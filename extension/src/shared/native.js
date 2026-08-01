@@ -46,20 +46,36 @@ export function sendToNativeHost(message) {
   }
 }
 
+// offer the code to tabs one at a time, most-recently-used first, and stop at the
+// first tab that reports it actually filled a field.
+export function deliverOtpToTabs(message) {
+  if (typeof chrome === 'undefined' || !chrome.tabs) return;
+
+  chrome.tabs.query({}, function(tabs) {
+    const ordered = [...(tabs || [])].sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
+
+    (function next(i) {
+      if (i >= ordered.length) return;
+      chrome.tabs.sendMessage(
+        ordered[i].id,
+        { action: "fill_otp", otp: message.otp, otp_id: message.otp_id },
+        (response) => {
+          // Tabs without a content script (about:, the web store, ...) set lastError.
+          void chrome.runtime.lastError;
+          if (response && response.filled) {
+            sendToNativeHost({ command: "consume_otp", otp_id: message.otp_id });
+          } else {
+            next(i + 1);
+          }
+        }
+      );
+    })(0);
+  });
+}
+
 function handleNativeMessage(message) {
   // Dispatch native messages to other parts of the extension
   if (message.command === "otp_available" && message.otp) {
-    // Deliver to every tab; the content script only fills when the page actually
-    // has OTP fields, so we don't depend on which tab happens to be focused.
-    if (typeof chrome !== 'undefined' && chrome.tabs) {
-      chrome.tabs.query({}, function(tabs) {
-        for (const tab of tabs) {
-          chrome.tabs.sendMessage(tab.id, { action: "fill_otp", otp: message.otp }, () => {
-            // Ignore tabs without a content script listening.
-            void chrome.runtime.lastError;
-          });
-        }
-      });
-    }
+    deliverOtpToTabs(message);
   }
 }
