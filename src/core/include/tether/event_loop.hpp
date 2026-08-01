@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <functional>
 #include <map>
 
@@ -30,7 +31,7 @@ namespace tether {
 
     private:
         int epoll_fd_;
-        bool running_;
+        std::atomic<bool> running_;
         std::map<int, Callback> callbacks_;
     };
 

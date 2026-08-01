@@ -116,8 +116,10 @@ namespace tether {
                     loop_.removeFd(fd);
                     close(fd);
 
-                    // Trim trailing nulls and whitespace
-                    while (!result.empty() && (result.back() == '\0' || isspace(result.back()))) {
+                    // Trim trailing nulls and whitespace. Cast: isspace() on a negative
+                    // char is UB, and clipboard text is routinely non-ASCII.
+                    while (!result.empty() &&
+                           (result.back() == '\0' || isspace(static_cast<unsigned char>(result.back())))) {
                         result.pop_back();
                     }
 
@@ -134,6 +136,7 @@ namespace tether {
             loop_.removeFd(fd);
             close(fd);
         }
+        source_.reset(); // before the device that owns the selection
         if (device_) {
             device_->sendDestroy();
         }
@@ -164,9 +167,14 @@ namespace tether {
             }).detach();
         });
 
-        source->setCancelled([](CCZwlrDataControlSourceV1* s) { s->sendDestroy(); });
+        // compositor cancels our source when something else takes the selection.
+        source->setCancelled([this](CCZwlrDataControlSourceV1* s) {
+            if (source_.get() == s)
+                source_.reset();
+        });
 
-        device_->sendSetSelection(source.release());
+        device_->sendSetSelection(source.get());
+        source_ = std::move(source);
     }
 
 } // namespace tether

@@ -10,6 +10,7 @@ namespace tether {
 
     std::string base64_encode(const unsigned char* bytes_to_encode, size_t in_len) {
         std::string ret;
+        ret.reserve(((in_len + 2) / 3) * 4); // exact output size; file chunks are 512 KB
         int i = 0;
         int j = 0;
         unsigned char char_array_3[3];
@@ -59,6 +60,7 @@ namespace tether {
         int in_ = 0;
         unsigned char char_array_4[4], char_array_3[3];
         std::vector<unsigned char> ret;
+        ret.reserve((encoded_string.size() / 4) * 3);
 
         while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_])) {
             char_array_4[i++] = encoded_string[in_];

@@ -14,8 +14,8 @@
 #include "tether/crypto.hpp"
 #include "tether/discovery.hpp"
 #include "tether/file_transfer.hpp"
+#include "tether/otp.hpp"
 #include "tether/wayland.hpp"
-#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -55,32 +55,50 @@ namespace tether {
     static std::vector<ReceivedFileInfo> recent_received_files;
     static constexpr size_t kMaxRecentReceivedFiles = 16;
     static std::map<int, ConnectedClientSnapshot> connected_remote_clients;
-    static std::string g_current_otp;
-    static std::chrono::steady_clock::time_point g_otp_set_at;
-    // 5-min TTL backstop; consume-on-fill is the primary guard
-    static constexpr auto kOtpTtl = std::chrono::minutes(5);
 
-    void register_client_fd(int fd) { active_sessions[fd] = {fd, nullptr}; }
+    void register_client_fd(int fd) {
+        std::lock_guard<std::mutex> lock(g_sessions_mutex);
+        active_sessions[fd] = {fd, nullptr};
+    }
 
-    void register_client_ssl(int fd, SSL* ssl) { active_sessions[fd] = {fd, ssl}; }
+    void register_client_ssl(int fd, SSL* ssl) {
+        std::lock_guard<std::mutex> lock(g_sessions_mutex);
+        active_sessions[fd] = {fd, ssl};
+    }
 
     void unregister_client_fd(int fd) {
-        active_sessions.erase(fd);
+        {
+            std::lock_guard<std::mutex> lock(g_sessions_mutex);
+            active_sessions.erase(fd);
+        }
         std::lock_guard<std::mutex> lock(g_subscribers_mutex);
         local_subscribers.erase(fd);
+    }
+
+    // The extension may send the code as a JSON string or a JSON number. Reading a
+    // number straight into std::string throws type_error.302, which the bare catch in
+    // the message loop swallowed, silently dropping the OTP.
+    static std::string otp_from_json(const nlohmann::json& value) {
+        if (value.is_string())
+            return value.get<std::string>();
+        if (value.is_number_integer())
+            return std::to_string(value.get<long long>());
+        if (value.is_number_unsigned())
+            return std::to_string(value.get<unsigned long long>());
+        return "";
+    }
+
+    static nlohmann::json make_otp_event(const Otp& otp) {
+        nlohmann::json event;
+        event["command"] = "otp_available";
+        event["otp"] = otp.code;
+        event["otp_id"] = otp.id;
+        return event;
     }
 
     void register_local_subscriber(int fd) {
         std::lock_guard<std::mutex> lock(g_subscribers_mutex);
         local_subscribers.insert(fd);
-    }
-
-    // Returns the stored OTP, clearing it first if it has aged past the TTL.
-    static std::string current_otp_if_fresh() {
-        if (!g_current_otp.empty() && std::chrono::steady_clock::now() - g_otp_set_at >= kOtpTtl) {
-            g_current_otp.clear();
-        }
-        return g_current_otp;
     }
 
     void unregister_local_subscriber(int fd) {
@@ -115,7 +133,7 @@ namespace tether {
         if (!packet.empty() && packet.back() != '\n')
             packet += '\n';
 
-        std::lock_guard<std::mutex> lock(g_subscribers_mutex);
+        std::lock_guard<std::mutex> lock(g_sessions_mutex);
         for (auto const& [fd, session] : active_sessions) {
             if (fd == exclude_fd)
                 continue;
@@ -253,7 +271,7 @@ namespace tether {
             packet += '\n';
 
         size_t recipients = 0;
-        std::lock_guard<std::mutex> lock(g_subscribers_mutex);
+        std::lock_guard<std::mutex> lock(g_sessions_mutex);
         for (auto const& [fd, session] : active_sessions) {
             if (fd == exclude_fd || !session.ssl)
                 continue;
@@ -320,6 +338,16 @@ namespace tether {
 
         sockaddr_un addr{};
         addr.sun_family = AF_UNIX;
+        // sun_path is 108 bytes. strncpy would silently truncate a longer path and we
+        // would end up listening somewhere nobody is looking.
+        if (socket_path_.size() >= sizeof(addr.sun_path)) {
+            debug::log(ERR,
+                       "Socket path too long ({} bytes, max {}): {}",
+                       socket_path_.size(),
+                       sizeof(addr.sun_path) - 1,
+                       socket_path_);
+            return false;
+        }
         std::strncpy(addr.sun_path, socket_path_.c_str(), sizeof(addr.sun_path) - 1);
 
         if (bind(server_fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
@@ -380,15 +408,19 @@ namespace tether {
     void UnixServer::handle_client(int client_fd) {
         // 64k buffer sizes for chunks
         char buf[65536];
-        ssize_t n = read(client_fd, buf, sizeof(buf) - 1);
+        ssize_t n = read(client_fd, buf, sizeof(buf));
         if (n > 0) {
-            buf[n] = '\0';
-            client_buffers_[client_fd] += std::string(buf, n);
+            // Reference + cursor rather than erase(0, ...) per message: the old form
+            // shifted the whole remaining buffer down for every line, which is O(n^2)
+            // over the ~683 KB base64 payloads file transfers push through here.
+            std::string& buffer = client_buffers_[client_fd];
+            buffer.append(buf, n);
 
+            size_t start = 0;
             size_t pos;
-            while ((pos = client_buffers_[client_fd].find('\n')) != std::string::npos) {
-                std::string msg = client_buffers_[client_fd].substr(0, pos);
-                client_buffers_[client_fd].erase(0, pos + 1);
+            while ((pos = buffer.find('\n', start)) != std::string::npos) {
+                std::string msg = buffer.substr(start, pos - start);
+                start = pos + 1;
 
                 try {
                     nlohmann::json j = nlohmann::json::parse(msg);
@@ -401,13 +433,11 @@ namespace tether {
                         }
                         // Replay any current OTP so a freshly reconnected extension
                         // (MV3 service worker restart) gets it without waiting for a
-                        // new_otp push it may have missed while disconnected.
-                        std::string otp = current_otp_if_fresh();
-                        if (!otp.empty()) {
-                            nlohmann::json event;
-                            event["command"] = "otp_available";
-                            event["otp"] = otp;
-                            std::string otp_payload = event.dump() + "\n";
+                        // new_otp push it may have missed while disconnected. Skip the
+                        // replay once a page has already taken the code, otherwise the
+                        // restart re-injects it into whatever site the user is on now.
+                        if (Otp otp = otp_peek(); otp && !otp_is_claimed()) {
+                            std::string otp_payload = make_otp_event(otp).dump() + "\n";
                             if (write(client_fd, otp_payload.c_str(), otp_payload.size()) < 0) {
                                 debug::log(ERR, "net write error\n");
                             }
@@ -442,31 +472,30 @@ namespace tether {
                             continue;
                         }
                     } else if (j.contains("command") && j["command"] == "new_otp" && j.contains("otp")) {
-                        g_current_otp = j["otp"];
-                        g_otp_set_at = std::chrono::steady_clock::now();
+                        std::string code = otp_from_json(j["otp"]);
+                        uint64_t id = otp_store(code);
                         // Push the code to local subscribers (browser extension, GTK, etc.)
                         // so the browser fills it without depending on its polling timing.
-                        nlohmann::json event;
-                        event["command"] = "otp_available";
-                        event["otp"] = g_current_otp;
-                        broadcast_local_event(event.dump(), client_fd);
+                        broadcast_local_event(make_otp_event({code, id}).dump(), client_fd);
                         std::string payload = "{\"status\":\"ok\"}\n";
                         if (write(client_fd, payload.c_str(), payload.size()) < 0) {
                             debug::log(ERR, "net write error\n");
                         }
                         continue;
                     } else if (j.contains("command") && j["command"] == "request_otp") {
-                        nlohmann::json resp;
-                        resp["command"] = "otp_available";
-                        resp["otp"] = current_otp_if_fresh();
-                        std::string payload = resp.dump() + "\n";
+                        // Claimed by the first site that polls for it, so the next site
+                        // the user visits doesn't get handed the previous site's code.
+                        Otp otp = otp_take_for_host(j.value("url", std::string{}));
+                        std::string payload = make_otp_event(otp).dump() + "\n";
                         if (write(client_fd, payload.c_str(), payload.size()) < 0) {
                             debug::log(ERR, "net write error\n");
                         }
                         continue;
                     } else if (j.contains("command") && j["command"] == "consume_otp") {
-                        // The extension filled the code; clear it so it isn't re-served.
-                        g_current_otp.clear();
+                        // A page filled the code; retire it so it isn't re-served. Scoped
+                        // to the id so a slow consume from the previous page can't wipe
+                        // the code that just arrived for the current one.
+                        otp_consume(j.value("otp_id", static_cast<uint64_t>(0)));
                         std::string payload = "{\"status\":\"ok\"}\n";
                         if (write(client_fd, payload.c_str(), payload.size()) < 0) {
                             debug::log(ERR, "net write error\n");
@@ -623,6 +652,10 @@ namespace tether {
                 if (write(client_fd, response.c_str(), response.size()) < 0) {
                     debug::log(ERR, "net write error\n");
                 }
+            }
+
+            if (start > 0) {
+                buffer.erase(0, start); // compact once per read, not once per message
             }
         } else if (n == 0 || (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)) {
             // Disconnected
@@ -795,15 +828,18 @@ namespace tether {
         }
 
         char buf[65536];
-        int n = SSL_read(ssl, buf, sizeof(buf) - 1);
+        int n = SSL_read(ssl, buf, sizeof(buf));
         if (n > 0) {
-            buf[n] = '\0';
-            client_buffers_[client_fd] += std::string(buf, n);
+            // See UnixServer::handle_client — cursor instead of a per-message erase.
+            // This is the hot path for inbound file transfers.
+            std::string& buffer = client_buffers_[client_fd];
+            buffer.append(buf, n);
 
+            size_t start = 0;
             size_t pos;
-            while ((pos = client_buffers_[client_fd].find('\n')) != std::string::npos) {
-                std::string msg = client_buffers_[client_fd].substr(0, pos);
-                client_buffers_[client_fd].erase(0, pos + 1);
+            while ((pos = buffer.find('\n', start)) != std::string::npos) {
+                std::string msg = buffer.substr(start, pos - start);
+                start = pos + 1;
 
                 try {
                     nlohmann::json j = nlohmann::json::parse(msg);
@@ -878,14 +914,11 @@ namespace tether {
                     } else if (j.contains("command") && j["command"] == "new_otp" && j.contains("otp")) {
                         // OTP sent from a mobile client (iPhone Share Extension) over mTLS.
                         // Store it in the global vault so the browser extension can retrieve it.
-                        g_current_otp = j["otp"].get<std::string>();
-                        g_otp_set_at = std::chrono::steady_clock::now();
+                        std::string code = otp_from_json(j["otp"]);
+                        uint64_t id = otp_store(code);
                         // Notify local subscribers (GTK, browser ext, etc.) using the
                         // otp_available shape the browser extension listens for.
-                        nlohmann::json event;
-                        event["command"] = "otp_available";
-                        event["otp"] = g_current_otp;
-                        broadcast_local_event(event.dump());
+                        broadcast_local_event(make_otp_event({code, id}).dump());
                         std::string payload = "{\"status\":\"ok\"}\n";
                         robust_ssl_write(ssl, payload.c_str(), payload.size());
                         continue;
@@ -911,6 +944,10 @@ namespace tether {
 
                 std::string response = "OK\n";
                 robust_ssl_write(ssl, response.c_str(), response.size());
+            }
+
+            if (start > 0) {
+                buffer.erase(0, start);
             }
         } else {
             int err = SSL_get_error(ssl, n);

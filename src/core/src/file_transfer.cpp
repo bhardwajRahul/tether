@@ -87,7 +87,30 @@ namespace tether {
         auto& t = it->second;
         auto raw_data = base64_decode(b64_data);
 
+        // Never write past the size the peer declared in file_start. Without this a
+        // buggy or hostile sender can stream unbounded data into $XDG_DOWNLOAD_DIR.
+        if (t->bytes_written + raw_data.size() > t->expected_size) {
+            debug::log(ERR,
+                       "FileReceiveManager: transfer {} exceeds declared size {} (chunk {}); aborting",
+                       transfer_id,
+                       t->expected_size,
+                       chunk_index);
+            t->stream->close();
+            std::error_code ec;
+            std::filesystem::remove(t->filepath, ec);
+            transfers_.erase(it);
+            return false;
+        }
+
         t->stream->write(reinterpret_cast<const char*>(raw_data.data()), raw_data.size());
+        if (!*t->stream) {
+            debug::log(ERR, "FileReceiveManager: write failed for {} (disk full?)", t->filepath.string());
+            t->stream->close();
+            std::error_code ec;
+            std::filesystem::remove(t->filepath, ec);
+            transfers_.erase(it);
+            return false;
+        }
         t->bytes_written += raw_data.size();
 
         return true;
@@ -107,6 +130,20 @@ namespace tether {
 
             auto& t = it->second;
             t->stream->close();
+
+            // A short transfer used to be reported as "success", leaving a truncated
+            // file in Downloads and telling the sender it went through.
+            if (t->bytes_written != t->expected_size) {
+                debug::log(ERR,
+                           "FileReceiveManager: transfer {} truncated ({} of {} bytes); discarding",
+                           transfer_id,
+                           t->bytes_written,
+                           t->expected_size);
+                std::error_code ec;
+                std::filesystem::remove(t->filepath, ec);
+                transfers_.erase(it);
+                return false;
+            }
 
             completed_path = t->filepath;
             bytes_written = t->bytes_written;

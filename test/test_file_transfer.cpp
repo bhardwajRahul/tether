@@ -63,3 +63,67 @@ TEST_F(FileTransferTest, NameDeduplicatorAppendsCounterGracefully) {
     std::getline(i2, r2);
     EXPECT_EQ(r2, "DEF");
 }
+
+TEST_F(FileTransferTest, MultiChunkTransferConcatenates) {
+    tether::FileReceiveManager mgr;
+
+    std::string t_id = "multi";
+    ASSERT_TRUE(mgr.handle_start(t_id, "parts.txt", 6));
+    EXPECT_TRUE(mgr.handle_chunk(t_id, 0, tether::base64_encode((const unsigned char*)"abc", 3)));
+    EXPECT_TRUE(mgr.handle_chunk(t_id, 1, tether::base64_encode((const unsigned char*)"def", 3)));
+    EXPECT_TRUE(mgr.handle_end(t_id));
+
+    std::ifstream iff("/tmp/tether_tests/Downloads/parts.txt");
+    std::string res;
+    std::getline(iff, res);
+    EXPECT_EQ(res, "abcdef");
+}
+
+TEST_F(FileTransferTest, RejectsChunkPastDeclaredSize) {
+    tether::FileReceiveManager mgr;
+
+    std::string t_id = "overflow";
+    ASSERT_TRUE(mgr.handle_start(t_id, "small.bin", 3));
+
+    // Peer declared 3 bytes but streams 8. The extra must not be written.
+    EXPECT_FALSE(mgr.handle_chunk(t_id, 0, tether::base64_encode((const unsigned char*)"AAAABBBB", 8)));
+    EXPECT_FALSE(mgr.handle_end(t_id)) << "aborted transfer must not report success";
+    EXPECT_FALSE(std::filesystem::exists("/tmp/tether_tests/Downloads/small.bin"));
+}
+
+TEST_F(FileTransferTest, TruncatedTransferIsNotReportedAsSuccess) {
+    tether::FileReceiveManager mgr;
+
+    std::string t_id = "short";
+    ASSERT_TRUE(mgr.handle_start(t_id, "short.bin", 10));
+    EXPECT_TRUE(mgr.handle_chunk(t_id, 0, tether::base64_encode((const unsigned char*)"ABC", 3)));
+
+    // Only 3 of 10 bytes arrived; this used to return true and leave a partial file.
+    EXPECT_FALSE(mgr.handle_end(t_id));
+    EXPECT_FALSE(std::filesystem::exists("/tmp/tether_tests/Downloads/short.bin"));
+}
+
+TEST_F(FileTransferTest, DuplicateTransferIdIsRejected) {
+    tether::FileReceiveManager mgr;
+
+    EXPECT_TRUE(mgr.handle_start("dup", "a.txt", 3));
+    EXPECT_FALSE(mgr.handle_start("dup", "b.txt", 3));
+}
+
+TEST_F(FileTransferTest, UnknownTransferIdIsRejected) {
+    tether::FileReceiveManager mgr;
+
+    EXPECT_FALSE(mgr.handle_chunk("nope", 0, tether::base64_encode((const unsigned char*)"AB", 2)));
+    EXPECT_FALSE(mgr.handle_end("nope"));
+}
+
+TEST_F(FileTransferTest, PathTraversalInFilenameStaysInDownloads) {
+    tether::FileReceiveManager mgr;
+
+    ASSERT_TRUE(mgr.handle_start("trav", "../../../etc/tether_pwned", 3));
+    ASSERT_TRUE(mgr.handle_chunk("trav", 0, tether::base64_encode((const unsigned char*)"xyz", 3)));
+    ASSERT_TRUE(mgr.handle_end("trav"));
+
+    EXPECT_TRUE(std::filesystem::exists("/tmp/tether_tests/Downloads/tether_pwned"));
+    EXPECT_FALSE(std::filesystem::exists("/tmp/tether_tests/etc/tether_pwned"));
+}

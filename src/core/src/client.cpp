@@ -5,6 +5,8 @@
 #include "tether/net.hpp"
 
 #include <arpa/inet.h>
+#include <atomic>
+#include <cerrno>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -64,6 +66,11 @@ namespace tether {
         sockaddr_un addr{};
         addr.sun_family = AF_UNIX;
         std::string path = tether::get_runtime_dir() + "/tetherd.sock";
+        if (path.size() >= sizeof(addr.sun_path)) {
+            debug::log(ERR, "Socket path too long: {}", path);
+            close(sock);
+            return -1;
+        }
         std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
 
         if (::connect(sock, (sockaddr*)&addr, sizeof(addr)) < 0) {
@@ -104,11 +111,19 @@ namespace tether {
         disconnect();
 
         if (!host.empty()) {
-            sock_ = socket(AF_INET, SOCK_STREAM, 0);
             sockaddr_in addr{};
             addr.sin_family = AF_INET;
             addr.sin_port = htons(port);
-            inet_pton(AF_INET, host.c_str(), &addr.sin_addr);
+            if (inet_pton(AF_INET, host.c_str(), &addr.sin_addr) != 1) {
+                debug::log(ERR, "Invalid IPv4 address: {}", host);
+                return false;
+            }
+
+            sock_ = socket(AF_INET, SOCK_STREAM, 0);
+            if (sock_ < 0) {
+                debug::log(ERR, "Failed to create socket: {}", std::strerror(errno));
+                return false;
+            }
 
             if (::connect(sock_, (sockaddr*)&addr, sizeof(addr)) < 0) {
                 return false;
@@ -128,37 +143,58 @@ namespace tether {
     }
 
     std::string Client::send_and_wait(const std::string& payload) {
-        char buf[1024 * 1024]; // Generous payload buffer
+        constexpr size_t kBufSize = 1024 * 1024; // Generous payload buffer
+        if (read_buf_.size() < kBufSize)
+            read_buf_.resize(kBufSize);
+        char* buf = read_buf_.data();
+
+        if (!send(payload))
+            return "";
 
         if (ssl_) {
-            int w = SSL_write(ssl_, payload.c_str(), payload.size());
-            if (w <= 0)
-                return "";
-            int n = SSL_read(ssl_, buf, sizeof(buf) - 1);
-            if (n > 0) {
-                buf[n] = '\0';
-                return std::string(buf);
-            }
+            int n = SSL_read(ssl_, buf, static_cast<int>(kBufSize - 1));
+            if (n > 0)
+                return std::string(buf, n);
         } else {
-            if (write(sock_, payload.c_str(), payload.size()) < 0) {
-                debug::log(ERR, "client write error\n");
-            }
-            ssize_t n = ::read(sock_, buf, sizeof(buf) - 1);
-            if (n > 0) {
-                buf[n] = '\0';
-                return std::string(buf);
-            }
+            ssize_t n = ::read(sock_, buf, kBufSize - 1);
+            if (n > 0)
+                return std::string(buf, n);
         }
         return "";
     }
 
     bool Client::send(const std::string& payload) {
-        if (ssl_) {
-            int w = SSL_write(ssl_, payload.c_str(), payload.size());
-            return w > 0;
-        } else {
-            return write(sock_, payload.c_str(), payload.size()) > 0;
+        // Loop: a short write on a stream socket is legal, and reporting it as success
+        // silently desynchronises the newline-framed protocol. Matters for the ~683 KB
+        // base64 payloads send_file() produces.
+        size_t total = 0;
+        while (total < payload.size()) {
+            const char* p = payload.data() + total;
+            size_t remaining = payload.size() - total;
+
+            if (ssl_) {
+                int n = SSL_write(ssl_, p, static_cast<int>(remaining));
+                if (n <= 0) {
+                    int err = SSL_get_error(ssl_, n);
+                    if (err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_READ)
+                        continue;
+                    return false;
+                }
+                total += static_cast<size_t>(n);
+            } else {
+                ssize_t n = ::write(sock_, p, remaining);
+                if (n < 0) {
+                    if (errno == EINTR)
+                        continue;
+                    debug::log(ERR, "client write error: {}", std::strerror(errno));
+                    return false;
+                }
+                if (n == 0)
+                    return false;
+                total += static_cast<size_t>(n);
+            }
         }
+        return true;
     }
 
     ssize_t Client::read(char* buf, size_t count) {
@@ -261,7 +297,11 @@ namespace tether {
 
         size_t file_size = std::filesystem::file_size(path);
         std::string filename = std::filesystem::path(path).filename().string();
-        std::string transfer_id = "cli_" + std::to_string(time(nullptr));
+        // pid + counter, not just time(): two transfers in the same second produced the
+        // same id, and the receiver rejects a duplicate transfer_id.
+        static std::atomic<unsigned> seq{0};
+        std::string transfer_id =
+            "cli_" + std::to_string(getpid()) + "_" + std::to_string(time(nullptr)) + "_" + std::to_string(seq++);
 
         nlohmann::json j_start;
         j_start["command"] = "file_start";

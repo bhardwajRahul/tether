@@ -180,6 +180,8 @@ namespace tether {
                 }
             }
 
+            std::function<void(const std::vector<DiscoveredDevice>&)> cb;
+            std::vector<DiscoveredDevice> grouped;
             {
                 std::lock_guard<std::mutex> lock(ctx->impl->results_mutex);
                 // Deduplicate by address+port
@@ -195,10 +197,13 @@ namespace tether {
                 }
 
                 if (ctx->impl->browse_callback) {
-                    auto grouped = group_discovered_hosts(ctx->impl->results);
-                    ctx->impl->browse_callback(grouped);
+                    cb = ctx->impl->browse_callback;
+                    grouped = group_discovered_hosts(ctx->impl->results);
                 }
             }
+
+            if (cb)
+                cb(grouped);
         }
 
         avahi_service_resolver_free(r);
@@ -228,16 +233,22 @@ namespace tether {
                                        resolve_callback,
                                        userdata);
         } else if (event == AVAHI_BROWSER_REMOVE) {
-            std::lock_guard<std::mutex> lock(ctx->impl->results_mutex);
-            ctx->impl->results.erase(std::remove_if(ctx->impl->results.begin(),
-                                                    ctx->impl->results.end(),
-                                                    [&](const DiscoveredHost& h) { return h.name == name; }),
-                                     ctx->impl->results.end());
+            std::function<void(const std::vector<DiscoveredDevice>&)> cb;
+            std::vector<DiscoveredDevice> grouped;
+            {
+                std::lock_guard<std::mutex> lock(ctx->impl->results_mutex);
+                ctx->impl->results.erase(std::remove_if(ctx->impl->results.begin(),
+                                                        ctx->impl->results.end(),
+                                                        [&](const DiscoveredHost& h) { return h.name == name; }),
+                                         ctx->impl->results.end());
 
-            if (ctx->impl->browse_callback) {
-                auto grouped = group_discovered_hosts(ctx->impl->results);
-                ctx->impl->browse_callback(grouped);
+                if (ctx->impl->browse_callback) {
+                    cb = ctx->impl->browse_callback;
+                    grouped = group_discovered_hosts(ctx->impl->results);
+                }
             }
+            if (cb)
+                cb(grouped);
         }
     }
 
@@ -245,7 +256,12 @@ namespace tether {
 
     Discovery::Discovery() : impl_(std::make_unique<Impl>()) {}
 
-    Discovery::~Discovery() { unpublish(); }
+    Discovery::~Discovery() {
+        // Both, not just unpublish(): a running continuous browse keeps its own poll
+        // thread alive and its callback fires into freed state during shutdown.
+        stop_continuous_browse();
+        unpublish();
+    }
 
     Discovery::Discovery(Discovery&&) noexcept = default;
     Discovery& Discovery::operator=(Discovery&&) noexcept = default;
@@ -418,24 +434,27 @@ namespace tether {
     }
 
     void Discovery::stop_continuous_browse() {
-        if (impl_->browse_poll) {
-            avahi_threaded_poll_stop(impl_->browse_poll);
-            if (impl_->browse_browser)
-                avahi_service_browser_free(impl_->browse_browser);
-            if (impl_->browse_client)
-                avahi_client_free(impl_->browse_client);
-            avahi_threaded_poll_free(impl_->browse_poll);
+        if (!impl_->browse_poll)
+            return;
 
-            if (impl_->browse_ctx) {
-                delete static_cast<BrowseContext*>(impl_->browse_ctx);
-                impl_->browse_ctx = nullptr;
-            }
+        avahi_threaded_poll_stop(impl_->browse_poll);
 
-            impl_->browse_browser = nullptr;
-            impl_->browse_client = nullptr;
-            impl_->browse_poll = nullptr;
-            impl_->browse_callback = nullptr;
+        impl_->browse_callback = nullptr;
+
+        if (impl_->browse_browser)
+            avahi_service_browser_free(impl_->browse_browser);
+        if (impl_->browse_client)
+            avahi_client_free(impl_->browse_client);
+        avahi_threaded_poll_free(impl_->browse_poll);
+
+        if (impl_->browse_ctx) {
+            delete static_cast<BrowseContext*>(impl_->browse_ctx);
+            impl_->browse_ctx = nullptr;
         }
+
+        impl_->browse_browser = nullptr;
+        impl_->browse_client = nullptr;
+        impl_->browse_poll = nullptr;
     }
 
     // ─── Grouping helper ────────────────────────────────────────────

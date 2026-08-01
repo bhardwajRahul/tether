@@ -3,6 +3,7 @@ add_executable(tether_test
     test_crypto.cpp
     test_discovery.cpp
     test_file_transfer.cpp
+    test_otp.cpp
 )
 
 target_include_directories(tether_test PRIVATE
