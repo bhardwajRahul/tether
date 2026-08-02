@@ -37,6 +37,7 @@ namespace tether {
 
         int sock_ = -1;
         SSL* ssl_ = nullptr;
+        std::vector<char> read_buf_;
     };
 
 } // namespace tether

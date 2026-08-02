@@ -10,7 +10,7 @@ MAIL_DIR="$BUILD_DIR/mail"
 CHROME_DIR="$BUILD_DIR/chromium"
 
 mkdir -p "$BROWSER_DIR/src/background" "$BROWSER_DIR/src/content"
-mkdir -p "$MAIL_DIR/src/background" "$MAIL_DIR/src/mail"
+mkdir -p "$MAIL_DIR/src/mail"
 mkdir -p "$CHROME_DIR/src/background" "$CHROME_DIR/src/content"
 
 # Bundle Firefox Browser Extension
@@ -23,7 +23,6 @@ if [ -d "extension/icons" ]; then cp -R extension/icons "$BROWSER_DIR/"; fi
 
 # Bundle Mail Extension
 echo "Bundling mail extension..."
-npx esbuild extension/src/background/background.js --bundle --outfile="$MAIL_DIR/src/background/background.js"
 npx esbuild extension/src/mail/extractor.js --bundle --outfile="$MAIL_DIR/src/mail/extractor.js"
 cp extension/manifest-mail.json "$MAIL_DIR/manifest.json"
 if [ -d "extension/icons" ]; then cp -R extension/icons "$MAIL_DIR/"; fi

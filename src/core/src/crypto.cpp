@@ -8,8 +8,10 @@
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
+#include <pwd.h>
 #include <sstream>
 #include <tether/log.hpp>
+#include <unistd.h>
 
 namespace tether {
 
@@ -28,8 +30,21 @@ namespace tether {
     SSL_CTX* Crypto::get_server_context() { return server_ctx_; }
     SSL_CTX* Crypto::get_client_context() { return client_ctx_; }
 
+    static std::string home_dir() {
+        if (const char* home = getenv("HOME"); home && *home) {
+            return home;
+        }
+        if (const passwd* pw = getpwuid(getuid()); pw && pw->pw_dir) {
+            return pw->pw_dir;
+        }
+        throw std::runtime_error("Cannot determine home directory (HOME unset and no passwd entry)");
+    }
+
     bool Crypto::init() {
-        std::filesystem::path config_dir = std::string(getenv("HOME")) + "/.config/tether";
+        if (server_ctx_ && client_ctx_)
+            return true;
+
+        std::filesystem::path config_dir = std::filesystem::path(home_dir()) / ".config" / "tether";
         std::filesystem::create_directories(config_dir);
         cert_path_ = (config_dir / "cert.pem").string();
         key_path_ = (config_dir / "key.pem").string();
@@ -82,7 +97,10 @@ namespace tether {
             }
         }
 
-        load_known_hosts();
+        {
+            std::lock_guard<std::mutex> lock(hosts_mutex_);
+            load_known_hosts();
+        }
         return true;
     }
 
@@ -142,55 +160,95 @@ namespace tether {
     }
 
     void Crypto::load_known_hosts() {
-        if (!std::filesystem::exists(hosts_path_)) {
-            nlohmann::json empty = nlohmann::json::object();
-            std::ofstream off(hosts_path_);
-            off << empty.dump(4);
+        known_hosts_.clear();
+        hosts_loaded_ = true;
+
+        std::ifstream iff(hosts_path_);
+        if (!iff.is_open()) {
+            save_known_hosts(); // materialise an empty file on first run
+            return;
+        }
+
+        try {
+            nlohmann::json j = nlohmann::json::parse(iff);
+            for (auto& [fingerprint, name] : j.items()) {
+                known_hosts_[fingerprint] = name.is_string() ? name.get<std::string>() : "Unknown Device";
+            }
+        } catch (...) {
+            debug::log(ERR, "Crypto: known_hosts.json is corrupt; treating as empty");
+        }
+        iff.close();
+
+        std::error_code ec;
+        hosts_mtime_ = std::filesystem::last_write_time(hosts_path_, ec);
+    }
+
+    void Crypto::refresh_known_hosts_if_stale() {
+        std::error_code ec;
+        auto mtime = std::filesystem::last_write_time(hosts_path_, ec);
+        if (ec) {
+            if (!hosts_loaded_)
+                load_known_hosts();
+            return;
+        }
+        if (!hosts_loaded_ || mtime != hosts_mtime_) {
+            load_known_hosts();
         }
     }
 
+    // writes to a temp file and renames
     void Crypto::save_known_hosts() {
-        // We do it directly in add_known_host right now
+        nlohmann::json j = nlohmann::json::object();
+        for (const auto& [fingerprint, name] : known_hosts_) {
+            j[fingerprint] = name;
+        }
+
+        std::string tmp_path = hosts_path_ + ".tmp";
+        {
+            std::ofstream off(tmp_path);
+            if (!off.is_open()) {
+                debug::log(ERR, "Crypto: cannot write {}", tmp_path);
+                return;
+            }
+            off << j.dump(4);
+            off.flush();
+            if (!off) {
+                debug::log(ERR, "Crypto: failed writing {}", tmp_path);
+                return;
+            }
+        }
+
+        std::error_code ec;
+        std::filesystem::rename(tmp_path, hosts_path_, ec);
+        if (ec) {
+            debug::log(ERR, "Crypto: failed to replace {}: {}", hosts_path_, ec.message());
+            std::filesystem::remove(tmp_path, ec);
+            return;
+        }
+        hosts_mtime_ = std::filesystem::last_write_time(hosts_path_, ec);
     }
 
     bool Crypto::is_host_known(const std::string& fingerprint) {
-        std::ifstream iff(hosts_path_);
-        if (!iff.is_open())
-            return false;
-        try {
-            nlohmann::json j = nlohmann::json::parse(iff);
-            return j.contains(fingerprint);
-        } catch (...) {
-            return false;
-        }
+        std::lock_guard<std::mutex> lock(hosts_mutex_);
+        refresh_known_hosts_if_stale();
+        return known_hosts_.count(fingerprint) > 0;
     }
 
     void Crypto::add_known_host(const std::string& name, const std::string& fingerprint) {
-        nlohmann::json j;
-        std::ifstream iff(hosts_path_);
-        if (iff.is_open()) {
-            try {
-                j = nlohmann::json::parse(iff);
-            } catch (...) {
-            }
-            iff.close();
-        }
-        j[fingerprint] = name;
-
-        std::ofstream off(hosts_path_);
-        off << j.dump(4);
+        std::lock_guard<std::mutex> lock(hosts_mutex_);
+        refresh_known_hosts_if_stale(); // don't clobber a pairing another process added
+        known_hosts_[fingerprint] = name;
+        save_known_hosts();
     }
 
     std::string Crypto::get_known_hosts_dump() const {
-        std::ifstream iff(hosts_path_);
-        if (iff.is_open()) {
-            try {
-                nlohmann::json j = nlohmann::json::parse(iff);
-                return j.dump(2);
-            } catch (...) {
-            }
+        std::lock_guard<std::mutex> lock(hosts_mutex_);
+        const_cast<Crypto*>(this)->refresh_known_hosts_if_stale();
+        nlohmann::json j = nlohmann::json::object();
+        for (const auto& [fingerprint, name] : known_hosts_) {
+            j[fingerprint] = name;
         }
-        return "{}";
+        return j.dump(2);
     }
 
     std::string Crypto::get_my_fingerprint() { return my_fingerprint_; }

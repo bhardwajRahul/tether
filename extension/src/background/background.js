@@ -32,7 +32,7 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
     }
 
     if (request.action === "consume_otp") {
-      sendToNativeHost({ command: "consume_otp" });
+      sendToNativeHost({ command: "consume_otp", otp_id: request.otp_id || 0 });
       sendResponse({ status: "consumed" });
     }
     return true;

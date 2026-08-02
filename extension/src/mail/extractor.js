@@ -1,9 +1,9 @@
 // Mail script for Thunderbird/Betterbird
 // This script extracts OTP codes from emails
 
-import { connectToNativeHost, sendToNativeHost } from '../shared/native.js';
-
-connectToNativeHost();
+// single entry point for the mail extension
+import '../background/background.js';
+import { sendToNativeHost } from '../shared/native.js';
 
 const OTP_CONTEXT_KEYWORDS = [
   'code', 'otp', 'one-time', 'verification', 'confirm', 'passcode',
@@ -47,6 +47,17 @@ function pruneOldSeen() {
 // Run pruning every minute so the Map doesn't grow forever
 setInterval(pruneOldSeen, 60_000);
 
+// distance from `target` to the closest occurrence of `needle` in `haystack`.
+function nearestDistance(haystack, needle, target) {
+  let best = Infinity;
+  for (let i = haystack.indexOf(needle); i !== -1; i = haystack.indexOf(needle, i + 1)) {
+    const d = Math.abs(target - i);
+    if (d < best) best = d;
+    if (i > target) break; // occurrences are ordered; past the target we only get worse
+  }
+  return best;
+}
+
 export function scoreCandidate(num, surroundingText) {
   let score = 0;
   // Squash whitespace for accurate proximity and keyword matching
@@ -55,16 +66,12 @@ export function scoreCandidate(num, surroundingText) {
   const numIndex = lower.indexOf(num.toLowerCase());
 
   for (const kw of OTP_CONTEXT_KEYWORDS) {
-    if (lower.includes(kw)) {
-      score += 10;
+    if (lower.indexOf(kw) === -1) continue;
+    score += 10;
 
-      // Proximity bonus: keyword within 30 chars of the number
-      if (numIndex !== -1) {
-        const kwIndex = lower.indexOf(kw);
-        if (Math.abs(numIndex - kwIndex) <= 30) {
-          score += 20;
-        }
-      }
+    // proximity bonus: keyword within 30 chars of the number
+    if (numIndex !== -1 && nearestDistance(lower, kw, numIndex) <= 30) {
+      score += 20;
     }
   }
 
@@ -283,7 +290,7 @@ if (typeof messenger !== 'undefined') {
     try {
       let page = await messenger.messages.query({ fromDate: since });
 
-      while (page) {
+      while (page && Array.isArray(page.messages)) {
         for (const message of page.messages) {
           if (hasSeen(message.id)) continue;
           markSeen(message.id);

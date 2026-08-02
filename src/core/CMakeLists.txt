@@ -4,6 +4,7 @@ add_library(tether STATIC
     src/net.cpp
     src/clipboard.cpp
     src/base64.cpp
+    src/otp.cpp
     src/file_transfer.cpp
     src/crypto.cpp
     src/client.cpp

@@ -10,6 +10,7 @@ class CCZwlrDataControlManagerV1;
 class CCWlSeat;
 class CCZwlrDataControlDeviceV1;
 class CCZwlrDataControlOfferV1;
+class CCZwlrDataControlSourceV1;
 
 namespace tether {
 
@@ -33,6 +34,7 @@ namespace tether {
         EpollEventLoop& loop_;
         wl_display* display_;
         std::unique_ptr<CCZwlrDataControlDeviceV1> device_;
+        std::unique_ptr<CCZwlrDataControlSourceV1> source_;
 
         std::function<void(const std::string&)> cb_;
         std::map<wl_proxy*, std::unique_ptr<CCZwlrDataControlOfferV1>> offers_;
