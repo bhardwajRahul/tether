@@ -1,9 +1,9 @@
 - [x]  mDNS discovery
-- [ ] PKGBUILD
+- [x] PKGBUILD
 - [ ] TOTP vault
-- [-] iPhone app
-    - [ ] iOS sharesheet thing
-- [ ] WebExtension
+- [x] iPhone app
+    - [x] iOS sharesheet thing
+- [x] WebExtension
 - [ ] TUI
 - [ ] layershell popups for
   - [x] device pairing request

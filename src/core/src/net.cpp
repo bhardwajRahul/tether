@@ -312,7 +312,6 @@ namespace tether {
                 throw std::system_error(errno, std::system_category(), "Failed to lock file");
             }
         }
-        // TODO: dont do this
         // we intentionally leak the fd so the lock is held for the lifetime of the process.
         // lock is automatically released by OS on exit.
     }
