@@ -8,13 +8,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[![Platform: Linux](https://img.shields.io/badge/Platform-Linux%20Wayland-blue.svg)](https://wayland.freedesktop.org/)
-
 [![Get the Firefox Add-on](https://img.shields.io/badge/Firefox-Add--on-orange.svg)](https://addons.mozilla.org/en-US/firefox/addon/tether-browser-extension/)
 
 [![Get the Thunderbird / Betterbird Add-on](https://img.shields.io/badge/Thunderbird-Add--on-orange.svg)](https://addons.thunderbird.net/en-US/thunderbird/addon/tether-mail-extension/)
-
-[![iOS: 16+](https://img.shields.io/badge/iOS-16%2B-purple.svg)](https://apps.apple.com/us/app/tether-linux-companion/id6762097135)
 
 [![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/tether-linux-companion/id6762097135)
 
@@ -28,58 +24,58 @@
 | **Browser Extension** | ✅ Stable |
 | **Mail Extension** | ✅ Stable |
 | **Messages (SMS/iMessage)** | 🧪 Beta |
-| **Notification Mirroring** | 🧪 Beta Bluetooth |
+| **Notification Mirroring** | 🧪 Beta |
 | **TOTP/OTP Vault** | 🗓️ Planning |
 
 ### Clipboard Sync
-Seamlessly share your Wayland compositor (`wlr-data-control`) clipboard over the Tether network. Text copied on your Linux desktop appears instantly on your iPhone, and vice versa.
+Text copied on your Linux desktop appears instantly on your iPhone, and vice versa.
 
 ### File Transfer
-Drag and drop files from Linux directly into the iPhone app, or receive files automatically deposited to your `$XDG_DOWNLOAD_DIR`.
+Drag and drop files from Linux directly into the iPhone app, or receive files automatically to your `$XDG_DOWNLOAD_DIR` (~/Downloads).
 
 ### Messages and Notifications
-
 Read and reply to SMS and iMessage conversations, and see notifications from any app on the phone, on the Linux desktop.
 
-iOS permits no app to touch messages or other apps' notifications. A Bluetooth accessory can, however, receive messages and notifications from the phone.
-
 ### Device Pairing
-Securely pair devices using **Mutually Authenticated TLS (mTLS)**, restricting TCP traffic securely using X.509 RSA certificates.
+There are two ways tether communicates with the iPhone:
+- WiFi (TCP via mTLS): for clipboard sync, file transfer, and OTP handling
+- Bluetooth: for Messages and Notifications
+You can use either or both, depending on your needs.
+
+Connections use Mutually Authenticated TLS (mTLS), restricting TCP traffic securely using X.509 RSA certificates.
 
 ### OTP Handling
 Streamline two-factor authentication across your devices:
 - iOS Share Extension: Send OTP codes from your iPhone to your Linux clipboard.
 - Thunderbird Addon: Automatically parse OTP codes from incoming email messages.
 - Browser Extension: Autofill OTP codes into login forms from the iOS app or the mail extension.
+- SMS / iMessage: Receive OTP codes from SMS or iMessage and send them to the Linux clipboard (Experimental).
 
 ### Browser & Mail Extensions
-A unified WebExtension that works across Thunderbird/Betterbird and Firefox/Chromium browsers:
+A unified WebExtension that works in Thunderbird/Betterbird and Firefox/Chromium browsers:
 
 - **Thunderbird/Betterbird:** Detects OTP codes in incoming emails (verification codes, 2FA messages) and copies them to the clipboard or sends them to the Tether daemon for vault storage
 - **Firefox/Chromium:** Autofills OTP codes into login forms by retrieving secrets from the Tether vault, with one-click verification for sites using TOTP-based 2FA
 
 The extension communicates with `tetherd` via native messaging. This allows users to autofill OTP codes into websites when the email arrives. 
 
-## Architecture
+## Components
 
-Tether uses a multi-component architecture:
+1. **`tetherd` (Linux Daemon)**: A background C++ process running on Linux and manages Bluetooth, TCP+mTLS, and Wayland integration.
 
-1. **`tetherd` (Linux Daemon)** — A background C++ process built on `epoll` and Wayland protocols via `hyprwayland-scanner`. Anchors the Linux clipboard and broadcasts events over UNIX Domain Sockets (`$XDG_RUNTIME_DIR/tether/tetherd.sock`). Network traffic securely traverses local TCP via OpenSSL.
+2. **`tether`**: A CLI to communicate with the daemon. This also allows the WebExtension to interface with the daemon via native messaging.
 
-2. **`tether` (CLI)** — A lightweight C++ CLI program to communicate with the daemon. This also allows the WebExtension to interface with the daemon via native messaging.
+3. **`tether-gtk` (GTK App)**: A native GTK3 application for Linux that provides a graphical interface to manage devices, send files, trigger clipboard sync, read and reply to iPhone messages, see mirrored notifications, and monitor connection status.
 
-3. **`tether-gtk` (GTK App)** — A native GTK3 application for Linux that provides a graphical interface to manage devices, send files, trigger clipboard sync, read and reply to iPhone messages, see mirrored notifications, and monitor connection status.
+4. **iPhone App**: Native SwiftUI iOS 16+ app that discovers the daemon via Bonjour/mDNS, utilizing Apple's `Network.framework` for secure TLS negotiation. Not required for SMS/iMessage and notification mirroring, which use Bluetooth.
 
-4. **iPhone App** — Native SwiftUI iOS 16+ app that discovers the daemon via Bonjour/mDNS, utilizing Apple's `Network.framework` for secure TLS negotiation.
-
-5. **Browser/Mail Extension** — WebExtension that interfaces with the daemon via native messaging. Use with Thunderbird/Betterbird and Firefox or Chromium-based browsers.
+5. **Browser/Mail Extension**: WebExtension that interfaces with the daemon via native messaging. Use with Thunderbird/Betterbird and Firefox or Chromium-based browsers.
 
 ## Requirements
 
 ### Linux
-- **Wayland compositor** with `wlr-data-control` protocol (Hyprland, Sway, etc.)
-- **Linux 5.15+** with glibc
-- **Build tools:** CMake, Ninja, pkg-config
+- Wayland compositor with `wlr-data-control` protocol (Hyprland, Sway, [Fenriz](https://github.com/zackb/fenriz) etc.)
+- Build tools: cmake, ninja, pkg-config
 
 ### Dependencies
 - `wayland-client`
@@ -92,12 +88,12 @@ Tether uses a multi-component architecture:
 - `avahi`
 - `bluez`, `bluez-utils`, and `bluez-obex` (for messages and notifications)
 
-### Bluetooth (for Messages and Notifications)
-- BlueZ 5.86+ running with experimental bearer API, for notification mirroring.
+#### Bluetooth (for Messages and Notifications)
+- BlueZ 5.86+ must be running with experimental bearer API.
 - A controller with BR/EDR, LE, and advertising support.
 - Notification mirroring does not work on iOS 18 and earlier.
 
-### iOS
+### iOS App
 - iOS 16+
 - Get the app: [Tether - Linux Companion](https://apps.apple.com/us/app/tether-linux-companion/id6762097135)
 
@@ -116,43 +112,27 @@ yay -S tether
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/tether.git
+git clone https://github.com/zackb/tether.git
 cd tether
 
-# Build with CMake presets
-make debug
+# Build with cmake presets
+make release
 
-# Run the daemon
-make run-daemon
+# Install the daemon, cli, and GTK app
+make install
 ```
 
-The daemon uses an advisory lock (`$XDG_RUNTIME_DIR/tether/tetherd.lock`) ensuring only one instance controls the Wayland connection at a time.
-
 ## Quick Start
+1. On Linux, launch the GTK app (tether-gtk) or run the CLI to pair your iPhone.
 
-1. **Build the project:**
+2. WiFi pair via the GUI or CLI:
    ```bash
-   make debug
+   tether pair
    ```
+   The iOS app will auto-discover the daemon via Bonjour/mDNS.
 
-2. **Start the daemon:** (optional, the GTK app will auto-launch it if not running)
-   ```bash
-   make run-daemon
-   ```
-
-3. **Launch the GTK app** (optional, for GUI-based device management):
-   ```bash
-   make run-gtk
-   ```
-
-4. **Pair your devices** (select the auto-discovered iPhone from the GTK app or CLI):
-   ```bash
-   ./build/debug/tether pair
-   ```
-
-5. **Start syncing** clipboard and transferring files
-
-6. **For messages and notifications**, (TODO: Bluetooth pairing instructions)
+3. Bluetooth pair via GUI or CLI (for Messages and Notifications):
+   (TODO: Bluetooth pairing instructions)
 
 ## Roadmap
 
@@ -162,12 +142,13 @@ The daemon uses an advisory lock (`$XDG_RUNTIME_DIR/tether/tetherd.lock`) ensuri
 - [x] Release mail extension for Thunderbird
 - [x] Read and reply to iPhone messages over Bluetooth
 - [x] Mirror iPhone notifications over Bluetooth
+- [-] Bluetooth for messages and notifications
 - [ ] Implement TOTP/OTP vault with Safari autofill
 - [ ] Explore macOS support
 
 ## Contributing
 
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.
+Contributions are welcome!
 
 ## License
 
