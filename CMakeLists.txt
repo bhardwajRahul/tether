@@ -162,7 +162,7 @@ set(CPACK_SET_DESTDIR ON)
 set(CPACK_PACKAGE_RELOCATABLE FALSE)
 set(CPACK_PACKAGE_NAME "tether")
 set(CPACK_PACKAGE_VENDOR "zackb")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A Wayland-native local file transfer and clipboard sync tool over mDNS")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Bridge an iPhone to the Linux desktop: clipboard, files, messages, and notifications")
 set(CPACK_PACKAGE_VERSION "${TETHER_VERSION}")
 
 set(CPACK_PACKAGE_CONTACT "zack@bartel.com")
