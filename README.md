@@ -38,7 +38,7 @@ Read and reply to SMS and iMessage conversations, and see notifications from any
 
 ### Device Pairing
 There are two ways tether communicates with the iPhone:
-- WiFi (TCP via mTLS): for clipboard sync, file transfer, and OTP handling
+- WiFi: for clipboard sync, file transfer, and OTP handling
 - Bluetooth: for Messages and Notifications
 You can use either or both, depending on your needs.
 
@@ -61,13 +61,13 @@ The extension communicates with `tetherd` via native messaging. This allows user
 
 ## Components
 
-1. **`tetherd` (Linux Daemon)**: A background C++ process running on Linux and manages Bluetooth, TCP+mTLS, and Wayland integration.
+1. **`tetherd` (Linux Daemon)**: A background process running on Linux manages Bluetooth, TCP+mTLS, and Wayland integration.
 
 2. **`tether`**: A CLI to communicate with the daemon. This also allows the WebExtension to interface with the daemon via native messaging.
 
-3. **`tether-gtk` (GTK App)**: A native GTK3 application for Linux that provides a graphical interface to manage devices, send files, trigger clipboard sync, read and reply to iPhone messages, see mirrored notifications, and monitor connection status.
+3. **`tether-gtk`**: An application for Linux that provides a graphical interface to manage devices, send files, trigger clipboard sync, read and reply to iPhone messages, see mirrored notifications, and monitor connection status.
 
-4. **iPhone App**: Native SwiftUI iOS 16+ app that discovers the daemon via Bonjour/mDNS, utilizing Apple's `Network.framework` for secure TLS negotiation. Not required for SMS/iMessage and notification mirroring, which use Bluetooth.
+4. **iPhone App**: Discovers the daemon via Bonjour/mDNS, utilizing Apple's `Network.framework` for secure TLS negotiation. Not required for SMS/iMessage and notification mirroring, which use Bluetooth.
 
 5. **Browser/Mail Extension**: WebExtension that interfaces with the daemon via native messaging. Use with Thunderbird/Betterbird and Firefox or Chromium-based browsers.
 
@@ -94,11 +94,13 @@ The extension communicates with `tetherd` via native messaging. This allows user
 - Notification mirroring does not work on iOS 18 and earlier.
 
 ### iOS App
-- iOS 16+
 - Get the app: [Tether - Linux Companion](https://apps.apple.com/us/app/tether-linux-companion/id6762097135)
 
 ### Browser Extension
 - Firefox: [Tether Browser Extension](https://addons.mozilla.org/en-US/firefox/addon/tether-browser-extension/)
+
+### Mail Extension
+- Thunderbird: [Tether Mail Extension](https://addons.thunderbird.net/en-US/thunderbird/addon/tether-mail-extension/)
 
 ## Installation
 
@@ -115,7 +117,7 @@ yay -S tether
 git clone https://github.com/zackb/tether.git
 cd tether
 
-# Build with cmake presets
+# Build and test
 make release
 
 # Install the daemon, cli, and GTK app
@@ -126,10 +128,14 @@ make install
 1. On Linux, launch the GTK app (tether-gtk) or run the CLI to pair your iPhone.
 
 2. WiFi pair via the GUI or CLI:
+
+   Open the iOS app, it will auto-discover the daemon. You will be prompted on both the iPhone and Linux to accept the pairing request. Once accepted on both ends, the devices are paired.
+
+   or
+
    ```bash
    tether pair
    ```
-   The iOS app will auto-discover the daemon via Bonjour/mDNS.
 
 3. Bluetooth pair via GUI or CLI (for Messages and Notifications):
    (TODO: Bluetooth pairing instructions)
