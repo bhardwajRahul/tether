@@ -27,6 +27,8 @@
 | **iOS App** | ✅ Stable |
 | **Browser Extension** | ✅ Stable |
 | **Mail Extension** | ✅ Stable |
+| **Messages (SMS/iMessage)** | 🧪 In-progress |
+| **Notification Mirroring** | 🧪 In-progress |
 | **TOTP/OTP Vault** | 🗓️ Planning |
 
 ### Clipboard Sync
