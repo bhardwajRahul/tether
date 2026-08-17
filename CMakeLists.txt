@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(tether VERSION 0.1.5 LANGUAGES CXX C)
+project(tether VERSION 0.1.7 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -36,7 +36,8 @@ include(FetchContent)
 FetchContent_Declare(
   json
   GIT_REPOSITORY https://github.com/nlohmann/json.git
-  GIT_TAG v3.11.3
+  GIT_TAG v3.12.0
+  GIT_SHALLOW ON
 )
 set(JSON_Install OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(json)
@@ -44,7 +45,8 @@ FetchContent_MakeAvailable(json)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG release-1.12.1
+  GIT_TAG v1.17.0
+  GIT_SHALLOW ON
 )
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
@@ -125,6 +127,11 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/man/tether.1" "${CMAKE_CURRENT_BINARY
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/man/tetherd.8"
         DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
 
+# Bluetooth CoD unit. Installed but not enabled: it changes how the machine presents itself over Bluetooth, so turning it on is the user's call.
+set(SYSTEMD_UNIT_DIR "${CMAKE_INSTALL_LIBDIR}/systemd/system" CACHE PATH "systemd system unit directory")
+install(FILES packaging/systemd/tether-btclass@.service
+        DESTINATION "${SYSTEMD_UNIT_DIR}")
+
 
 # Extension Building only if npm is available
 option(TETHER_BUILD_EXTENSIONS "Build browser and mail extensions automatically" ON)
@@ -168,12 +175,12 @@ set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
 
 # DEB
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "zack@bartel.com")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgtk-3-0, libnotify4, openssl, libwayland-client0, libavahi-client3")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgtk-3-0, libnotify4, openssl, libwayland-client0, libavahi-client3, libglib2.0-0, bluez, bluez-obexd")
 set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/zackb/tether")
 
 # RPM
-set(CPACK_RPM_PACKAGE_REQUIRES "gtk3, libnotify, openssl, wayland-client, avahi-client")
+set(CPACK_RPM_PACKAGE_REQUIRES "gtk3, libnotify, openssl, wayland-client, avahi-client, glib2, bluez, bluez-obexd")
 set(CPACK_RPM_PACKAGE_LICENSE "MIT")
 set(CPACK_RPM_PACKAGE_RELOCATABLE FALSE)
 

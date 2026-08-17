@@ -96,7 +96,7 @@ export function isFalsePositive(num, context) {
 
 // ---------------------------------------------------------------------------
 // FALLBACK text extraction: manually walk getFull() parts.
-// Used when listInlineTextParts() is unavailable (older Thunderbird builds).
+// Recovery path for messages whose MIME tree makes listInlineTextParts() throw.
 // For HTML parts we use DOMParser to tag prominent elements for the scorer,
 // then grab the full body plain text.
 // ---------------------------------------------------------------------------
@@ -152,12 +152,12 @@ function extractTextFromParts(parts) {
 }
 
 // ---------------------------------------------------------------------------
-// PRIMARY text extraction: uses newer Thunderbird APIs (TB 102+).
+// PRIMARY text extraction. Both APIs set the manifest's strict_min_version:
 //
-//   messenger.messages.listInlineTextParts(id)
+//   messenger.messages.listInlineTextParts(id)            - TB 128+
 //     - gives us clean content without manually walking the MIME tree
 //
-//   messenger.messengerUtilities.convertToPlainText(html)
+//   messenger.messengerUtilities.convertToPlainText(html) - TB 137+
 //     - Thunderbird's own HTML-to-plaintext converter; handles tables,
 //       encoded entities, and nested elements far better than a hand-rolled
 //       DOMParser tag-strip. Borrowed from thunderbird-vericode's approach.
@@ -165,7 +165,7 @@ function extractTextFromParts(parts) {
 // We still run the DOMParser tagging pass on the raw HTML before
 // converting, so the scorer's +25 bonus is preserved on this code path too.
 //
-// Falls back to extractTextFromParts() for older Thunderbird/Betterbird builds.
+// extractTextFromParts() catches runtime failures, not missing APIs.
 // ---------------------------------------------------------------------------
 async function getEmailText(messageId) {
   try {
@@ -218,9 +218,9 @@ async function getEmailText(messageId) {
 
     return text;
   } catch (e) {
-    // listInlineTextParts or convertToPlainText not available
-    // fall back to the manual DOMParser path.
-    console.log("listInlineTextParts unavailable, falling back to getFull():", e.message);
+    // strict_min_version guarantees both APIs exist, so this is a message
+    // they choked on. Retry by walking the MIME tree ourselves.
+    console.log("listInlineTextParts failed, falling back to getFull():", e.message);
     const full = await messenger.messages.getFull(messageId);
     return extractTextFromParts(full.parts);
   }

@@ -9,6 +9,10 @@ BROWSER_DIR="$BUILD_DIR/browser"
 MAIL_DIR="$BUILD_DIR/mail"
 CHROME_DIR="$BUILD_DIR/chromium"
 
+# esbuild comes from extension/node_modules; without it npx would fetch an
+# unpinned copy off the network mid-build
+[ -d extension/node_modules ] || npm --prefix extension ci
+
 mkdir -p "$BROWSER_DIR/src/background" "$BROWSER_DIR/src/content"
 mkdir -p "$MAIL_DIR/src/mail"
 mkdir -p "$CHROME_DIR/src/background" "$CHROME_DIR/src/content"
