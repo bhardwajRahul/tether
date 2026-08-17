@@ -40,6 +40,7 @@ Read and reply to SMS and iMessage conversations, and see notifications from any
 There are two ways tether communicates with the iPhone:
 - WiFi: for clipboard sync, file transfer, and OTP handling
 - Bluetooth: for Messages and Notifications
+
 You can use either or both, depending on your needs.
 
 Connections use Mutually Authenticated TLS (mTLS), restricting TCP traffic securely using X.509 RSA certificates.
