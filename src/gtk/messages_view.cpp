@@ -3,6 +3,7 @@
 #include "ui_util.hpp"
 
 #include <ctime>
+#include <gdk/gdkkeysyms.h>
 #include <set>
 #include <string>
 #include <vector>
@@ -17,6 +18,7 @@ namespace tether::ui {
             GtkWidget* banner_action = nullptr;
             GtkWidget* thread_list = nullptr;
             GtkWidget* conversation = nullptr;
+            GtkWidget* conversation_header = nullptr;
             GtkWidget* conversation_scroll = nullptr;
             GtkWidget* composer = nullptr;
             GtkWidget* send_button = nullptr;
@@ -37,6 +39,9 @@ namespace tether::ui {
             // Handles already asked about, so reopening a conversation does not
             // re-issue a blocking OBEX write per message every time.
             std::set<std::string> marked_read;
+            // Scrolling to the newest message has to wait for GTK to lay the new
+            // rows out, so it is deferred rather than done inline.
+            guint scroll_idle_id = 0;
             // Whether the daemon says the selected thread can be replied to, and
             // why not when it cannot.
             bool selected_repliable = false;
@@ -51,7 +56,10 @@ namespace tether::ui {
         void update_composer_sensitivity();
         void apply_row_selection(GtkWidget* row);
         void clear_selection();
-        void set_banner(const std::string& text);
+        // `offer_permissions` shows the button that re-solicits the iPhone's
+        // Bluetooth toggles, which only helps when that is the actual problem.
+        void set_banner(const std::string& text, bool offer_permissions = false);
+        std::string composer_text();
 
         std::string format_timestamp(int64_t epoch) {
             if (epoch <= 0)
@@ -129,6 +137,7 @@ namespace tether::ui {
                 GtkWidget* badge = gtk_label_new(nullptr);
                 gtk_label_set_markup(GTK_LABEL(badge), ("<b>" + std::to_string(unread) + "</b>").c_str());
                 gtk_widget_set_valign(badge, GTK_ALIGN_CENTER);
+                gtk_style_context_add_class(gtk_widget_get_style_context(badge), "tether-badge");
                 gtk_box_pack_start(GTK_BOX(box), badge, FALSE, FALSE, 0);
             }
 
@@ -153,8 +162,14 @@ namespace tether::ui {
             gtk_label_set_line_wrap(GTK_LABEL(bubble), TRUE);
             gtk_label_set_line_wrap_mode(GTK_LABEL(bubble), PANGO_WRAP_WORD_CHAR);
             gtk_label_set_max_width_chars(GTK_LABEL(bubble), 48);
-            gtk_label_set_xalign(GTK_LABEL(bubble), outgoing ? 1.0 : 0.0);
+            gtk_label_set_xalign(GTK_LABEL(bubble), 0.0);
             gtk_label_set_selectable(GTK_LABEL(bubble), TRUE);
+            // Without this the label stretches to whatever else is in the row and
+            // the bubble reads as a full-width bar rather than wrapping the text.
+            gtk_widget_set_halign(bubble, outgoing ? GTK_ALIGN_END : GTK_ALIGN_START);
+            GtkStyleContext* bubble_style = gtk_widget_get_style_context(bubble);
+            gtk_style_context_add_class(bubble_style, "tether-bubble");
+            gtk_style_context_add_class(bubble_style, outgoing ? "tether-bubble-out" : "tether-bubble-in");
             gtk_box_pack_start(GTK_BOX(box), bubble, FALSE, FALSE, 0);
 
             if (!stamp.empty()) {
@@ -168,13 +183,29 @@ namespace tether::ui {
             return row;
         }
 
-        void scroll_conversation_to_end() {
+        gboolean scroll_to_end_idle(gpointer) {
+            g_messages.scroll_idle_id = 0;
             if (!g_messages.conversation_scroll)
-                return;
+                return G_SOURCE_REMOVE;
             GtkAdjustment* adjustment =
                 gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(g_messages.conversation_scroll));
-            if (adjustment)
-                gtk_adjustment_set_value(adjustment, gtk_adjustment_get_upper(adjustment));
+            if (adjustment) {
+                // upper is the full content height; subtracting the visible page
+                // is what puts the last message at the bottom edge rather than
+                // one screen past it.
+                gtk_adjustment_set_value(
+                    adjustment, gtk_adjustment_get_upper(adjustment) - gtk_adjustment_get_page_size(adjustment));
+            }
+            return G_SOURCE_REMOVE;
+        }
+
+        void scroll_conversation_to_end() {
+            // The rows have only just been inserted, so GTK has not laid them out
+            // and the adjustment still reports the bounds of the old contents.
+            // Scrolling now lands somewhere short of the newest message.
+            if (g_messages.scroll_idle_id == 0)
+                g_messages.scroll_idle_id =
+                    g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, scroll_to_end_idle, nullptr, nullptr);
         }
 
         void show_threads(const nlohmann::json& event) {
@@ -254,7 +285,7 @@ namespace tether::ui {
             }
         }
 
-        void set_banner(const std::string& text) {
+        void set_banner(const std::string& text, bool offer_permissions) {
             if (!g_messages.banner)
                 return;
             if (text.empty()) {
@@ -263,6 +294,9 @@ namespace tether::ui {
             }
             set_text(g_messages.banner_label, text);
             gtk_widget_show_all(g_messages.banner);
+            // show_all revealed it; hide it again unless re-soliciting is the
+            // thing that would actually help here.
+            gtk_widget_set_visible(g_messages.banner_action, offer_permissions);
         }
 
         // The advertisement that makes iOS reveal its Messages and Contacts
@@ -294,7 +328,11 @@ namespace tether::ui {
                 reason = event.value("link_reason", "");
             if (reason.empty())
                 reason = "Messages are not connected.";
-            set_banner(reason);
+
+            // Re-soliciting only helps when the phone is withholding the profile,
+            // not when the link itself is down.
+            const std::string map_error = event.value("map_error", "none");
+            set_banner(reason, map_error == "forbidden" || map_error == "no_record");
         }
 
         // Replying needs an open conversation and a live MAP session. A group
@@ -306,8 +344,11 @@ namespace tether::ui {
             if (!g_messages.composer)
                 return;
 
-            gtk_widget_set_sensitive(g_messages.composer, can_send && !g_messages.sending);
-            gtk_widget_set_sensitive(g_messages.send_button, can_send && !g_messages.sending);
+            // The box stays typable whenever the conversation can take a reply;
+            // only the button waits for there to be something in it.
+            const bool composer_live = can_send && !g_messages.sending;
+            gtk_widget_set_sensitive(g_messages.composer, composer_live);
+            gtk_widget_set_sensitive(g_messages.send_button, composer_live && !composer_text().empty());
 
             const char* reason = nullptr;
             if (g_messages.sending)
@@ -375,6 +416,24 @@ namespace tether::ui {
             set_status_main("Sending…");
         }
 
+        // Every messaging app has trained people that Enter sends and Shift+Enter
+        // starts a new line. A multi-line box that only sends on a button click is
+        // the single thing that makes a composer feel unfinished.
+        gboolean on_composer_key(GtkWidget*, GdkEventKey* event, gpointer) {
+            if (event->keyval != GDK_KEY_Return && event->keyval != GDK_KEY_KP_Enter)
+                return FALSE;
+            if (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
+                return FALSE;
+            // Mid-composition input methods deliver Return as part of a candidate
+            // selection, which must not be read as a send.
+            if (event->state & GDK_MOD1_MASK)
+                return FALSE;
+
+            if (gtk_widget_is_sensitive(g_messages.send_button))
+                on_send_clicked(nullptr, nullptr);
+            return TRUE;
+        }
+
         void on_send_result(const nlohmann::json& event) {
             clear_sending();
             update_composer_sensitivity();
@@ -409,6 +468,13 @@ namespace tether::ui {
             g_messages.selected_name = name ? name : "";
             g_messages.selected_repliable = g_object_get_data(G_OBJECT(row), "repliable") != nullptr;
             g_messages.selected_block_reason = block_reason ? block_reason : "";
+            // Which conversation is open is otherwise only legible from the
+            // selection highlight in the list beside it.
+            set_markup(g_messages.conversation_header,
+                       "<b>" +
+                           escape_markup(g_messages.selected_name.empty() ? g_messages.selected_thread
+                                                                          : g_messages.selected_name) +
+                           "</b>");
             update_composer_sensitivity();
         }
 
@@ -420,6 +486,10 @@ namespace tether::ui {
             apply_row_selection(GTK_WIDGET(row));
             gtk_stack_set_visible_child_name(GTK_STACK(g_messages.placeholder_stack), "conversation");
             request_messages(g_messages.selected_thread);
+            // Only on a real click: the handler is blocked while the list is
+            // rebuilt, so this cannot steal focus behind the user's back.
+            if (gtk_widget_is_sensitive(g_messages.composer))
+                gtk_widget_grab_focus(g_messages.composer);
         }
 
     } // namespace
@@ -530,6 +600,15 @@ namespace tether::ui {
 
         GtkWidget* conversation_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
+        GtkWidget* conversation_header_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        gtk_container_set_border_width(GTK_CONTAINER(conversation_header_box), 10);
+        g_messages.conversation_header = gtk_label_new(nullptr);
+        gtk_label_set_xalign(GTK_LABEL(g_messages.conversation_header), 0.0);
+        gtk_label_set_ellipsize(GTK_LABEL(g_messages.conversation_header), PANGO_ELLIPSIZE_END);
+        gtk_box_pack_start(GTK_BOX(conversation_header_box), g_messages.conversation_header, TRUE, TRUE, 0);
+        gtk_box_pack_start(GTK_BOX(conversation_box), conversation_header_box, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(conversation_box), gtk_separator_new(GTK_ORIENTATION_HORIZONTAL), FALSE, FALSE, 0);
+
         g_messages.conversation_scroll = gtk_scrolled_window_new(nullptr, nullptr);
         gtk_scrolled_window_set_policy(
             GTK_SCROLLED_WINDOW(g_messages.conversation_scroll), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
@@ -542,17 +621,33 @@ namespace tether::ui {
         gtk_container_set_border_width(GTK_CONTAINER(composer_box), 8);
         g_messages.composer = gtk_text_view_new();
         gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(g_messages.composer), GTK_WRAP_WORD_CHAR);
+        gtk_text_view_set_left_margin(GTK_TEXT_VIEW(g_messages.composer), 6);
+        gtk_text_view_set_right_margin(GTK_TEXT_VIEW(g_messages.composer), 6);
+        gtk_text_view_set_top_margin(GTK_TEXT_VIEW(g_messages.composer), 6);
+        gtk_text_view_set_bottom_margin(GTK_TEXT_VIEW(g_messages.composer), 6);
         gtk_widget_set_size_request(g_messages.composer, -1, 48);
         GtkWidget* composer_frame = gtk_scrolled_window_new(nullptr, nullptr);
         gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(composer_frame), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+        // Without a border the box floats in the panel with nothing marking it as
+        // somewhere to type.
+        gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(composer_frame), GTK_SHADOW_IN);
+        gtk_scrolled_window_set_max_content_height(GTK_SCROLLED_WINDOW(composer_frame), 140);
         gtk_container_add(GTK_CONTAINER(composer_frame), g_messages.composer);
         gtk_box_pack_start(GTK_BOX(composer_box), composer_frame, TRUE, TRUE, 0);
 
         g_messages.send_button = gtk_button_new_with_label("Send");
         gtk_widget_set_valign(g_messages.send_button, GTK_ALIGN_END);
+        gtk_style_context_add_class(gtk_widget_get_style_context(g_messages.send_button), "suggested-action");
         gtk_box_pack_start(GTK_BOX(composer_box), g_messages.send_button, FALSE, FALSE, 0);
 
         g_signal_connect(g_messages.send_button, "clicked", G_CALLBACK(on_send_clicked), nullptr);
+        g_signal_connect(g_messages.composer, "key-press-event", G_CALLBACK(on_composer_key), nullptr);
+        // The button follows what is actually in the box, so "Send" is never
+        // offered for an empty message.
+        g_signal_connect(gtk_text_view_get_buffer(GTK_TEXT_VIEW(g_messages.composer)),
+                         "changed",
+                         G_CALLBACK(+[](GtkTextBuffer*, gpointer) { update_composer_sensitivity(); }),
+                         nullptr);
         // Enabled only once MAP is up and a conversation is open.
         update_composer_sensitivity();
 

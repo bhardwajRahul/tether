@@ -384,3 +384,130 @@ TEST(MapListingConversion, KeepsTheObjectPathForActingOnTheMessage) {
     EXPECT_EQ(message.handle, "42");
     EXPECT_EQ(message.object_path, "/org/bluez/obex/client/session5/message42");
 }
+
+namespace {
+
+    MapListing listing_for(const std::string& path, bool sent, const std::string& folder) {
+        MapListing listing;
+        listing.handle = path;
+        listing.subject = "see you at six";
+        listing.sender_name = "Alice";
+        listing.sender_address = "+15551110000";
+        listing.recipient_name = "Bob";
+        listing.recipient_address = "+15552220000";
+        listing.timestamp = "20260817T190000";
+        listing.sent = sent;
+        listing.folder = folder;
+        return listing;
+    }
+
+} // namespace
+
+// A received message is identified by whoever sent it.
+TEST(MapListing, IncomingIsKeyedOnTheSender) {
+    const Message message = message_from_listing(listing_for("/obex/session1/message1", false, "inbox"));
+    EXPECT_FALSE(message.outgoing);
+    EXPECT_EQ(message.thread_key, "tel:+15551110000");
+    EXPECT_EQ(message.peer_name, "Alice");
+}
+
+// A message the phone sent names the user as its sender. Keying on that would
+// collapse every outgoing message into one thread under the user's own number,
+// and would aim a reply there too.
+TEST(MapListing, SentIsKeyedOnTheRecipient) {
+    const Message message = message_from_listing(listing_for("/obex/session1/message2", true, "sent"));
+    EXPECT_TRUE(message.outgoing);
+    EXPECT_EQ(message.thread_key, "tel:+15552220000");
+    EXPECT_EQ(message.peer_name, "Bob");
+}
+
+// Not every phone sets the Sent flag on what it serves from the sent folder.
+TEST(MapListing, SentFolderIsOutgoingWithoutTheFlag) {
+    const Message message = message_from_listing(listing_for("/obex/session1/message3", false, "telecom/msg/sent"));
+    EXPECT_TRUE(message.outgoing);
+    EXPECT_EQ(message.thread_key, "tel:+15552220000");
+}
+
+// An address we do not have is not an address to guess at: an empty thread key
+// is the signal for the caller to drop the message rather than misfile it.
+TEST(MapListing, SentWithoutARecipientHasNoThread) {
+    MapListing listing = listing_for("/obex/session1/message4", true, "sent");
+    listing.recipient_address.clear();
+    listing.recipient_name.clear();
+
+    const Message message = message_from_listing(listing);
+    EXPECT_TRUE(message.outgoing);
+    EXPECT_TRUE(message.thread_key.empty());
+}
+
+TEST(MapListing, EmailRecipientIsKeyedAsAnAppleId) {
+    MapListing listing = listing_for("/obex/session1/message5", true, "sent");
+    listing.recipient_address = "Someone@Example.COM";
+
+    const Message message = message_from_listing(listing);
+    EXPECT_EQ(message.thread_key, "email:someone@example.com");
+}
+
+namespace {
+
+    Message local_send(const std::string& thread, const std::string& body, int64_t ts) {
+        Message m;
+        m.handle = std::string(LOCAL_HANDLE_PREFIX) + std::to_string(ts);
+        m.thread_key = thread;
+        m.peer_address = thread;
+        m.body = body;
+        m.timestamp = ts;
+        m.outgoing = true;
+        m.read = true;
+        m.folder = "outbox";
+        return m;
+    }
+
+    Message phone_copy(const std::string& handle, const std::string& thread, const std::string& body, int64_t ts) {
+        Message m = local_send(thread, body, ts);
+        m.handle = handle;
+        m.folder = "sent";
+        return m;
+    }
+
+} // namespace
+
+// A reply sent from Tether is shown immediately under a local handle. Once the
+// phone lists its own copy from the sent folder, the two must collapse into one
+// message rather than showing the reply twice.
+TEST(MessageStore, PhoneCopySupersedesTheLocalEcho) {
+    MessageStore store;
+    ASSERT_TRUE(store.add(local_send("tel:+1111", "on my way", 1000)));
+    ASSERT_TRUE(store.add(phone_copy("m9", "tel:+1111", "on my way", 1005)));
+
+    EXPECT_EQ(store.size(), 1u);
+    auto messages = store.messages("tel:+1111");
+    ASSERT_EQ(messages.size(), 1u);
+    EXPECT_EQ(messages[0].handle, "m9") << "the phone's copy is the one with a usable handle";
+}
+
+TEST(MessageStore, UnrelatedOutgoingMessagesAreNotCollapsed) {
+    MessageStore store;
+    store.add(local_send("tel:+1111", "on my way", 1000));
+
+    // Same text, different conversation.
+    store.add(phone_copy("m1", "tel:+2222", "on my way", 1005));
+    // Same conversation, different text.
+    store.add(phone_copy("m2", "tel:+1111", "running late", 1005));
+    // Same text and conversation, but far too long afterwards to be the echo.
+    store.add(phone_copy("m3", "tel:+1111", "on my way", 1000 + LOCAL_ECHO_WINDOW_SECONDS + 1));
+
+    EXPECT_EQ(store.size(), 4u) << "a distinct message was mistaken for a duplicate";
+}
+
+// The journal replays the placeholder and the phone's copy in the order they
+// were written, so a restart must collapse them the same way.
+TEST(MessageStore, EchoIsCollapsedOnReplayToo) {
+    MessageStore store;
+    store.add(local_send("tel:+1111", "on my way", 1000));
+    store.add(phone_copy("m9", "tel:+1111", "on my way", 1005));
+    store.add(phone_copy("m9", "tel:+1111", "on my way", 1005));
+
+    EXPECT_EQ(store.size(), 1u);
+    EXPECT_EQ(store.threads().size(), 1u);
+}

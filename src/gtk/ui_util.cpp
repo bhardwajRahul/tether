@@ -5,7 +5,51 @@ namespace tether::ui {
     namespace {
         GtkWidget* g_window = nullptr;
         GtkWidget* g_header_bar = nullptr;
+
+        constexpr const char* STYLE = R"CSS(
+.muted {
+    opacity: 0.62;
+    font-size: 90%;
+}
+
+.tether-bubble {
+    padding: 8px 12px;
+    border-radius: 14px;
+}
+
+.tether-bubble-in {
+    background-color: alpha(@theme_fg_color, 0.10);
+}
+
+.tether-bubble-out {
+    background-color: @theme_selected_bg_color;
+    color: @theme_selected_fg_color;
+}
+
+.tether-badge {
+    background-color: @theme_selected_bg_color;
+    color: @theme_selected_fg_color;
+    border-radius: 10px;
+    padding: 0 8px;
+}
+)CSS";
     } // namespace
+
+    void install_style() {
+        GdkScreen* screen = gdk_screen_get_default();
+        if (!screen)
+            return;
+
+        GtkCssProvider* provider = gtk_css_provider_new();
+        GError* error = nullptr;
+        if (!gtk_css_provider_load_from_data(provider, STYLE, -1, &error)) {
+            g_warning("tether: stylesheet rejected: %s", error ? error->message : "unknown");
+            g_clear_error(&error);
+        }
+        gtk_style_context_add_provider_for_screen(
+            screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+        g_object_unref(provider);
+    }
 
     std::string escape_markup(const std::string& text) {
         gchar* escaped = g_markup_escape_text(text.c_str(), -1);
