@@ -1,6 +1,7 @@
 #include "daemon_client.hpp"
 #include "ui_util.hpp"
 
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -23,6 +24,7 @@ namespace tether::ui {
         guint g_event_watch_id = 0;
         guint g_event_retry_id = 0;
         DaemonEventFn g_on_event;
+        DaemonDisconnectFn g_on_disconnect;
 
         gboolean start_event_subscription(gpointer);
 
@@ -46,11 +48,17 @@ namespace tether::ui {
                 g_event_retry_id = g_timeout_add_seconds(2, start_event_subscription, nullptr);
         }
 
+        void handle_disconnect() {
+            stop_event_subscription();
+            schedule_event_retry();
+            set_status_main("Daemon Offline");
+            if (g_on_disconnect)
+                g_on_disconnect();
+        }
+
         gboolean on_event_channel(GIOChannel* source, GIOCondition condition, gpointer) {
             if (condition & (G_IO_HUP | G_IO_ERR | G_IO_NVAL)) {
-                stop_event_subscription();
-                schedule_event_retry();
-                set_status_main("Daemon Offline");
+                handle_disconnect();
                 return FALSE;
             }
             if (condition & G_IO_IN) {
@@ -71,9 +79,7 @@ namespace tether::ui {
                         }
                         if (line)
                             g_free(line);
-                        stop_event_subscription();
-                        schedule_event_retry();
-                        set_status_main("Daemon Offline");
+                        handle_disconnect();
                         return FALSE;
                     }
                     if (line && length > 0) {
@@ -151,6 +157,10 @@ namespace tether::ui {
             if (write(fd, kSubscribe, sizeof(kSubscribe) - 1) < 0) {
                 debug::log(ERR, "subscribe write error\n");
             }
+            // The daemon answers subscribe with the current Bluetooth connection
+            // status, but ask anyway: an older daemon will not, and a view whose
+            // composer is gated on that status stays shut until it arrives.
+            daemon_send({{"command", "bt_connection"}});
             set_status_main("Daemon Online");
             return G_SOURCE_REMOVE;
         }
@@ -170,14 +180,42 @@ namespace tether::ui {
         }
     }
 
-    void daemon_send(const nlohmann::json& message) {
-        if (g_event_fd >= 0) {
-            std::string payload = message.dump() + "\n";
-            if (::write(g_event_fd, payload.c_str(), payload.size()) < 0) {
-                debug::log(ERR, "daemon write error\n");
+    bool daemon_send(const nlohmann::json& message) {
+        if (g_event_fd < 0)
+            return false;
+
+        // The socket is non-blocking, and these are newline-delimited commands:
+        // a short write leaves the daemon parsing a fragment and every later
+        // command on this socket is misframed. Write it all or report failure.
+        const std::string payload = message.dump() + "\n";
+        size_t written = 0;
+        int stalls = 0;
+        while (written < payload.size()) {
+            const ssize_t n = ::write(g_event_fd, payload.data() + written, payload.size() - written);
+            if (n > 0) {
+                written += static_cast<size_t>(n);
+                stalls = 0;
+                continue;
             }
+            if (n < 0 && errno == EINTR)
+                continue;
+            if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                // Blocking the UI thread is the lesser evil against dropping a
+                // command the user just asked for, but only briefly.
+                if (++stalls > 200) {
+                    debug::log(ERR, "daemon send stalled; dropped {} command", message.value("command", "?"));
+                    return false;
+                }
+                g_usleep(1000);
+                continue;
+            }
+            debug::log(ERR, "daemon write error: {}", std::strerror(errno));
+            return false;
         }
+        return true;
     }
+
+    void daemon_client_on_disconnect(DaemonDisconnectFn on_disconnect) { g_on_disconnect = std::move(on_disconnect); }
 
     bool daemon_connected() { return g_event_fd >= 0; }
 

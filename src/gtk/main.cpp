@@ -62,6 +62,7 @@ namespace {
 
         // One feed, dispatched to whichever view owns the event; the views never
         // hold the socket themselves.
+        daemon_client_on_disconnect([] { messages_view_handle_disconnect(); });
         daemon_client_start([](const nlohmann::json& event) {
             if (devices_view_handle_event(event))
                 return;
@@ -73,11 +74,10 @@ namespace {
         devices_view_trigger_discovery();
         devices_view_refresh();
 
-        // Ask once at startup so the messages banner reflects reality before the
-        // user ever opens that view.
-        nlohmann::json connection;
-        connection["command"] = "bt_connection";
-        daemon_send(connection);
+        // Bluetooth connection status is requested by the client on every
+        // subscription, including reconnects, so there is nothing to ask for
+        // here: doing it once from this point would be lost whenever the daemon
+        // had to be autostarted and no socket existed yet.
 
         gtk_widget_show_all(window);
         gtk_stack_set_visible_child_name(GTK_STACK(stack), "devices");

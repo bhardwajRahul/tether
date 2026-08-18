@@ -16,4 +16,8 @@ namespace tether::ui {
     // to be told when it comes and goes.
     void messages_view_set_visible(bool visible);
 
+    // Drops anything that was waiting on a daemon reply. Without this a send in
+    // flight when the daemon goes away leaves the composer disabled for good.
+    void messages_view_handle_disconnect();
+
 } // namespace tether::ui
