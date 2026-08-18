@@ -33,6 +33,8 @@ namespace tether::bluetooth {
             return "no_record";
         case ObexError::Unavailable:
             return "unavailable";
+        case ObexError::NoDaemon:
+            return "no_daemon";
         default:
             return "other";
         }
@@ -43,6 +45,12 @@ namespace tether::bluetooth {
             return ObexError::None;
 
         const std::string text = lowered(message);
+
+        // Bus-level, not phone-level: obexd is absent so the name has no owner
+        // and no .service file to start one.
+        if (contains(text, "not activatable") || contains(text, "serviceunknown") ||
+            contains(text, "was not provided by any .service files"))
+            return ObexError::NoDaemon;
 
         // permission toggle is off on the phone
         if (contains(text, "forbidden") || contains(text, "0x43"))
@@ -82,6 +90,10 @@ namespace tether::bluetooth {
                    "\" is off in Settings > Bluetooth > (i). Check both; re-pairing is not the fix.";
         case ObexError::Unavailable:
             return label + " is unreachable; waiting for the iPhone to come back.";
+        case ObexError::NoDaemon:
+            return label +
+                   " needs BlueZ's OBEX daemon, which is not installed on this computer. Install it "
+                   "(bluez-obex on Arch, bluez-obexd on Debian and Ubuntu). Nothing needs changing on the iPhone.";
         case ObexError::Other:
             return label + " could not be opened.";
         default:

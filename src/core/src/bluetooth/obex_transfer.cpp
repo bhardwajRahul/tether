@@ -51,18 +51,20 @@ namespace tether::bluetooth {
     TransferState wait_for_transfer(GDBusConnection* bus, const std::string& path, int timeout_seconds) {
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(timeout_seconds);
         TransferState state = TransferState::Active;
-        // obexd removes the transfer object immediately after setting its status
-        bool saw_complete = false;
         while (std::chrono::steady_clock::now() < deadline) {
             state = poll_once(bus, path);
-            if (state == TransferState::Complete) {
-                saw_complete = true;
+            if (state == TransferState::Complete || state == TransferState::Error)
                 return state;
-            }
-            if (state == TransferState::Error)
-                return state;
+            // obexd drops the transfer object as soon as it settles, on success and
+            // on failure alike, so polling loses the final status more often than it
+            // catches it. Reporting the disappearance as a failure strands a message
+            // the phone did deliver: no local copy, nothing in the conversation, and
+            // the composer still holding text that was already sent.
+            // ponytail: an object vanishing is read as success; subscribe to
+            // PropertiesChanged on the transfer path before pushing if telling a
+            // rejected send apart from an accepted one starts to matter.
             if (state == TransferState::Gone)
-                return saw_complete ? TransferState::Complete : TransferState::Gone;
+                return TransferState::Complete;
             std::this_thread::sleep_for(std::chrono::milliseconds(POLL_INTERVAL_MS));
         }
         return state;

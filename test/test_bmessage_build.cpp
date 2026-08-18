@@ -47,6 +47,17 @@ TEST(BMessageBuild, AlwaysUsesSmsGsmEvenForAppleIdRecipients) {
     EXPECT_EQ(out.find("TEL:"), std::string::npos);
 }
 
+// The address the phone acts on has to survive a round trip through the same
+// parser that reads incoming messages, parameters and all.
+TEST(BMessageBuild, EmailRecipientSurvivesAParseOfWhatWasBuilt) {
+    const std::string address = "cece.blair@icloud.com";
+    const BMessage parsed = parse_bmessage(build_bmessage({email(address)}, "hi"));
+
+    ASSERT_TRUE(parsed.valid);
+    ASSERT_EQ(parsed.recipients.size(), 1u);
+    EXPECT_EQ(parsed.recipients.front().email, address) << "the recipient lost characters between build and parse";
+}
+
 TEST(BMessageBuild, LengthCountsTheWholeMessageBlock) {
     const std::string out = build_bmessage({tel("+15551234567")}, "hello");
 

@@ -76,8 +76,9 @@ namespace tether::bluetooth {
     private:
         void trim();
         // Removes the placeholder written when the user sent `arrived` from here,
-        // now that the phone has listed its own copy of it.
-        void drop_local_echo(const Message& arrived);
+        // now that the phone has listed its own copy of it, and carries the
+        // placeholder's peer over when the phone's copy names a different one.
+        void adopt_local_echo(Message& arrived);
 
         size_t max_messages_;
         std::map<std::string, Message> by_handle_;

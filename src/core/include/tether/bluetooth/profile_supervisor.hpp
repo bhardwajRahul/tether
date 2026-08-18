@@ -23,6 +23,9 @@ namespace tether::bluetooth {
         NoRecord,
         // The phone is not reachable right now.
         Unavailable,
+        // org.bluez.obex is not on the session bus and cannot be activated,
+        // meaning obexd is not installed. No phone-side setting affects this.
+        NoDaemon,
         Other,
     };
 

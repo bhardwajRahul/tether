@@ -178,12 +178,12 @@ TEST(BearerSupervisor, InProgressDoesNotGrowTheLeBackoff) {
     sup.tick(0);
     sup.tick(1);
     int64_t now = 1 + BEARER_SETTLE_SECONDS;
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < LE_ATTEMPTS_BEFORE_ADVICE; ++i) {
         sup.tick(now);
         EXPECT_EQ(sup.status().le_backoff, BEARER_BACKOFF_MIN_SECONDS);
         now += BEARER_BACKOFF_MIN_SECONDS;
     }
-    EXPECT_EQ(ops.le_attempts, 10);
+    EXPECT_EQ(ops.le_attempts, LE_ATTEMPTS_BEFORE_ADVICE);
 }
 
 // A refusal is different: the phone said no, and hammering it was observed to
@@ -340,6 +340,18 @@ TEST(ObexErrors, ClassifiesUnavailableAndOther) {
     EXPECT_EQ(classify_obex_error("Page Timeout"), ObexError::Unavailable);
     EXPECT_EQ(classify_obex_error(""), ObexError::None);
     EXPECT_EQ(classify_obex_error("something entirely new"), ObexError::Other);
+}
+
+TEST(ObexErrors, MissingObexdIsNotBlamedOnThePhone) {
+    // Verbatim from a machine where bluez-obex had been uninstalled.
+    const std::string real = "GDBus.Error:org.freedesktop.DBus.Error.ServiceUnknown: The name is not activatable";
+    EXPECT_EQ(classify_obex_error(real), ObexError::NoDaemon);
+
+    const std::string advice = obex_error_advice(ObexError::NoDaemon, "map");
+    EXPECT_NE(advice.find("bluez-obex"), std::string::npos);
+    // Nothing about this is fixable on the phone, so the advice must not say so.
+    EXPECT_EQ(advice.find("iPhone's Settings"), std::string::npos);
+    EXPECT_EQ(advice.find("re-pair"), std::string::npos);
 }
 
 TEST(ObexErrors, AdviceNamesThePermissionToggle) {
@@ -637,6 +649,40 @@ TEST(BearerSupervisor, RepeatedRefusalNamesTheRemedy) {
 // transport is down, and Device1.Connect quietly no-ops once BR/EDR is up, so
 // the attempt "succeeds" without a link. Saying "bringing it up" forever hides
 // that only the phone can open it.
+TEST(BearerSupervisor, GivesUpDiallingLeInsteadOfSpinningForever) {
+    // A phone that will not accept an inbound LE connect: BlueZ keeps working
+    // after our call gives up, so the next attempts collide with it.
+    class RefusingBearer : public FakeBearer {
+    public:
+        bool connect_le(std::string& err) override {
+            ++le_attempts;
+            err = (le_attempts % 2) ? "Timeout was reached" : "GDBus.Error:org.bluez.Error.InProgress: In Progress";
+            return false;
+        }
+    } refusing;
+
+    BearerSupervisor sup(refusing, true);
+    int64_t now = 0;
+    sup.tick(now);
+    now += BEARER_SETTLE_SECONDS + 1;
+
+    for (int i = 0; i < 200; ++i) {
+        now += BEARER_BACKOFF_MAX_SECONDS;
+        sup.tick(now);
+    }
+
+    EXPECT_EQ(refusing.le_attempts, LE_ATTEMPTS_BEFORE_ADVICE) << "LE was dialled forever against a phone refusing it";
+    EXPECT_NE(sup.status().reason.find("not opening the LE link"), std::string::npos);
+
+    // A reconnect is a new session and has to try again.
+    sup.reset();
+    now += BEARER_BACKOFF_MAX_SECONDS;
+    sup.tick(now);
+    now += BEARER_SETTLE_SECONDS + 1;
+    sup.tick(now);
+    EXPECT_GT(refusing.le_attempts, LE_ATTEMPTS_BEFORE_ADVICE) << "reset must re-arm LE for the next session";
+}
+
 TEST(BearerSupervisor, UndiallableLeStopsClaimingItIsComingUp) {
     // The connect reports success but the link never appears, which is exactly
     // what a Device1.Connect fallback does on an already-connected device.

@@ -123,9 +123,22 @@ namespace tether::ui {
                         std::filesystem::path self_path = std::filesystem::read_symlink("/proc/self/exe");
                         std::string daemon_path = (self_path.parent_path() / "tetherd").string();
                         if (fork() == 0) {
-                            if (freopen("/dev/null", "w", stdout) == nullptr) {
+                            const char* state = getenv("XDG_STATE_HOME");
+                            std::filesystem::path log_dir =
+                                state && *state ? std::filesystem::path(state)
+                                                : std::filesystem::path(getenv("HOME") ? getenv("HOME") : "/tmp") /
+                                                      ".local" / "state";
+                            log_dir /= "tether";
+                            std::error_code ec;
+                            std::filesystem::create_directories(log_dir, ec);
+                            const std::string log_path = (log_dir / "tetherd.log").string();
+                            if (freopen(log_path.c_str(), "a", stdout) == nullptr) {
+                                if (freopen("/dev/null", "w", stdout) == nullptr) {
+                                }
                             }
-                            if (freopen("/dev/null", "w", stderr) == nullptr) {
+                            if (freopen(log_path.c_str(), "a", stderr) == nullptr) {
+                                if (freopen("/dev/null", "w", stderr) == nullptr) {
+                                }
                             }
                             if (freopen("/dev/null", "r", stdin) == nullptr) {
                             }

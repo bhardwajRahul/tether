@@ -215,13 +215,17 @@ namespace tether::bluetooth {
         constexpr const char* OBEX_CLIENT = "org.bluez.obex.Client1";
 
         constexpr int CONNECT_TIMEOUT_MS = 30000;
+        // Paging a phone over BR/EDR is slow, but an LE connect to a bonded device
+        // already in range either answers quickly or is not going to. Waiting the
+        // full 30s only stalls the supervisor thread and piles up InProgress on the
+        // next attempts, since BlueZ keeps working after the call gives up.
+        constexpr int LE_CONNECT_TIMEOUT_MS = 5000;
 
         constexpr int MESSAGE_POLL_SECONDS = 15;
         // obexd can drop a MAP session while the Classic link stays up, and the
         // profile supervisor short-circuits once map_open is set, so nothing else
         // notices. Consecutive listing failures are the cheapest liveness signal.
         constexpr int MAP_FAILURES_BEFORE_REOPEN = 3;
-        constexpr int SENT_EMPTY_LISTINGS_BEFORE_GIVING_UP = 3;
         constexpr int MESSAGE_LIST_MAX = 200;
         constexpr int SUPERVISOR_TICK_SECONDS = 1;
 
@@ -319,13 +323,13 @@ namespace tether::bluetooth {
                     return false;
                 }
                 std::string bearer_err;
-                if (call(device->path, IFACE_BEARER_LE, "Connect", bearer_err))
+                if (call(device->path, IFACE_BEARER_LE, "Connect", bearer_err, LE_CONNECT_TIMEOUT_MS))
                     return true;
                 if (bearer_err.find("UnknownMethod") == std::string::npos) {
                     err = bearer_err;
                     return false;
                 }
-                return call(device->path, IFACE_DEVICE, "Connect", err);
+                return call(device->path, IFACE_DEVICE, "Connect", err, LE_CONNECT_TIMEOUT_MS);
             }
 
         private:
@@ -337,7 +341,11 @@ namespace tether::bluetooth {
                 return std::nullopt;
             }
 
-            bool call(const std::string& path, const char* iface, const char* method, std::string& err) {
+            bool call(const std::string& path,
+                      const char* iface,
+                      const char* method,
+                      std::string& err,
+                      int timeout_ms = CONNECT_TIMEOUT_MS) {
                 GError* error = nullptr;
                 GVariant* reply = g_dbus_connection_call_sync(monitor_.connection(),
                                                               BLUEZ_NAME,
@@ -347,7 +355,7 @@ namespace tether::bluetooth {
                                                               nullptr,
                                                               nullptr,
                                                               G_DBUS_CALL_FLAGS_NONE,
-                                                              CONNECT_TIMEOUT_MS,
+                                                              timeout_ms,
                                                               nullptr,
                                                               &error);
                 if (!reply) {
@@ -477,7 +485,6 @@ namespace tether::bluetooth {
         // Cleared once, permanently for the session, if it turns out not to.
         bool map_lists_subfolders = true;
         bool map_lists_sent = true;
-        int map_empty_sent_listings = 0;
         // The first listing on a new MAP session returns the phone's existing
         // inbox, which on a first run is every message it holds.
         bool map_session_backfill = true;
@@ -587,7 +594,6 @@ namespace tether::bluetooth {
             map_session_backfill = true;
             map_lists_subfolders = true;
             map_lists_sent = true;
-            map_empty_sent_listings = 0;
         }
 
         if (now < next_message_poll)
@@ -649,15 +655,9 @@ namespace tether::bluetooth {
                 debug::log(
                     WARN, "bluetooth: the sent folder is unavailable ({}); showing received messages only", sent_err);
                 map_lists_sent = false;
-            } else if (sent.empty() && !listings.empty()) {
-                if (++map_empty_sent_listings >= SENT_EMPTY_LISTINGS_BEFORE_GIVING_UP) {
-                    debug::log(INFO,
-                               "bluetooth: the phone serves no sent messages over MAP; "
-                               "conversations will show received messages and replies sent from here");
-                    map_lists_sent = false;
-                }
             } else {
-                map_empty_sent_listings = 0;
+                // An empty sent folder is just a folder with nothing new in it.
+                // Only an error means the phone will not serve it.
                 listings.insert(listings.end(), sent.begin(), sent.end());
             }
         }

@@ -486,6 +486,28 @@ TEST(MessageStore, PhoneCopySupersedesTheLocalEcho) {
     EXPECT_EQ(messages[0].handle, "m9") << "the phone's copy is the one with a usable handle";
 }
 
+// iOS has been observed recording an Apple-ID recipient with characters missing
+// from the front of the address it was sent. Filing the phone's copy under that
+// address opens a second conversation nobody can reply to, so the local echo --
+// which knows what was actually addressed -- carries the peer over.
+TEST(MessageStore, PhoneCopyWithATruncatedAddressJoinsTheRealConversation) {
+    MessageStore store;
+    Message echo = local_send("email:cece.blair@icloud.com", "test3", 1000);
+    echo.peer_address = "cece.blair@icloud.com";
+    Message copy = phone_copy("m9", "email:ce.blair@icloud.com", "test3", 1005);
+    copy.peer_address = "ce.blair@icloud.com";
+
+    ASSERT_TRUE(store.add(echo));
+    ASSERT_TRUE(store.add(copy));
+
+    EXPECT_EQ(store.size(), 1u);
+    EXPECT_EQ(store.threads().size(), 1u) << "the mangled address opened a second conversation";
+    auto messages = store.messages("email:cece.blair@icloud.com");
+    ASSERT_EQ(messages.size(), 1u);
+    EXPECT_EQ(messages[0].handle, "m9");
+    EXPECT_EQ(messages[0].peer_address, "cece.blair@icloud.com");
+}
+
 TEST(MessageStore, UnrelatedOutgoingMessagesAreNotCollapsed) {
     MessageStore store;
     store.add(local_send("tel:+1111", "on my way", 1000));

@@ -132,7 +132,11 @@ namespace tether::bluetooth {
         if (!status_.le_connected) {
             const bool settled =
                 classic_connected_since_ >= 0 && now - classic_connected_since_ >= BEARER_SETTLE_SECONDS;
-            if (settled && now >= next_le_attempt_) {
+            // Dialling LE from this side only works if the phone is willing to be
+            // dialled. When it is not, every attempt either times out or collides
+            // with the previous one still running inside bluez, stop after
+            // LE_ATTEMPTS_BEFORE_ADVICE and leave it to the phone.
+            if (settled && le_attempts_ < LE_ATTEMPTS_BEFORE_ADVICE && now >= next_le_attempt_) {
                 // Select LE only for this attempt, then hand the preference back
                 // so LE is never left preferred while idle.
                 ops_.set_preferred_bearer("le");

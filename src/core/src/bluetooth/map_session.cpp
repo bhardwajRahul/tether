@@ -1,5 +1,6 @@
 #include "tether/bluetooth/map_session.hpp"
 #include "tether/bluetooth/obex_transfer.hpp"
+#include "tether/log.hpp"
 
 #include <cstdlib>
 #include <filesystem>
@@ -17,7 +18,7 @@ namespace tether::bluetooth {
 
         // Listing a large mailbox is a real OBEX transfer; give it room.
         constexpr int MAP_CALL_TIMEOUT_MS = 60000;
-        // Sending is interactive; the user is waiting on the answer.
+        constexpr int MAP_PUSH_CALL_TIMEOUT_MS = 15000;
         constexpr int MAP_PUSH_TIMEOUT_SECONDS = 30;
 
         std::string variant_string(GVariant* value) {
@@ -246,6 +247,19 @@ namespace tether::bluetooth {
                 return false;
             }
         }
+        // The recipient the phone acts on lives in these bytes and nowhere else,
+        // so a send that arrives addressed wrongly can be traced to a side. Only
+        // the address lines are logged; the body is the user's message.
+        for (size_t at = 0; at < bmessage.size();) {
+            const size_t end = bmessage.find('\r', at);
+            const std::string line = bmessage.substr(at, end == std::string::npos ? end : end - at);
+            if (line.rfind("TEL:", 0) == 0 || line.rfind("EMAIL:", 0) == 0)
+                debug::log(DEBUG, "bluetooth: sending to {} ({})", line, folder);
+            if (end == std::string::npos)
+                break;
+            at = end + 2;
+        }
+
         std::filesystem::permissions(source,
                                      std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
                                      std::filesystem::perm_options::replace,
@@ -266,7 +280,7 @@ namespace tether::bluetooth {
                                                       g_variant_new("(ssa{sv})", source.c_str(), folder.c_str(), &args),
                                                       G_VARIANT_TYPE("(oa{sv})"),
                                                       G_DBUS_CALL_FLAGS_NONE,
-                                                      MAP_CALL_TIMEOUT_MS,
+                                                      MAP_PUSH_CALL_TIMEOUT_MS,
                                                       nullptr,
                                                       &error);
         if (!reply) {
@@ -299,13 +313,6 @@ namespace tether::bluetooth {
         if (state == TransferState::Active) {
             // The transfer is still running, so the message may yet be sent.
             err = "Timed out waiting for the phone to accept the message; it may still be sent.";
-            return false;
-        }
-        if (state == TransferState::Gone) {
-            // The object disappeared before its status was ever seen as complete.
-            // obexd does that for a rejected transfer too, so reporting success
-            // here would tell the user a message was sent that never was.
-            err = "The phone did not confirm the message; check Messages on the iPhone before resending.";
             return false;
         }
         return true;

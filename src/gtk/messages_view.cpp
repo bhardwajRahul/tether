@@ -50,8 +50,7 @@ namespace tether::ui {
 
         MessagesState g_messages;
 
-        // Sending is a real OBEX transfer; this only has to outlast a healthy one.
-        constexpr int SEND_TIMEOUT_SECONDS = 45;
+        constexpr int SEND_TIMEOUT_SECONDS = 60;
 
         void update_composer_sensitivity();
         void apply_row_selection(GtkWidget* row);
