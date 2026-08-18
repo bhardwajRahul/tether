@@ -35,8 +35,12 @@ namespace tether::bluetooth {
         std::atomic<bool> g_group_replies_enabled{false};
 
         // MAP folders are navigated from the session root one level at a time.
-        constexpr const char* MAP_INBOX = "telecom/msg/inbox";
+        // The session parks on the message root and lists its children, so both
+        // halves of a conversation can be pulled without walking between them.
+        constexpr const char* MAP_MSG_ROOT = "telecom/msg";
         constexpr const char* MAP_OUTBOX = "telecom/msg/outbox";
+        constexpr const char* MAP_FOLDER_INBOX = "inbox";
+        constexpr const char* MAP_FOLDER_SENT = "sent";
     } // namespace
 
     MessageStore& message_store() { return g_messages; }
@@ -104,7 +108,8 @@ namespace tether::bluetooth {
 
         {
             std::lock_guard<std::mutex> lock(g_messages_mutex);
-            sent.handle = "local-" + std::to_string(std::time(nullptr)) + "-" + std::to_string(g_messages.size());
+            sent.handle =
+                LOCAL_HANDLE_PREFIX + std::to_string(std::time(nullptr)) + "-" + std::to_string(g_messages.size());
             g_messages.add(sent);
             g_journal.append(sent);
         }
@@ -448,6 +453,12 @@ namespace tether::bluetooth {
         int map_failures = 0;
         int64_t next_message_poll = 0;
         std::string open_map_path;
+        // Whether the phone answers a listing for a child of the message root.
+        // Cleared once, permanently for the session, if it turns out not to.
+        bool map_lists_subfolders = true;
+        // Not every phone serves the sent folder; losing it must not cost us the
+        // inbox as well.
+        bool map_lists_sent = true;
         // The first listing on a new MAP session returns the phone's existing
         // inbox, which on a first run is every message it holds.
         bool map_session_backfill = true;
@@ -549,12 +560,14 @@ namespace tether::bluetooth {
                 g_map_session = session;
             }
             // A freshly opened session starts at the root, and SetFolder walks the
-            // MAP hierarchy from there — "inbox" on its own is not a valid step.
+            // MAP hierarchy from there — "msg" on its own is not a valid step.
             std::string err;
-            if (!session->set_folder(MAP_INBOX, err))
-                debug::log(WARN, "bluetooth: SetFolder({}) failed: {}", MAP_INBOX, err);
+            if (!session->set_folder(MAP_MSG_ROOT, err))
+                debug::log(WARN, "bluetooth: SetFolder({}) failed: {}", MAP_MSG_ROOT, err);
             next_message_poll = 0;
             map_session_backfill = true;
+            map_lists_subfolders = true;
+            map_lists_sent = true;
         }
 
         if (now < next_message_poll)
@@ -570,8 +583,25 @@ namespace tether::bluetooth {
             return;
 
         std::string err;
-        // Empty means the current folder, which SetFolder already selected.
-        auto listings = session->list_messages("", MESSAGE_LIST_MAX, err);
+        // Empty means the current folder; a name means that child of it.
+        auto listings = session->list_messages(map_lists_subfolders ? MAP_FOLDER_INBOX : "", MESSAGE_LIST_MAX, err);
+
+        // Some stacks only answer for the folder they are standing in. Walking
+        // into the inbox costs the sent folder but keeps messages working, so it
+        // is worth one attempt before declaring the session dead.
+        if (!err.empty() && map_lists_subfolders) {
+            debug::log(
+                WARN, "bluetooth: listing '{}' failed ({}); falling back to the inbox alone", MAP_FOLDER_INBOX, err);
+            map_lists_subfolders = false;
+            map_lists_sent = false;
+            std::string nav_err;
+            // Relative: the session is parked on the message root.
+            if (!session->set_folder(MAP_FOLDER_INBOX, nav_err))
+                debug::log(WARN, "bluetooth: SetFolder({}) failed: {}", MAP_FOLDER_INBOX, nav_err);
+            err.clear();
+            listings = session->list_messages("", MESSAGE_LIST_MAX, err);
+        }
+
         if (!err.empty()) {
             debug::log(WARN, "bluetooth: ListMessages failed: {}", err);
             // ponytail: a fail count, not an obexd ObjectManager watcher. Costs up
@@ -588,6 +618,21 @@ namespace tether::bluetooth {
             return;
         }
         map_failures = 0;
+
+        // Replies sent from the phone itself live in a separate folder and name
+        // the user as their sender, so without this a conversation only ever
+        // shows one side of itself.
+        if (map_lists_sent) {
+            std::string sent_err;
+            auto sent = session->list_messages(MAP_FOLDER_SENT, MESSAGE_LIST_MAX, sent_err);
+            if (sent_err.empty()) {
+                listings.insert(listings.end(), sent.begin(), sent.end());
+            } else {
+                debug::log(
+                    WARN, "bluetooth: the sent folder is unavailable ({}); showing received messages only", sent_err);
+                map_lists_sent = false;
+            }
+        }
 
         std::vector<Message> fresh;
         {

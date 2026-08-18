@@ -127,6 +127,10 @@ namespace tether::bluetooth {
                     listing.sender_name = variant_string(value);
                 else if (name == "SenderAddress")
                     listing.sender_address = variant_string(value);
+                else if (name == "Recipient")
+                    listing.recipient_name = variant_string(value);
+                else if (name == "RecipientAddress")
+                    listing.recipient_address = variant_string(value);
                 else if (name == "Timestamp")
                     listing.timestamp = variant_string(value);
                 else if (name == "Type")
@@ -319,14 +323,24 @@ namespace tether::bluetooth {
     }
 
     Message message_from_listing(const MapListing& listing) {
+        // iOS sets Sent on messages in the sent folder, but not every phone
+        // does, so the folder is the second opinion.
+        const bool outgoing = listing.sent || is_outgoing_folder(listing.folder);
+
+        // A conversation is keyed on the other party. For a message the phone
+        // sent, that is the recipient — keying on the sender would file every
+        // outgoing message under the user's own number instead of the thread it
+        // belongs to, and would aim a reply there too.
+        const std::string& address = outgoing ? listing.recipient_address : listing.sender_address;
+
         VCardParty peer;
-        peer.name = listing.sender_name;
+        peer.name = outgoing ? listing.recipient_name : listing.sender_name;
         // MAP reports the address in one field without saying which kind it is;
         // an '@' is the only available discriminator.
-        if (listing.sender_address.find('@') != std::string::npos)
-            peer.email = listing.sender_address;
+        if (address.find('@') != std::string::npos)
+            peer.email = address;
         else
-            peer.tel = listing.sender_address;
+            peer.tel = address;
 
         Message message;
         message.handle = map_handle_from_path(listing.handle);
@@ -334,8 +348,10 @@ namespace tether::bluetooth {
         message.body = listing.subject;
         message.timestamp = parse_map_timestamp(listing.timestamp);
         message.read = listing.read;
-        message.outgoing = listing.sent;
+        message.outgoing = outgoing;
         message.folder = listing.folder;
+        // Empty when the phone gave no usable address for the other end. The
+        // caller drops those rather than filing them under a guess.
         message.thread_key = thread_key_for(peer);
         message.peer_address = peer.tel.empty() ? normalize_email(peer.email) : normalize_phone(peer.tel);
         message.peer_name = peer.name;

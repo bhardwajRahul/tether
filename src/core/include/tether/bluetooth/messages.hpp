@@ -10,6 +10,19 @@
 
 namespace tether::bluetooth {
 
+    // Handles minted locally for a message sent from here, before the phone has
+    // listed its own copy. The prefix is what tells the two apart.
+    inline constexpr const char* LOCAL_HANDLE_PREFIX = "local-";
+
+    inline bool is_local_handle(const std::string& handle) { return handle.rfind(LOCAL_HANDLE_PREFIX, 0) == 0; }
+
+    // How far apart the local record and the phone's copy of the same sent
+    // message may be before they stop being treated as the same message.
+    inline constexpr int64_t LOCAL_ECHO_WINDOW_SECONDS = 300;
+
+    // True for a MAP folder holding messages the phone sent.
+    bool is_outgoing_folder(const std::string& folder);
+
     struct Message {
         std::string handle;
         std::string object_path;
@@ -62,6 +75,9 @@ namespace tether::bluetooth {
 
     private:
         void trim();
+        // Removes the placeholder written when the user sent `arrived` from here,
+        // now that the phone has listed its own copy of it.
+        void drop_local_echo(const Message& arrived);
 
         size_t max_messages_;
         std::map<std::string, Message> by_handle_;

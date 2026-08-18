@@ -1,14 +1,15 @@
 #include "tether/bluetooth/messages.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 
 namespace tether::bluetooth {
 
-    namespace {
+    bool is_outgoing_folder(const std::string& folder) {
+        return folder.find("sent") != std::string::npos || folder.find("outbox") != std::string::npos;
+    }
 
-        bool is_outgoing_folder(const std::string& folder) {
-            return folder.find("sent") != std::string::npos || folder.find("outbox") != std::string::npos;
-        }
+    namespace {
 
         std::string display_address(const VCardParty& party) {
             if (!party.tel.empty())
@@ -30,10 +31,31 @@ namespace tether::bluetooth {
             return false;
         }
 
+        if (message.outgoing && !is_local_handle(message.handle))
+            drop_local_echo(message);
+
         by_handle_.emplace(message.handle, message);
         order_.push_back(message.handle);
         trim();
         return true;
+    }
+
+    // Linear scan. Only a handful of local sends are ever waiting to be
+    // matched, and the prefix check rejects everything else before any string is
+    // compared. Index by thread if the store ever grows enough for this to show.
+    void MessageStore::drop_local_echo(const Message& arrived) {
+        for (auto it = by_handle_.begin(); it != by_handle_.end(); ++it) {
+            const Message& existing = it->second;
+            if (!existing.outgoing || !is_local_handle(existing.handle))
+                continue;
+            if (existing.thread_key != arrived.thread_key || existing.body != arrived.body)
+                continue;
+            if (std::llabs(existing.timestamp - arrived.timestamp) > LOCAL_ECHO_WINDOW_SECONDS)
+                continue;
+            order_.erase(std::remove(order_.begin(), order_.end(), existing.handle), order_.end());
+            by_handle_.erase(it);
+            return;
+        }
     }
 
     bool MessageStore::set_read(const std::string& handle, bool read) {

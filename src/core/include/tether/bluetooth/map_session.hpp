@@ -11,11 +11,16 @@
 namespace tether::bluetooth {
 
     // One entry from MessageAccess1.ListMessages.
+    //
+    // Both ends are recorded: a message the phone sent names the user as its
+    // sender, so only the recipient identifies the conversation it belongs to.
     struct MapListing {
         std::string handle;
         std::string subject;
         std::string sender_address;
         std::string sender_name;
+        std::string recipient_address;
+        std::string recipient_name;
         std::string timestamp;
         std::string type;
         std::string folder;
