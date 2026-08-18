@@ -52,6 +52,8 @@ namespace tether::ui {
             stop_event_subscription();
             schedule_event_retry();
             set_status_main("Daemon Offline");
+            set_route_status(Route::WiFi, false, "The Tether daemon is not running.");
+            set_route_status(Route::Bluetooth, false, "The Tether daemon is not running.");
             if (g_on_disconnect)
                 g_on_disconnect();
         }
@@ -154,6 +156,8 @@ namespace tether::ui {
                 }
                 schedule_event_retry();
                 set_status_main("Daemon Offline");
+                set_route_status(Route::WiFi, false, "The Tether daemon is not running.");
+                set_route_status(Route::Bluetooth, false, "The Tether daemon is not running.");
                 return G_SOURCE_REMOVE;
             }
 
@@ -174,6 +178,8 @@ namespace tether::ui {
             // status, but ask anyway: an older daemon will not, and a view whose
             // composer is gated on that status stays shut until it arrives.
             daemon_send({{"command", "bt_connection"}});
+            daemon_send({{"command", "bt_status"}});
+            daemon_send({{"command", "bt_list_devices"}});
             set_status_main("Daemon Online");
             return G_SOURCE_REMOVE;
         }

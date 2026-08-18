@@ -59,11 +59,16 @@ namespace {
         gtk_header_bar_set_custom_title(GTK_HEADER_BAR(header_bar), switcher);
 
         g_signal_connect(stack, "notify::visible-child-name", G_CALLBACK(on_visible_view_changed), nullptr);
-        gtk_container_add(GTK_CONTAINER(window), stack);
+
+        GtkWidget* root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+        gtk_box_pack_start(GTK_BOX(root), stack, TRUE, TRUE, 0);
+        gtk_box_pack_start(GTK_BOX(root), create_route_bar(), FALSE, FALSE, 0);
+        gtk_container_add(GTK_CONTAINER(window), root);
 
         // One feed, dispatched to whichever view owns the event; the views never
         // hold the socket themselves.
         daemon_client_on_disconnect([] { messages_view_handle_disconnect(); });
+
         daemon_client_start([](const nlohmann::json& event) {
             if (devices_view_handle_event(event))
                 return;
@@ -74,11 +79,6 @@ namespace {
 
         devices_view_trigger_discovery();
         devices_view_refresh();
-
-        // Bluetooth connection status is requested by the client on every
-        // subscription, including reconnects, so there is nothing to ask for
-        // here: doing it once from this point would be lost whenever the daemon
-        // had to be autostarted and no socket existed yet.
 
         gtk_widget_show_all(window);
         gtk_stack_set_visible_child_name(GTK_STACK(stack), "devices");

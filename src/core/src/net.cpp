@@ -258,6 +258,7 @@ namespace tether {
         nlohmann::json status;
         status["command"] = "bt_status";
         status["available"] = bluetooth::g_bluez != nullptr && bluetooth::g_bluez->running();
+        status["device_address"] = bluetooth::load_config().device_address;
         if (!bluetooth::g_bluez) {
             status["capability"] = nullptr;
             status["adapters"] = nlohmann::json::array();

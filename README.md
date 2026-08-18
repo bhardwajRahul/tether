@@ -139,7 +139,27 @@ make install
    ```
 
 3. Bluetooth pair via GUI or CLI (for Messages and Notifications):
-   (TODO: Bluetooth pairing instructions)
+
+   Check that your machine has the Bluetooth features first.
+   This sets the Bluetooth adapter class to "A/V Hands-Free" instead of "Computer"
+
+   ```bash
+   ./scripts/bt-probe.sh --set-class
+   ```
+
+   Then, in the GTK app, pick your iPhone under BLUETOOTH on the Devices page
+   and press "Pair over Bluetooth". Confirm the code on both the iPhone and
+   Linux. Afterwards the iPhone offers "Show Message Notifications" and "Sync
+   Contacts" under Settings > Bluetooth > (i) for this computer. Enable these, both are needed. 
+   They can take a few minutes to appear. "Show iPhone Permissions" in the same pane can re-advertise so they show up again.
+
+   or
+
+   ```bash
+   tether --bt-devices          # find the iPhone's address
+   tether --bt-pair <address>
+   tether --bt-connection       # what is up, and what is not
+   ```
 
 ## Roadmap
 

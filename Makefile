@@ -45,6 +45,16 @@ fmt:
 extension:
 	@./extension/build.sh
 
+.PHONY: reset reset-wifi reset-bt
+reset:
+	@./scripts/tether-reset.sh all
+
+reset-wifi:
+	@./scripts/tether-reset.sh wifi
+
+reset-bt:
+	@./scripts/tether-reset.sh bt
+
 clean:
 	rm -rf build
 	rm -f compile_commands.json

@@ -6,6 +6,19 @@ namespace tether::ui {
         GtkWidget* g_window = nullptr;
         GtkWidget* g_header_bar = nullptr;
 
+        struct RouteIndicator {
+            GtkWidget* box = nullptr;
+            GtkWidget* icon = nullptr;
+            GtkWidget* label = nullptr;
+            const char* name = nullptr;
+            const char* icon_ok = nullptr;
+            const char* icon_off = nullptr;
+        };
+
+        RouteIndicator g_routes[2];
+
+        RouteIndicator& indicator(Route route) { return g_routes[route == Route::WiFi ? 0 : 1]; }
+
         constexpr const char* STYLE = R"CSS(
 .muted {
     opacity: 0.62;
@@ -29,6 +42,14 @@ namespace tether::ui {
 .tether-bubble-unconfirmed {
     background-image: none;
     border: 1px dashed alpha(@theme_selected_fg_color, 0.55);
+}
+
+.tether-route-bar {
+    border-top: 1px solid alpha(@theme_fg_color, 0.12);
+}
+
+.tether-route-off {
+    opacity: 0.5;
 }
 
 .tether-badge {
@@ -93,6 +114,57 @@ namespace tether::ui {
         if (g_header_bar) {
             gtk_header_bar_set_subtitle(GTK_HEADER_BAR(g_header_bar), text.c_str());
         }
+    }
+
+    GtkWidget* create_route_bar() {
+        GtkWidget* bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 16);
+        gtk_container_set_border_width(GTK_CONTAINER(bar), 6);
+        gtk_style_context_add_class(gtk_widget_get_style_context(bar), "tether-route-bar");
+
+        auto build = [](RouteIndicator& route, const char* name, const char* icon_ok, const char* icon_off) {
+            route.icon_ok = icon_ok;
+            route.icon_off = icon_off;
+            route.name = name;
+            route.box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+            route.icon = gtk_image_new_from_icon_name(icon_off, GTK_ICON_SIZE_MENU);
+            gtk_box_pack_start(GTK_BOX(route.box), route.icon, FALSE, FALSE, 0);
+            route.label = gtk_label_new(nullptr);
+            gtk_label_set_ellipsize(GTK_LABEL(route.label), PANGO_ELLIPSIZE_END);
+            gtk_box_pack_start(GTK_BOX(route.box), route.label, FALSE, FALSE, 0);
+        };
+
+        build(indicator(Route::WiFi),
+              "Wi-Fi",
+              "network-wireless-signal-excellent-symbolic",
+              "network-wireless-offline-symbolic");
+        build(indicator(Route::Bluetooth), "Bluetooth", "bluetooth-active-symbolic", "bluetooth-disabled-symbolic");
+
+        gtk_box_pack_start(GTK_BOX(bar), indicator(Route::WiFi).box, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(bar), indicator(Route::Bluetooth).box, FALSE, FALSE, 0);
+
+        set_route_status(Route::WiFi, false, "Waiting for the Tether daemon.");
+        set_route_status(Route::Bluetooth, false, "Waiting for the Tether daemon.");
+        return bar;
+    }
+
+    void set_route_status(Route route, bool ok, const std::string& detail) {
+        RouteIndicator& r = indicator(route);
+        if (!r.box)
+            return;
+
+        gtk_image_set_from_icon_name(GTK_IMAGE(r.icon), ok ? r.icon_ok : r.icon_off, GTK_ICON_SIZE_MENU);
+        GtkStyleContext* context = gtk_widget_get_style_context(r.box);
+        if (ok)
+            gtk_style_context_remove_class(context, "tether-route-off");
+        else
+            gtk_style_context_add_class(context, "tether-route-off");
+
+        const std::string state = std::string(r.name) + ": " + (ok ? "connected" : "not connected");
+        set_text(r.label, state);
+        // The reason can be a sentence or two, which would push the other route
+        // off the strip, so it lives in the tooltip. The Devices page shows it
+        // in full.
+        gtk_widget_set_tooltip_text(r.box, detail.empty() ? state.c_str() : (state + "\n" + detail).c_str());
     }
 
 } // namespace tether::ui

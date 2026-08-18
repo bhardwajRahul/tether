@@ -550,7 +550,7 @@ namespace tether::ui {
         }
         if (command == "bt_connection_changed") {
             update_connection(event);
-            return true;
+            return false;
         }
         if (command == "bt_message") {
             // A new message changes both the thread list and, when it lands in

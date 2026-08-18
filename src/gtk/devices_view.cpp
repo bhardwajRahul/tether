@@ -19,6 +19,11 @@ namespace tether::ui {
             std::vector<std::pair<std::string, std::string>> paired_devices; // fp, name
             std::vector<std::string> connected_fps;                          // active connections
 
+            // The Bluetooth route
+            std::vector<nlohmann::json> bt_devices;
+            nlohmann::json bt_status = nlohmann::json::object();
+            nlohmann::json bt_connection = nlohmann::json::object();
+
             GtkWidget* list_devices = nullptr;
             GtkWidget* right_pane_stack = nullptr;
 
@@ -33,14 +38,160 @@ namespace tether::ui {
 
             GtkWidget* lbl_unpaired_name = nullptr;
             GtkWidget* lbl_unpaired_ip = nullptr;
+
+            std::string selected_bt_address;
+            std::string selected_bt_name;
+
+            GtkWidget* lbl_bt_name = nullptr;
+            GtkWidget* lbl_bt_mode = nullptr;
+            GtkWidget* lbl_bt_link = nullptr;
+            GtkWidget* lbl_bt_messages = nullptr;
+            GtkWidget* lbl_bt_contacts = nullptr;
+            GtkWidget* lbl_bt_notifications = nullptr;
+            GtkWidget* lbl_bt_reason = nullptr;
+            GtkWidget* lbl_bt_progress = nullptr;
+            GtkWidget* btn_bt_pair = nullptr;
+            GtkWidget* btn_bt_solicit = nullptr;
+            GtkWidget* btn_bt_unpair = nullptr;
+
+            GtkWidget* lbl_welcome_wifi = nullptr;
+            GtkWidget* lbl_welcome_bt = nullptr;
         };
 
         DevicesState g_devices;
 
         void set_status_action(const std::string& text) { set_text(g_devices.lbl_action_status, text); }
 
+        const nlohmann::json* find_bt_device(const std::string& address) {
+            for (const auto& device : g_devices.bt_devices) {
+                if (device.value("address", "") == address)
+                    return &device;
+            }
+            return nullptr;
+        }
+
+        // The daemon supervises one iPhone at a time, so the live profile status
+        // describes whichever Bluetooth device is bonded, not the one merely
+        // selected in the list.
+        bool is_supervised_bt_device(const std::string& address) {
+            if (address.empty())
+                return false;
+            const std::string supervised = g_devices.bt_status.value("device_address", "");
+            return !supervised.empty() && supervised == address;
+        }
+
+        void set_capability_row(GtkWidget* label, const std::string& title, bool ok, const std::string& note) {
+            std::string markup = std::string(ok ? "\u2713" : "\u2717") + "  <b>" + escape_markup(title) + "</b>";
+            if (!note.empty())
+                markup += "  <span size='small'>" + escape_markup(note) + "</span>";
+            set_markup(label, markup);
+        }
+
+        void update_welcome_pane() {
+            const bool wifi_ok = !g_devices.connected_fps.empty();
+            set_text(g_devices.lbl_welcome_wifi, wifi_ok ? "Connected." : "Not connected yet.");
+
+            const bool bt_ok =
+                g_devices.bt_connection.value("map_open", false) || g_devices.bt_connection.value("ancs_ready", false);
+            std::string bt_note = "Not connected yet.";
+            if (bt_ok)
+                bt_note = "Connected.";
+            else if (!g_devices.bt_status.empty() && !g_devices.bt_status.value("available", false))
+                bt_note = "Bluetooth is unavailable on this machine.";
+            set_text(g_devices.lbl_welcome_bt, bt_note);
+        }
+
+        void update_bt_pane() {
+            const std::string address = g_devices.selected_bt_address;
+            const nlohmann::json* device = find_bt_device(address);
+            const bool paired = device && device->value("paired", false);
+            const bool supervised = is_supervised_bt_device(address);
+            const bool available = g_devices.bt_status.value("available", false);
+
+            set_markup(g_devices.lbl_bt_name, "<b>" + escape_markup(g_devices.selected_bt_name) + "</b>");
+
+            std::string mode;
+            if (!g_devices.bt_status.empty()) {
+                const nlohmann::json capability = g_devices.bt_status.value("capability", nlohmann::json());
+                if (!available || capability.is_null()) {
+                    mode = "Bluetooth is unavailable on this machine.";
+                } else if (capability.value("mode", "") == "full") {
+                    mode = "Full mode \u2014 messages, contacts, and notifications.";
+                } else if (capability.value("mode", "") == "compatibility") {
+                    mode = "Compatibility mode \u2014 messages and contacts, no notification mirroring.";
+                } else {
+                    mode = "This machine cannot carry the Bluetooth features.";
+                }
+                // The reasons name what is missing (adapter class, LE roles, BlueZ
+                // version) and are the only place that detail surfaces outside the CLI.
+                if (!capability.is_null() && capability.contains("reasons")) {
+                    for (const auto& reason : capability["reasons"]) {
+                        if (reason.is_string())
+                            mode += "\n" + reason.get<std::string>();
+                    }
+                }
+            }
+            set_text(g_devices.lbl_bt_mode, mode);
+
+            // Only the supervised bond has live profile state; anything else can
+            // report what BlueZ knows and no more.
+            const nlohmann::json& connection = g_devices.bt_connection;
+            const bool classic = supervised ? connection.value("classic_connected", false)
+                                            : (device && device->value("classic_connected", false));
+            const bool le =
+                supervised ? connection.value("le_connected", false) : (device && device->value("le_connected", false));
+            const bool map_open = supervised && connection.value("map_open", false);
+            const bool pbap_open = supervised && connection.value("pbap_open", false);
+            const bool ancs_ready = supervised && connection.value("ancs_ready", false);
+
+            set_capability_row(g_devices.lbl_bt_link,
+                               "Link",
+                               classic || le,
+                               std::string("BR/EDR ") + (classic ? "on" : "off") + ", LE " + (le ? "on" : "off"));
+
+            const std::string map_error = connection.value("map_error", "none");
+            const std::string pbap_error = connection.value("pbap_error", "none");
+            set_capability_row(
+                g_devices.lbl_bt_messages, "Messages", map_open, map_open || map_error == "none" ? "" : map_error);
+            set_capability_row(
+                g_devices.lbl_bt_contacts, "Contacts", pbap_open, pbap_open || pbap_error == "none" ? "" : pbap_error);
+            set_capability_row(g_devices.lbl_bt_notifications,
+                               "Notifications",
+                               ancs_ready,
+                               ancs_ready ? "" : connection.value("ancs_reason", ""));
+
+            // The daemon's reasons name the actual next step, so they are shown
+            // verbatim rather than replaced with something vaguer.
+            std::string reason;
+            if (!paired) {
+                reason = "Not paired over Bluetooth yet.";
+            } else if (!supervised) {
+                reason = "Tether is not using this device. Pair it to select it.";
+            } else {
+                reason = connection.value("profile_reason", "");
+                if (reason.empty())
+                    reason = connection.value("link_reason", "");
+            }
+            set_text(g_devices.lbl_bt_reason, reason);
+
+            gtk_widget_set_visible(g_devices.btn_bt_pair, available && (!paired || !supervised));
+            gtk_widget_set_visible(g_devices.btn_bt_unpair, available && paired);
+            // Re-soliciting only helps when the phone is withholding a profile,
+            // not when the link itself is down or nothing is bonded.
+            gtk_widget_set_visible(g_devices.btn_bt_solicit,
+                                   available && supervised &&
+                                       (map_error == "forbidden" || map_error == "no_record" || !ancs_ready));
+        }
+
         void update_right_pane() {
+            if (!g_devices.selected_bt_address.empty()) {
+                gtk_stack_set_visible_child_name(GTK_STACK(g_devices.right_pane_stack), "bluetooth");
+                update_bt_pane();
+                return;
+            }
+
             if (g_devices.selected_device_fp.empty()) {
+                update_welcome_pane();
                 gtk_stack_set_visible_child_name(GTK_STACK(g_devices.right_pane_stack), "placeholder");
                 return;
             }
@@ -75,6 +226,17 @@ namespace tether::ui {
         void on_device_selected(GtkListBox*, GtkListBoxRow* row, gpointer) {
             if (!row)
                 return;
+
+            const char* bt_address = (const char*)g_object_get_data(G_OBJECT(row), "bt_address");
+            g_devices.selected_bt_address = bt_address ? bt_address : "";
+            if (!g_devices.selected_bt_address.empty()) {
+                const char* bt_name = (const char*)g_object_get_data(G_OBJECT(row), "name");
+                g_devices.selected_bt_name = bt_name ? bt_name : "";
+                g_devices.selected_device_fp.clear();
+                update_right_pane();
+                return;
+            }
+
             const char* fp = (const char*)g_object_get_data(G_OBJECT(row), "fp");
             const char* name = (const char*)g_object_get_data(G_OBJECT(row), "name");
             const char* ip = (const char*)g_object_get_data(G_OBJECT(row), "ip");
@@ -104,6 +266,51 @@ namespace tether::ui {
             j["command"] = "accept_device";
             j["fingerprint"] = g_devices.selected_device_fp;
             daemon_send(j);
+        }
+
+        void on_bt_pair_click(GtkWidget*, gpointer) {
+            if (g_devices.selected_bt_address.empty())
+                return;
+            if (!daemon_send({{"command", "bt_pair"}, {"address", g_devices.selected_bt_address}})) {
+                set_text(g_devices.lbl_bt_progress, "Could not reach the Tether daemon.");
+                return;
+            }
+            gtk_widget_set_sensitive(g_devices.btn_bt_pair, FALSE);
+            set_text(g_devices.lbl_bt_progress, "Pairing\u2026 confirm the prompt on the iPhone.");
+        }
+
+        void on_bt_unpair_click(GtkWidget*, gpointer) {
+            if (g_devices.selected_bt_address.empty())
+                return;
+
+            GtkWidget* dialog = gtk_message_dialog_new(GTK_WINDOW(main_window()),
+                                                       GTK_DIALOG_MODAL,
+                                                       GTK_MESSAGE_QUESTION,
+                                                       GTK_BUTTONS_OK_CANCEL,
+                                                       "Remove the Bluetooth pairing with %s?",
+                                                       g_devices.selected_bt_name.c_str());
+            gtk_message_dialog_format_secondary_text(
+                GTK_MESSAGE_DIALOG(dialog),
+                "Also delete this computer from the iPhone's Bluetooth settings before pairing again, "
+                "or the phone will keep the stale bond.");
+            const bool confirmed = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK;
+            gtk_widget_destroy(dialog);
+            if (!confirmed)
+                return;
+
+            daemon_send({{"command", "bt_unpair"}, {"address", g_devices.selected_bt_address}});
+            set_text(g_devices.lbl_bt_progress, "Removing the pairing\u2026");
+        }
+
+        // The advertisement that makes iOS reveal its Messages and Contacts
+        // permission toggles expires a few minutes after pairing. Without this the
+        // only way back to those toggles is to remove the bond and pair again.
+        void on_bt_solicit_click(GtkWidget*, gpointer) {
+            if (!daemon_send({{"command", "bt_solicit"}})) {
+                set_text(g_devices.lbl_bt_progress, "Could not reach the Tether daemon.");
+                return;
+            }
+            set_text(g_devices.lbl_bt_progress, "Asking the iPhone to show its Bluetooth permissions\u2026");
         }
 
         void send_file_async(const std::filesystem::path& path) {
@@ -137,6 +344,14 @@ namespace tether::ui {
             gtk_widget_destroy(dialog);
         }
 
+        void update_wifi_indicator() {
+            const bool connected = !g_devices.connected_fps.empty();
+            set_route_status(Route::WiFi,
+                             connected,
+                             connected ? "Clipboard, files, and OTP are connected."
+                                       : "No paired iPhone is connected. Open the Tether app on the phone.");
+        }
+
         void apply_state_snapshot(const nlohmann::json& j) {
             g_devices.connected_fps.clear();
             if (j.contains("connected_clients") && j["connected_clients"].is_array()) {
@@ -162,15 +377,17 @@ namespace tether::ui {
                 }
             }
             devices_view_refresh();
+            update_wifi_indicator();
         }
 
     } // namespace
 
     void devices_view_trigger_discovery() {
         set_status_main("Scanning for nearby devices...");
-        nlohmann::json j;
-        j["command"] = "discover";
-        daemon_send(j);
+        // Refresh means both routes: mDNS for Wi-Fi peers, BlueZ for Bluetooth.
+        daemon_send({{"command", "discover"}});
+        daemon_send({{"command", "bt_status"}});
+        daemon_send({{"command", "bt_list_devices"}});
     }
 
     // Refresh the device list based on Discovered (unpaired), Paired (offline), Paired (online)
@@ -223,6 +440,39 @@ namespace tether::ui {
             gtk_box_pack_start(GTK_BOX(labels), title, FALSE, FALSE, 0);
 
             GtkWidget* subtitle = gtk_label_new(paired ? (online ? "Connected" : "Offline") : "Nearby (Tap to Pair)");
+            gtk_label_set_xalign(GTK_LABEL(subtitle), 0.0);
+            gtk_style_context_add_class(gtk_widget_get_style_context(subtitle), "muted");
+            gtk_box_pack_start(GTK_BOX(labels), subtitle, FALSE, FALSE, 0);
+
+            gtk_box_pack_start(GTK_BOX(box), labels, TRUE, TRUE, 0);
+            gtk_container_add(GTK_CONTAINER(row), box);
+            return row;
+        };
+
+        auto create_bt_row = [](const nlohmann::json& device) {
+            const std::string address = device.value("address", "");
+            const std::string name = device.value("name", "").empty() ? address : device.value("name", "");
+            const bool paired = device.value("paired", false);
+            const bool connected = device.value("connected", false);
+
+            GtkWidget* row = gtk_list_box_row_new();
+            g_object_set_data_full(G_OBJECT(row), "bt_address", g_strdup(address.c_str()), g_free);
+            g_object_set_data_full(G_OBJECT(row), "name", g_strdup(name.c_str()), g_free);
+
+            GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
+            gtk_container_set_border_width(GTK_CONTAINER(box), 12);
+
+            GtkWidget* icon = gtk_image_new_from_icon_name(
+                connected ? "bluetooth-active-symbolic" : "bluetooth-symbolic", GTK_ICON_SIZE_LARGE_TOOLBAR);
+            gtk_box_pack_start(GTK_BOX(box), icon, FALSE, FALSE, 0);
+
+            GtkWidget* labels = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+            GtkWidget* title = gtk_label_new(nullptr);
+            gtk_label_set_markup(GTK_LABEL(title), ("<b>" + escape_markup(name) + "</b>").c_str());
+            gtk_label_set_xalign(GTK_LABEL(title), 0.0);
+            gtk_box_pack_start(GTK_BOX(labels), title, FALSE, FALSE, 0);
+
+            GtkWidget* subtitle = gtk_label_new(connected ? "Connected" : (paired ? "Paired" : "Nearby (Tap to Pair)"));
             gtk_label_set_xalign(GTK_LABEL(subtitle), 0.0);
             gtk_style_context_add_class(gtk_widget_get_style_context(subtitle), "muted");
             gtk_box_pack_start(GTK_BOX(labels), subtitle, FALSE, FALSE, 0);
@@ -328,6 +578,23 @@ namespace tether::ui {
                 gtk_list_box_insert(GTK_LIST_BOX(g_devices.list_devices), r, -1);
         }
 
+        // ponytail: iPhones, plus whatever Tether is actually bonded to. Every
+        // other paired thing BlueZ knows about -- headphones, controllers,
+        // keyboards -- is noise on this page. Widen the filter only if someone
+        // needs to pair a phone that does not look like an iPhone.
+        std::vector<GtkWidget*> bt_rows;
+        for (const auto& device : g_devices.bt_devices) {
+            if (!device.value("iphone", false) && !is_supervised_bt_device(device.value("address", "")))
+                continue;
+            bt_rows.push_back(create_bt_row(device));
+        }
+
+        if (!bt_rows.empty()) {
+            gtk_list_box_insert(GTK_LIST_BOX(g_devices.list_devices), create_header_row("BLUETOOTH"), -1);
+            for (auto* r : bt_rows)
+                gtk_list_box_insert(GTK_LIST_BOX(g_devices.list_devices), r, -1);
+        }
+
         gtk_widget_show_all(g_devices.list_devices);
     }
 
@@ -345,6 +612,7 @@ namespace tether::ui {
             }
             devices_view_refresh();
             update_right_pane();
+            update_wifi_indicator();
             return true;
         }
         if (command == "client_disconnected") {
@@ -354,6 +622,7 @@ namespace tether::ui {
                 g_devices.connected_fps.end());
             devices_view_refresh();
             update_right_pane();
+            update_wifi_indicator();
             return true;
         }
         if (command == "pair_request_received" || command == "untrusted_client_connected") {
@@ -438,6 +707,52 @@ namespace tether::ui {
             set_status_action("Desktop Clipboard Sync triggered.");
             return true;
         }
+        if (command == "bt_status") {
+            g_devices.bt_status = event;
+            devices_view_refresh();
+            update_right_pane();
+            return true;
+        }
+        if (command == "bt_devices") {
+            g_devices.bt_devices.clear();
+            if (event.contains("devices") && event["devices"].is_array()) {
+                for (const auto& device : event["devices"])
+                    g_devices.bt_devices.push_back(device);
+            }
+            devices_view_refresh();
+            update_right_pane();
+            return true;
+        }
+        if (command == "bt_connection_changed") {
+            g_devices.bt_connection = event;
+            const bool connected = event.value("map_open", false) || event.value("ancs_ready", false);
+            std::string detail = event.value("profile_reason", "");
+            if (detail.empty())
+                detail = event.value("link_reason", "");
+            if (detail.empty() && connected)
+                detail = "Messages and notifications are connected.";
+            set_route_status(Route::Bluetooth, connected, detail);
+            update_right_pane();
+            // A status broadcast, not a command this view owns: the Messages and
+            // Notifications views need the same event.
+            return false;
+        }
+        if (command == "bt_solicit_result") {
+            set_text(g_devices.lbl_bt_progress, event.value("message", ""));
+            return false;
+        }
+        if (command == "bt_pair_progress") {
+            set_text(g_devices.lbl_bt_progress, event.value("step", "") + "  " + event.value("detail", ""));
+            return true;
+        }
+        if (command == "bt_pair_result" || command == "bt_unpair_result") {
+            gtk_widget_set_sensitive(g_devices.btn_bt_pair, TRUE);
+            set_text(g_devices.lbl_bt_progress, event.value("message", ""));
+            // The bond and the supervised device both just changed.
+            daemon_send({{"command", "bt_status"}});
+            daemon_send({{"command", "bt_list_devices"}});
+            return true;
+        }
         return false;
     }
 
@@ -458,16 +773,142 @@ namespace tether::ui {
         g_devices.right_pane_stack = gtk_stack_new();
         gtk_stack_set_transition_type(GTK_STACK(g_devices.right_pane_stack), GTK_STACK_TRANSITION_TYPE_CROSSFADE);
 
-        // Placeholder
-        GtkWidget* placeholder = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+        // Placeholder, which on a machine with nothing paired is the first thing
+        // anyone sees: it explains both routes rather than saying "select a device".
+        GtkWidget* placeholder = gtk_box_new(GTK_ORIENTATION_VERTICAL, 24);
+        gtk_container_set_border_width(GTK_CONTAINER(placeholder), 24);
         gtk_widget_set_valign(placeholder, GTK_ALIGN_CENTER);
-        gtk_widget_set_halign(placeholder, GTK_ALIGN_CENTER);
-        GtkWidget* p_icon = gtk_image_new_from_icon_name("computer-symbolic", GTK_ICON_SIZE_DIALOG);
-        gtk_box_pack_start(GTK_BOX(placeholder), p_icon, FALSE, FALSE, 0);
-        GtkWidget* p_lbl = gtk_label_new("Select a device to start");
-        gtk_style_context_add_class(gtk_widget_get_style_context(p_lbl), "muted");
-        gtk_box_pack_start(GTK_BOX(placeholder), p_lbl, FALSE, FALSE, 0);
+
+        GtkWidget* welcome_title = gtk_label_new(nullptr);
+        gtk_label_set_markup(GTK_LABEL(welcome_title), "<big><b>Connect your iPhone</b></big>");
+        gtk_box_pack_start(GTK_BOX(placeholder), welcome_title, FALSE, FALSE, 0);
+
+        // A plain box cannot reflow, and the two blocks do not both fit in a narrow
+        // window. A flow box drops to a single column instead of clipping.
+        GtkWidget* routes = gtk_flow_box_new();
+        gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(routes), GTK_SELECTION_NONE);
+        gtk_flow_box_set_min_children_per_line(GTK_FLOW_BOX(routes), 1);
+        gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(routes), 2);
+        gtk_flow_box_set_column_spacing(GTK_FLOW_BOX(routes), 24);
+        gtk_flow_box_set_row_spacing(GTK_FLOW_BOX(routes), 16);
+        gtk_flow_box_set_homogeneous(GTK_FLOW_BOX(routes), TRUE);
+        gtk_widget_set_halign(routes, GTK_ALIGN_CENTER);
+
+        auto build_route_block =
+            [](const char* icon_name, const char* title, const char* steps, GtkWidget** status_out) {
+                GtkWidget* block = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+                gtk_widget_set_valign(block, GTK_ALIGN_START);
+
+                GtkWidget* heading = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+                gtk_box_pack_start(
+                    GTK_BOX(heading), gtk_image_new_from_icon_name(icon_name, GTK_ICON_SIZE_BUTTON), FALSE, FALSE, 0);
+                GtkWidget* heading_label = gtk_label_new(nullptr);
+                gtk_label_set_markup(GTK_LABEL(heading_label), title);
+                gtk_label_set_xalign(GTK_LABEL(heading_label), 0.0);
+                gtk_box_pack_start(GTK_BOX(heading), heading_label, FALSE, FALSE, 0);
+                gtk_box_pack_start(GTK_BOX(block), heading, FALSE, FALSE, 0);
+
+                GtkWidget* steps_label = gtk_label_new(steps);
+                gtk_label_set_xalign(GTK_LABEL(steps_label), 0.0);
+                gtk_label_set_line_wrap(GTK_LABEL(steps_label), TRUE);
+                gtk_label_set_max_width_chars(GTK_LABEL(steps_label), 28);
+                gtk_box_pack_start(GTK_BOX(block), steps_label, FALSE, FALSE, 0);
+
+                *status_out = gtk_label_new("");
+                gtk_label_set_xalign(GTK_LABEL(*status_out), 0.0);
+                gtk_label_set_line_wrap(GTK_LABEL(*status_out), TRUE);
+                gtk_label_set_max_width_chars(GTK_LABEL(*status_out), 30);
+                gtk_style_context_add_class(gtk_widget_get_style_context(*status_out), "muted");
+                gtk_box_pack_start(GTK_BOX(block), *status_out, FALSE, FALSE, 0);
+                return block;
+            };
+
+        gtk_container_add(GTK_CONTAINER(routes),
+                          build_route_block("network-wireless-signal-excellent-symbolic",
+                                            "<b>Wi-Fi</b>\nclipboard, files, OTP",
+                                            "1.  Open the Tether app on the iPhone\n"
+                                            "2.  It finds this computer by itself\n"
+                                            "3.  Approve on both ends",
+                                            &g_devices.lbl_welcome_wifi));
+
+        gtk_container_add(GTK_CONTAINER(routes),
+                          build_route_block("bluetooth-active-symbolic",
+                                            "<b>Bluetooth</b>\nmessages, notifications",
+                                            "1.  Pick the iPhone under BLUETOOTH\n"
+                                            "2.  Press Pair over Bluetooth\n"
+                                            "3.  Grant the two toggles on the phone",
+                                            &g_devices.lbl_welcome_bt));
+
+        gtk_box_pack_start(GTK_BOX(placeholder), routes, FALSE, FALSE, 0);
+
+        // One button for both routes: scanning is what refreshes either list.
+        GtkWidget* welcome_scan = gtk_button_new_with_label("Scan for devices");
+        gtk_widget_set_halign(welcome_scan, GTK_ALIGN_CENTER);
+        g_signal_connect(welcome_scan,
+                         "clicked",
+                         G_CALLBACK(+[](GtkWidget*, gpointer) { devices_view_trigger_discovery(); }),
+                         nullptr);
+        gtk_box_pack_start(GTK_BOX(placeholder), welcome_scan, FALSE, FALSE, 0);
         gtk_stack_add_named(GTK_STACK(g_devices.right_pane_stack), placeholder, "placeholder");
+
+        // Bluetooth
+        GtkWidget* bt_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 16);
+        gtk_container_set_border_width(GTK_CONTAINER(bt_box), 32);
+        gtk_widget_set_valign(bt_box, GTK_ALIGN_CENTER);
+
+        g_devices.lbl_bt_name = gtk_label_new(nullptr);
+        gtk_label_set_xalign(GTK_LABEL(g_devices.lbl_bt_name), 0.0);
+        gtk_box_pack_start(GTK_BOX(bt_box), g_devices.lbl_bt_name, FALSE, FALSE, 0);
+
+        g_devices.lbl_bt_mode = gtk_label_new(nullptr);
+        gtk_label_set_xalign(GTK_LABEL(g_devices.lbl_bt_mode), 0.0);
+        gtk_label_set_line_wrap(GTK_LABEL(g_devices.lbl_bt_mode), TRUE);
+        gtk_style_context_add_class(gtk_widget_get_style_context(g_devices.lbl_bt_mode), "muted");
+        gtk_box_pack_start(GTK_BOX(bt_box), g_devices.lbl_bt_mode, FALSE, FALSE, 0);
+
+        GtkWidget* capabilities = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        for (GtkWidget** label : {&g_devices.lbl_bt_link,
+                                  &g_devices.lbl_bt_messages,
+                                  &g_devices.lbl_bt_contacts,
+                                  &g_devices.lbl_bt_notifications}) {
+            *label = gtk_label_new(nullptr);
+            gtk_label_set_xalign(GTK_LABEL(*label), 0.0);
+            gtk_label_set_line_wrap(GTK_LABEL(*label), TRUE);
+            gtk_box_pack_start(GTK_BOX(capabilities), *label, FALSE, FALSE, 0);
+        }
+        gtk_box_pack_start(GTK_BOX(bt_box), capabilities, FALSE, FALSE, 0);
+
+        g_devices.lbl_bt_reason = gtk_label_new(nullptr);
+        gtk_label_set_xalign(GTK_LABEL(g_devices.lbl_bt_reason), 0.0);
+        gtk_label_set_line_wrap(GTK_LABEL(g_devices.lbl_bt_reason), TRUE);
+        gtk_style_context_add_class(gtk_widget_get_style_context(g_devices.lbl_bt_reason), "muted");
+        gtk_box_pack_start(GTK_BOX(bt_box), g_devices.lbl_bt_reason, FALSE, FALSE, 0);
+
+        GtkWidget* bt_buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        g_devices.btn_bt_pair = gtk_button_new_with_label("Pair over Bluetooth");
+        gtk_style_context_add_class(gtk_widget_get_style_context(g_devices.btn_bt_pair), "suggested-action");
+        g_signal_connect(g_devices.btn_bt_pair, "clicked", G_CALLBACK(on_bt_pair_click), nullptr);
+        gtk_box_pack_start(GTK_BOX(bt_buttons), g_devices.btn_bt_pair, FALSE, FALSE, 0);
+
+        g_devices.btn_bt_solicit = gtk_button_new_with_label("Show iPhone Permissions");
+        gtk_widget_set_tooltip_text(g_devices.btn_bt_solicit,
+                                    "Re-advertise so the iPhone shows its Show Message Notifications and "
+                                    "Sync Contacts toggles under Settings > Bluetooth > (i).");
+        g_signal_connect(g_devices.btn_bt_solicit, "clicked", G_CALLBACK(on_bt_solicit_click), nullptr);
+        gtk_box_pack_start(GTK_BOX(bt_buttons), g_devices.btn_bt_solicit, FALSE, FALSE, 0);
+
+        g_devices.btn_bt_unpair = gtk_button_new_with_label("Unpair");
+        g_signal_connect(g_devices.btn_bt_unpair, "clicked", G_CALLBACK(on_bt_unpair_click), nullptr);
+        gtk_box_pack_start(GTK_BOX(bt_buttons), g_devices.btn_bt_unpair, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(bt_box), bt_buttons, FALSE, FALSE, 0);
+
+        g_devices.lbl_bt_progress = gtk_label_new(nullptr);
+        gtk_label_set_xalign(GTK_LABEL(g_devices.lbl_bt_progress), 0.0);
+        gtk_label_set_line_wrap(GTK_LABEL(g_devices.lbl_bt_progress), TRUE);
+        gtk_style_context_add_class(gtk_widget_get_style_context(g_devices.lbl_bt_progress), "muted");
+        gtk_box_pack_start(GTK_BOX(bt_box), g_devices.lbl_bt_progress, FALSE, FALSE, 0);
+
+        gtk_stack_add_named(GTK_STACK(g_devices.right_pane_stack), bt_box, "bluetooth");
 
         // Pair
         GtkWidget* pair_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 16);
