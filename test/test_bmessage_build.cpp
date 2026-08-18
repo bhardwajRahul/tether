@@ -44,7 +44,22 @@ TEST(BMessageBuild, AlwaysUsesSmsGsmEvenForAppleIdRecipients) {
 
     EXPECT_NE(out.find("TYPE:SMS_GSM"), std::string::npos);
     EXPECT_NE(out.find("EMAIL:someone@example.com"), std::string::npos);
-    EXPECT_EQ(out.find("TEL:"), std::string::npos);
+    // The originator carries an empty TEL; no TEL may carry an address.
+    EXPECT_EQ(out.find("TEL:+"), std::string::npos);
+    EXPECT_EQ(out.find("TEL:someone"), std::string::npos);
+}
+
+// iOS was observed recording a recipient with characters missing from the front
+// of the address, against an envelope that differed from a known-good sender's
+// only in these details. Pinned so the shape cannot drift back.
+TEST(BMessageBuild, UsesTheVcardShapeIosParsesCorrectly) {
+    const std::string out = build_bmessage({email("cece.blair@icloud.com")}, "hi");
+
+    EXPECT_EQ(out.find("VERSION:3.0"), std::string::npos) << "vCard 3.0 is not the shape that parsed correctly";
+    EXPECT_NE(out.find("VERSION:2.1"), std::string::npos);
+    // All five N components present; a bare "N:" preceded the mangled address.
+    EXPECT_NE(out.find("N:;;;;"), std::string::npos);
+    EXPECT_EQ(out.find("N:\r\n"), std::string::npos);
 }
 
 // The address the phone acts on has to survive a round trip through the same
@@ -58,19 +73,32 @@ TEST(BMessageBuild, EmailRecipientSurvivesAParseOfWhatWasBuilt) {
     EXPECT_EQ(parsed.recipients.front().email, address) << "the recipient lost characters between build and parse";
 }
 
-TEST(BMessageBuild, LengthCountsTheWholeMessageBlock) {
+// An iPhone truncates the EMAIL address in a pushed bMessage and delivers to the
+// result, so the message reaches nobody -- and reports the transfer complete
+// either way. Verified against two independent senders emitting byte-identical
+// bMessages. The send is allowed, so the warning is the only thing standing
+// between the user and a message they believe arrived.
+TEST(BMessageBuild, AppleIdRecipientsCarryADeliveryWarning) {
+    const std::string why = delivery_warning(email("cece.blair@icloud.com"));
+    ASSERT_FALSE(why.empty()) << "an Apple ID recipient was reported as reliable";
+    EXPECT_NE(why.find("not arrive"), std::string::npos) << "the warning does not say what goes wrong";
+
+    EXPECT_TRUE(delivery_warning(tel("+15551234567")).empty()) << "phone recipients are unaffected";
+}
+
+TEST(BMessageBuild, LengthCountsTheBodyWithoutItsDelimiters) {
     const std::string out = build_bmessage({tel("+15551234567")}, "hello");
 
     const size_t length_at = out.find("LENGTH:");
     ASSERT_NE(length_at, std::string::npos);
     const size_t declared = std::stoul(out.substr(length_at + 7));
 
-    const size_t begin = out.find("BEGIN:MSG");
-    const size_t end = out.find("END:MSG");
+    const std::string open = "BEGIN:MSG\r\n";
+    const size_t begin = out.find(open);
+    const size_t end = out.find("\r\nEND:MSG");
     ASSERT_NE(begin, std::string::npos);
     ASSERT_NE(end, std::string::npos);
-    const size_t actual = (end + std::string("END:MSG\r\n").size()) - begin;
-    EXPECT_EQ(declared, actual);
+    EXPECT_EQ(declared, end - (begin + open.size()));
 }
 
 // --- The trust boundary --------------------------------------------------

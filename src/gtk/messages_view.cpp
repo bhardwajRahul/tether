@@ -29,6 +29,7 @@ namespace tether::ui {
             bool visible = false;
             bool map_open = false;
             bool sending = false;
+            GtkWidget* composer_notice = nullptr;
             // Rebuilding the thread list destroys and recreates the selected row.
             // The handler is blocked across that so the churn is not mistaken for
             // the user opening a conversation.
@@ -46,6 +47,7 @@ namespace tether::ui {
             // why not when it cannot.
             bool selected_repliable = false;
             std::string selected_block_reason;
+            std::string selected_warning;
         };
 
         MessagesState g_messages;
@@ -109,6 +111,8 @@ namespace tether::ui {
             // to; the UI must not re-derive it from the key shape.
             g_object_set_data(G_OBJECT(row), "repliable", GINT_TO_POINTER(thread.value("repliable", true) ? 1 : 0));
             g_object_set_data_full(
+                G_OBJECT(row), "reply_warning", g_strdup(thread.value("reply_warning", "").c_str()), g_free);
+            g_object_set_data_full(
                 G_OBJECT(row), "reply_reason", g_strdup(thread.value("reply_reason", "").c_str()), g_free);
             g_object_set_data(G_OBJECT(row), "group", GINT_TO_POINTER(thread.value("group", false) ? 1 : 0));
 
@@ -169,12 +173,20 @@ namespace tether::ui {
             GtkStyleContext* bubble_style = gtk_widget_get_style_context(bubble);
             gtk_style_context_add_class(bubble_style, "tether-bubble");
             gtk_style_context_add_class(bubble_style, outgoing ? "tether-bubble-out" : "tether-bubble-in");
+            // The phone reports every send as delivered, including the ones it addressed to nobody.
+            const bool unconfirmed = outgoing && !g_messages.selected_warning.empty();
+            if (unconfirmed)
+                gtk_style_context_add_class(bubble_style, "tether-bubble-unconfirmed");
             gtk_box_pack_start(GTK_BOX(box), bubble, FALSE, FALSE, 0);
 
-            if (!stamp.empty()) {
-                GtkWidget* time_label = gtk_label_new(stamp.c_str());
+            const std::string meta =
+                unconfirmed ? (stamp.empty() ? std::string("not confirmed") : stamp + " \u00b7 not confirmed") : stamp;
+            if (!meta.empty()) {
+                GtkWidget* time_label = gtk_label_new(meta.c_str());
                 gtk_label_set_xalign(GTK_LABEL(time_label), outgoing ? 1.0 : 0.0);
                 gtk_style_context_add_class(gtk_widget_get_style_context(time_label), "muted");
+                if (unconfirmed)
+                    gtk_widget_set_tooltip_text(time_label, g_messages.selected_warning.c_str());
                 gtk_box_pack_start(GTK_BOX(box), time_label, FALSE, FALSE, 0);
             }
 
@@ -361,6 +373,20 @@ namespace tether::ui {
             else if (!can_send)
                 reason = "Replying to this conversation is not available.";
             gtk_widget_set_tooltip_text(g_messages.send_button, reason);
+
+            if (g_messages.composer_notice) {
+                // Why the box is shut, or -- when it is open but the phone is
+                // known to mangle this conversation's address -- why a send that
+                // reports success may still not arrive.
+                const char* notice = nullptr;
+                if (reason && !composer_live && !g_messages.sending)
+                    notice = reason;
+                else if (composer_live && !g_messages.selected_warning.empty())
+                    notice = g_messages.selected_warning.c_str();
+                if (notice)
+                    set_text(g_messages.composer_notice, notice);
+                gtk_widget_set_visible(g_messages.composer_notice, notice != nullptr);
+            }
         }
 
         std::string composer_text() {
@@ -453,6 +479,7 @@ namespace tether::ui {
             g_messages.selected_name.clear();
             g_messages.selected_repliable = false;
             g_messages.selected_block_reason.clear();
+            g_messages.selected_warning.clear();
             update_composer_sensitivity();
             gtk_stack_set_visible_child_name(GTK_STACK(g_messages.placeholder_stack), "placeholder");
         }
@@ -463,10 +490,12 @@ namespace tether::ui {
             const char* thread = (const char*)g_object_get_data(G_OBJECT(row), "thread");
             const char* name = (const char*)g_object_get_data(G_OBJECT(row), "name");
             const char* block_reason = (const char*)g_object_get_data(G_OBJECT(row), "reply_reason");
+            const char* warning = (const char*)g_object_get_data(G_OBJECT(row), "reply_warning");
             g_messages.selected_thread = thread ? thread : "";
             g_messages.selected_name = name ? name : "";
             g_messages.selected_repliable = g_object_get_data(G_OBJECT(row), "repliable") != nullptr;
             g_messages.selected_block_reason = block_reason ? block_reason : "";
+            g_messages.selected_warning = warning ? warning : "";
             // Which conversation is open is otherwise only legible from the
             // selection highlight in the list beside it.
             set_markup(g_messages.conversation_header,
@@ -649,6 +678,18 @@ namespace tether::ui {
                          nullptr);
         // Enabled only once MAP is up and a conversation is open.
         update_composer_sensitivity();
+
+        // A dead composer with the explanation hidden in the send button's tooltip
+        // reads as the app being broken. The button is insensitive, so the tooltip
+        // never appears at all.
+        g_messages.composer_notice = gtk_label_new(nullptr);
+        gtk_label_set_xalign(GTK_LABEL(g_messages.composer_notice), 0.0);
+        gtk_label_set_line_wrap(GTK_LABEL(g_messages.composer_notice), TRUE);
+        gtk_widget_set_no_show_all(g_messages.composer_notice, TRUE);
+        gtk_style_context_add_class(gtk_widget_get_style_context(g_messages.composer_notice), "muted");
+        gtk_widget_set_margin_start(g_messages.composer_notice, 8);
+        gtk_widget_set_margin_end(g_messages.composer_notice, 8);
+        gtk_box_pack_start(GTK_BOX(conversation_box), g_messages.composer_notice, FALSE, FALSE, 0);
 
         gtk_box_pack_start(GTK_BOX(conversation_box), composer_box, FALSE, FALSE, 0);
         gtk_stack_add_named(GTK_STACK(g_messages.placeholder_stack), conversation_box, "conversation");

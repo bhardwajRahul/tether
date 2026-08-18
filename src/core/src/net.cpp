@@ -365,6 +365,12 @@ namespace tether {
         for (auto& entry : threads) {
             if (!entry.value("group", false)) {
                 entry["repliable"] = true;
+                bluetooth::Recipient recipient;
+                std::string parse_err;
+                if (bluetooth::recipient_from_thread_key(entry.value("thread", ""), recipient, parse_err)) {
+                    if (std::string why = bluetooth::delivery_warning(recipient); !why.empty())
+                        entry["reply_warning"] = why;
+                }
                 continue;
             }
             std::string reason;
@@ -771,12 +777,25 @@ namespace tether {
                         std::thread([]() {
                             nlohmann::json event;
                             event["command"] = "bt_solicit_result";
+
+                            // Telling someone to switch on what is already on and
+                            // already working reads as the app not knowing its own
+                            // state. Nothing needs soliciting in that case.
+                            if (build_bt_connection_status().value("ancs_ready", false)) {
+                                event["success"] = true;
+                                event["message"] = "Notification mirroring is already active; nothing to do.";
+                                broadcast_local_event(event.dump());
+                                return;
+                            }
+
                             std::string err;
                             event["success"] = bluetooth::g_bluez && bluetooth::solicit_ancs(*bluetooth::g_bluez, err);
                             event["message"] =
                                 event["success"]
-                                    ? "Open Settings > Bluetooth > (i) on the iPhone and enable Show Message "
-                                      "Notifications and Sync Contacts. They can take a few minutes to appear."
+                                    ? "Asked the iPhone to re-offer notification access. Watch the connection "
+                                      "status. If it does not go active within a minute or two, toggle Show "
+                                      "Message Notifications off and on in Settings > Bluetooth > (i) -- it can "
+                                      "need re-granting even when it already looks enabled."
                                     : (err.empty() ? "Bluetooth is unavailable." : err);
                             broadcast_local_event(event.dump());
                         }).detach();

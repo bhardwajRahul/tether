@@ -253,7 +253,8 @@ namespace tether::bluetooth {
         for (size_t at = 0; at < bmessage.size();) {
             const size_t end = bmessage.find('\r', at);
             const std::string line = bmessage.substr(at, end == std::string::npos ? end : end - at);
-            if (line.rfind("TEL:", 0) == 0 || line.rfind("EMAIL:", 0) == 0)
+            const bool addressed = line.size() > 4 && (line.rfind("TEL:", 0) == 0 || line.rfind("EMAIL:", 0) == 0);
+            if (addressed && line.find(':') + 1 < line.size())
                 debug::log(DEBUG, "bluetooth: sending to {} ({})", line, folder);
             if (end == std::string::npos)
                 break;

@@ -31,13 +31,11 @@ namespace tether::bluetooth {
             return false;
         }
 
-        Message entry = message;
-        if (entry.outgoing && !is_local_handle(entry.handle))
-            adopt_local_echo(entry);
+        if (message.outgoing && !is_local_handle(message.handle))
+            drop_local_echo(message);
 
-        const std::string handle = entry.handle;
-        by_handle_.emplace(handle, std::move(entry));
-        order_.push_back(handle);
+        by_handle_.emplace(message.handle, message);
+        order_.push_back(message.handle);
         trim();
         return true;
     }
@@ -45,34 +43,17 @@ namespace tether::bluetooth {
     // Linear scan. Only a handful of local sends are ever waiting to be
     // matched, and the prefix check rejects everything else before any string is
     // compared. Index by thread if the store ever grows enough for this to show.
-    void MessageStore::adopt_local_echo(Message& arrived) {
-        auto erase_echo = [&](std::map<std::string, Message>::iterator it) {
-            order_.erase(std::remove(order_.begin(), order_.end(), it->second.handle), order_.end());
+    void MessageStore::drop_local_echo(const Message& arrived) {
+        for (auto it = by_handle_.begin(); it != by_handle_.end(); ++it) {
+            const Message& existing = it->second;
+            if (!existing.outgoing || !is_local_handle(existing.handle))
+                continue;
+            if (existing.thread_key != arrived.thread_key || existing.body != arrived.body)
+                continue;
+            if (std::llabs(existing.timestamp - arrived.timestamp) > LOCAL_ECHO_WINDOW_SECONDS)
+                continue;
+            order_.erase(std::remove(order_.begin(), order_.end(), existing.handle), order_.end());
             by_handle_.erase(it);
-        };
-        auto echoes = [&](const Message& existing) {
-            return existing.outgoing && is_local_handle(existing.handle) && existing.body == arrived.body &&
-                   std::llabs(existing.timestamp - arrived.timestamp) <= LOCAL_ECHO_WINDOW_SECONDS;
-        };
-
-        // An exact match settles it without any guessing about addresses.
-        for (auto it = by_handle_.begin(); it != by_handle_.end(); ++it) {
-            if (echoes(it->second) && it->second.thread_key == arrived.thread_key) {
-                erase_echo(it);
-                return;
-            }
-        }
-
-        for (auto it = by_handle_.begin(); it != by_handle_.end(); ++it) {
-            const std::string& sent_to = it->second.peer_address;
-            if (!echoes(it->second) || arrived.peer_address.empty() || arrived.peer_address == sent_to)
-                continue;
-            if (sent_to.size() <= arrived.peer_address.size() || !sent_to.ends_with(arrived.peer_address))
-                continue;
-            arrived.thread_key = it->second.thread_key;
-            arrived.peer_address = it->second.peer_address;
-            arrived.peer_name = it->second.peer_name;
-            erase_echo(it);
             return;
         }
     }

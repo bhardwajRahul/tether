@@ -666,6 +666,15 @@ namespace tether::bluetooth {
         {
             std::lock_guard<std::mutex> lock(g_messages_mutex);
             for (const auto& listing : listings) {
+                // raw, before anything here can correct or discard it
+                if ((listing.sent || is_outgoing_folder(listing.folder)) && !g_messages.find(listing.handle))
+                    debug::log(DEBUG,
+                               "bluetooth: phone lists sent msg folder='{}' recipient=[{}] sender=[{}] handle={}",
+                               listing.folder,
+                               listing.recipient_address,
+                               listing.sender_address,
+                               listing.handle);
+
                 Message message = message_from_listing(listing);
                 if (message.thread_key.empty())
                     continue;

@@ -328,6 +328,13 @@ namespace tether::bluetooth {
         return true;
     }
 
+    std::string delivery_warning(const Recipient& recipient) {
+        if (recipient.kind == RecipientKind::Email)
+            return "The iPhone corrupts Apple ID email addresses in Bluetooth messages, so this probably will not "
+                   "arrive. It reports the send as successful either way. Send from the iPhone to be sure.";
+        return {};
+    }
+
     bool recipient_from_thread_key(const std::string& thread_key, Recipient& out, std::string& err_out) {
         if (thread_key.rfind("tel:", 0) == 0) {
             out.kind = RecipientKind::Tel;
@@ -381,18 +388,20 @@ namespace tether::bluetooth {
         out += "TYPE:SMS_GSM\r\n";
         out += "FOLDER:telecom/msg/outbox\r\n";
 
-        // The originator vCard is empty and sits outside the envelope: the phone
-        // fills in its own identity.
+        // vCard 2.1 with all five N components present, which is what MAP
+        // implementations emit and the one iOS parses correctly.
         out += "BEGIN:VCARD\r\n";
-        out += "VERSION:3.0\r\n";
-        out += "N:\r\n";
+        out += "VERSION:2.1\r\n";
+        out += "N:;;;;\r\n";
+        // The originator address is left empty for the phone to fill in, but the property itself is present.
+        out += "TEL:\r\n";
         out += "END:VCARD\r\n";
 
         out += "BEGIN:BENV\r\n";
         for (const auto& recipient : recipients) {
             out += "BEGIN:VCARD\r\n";
-            out += "VERSION:3.0\r\n";
-            out += "N:\r\n";
+            out += "VERSION:2.1\r\n";
+            out += "N:;;;;\r\n";
             out += (recipient.kind == RecipientKind::Tel ? "TEL:" : "EMAIL:");
             out += recipient.address;
             out += "\r\n";
@@ -401,8 +410,9 @@ namespace tether::bluetooth {
 
         out += "BEGIN:BBODY\r\n";
         out += "CHARSET:UTF-8\r\n";
-        // LENGTH counts the whole message block, delimiters included.
-        out += "LENGTH:" + std::to_string(message_block.size()) + "\r\n";
+        // LENGTH counts the body alone, without the BEGIN:MSG/END:MSG delimiters
+        // that surround it.
+        out += "LENGTH:" + std::to_string(stuffed.size()) + "\r\n";
         out += message_block;
         out += "END:BBODY\r\n";
         out += "END:BENV\r\n";

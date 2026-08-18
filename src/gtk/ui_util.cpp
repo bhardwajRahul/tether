@@ -26,6 +26,11 @@ namespace tether::ui {
     color: @theme_selected_fg_color;
 }
 
+.tether-bubble-unconfirmed {
+    background-image: none;
+    border: 1px dashed alpha(@theme_selected_fg_color, 0.55);
+}
+
 .tether-badge {
     background-color: @theme_selected_bg_color;
     color: @theme_selected_fg_color;

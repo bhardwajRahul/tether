@@ -68,6 +68,16 @@ namespace tether::bluetooth {
         bool operator==(const Recipient&) const = default;
     };
 
+    // Why a message to this recipient may not arrive, or an empty string when
+    // there is no known problem. Advisory: the send still goes out.
+    //
+    // An iPhone truncates the EMAIL address in a pushed bMessage and delivers to
+    // the result, which is not an address anyone owns: "foo.bar@icloud.com"
+    // arrives as "o.bar@icloud.com" and the message reaches nobody. Confirmed
+    // against two independent senders emitting byte-identical bMessages, so this
+    // is the phone's behaviour and no wording of the message avoids it.
+    std::string delivery_warning(const Recipient& recipient);
+
     // Returns false with err_out set when the address must not be used.
     bool validate_recipient(const Recipient& recipient, std::string& err_out);
 
