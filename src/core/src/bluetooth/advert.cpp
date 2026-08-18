@@ -4,6 +4,13 @@
 
 namespace tether::bluetooth {
 
+    struct AdvertState {
+        GDBusConnection* conn = nullptr;
+        std::string adapter_path;
+        guint registration_id = 0;
+        bool registered_with_bluez = false;
+    };
+
     namespace {
 
         constexpr const char* BLUEZ_NAME = "org.bluez";
@@ -45,10 +52,15 @@ namespace tether::bluetooth {
                            const gchar* method,
                            GVariant*,
                            GDBusMethodInvocation* invocation,
-                           gpointer) {
-            // BlueZ calls Release when it drops the advertisement on its own.
-            if (g_strcmp0(method, "Release") == 0)
+                           gpointer user_data) {
+            // BlueZ calls Release when it drops the advertisement on its own, which
+            // the Timeout above guarantees will happen. The registration is gone by
+            // then, so leaving the flag set only makes the next unregister fail.
+            if (g_strcmp0(method, "Release") == 0) {
                 debug::log(INFO, "bluetooth: ANCS advertisement released by BlueZ");
+                if (auto* state = static_cast<AdvertState*>(user_data))
+                    state->registered_with_bluez = false;
+            }
             g_dbus_method_invocation_return_value(invocation, nullptr);
         }
 
@@ -95,13 +107,6 @@ namespace tether::bluetooth {
         const GDBusInterfaceVTable ADVERT_VTABLE = {handle_method, handle_get_property, nullptr, {nullptr}};
 
     } // namespace
-
-    struct AdvertState {
-        GDBusConnection* conn = nullptr;
-        std::string adapter_path;
-        guint registration_id = 0;
-        bool registered_with_bluez = false;
-    };
 
     AncsAdvertisement::AncsAdvertisement(GDBusConnection* connection, std::string adapter_path)
         : state_(std::make_unique<AdvertState>()) {

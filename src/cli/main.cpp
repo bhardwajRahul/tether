@@ -114,6 +114,9 @@ void print_help() {
               << "  --bt-send <thread> <text>  Reply in one conversation.\n"
               << "  --bt-pair <addr>         Pair with an iPhone over Bluetooth.\n"
               << "  --bt-unpair <addr>       Remove a Bluetooth bond.\n"
+              << "  --bt-solicit             Re-advertise for ANCS so the iPhone shows its permission\n"
+              << "                           toggles again, without removing the bond.\n"
+              << "  --bt-ancs <on|off>       Turn notification mirroring on or off.\n"
               << "  --bt-diagnostics         Print a redacted Bluetooth report for a bug report.\n"
               << "  --accept <fingerprint>   Accept a pending pairing request locally.\n"
               << "  --pair                   Send a pair_request over TCP to the daemon.\n\n"
@@ -211,13 +214,14 @@ static int print_bt_devices(tether::Client& client) {
 
 // Pairing takes tens of seconds and reports progress as it goes, so this
 // subscribes and streams events until the terminal result arrives.
-static int run_bt_transaction(tether::Client& client, const std::string& command, const std::string& address) {
-    const std::string result_command = command == "bt_pair" ? "bt_pair_result" : "bt_unpair_result";
+static int run_bt_transaction(tether::Client& client, const std::string& command, const std::string& address = "") {
+    const std::string result_command = command + "_result";
 
     client.send("{\"command\":\"subscribe\"}\n");
     nlohmann::json request;
     request["command"] = command;
-    request["address"] = address;
+    if (!address.empty())
+        request["address"] = address;
     if (!client.send(request.dump() + "\n")) {
         debug::log(ERR, "Could not reach the daemon.\n");
         return 1;
@@ -476,6 +480,12 @@ int main(int argc, char* argv[]) {
                 arg_val = argv[++i];
             if (i + 1 < argc)
                 arg_val2 = argv[++i];
+        } else if (arg == "--bt-solicit") {
+            action = "bt_solicit";
+        } else if (arg == "--bt-ancs") {
+            action = "bt_ancs";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
         } else if (arg == "--bt-pair") {
             action = "bt_pair";
             if (i + 1 < argc && argv[i + 1][0] != '-')
@@ -630,6 +640,21 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         return run_bt_transaction(client, action == "bt_pair" ? "bt_pair" : "bt_unpair", arg_val);
+    } else if (action == "bt_solicit") {
+        return run_bt_transaction(client, "bt_solicit");
+    } else if (action == "bt_ancs") {
+        if (arg_val != "on" && arg_val != "off") {
+            debug::log(ERR, "Expected on or off, e.g. --bt-ancs on\n");
+            return 1;
+        }
+        nlohmann::json request;
+        request["command"] = "bt_set_ancs";
+        request["enabled"] = arg_val == "on";
+        if (!client.send(request.dump() + "\n")) {
+            debug::log(ERR, "Could not reach the daemon.\n");
+            return 1;
+        }
+        fprintf(stdout, "Notification mirroring %s.\n", arg_val == "on" ? "enabled" : "disabled");
     }
 
     return 0;

@@ -48,11 +48,11 @@ namespace tether::bluetooth {
 
     PbapSession::PbapSession(GDBusConnection* session_bus, std::string session_path)
         : state_(std::make_unique<PbapSessionState>()) {
-        state_->bus = session_bus;
+        state_->bus = session_bus ? G_DBUS_CONNECTION(g_object_ref(session_bus)) : nullptr;
         state_->path = std::move(session_path);
     }
 
-    PbapSession::~PbapSession() = default;
+    PbapSession::~PbapSession() { g_clear_object(&state_->bus); }
 
     const std::string& PbapSession::path() const { return state_->path; }
 

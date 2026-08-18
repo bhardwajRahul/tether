@@ -13,12 +13,28 @@ namespace tether::bluetooth {
             return std::min(current * 2, BEARER_BACKOFF_MAX_SECONDS);
         }
 
-        // BlueZ answers InProgress while one of its own connect operations is
-        // still pending on the device. That clears on its own, unlike a refusal
-        // from the phone, so backing off for minutes leaves the link down long
-        // after the reason for it is gone.
+        // Failures that clear on their own, unlike a refusal from the phone.
+        // Backing off for minutes on these leaves the link down long after the
+        // reason for it is gone (left the room answers with a page timeout, not a rejection).
         bool is_transient(const std::string& err) {
-            return err.find("org.bluez.Error.InProgress") != std::string::npos;
+            static const char* const transient[] = {
+                "org.bluez.Error.InProgress",
+                "org.bluez.Error.NotReady",
+                // BlueZ spells these as the tail of an Error.Failed message.
+                "page-timeout",
+                "page timeout",
+                "connection-abort",
+                "Software caused connection abort",
+                "Host is down",
+                "Connection timed out",
+                "br-connection-canceled",
+                "le-connection-abort-by-local",
+            };
+            for (const char* needle : transient) {
+                if (err.find(needle) != std::string::npos)
+                    return true;
+            }
+            return false;
         }
 
         int next_backoff(int current, const std::string& err) {

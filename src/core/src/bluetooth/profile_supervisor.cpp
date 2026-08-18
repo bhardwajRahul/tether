@@ -105,9 +105,22 @@ namespace tether::bluetooth {
         status_.pbap_open = false;
     }
 
+    void ProfileSupervisor::drop_map() {
+        if (!map_path_.empty())
+            ops_.remove_session(map_path_);
+        map_path_.clear();
+        map_retried_ = false;
+        status_.map_open = false;
+        // Reopen on the next tick rather than waiting out the steady poll.
+        next_attempt_ = 0;
+    }
+
     bool
         ProfileSupervisor::open_profile(const std::string& target, std::string& path, ObexError& error, bool& retried) {
         std::string err;
+        // create_session() clears `path` on failure, so the session that may need
+        // dropping has to be captured before the call.
+        const std::string previous = path;
         path = ops_.create_session(target, err);
         if (!path.empty()) {
             error = ObexError::None;
@@ -122,7 +135,7 @@ namespace tether::bluetooth {
         // this profile's session and try once more, rather than restarting obexd.
         if (error == ObexError::Forbidden && !retried) {
             retried = true;
-            ops_.remove_session(path);
+            ops_.remove_session(previous);
             path = ops_.create_session(target, err);
             if (!path.empty()) {
                 error = ObexError::None;

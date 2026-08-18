@@ -244,7 +244,77 @@ namespace tether::bluetooth {
             g_advert = nullptr;
         }
 
+        // Puts the solicitation advert on air, replacing whatever was there.
+        bool start_advert(BluezMonitor& monitor, const std::string& adapter_path, std::string& err) {
+            if (adapter_path.empty()) {
+                err = "No Bluetooth adapter is available.";
+                return false;
+            }
+            stop_advert(monitor);
+            auto* advert = new AncsAdvertisement(monitor.connection(), adapter_path);
+
+            bool exported = false;
+            monitor.invoke_sync([&] { exported = advert->export_object(); });
+            // BlueZ reads the advertisement's properties back before returning, so
+            // this call must stay off the thread that answers those reads.
+            if (exported && advert->register_with_bluez()) {
+                g_advert = advert;
+                return true;
+            }
+
+            monitor.invoke_sync([&] { advert->unexport_object(); });
+            delete advert;
+            err = "Could not advertise for ANCS. The controller may have no free LE advertising instance.";
+            return false;
+        }
+
+        // Reads Device1.Paired straight from BlueZ rather than from the monitor's
+        // snapshot. The confirmation dialog blocks the monitor's GLib thread for as
+        // long as the user takes to answer, so the snapshot is frozen for exactly
+        // the window in which the bond completes — polling it reports a timeout for
+        // a pairing that actually succeeded.
+        bool device_is_paired(GDBusConnection* conn, const std::string& path) {
+            GError* error = nullptr;
+            GVariant* reply = g_dbus_connection_call_sync(conn,
+                                                          BLUEZ_NAME,
+                                                          path.c_str(),
+                                                          IFACE_PROPS,
+                                                          "Get",
+                                                          g_variant_new("(ss)", IFACE_DEVICE, "Paired"),
+                                                          G_VARIANT_TYPE("(v)"),
+                                                          G_DBUS_CALL_FLAGS_NONE,
+                                                          5000,
+                                                          nullptr,
+                                                          &error);
+            if (!reply) {
+                g_clear_error(&error);
+                return false;
+            }
+            GVariant* boxed = nullptr;
+            g_variant_get(reply, "(v)", &boxed);
+            const bool paired =
+                boxed && g_variant_is_of_type(boxed, G_VARIANT_TYPE_BOOLEAN) && g_variant_get_boolean(boxed);
+            if (boxed)
+                g_variant_unref(boxed);
+            g_variant_unref(reply);
+            return paired;
+        }
+
     } // namespace
+
+    bool solicit_ancs(BluezMonitor& monitor, std::string& err) {
+        if (!monitor.connection()) {
+            err = "Bluetooth is unavailable.";
+            return false;
+        }
+        // Deliberately not gated on Capability::advertising: BlueZ reports zero
+        // free instances while one of our own adverts is registered, which is
+        // precisely the state a user retrying this is likely to be in. Try, and
+        // report what BlueZ actually says.
+        auto objects = monitor.snapshot();
+        const std::string adapter = objects.adapters.empty() ? std::string{} : objects.adapters.front().path;
+        return start_advert(monitor, adapter, err);
+    }
 
     bool confirm_with_dialog(const std::string& device_name, const std::string& code) {
         std::string body =
@@ -396,10 +466,8 @@ namespace tether::bluetooth {
             auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(PAIR_TIMEOUT_SECONDS);
             bool paired = false;
             while (std::chrono::steady_clock::now() < deadline) {
-                Device current;
-                if (lookup(monitor, result.device_address, current) && current.paired) {
+                if (device_is_paired(conn, device.path)) {
                     paired = true;
-                    device = current;
                     break;
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -439,25 +507,14 @@ namespace tether::bluetooth {
         // Only now solicit ANCS. This advert is what makes iOS reveal its
         // "Show Message Notifications" and "Sync Contacts" toggles, and it is safe
         // to broadcast because the bond already exists.
-        if (!adapter_path.empty() && monitor.capability().advertising) {
-            stop_advert(monitor);
-            auto* advert = new AncsAdvertisement(conn, adapter_path);
-
-            bool exported = false;
-            monitor.invoke_sync([&] { exported = advert->export_object(); });
-            // BlueZ reads the advertisement's properties back before returning, so
-            // this call must stay off the thread that answers those reads.
-            if (exported && advert->register_with_bluez()) {
-                g_advert = advert;
-                notify(progress,
-                       "soliciting",
-                       "Open Settings > Bluetooth > (i) on the iPhone and enable Show Message Notifications and "
-                       "Sync Contacts. They can take a few minutes to appear.");
-            } else {
-                monitor.invoke_sync([&] { advert->unexport_object(); });
-                delete advert;
-                notify(progress, "warning", "Could not advertise for ANCS; notification permissions may not appear.");
-            }
+        std::string advert_err;
+        if (start_advert(monitor, adapter_path, advert_err)) {
+            notify(progress,
+                   "soliciting",
+                   "Open Settings > Bluetooth > (i) on the iPhone and enable Show Message Notifications and "
+                   "Sync Contacts. They can take a few minutes to appear.");
+        } else {
+            notify(progress, "warning", advert_err + " Notification permissions may not appear.");
         }
 
         if (!result.dual_bond) {

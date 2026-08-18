@@ -89,7 +89,7 @@ namespace tether::bluetooth {
 
     // bluetoothd exposes no property for its own flags, so the argument vector is
     // the only place to read it. Accepts both spellings; Arch's unit uses -E.
-    bool bluetoothd_has_experimental() {
+    static bool scan_bluetoothd_cmdline() {
         std::error_code ec;
         for (const auto& entry : std::filesystem::directory_iterator("/proc", ec)) {
             std::ifstream comm(entry.path() / "comm");
@@ -109,6 +109,13 @@ namespace tether::bluetooth {
             return false;
         }
         return false;
+    }
+
+    // Walking /proc is not free, and refresh() runs on every debounced BlueZ
+    // signal. The answer cannot change without bluetoothd restarting.
+    bool bluetoothd_has_experimental() {
+        static const bool value = scan_bluetoothd_cmdline();
+        return value;
     }
 
     void MonitorState::refresh() {
@@ -173,7 +180,6 @@ namespace tether::bluetooth {
 
         refresh();
 
-        loop = g_main_loop_new(context, FALSE);
         g_main_loop_run(loop);
         running = false;
 
@@ -237,6 +243,10 @@ namespace tether::bluetooth {
         }
 
         impl_->context = g_main_context_new();
+        // Created here, not on the watcher thread: a stop() that lands before the
+        // thread reaches g_main_loop_new would otherwise quit nothing, and the
+        // join() below it would block forever.
+        impl_->loop = g_main_loop_new(impl_->context, FALSE);
         impl_->running = true;
         impl_->thread = std::thread([this] { impl_->run(); });
         return true;

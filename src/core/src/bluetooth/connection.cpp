@@ -59,8 +59,12 @@ namespace tether::bluetooth {
                     info = found->second;
                 rosters = g_rosters;
             }
-            const ReplyEligibility eligibility = resolve_group_recipients(
-                info, thread_key, contact_store(), rosters, g_group_replies_enabled, recipients, err_out);
+            ReplyEligibility eligibility;
+            {
+                std::lock_guard<std::mutex> lock(g_messages_mutex);
+                eligibility = resolve_group_recipients(
+                    info, thread_key, contact_store(), rosters, g_group_replies_enabled, recipients, err_out);
+            }
             if (eligibility != ReplyEligibility::Allowed)
                 return false;
         } else {
@@ -90,7 +94,6 @@ namespace tether::bluetooth {
             return false;
 
         Message sent;
-        sent.handle = "local-" + std::to_string(std::time(nullptr)) + "-" + std::to_string(g_messages.size());
         sent.thread_key = thread_key;
         sent.peer_address = recipients.size() == 1 ? recipients.front().address : std::string{};
         sent.body = body;
@@ -101,6 +104,7 @@ namespace tether::bluetooth {
 
         {
             std::lock_guard<std::mutex> lock(g_messages_mutex);
+            sent.handle = "local-" + std::to_string(std::time(nullptr)) + "-" + std::to_string(g_messages.size());
             g_messages.add(sent);
             g_journal.append(sent);
         }
@@ -128,6 +132,7 @@ namespace tether::bluetooth {
             rosters = g_rosters;
         }
         std::vector<Recipient> recipients;
+        std::lock_guard<std::mutex> lock(g_messages_mutex);
         return resolve_group_recipients(
             info, thread_key, contact_store(), rosters, g_group_replies_enabled, recipients, reason);
     }
@@ -142,35 +147,53 @@ namespace tether::bluetooth {
         g_rosters = load_rosters();
     }
 
-    bool mark_message_read(const std::string& handle, bool read, std::string& err_out) {
+    bool mark_message_read(const std::string& handle, bool read, std::string& err_out, bool* synced_out) {
+        if (synced_out)
+            *synced_out = false;
+
+        // The stored path is what obexd currently answers on. A message replayed
+        // from the journal has none, and one that has scrolled out of the listing
+        // window never gets another. The desktop's own read state must still move
+        // for those, or the unread badge can never reach zero.
+        std::string object_path;
+        bool known = false;
+        {
+            std::lock_guard<std::mutex> lock(g_messages_mutex);
+            if (const Message* message = g_messages.find(handle)) {
+                known = true;
+                object_path = message->object_path;
+            }
+        }
+        if (!known) {
+            err_out = "That message is no longer in the conversation history.";
+            return false;
+        }
+
         std::shared_ptr<MapSession> session;
         {
             std::lock_guard<std::mutex> lock(g_map_mutex);
             session = g_map_session;
         }
-        if (!session) {
-            err_out = "Messages are not connected.";
-            return false;
+
+        if (session && !object_path.empty()) {
+            std::string sync_err;
+            if (session->set_read(object_path, read, sync_err)) {
+                if (synced_out)
+                    *synced_out = true;
+            } else {
+                err_out = sync_err;
+            }
+        } else {
+            err_out = "The iPhone is not serving this message right now; marked read on this computer only.";
         }
 
-        // The stored path is what obexd currently answers on. A message replayed
-        // from the journal has none until the phone lists it again this session.
-        std::string object_path;
-        {
-            std::lock_guard<std::mutex> lock(g_messages_mutex);
-            if (const Message* message = g_messages.find(handle))
-                object_path = message->object_path;
-        }
-        if (object_path.empty()) {
-            err_out = "That message is not available in the current session yet.";
-            return false;
-        }
-
-        // write through to the phone first; only mirror locally once it took.
-        if (!session->set_read(object_path, read, err_out))
-            return false;
         std::lock_guard<std::mutex> lock(g_messages_mutex);
-        g_messages.set_read(handle, read);
+        if (g_messages.set_read(handle, read)) {
+            // Re-append so the state survives a restart. Retention keeps the last
+            // line for a handle, so the newer read state wins on the next load.
+            if (const Message* updated = g_messages.find(handle))
+                g_journal.append(*updated);
+        }
         return true;
     }
 
@@ -188,8 +211,16 @@ namespace tether::bluetooth {
         constexpr int CONNECT_TIMEOUT_MS = 30000;
 
         constexpr int MESSAGE_POLL_SECONDS = 15;
+        // obexd can drop a MAP session while the Classic link stays up, and the
+        // profile supervisor short-circuits once map_open is set, so nothing else
+        // notices. Consecutive listing failures are the cheapest liveness signal.
+        constexpr int MAP_FAILURES_BEFORE_REOPEN = 3;
         constexpr int MESSAGE_LIST_MAX = 200;
         constexpr int SUPERVISOR_TICK_SECONDS = 1;
+
+        // Whether the controller can carry ANCS right now. Re-read rather than
+        // latched: see the comment in ConnectionManager::start().
+        bool ancs_available() { return g_bluez && g_bluez->capability().mode == DeliveryMode::Full; }
 
         std::string normalize_address(std::string address) {
             for (char& c : address)
@@ -409,8 +440,12 @@ namespace tether::bluetooth {
         std::condition_variable wake;
 
         std::string address;
+        // What the user asked for, versus what the controller can currently do.
+        bool ancs_preference = true;
         bool ancs_enabled = true;
         bool link_was_ready = false;
+        bool device_was_present = false;
+        int map_failures = 0;
         int64_t next_message_poll = 0;
         std::string open_map_path;
         // The first listing on a new MAP session returns the phone's existing
@@ -428,38 +463,47 @@ namespace tether::bluetooth {
         void sync_messages(int64_t now);
         void sync_contacts();
         void sync_ancs(int64_t now);
-        nlohmann::json status_payload() const;
-        // Hands the status to the subscriber only when it differs from the last
-        // one published. The supervisors report their own internal transitions
-        // as changes, and most of those are invisible in the payload, so without
-        // this a subscriber receives the same status every few seconds.
+
+        // Rebuilds the cached payload from the supervisors. Supervisor thread
+        // only: it is the sole writer of BearerStatus and ProfileStatus, both of
+        // which hold a std::string that no other thread may read directly.
+        void refresh_status();
+
+        // Hands the cached status to the subscriber only when it differs from the
+        // last one published. The supervisors report their own internal
+        // transitions as changes, and most of those are invisible in the payload,
+        // so without this a subscriber receives the same status every second.
         void publish();
 
-        // Guards last_published: publish() is reached from the supervisor thread
-        // and from the ANCS readiness callback on the GLib thread.
-        std::mutex publish_mutex;
+        // Guards everything below. publish() is reached from the supervisor
+        // thread and from the ANCS readiness callback on the GLib thread, and
+        // status() from whichever thread is serving a command.
+        mutable std::mutex status_mutex;
+        nlohmann::json current_status;
         nlohmann::json last_published;
     };
+
+    void ConnectionState::refresh_status() {
+        nlohmann::json payload = to_json(bearers->status(), profiles->status());
+        std::lock_guard<std::mutex> lock(status_mutex);
+        payload["ancs_ready"] = ancs_ready;
+        payload["ancs_reason"] = ancs_reason;
+        current_status = std::move(payload);
+    }
 
     void ConnectionState::publish() {
         if (!on_change)
             return;
 
-        nlohmann::json payload = status_payload();
+        nlohmann::json payload;
         {
-            std::lock_guard<std::mutex> lock(publish_mutex);
-            if (payload == last_published)
+            std::lock_guard<std::mutex> lock(status_mutex);
+            if (current_status.is_null() || current_status == last_published)
                 return;
+            payload = current_status;
             last_published = payload;
         }
         on_change(payload);
-    }
-
-    nlohmann::json ConnectionState::status_payload() const {
-        nlohmann::json payload = to_json(bearers->status(), profiles->status());
-        payload["ancs_ready"] = ancs_ready;
-        payload["ancs_reason"] = ancs_reason;
-        return payload;
     }
 
     nlohmann::json to_json(const BearerStatus& bearer, const ProfileStatus& profiles) {
@@ -530,8 +574,20 @@ namespace tether::bluetooth {
         auto listings = session->list_messages("", MESSAGE_LIST_MAX, err);
         if (!err.empty()) {
             debug::log(WARN, "bluetooth: ListMessages failed: {}", err);
+            // ponytail: a fail count, not an obexd ObjectManager watcher. Costs up
+            // to MAP_FAILURES_BEFORE_REOPEN polls of latency; subscribe to
+            // org.bluez.obex InterfacesRemoved if that ever proves too slow.
+            if (++map_failures >= MAP_FAILURES_BEFORE_REOPEN) {
+                debug::log(WARN, "bluetooth: MAP session is not answering; reopening it");
+                map_failures = 0;
+                profiles->drop_map();
+                std::lock_guard<std::mutex> lock(g_map_mutex);
+                g_map_session.reset();
+                open_map_path.clear();
+            }
             return;
         }
+        map_failures = 0;
 
         std::vector<Message> fresh;
         {
@@ -641,20 +697,31 @@ namespace tether::bluetooth {
         while (running) {
             const int64_t now = duration_cast<seconds>(steady_clock::now() - started).count();
 
-            bool changed = bearers->tick(now);
+            bearers->tick(now);
+            const bool present = bearers->status().device_present;
             const bool link_ready = bearers->status().classic_connected;
 
-            // A dropped Classic link invalidates every OBEX session on top of it.
+            // A phone that walks back into range must not sit out a backoff that
+            // grew to minutes while it was gone.
+            if (present && !device_was_present)
+                bearers->reset();
+            device_was_present = present;
+
+            // A dropped Classic link invalidates every OBEX session on top of it,
+            // along with any backoff accumulated against the link that just died.
             if (link_was_ready && !link_ready) {
                 profiles->reset();
-                changed = true;
+                bearers->reset();
+                map_failures = 0;
             }
             link_was_ready = link_ready;
 
-            changed = profiles->tick(now, link_ready) || changed;
+            profiles->tick(now, link_ready);
 
-            if (changed)
-                publish();
+            // publish() drops a payload identical to the last one, so refreshing
+            // every tick costs nothing and cannot miss a transition.
+            refresh_status();
+            publish();
 
             sync_contacts();
             sync_messages(now);
@@ -683,7 +750,14 @@ namespace tether::bluetooth {
         }
 
         state_->address = address;
-        state_->ancs_enabled = ancs_enabled;
+        state_->ancs_preference = ancs_enabled;
+        // Read the controller's capability here rather than letting each caller
+        // latch its own copy. At startup BlueZ may not have finished enumerating
+        // the adapter, and its free advertising-instance count drops to zero
+        // while one of our own adverts is registered — a caller that sampled
+        // either would disable mirroring for the rest of the daemon's life.
+        const bool ancs_effective = ancs_enabled && ancs_available();
+        state_->ancs_enabled = ancs_effective;
 
         // Replay history before the first poll so the store is never briefly
         // empty, and so previously seen handles dedupe instead of re-announcing.
@@ -708,7 +782,7 @@ namespace tether::bluetooth {
 
         // Only built when the caller can actually show notifications and the
         // bond can carry them.
-        if (ancs_enabled && state_->on_notification) {
+        if (ancs_effective && state_->on_notification) {
             auto* raw = state_.get();
             state_->ancs_client = std::make_unique<ancs::AncsClient>(
                 *state_->monitor,
@@ -721,8 +795,17 @@ namespace tether::bluetooth {
                         raw->on_withdraw(uid);
                 },
                 [raw](bool ready, const std::string& reason) {
-                    raw->ancs_ready = ready;
-                    raw->ancs_reason = reason;
+                    {
+                        // Fold straight into the cached payload: this runs on the
+                        // GLib thread, which must not read supervisor state.
+                        std::lock_guard<std::mutex> lock(raw->status_mutex);
+                        raw->ancs_ready = ready;
+                        raw->ancs_reason = reason;
+                        if (!raw->current_status.is_null()) {
+                            raw->current_status["ancs_ready"] = ready;
+                            raw->current_status["ancs_reason"] = reason;
+                        }
+                    }
                     debug::log(INFO, "ancs: {}", reason);
                     raw->publish();
                 });
@@ -731,7 +814,7 @@ namespace tether::bluetooth {
 
         state_->running = true;
         state_->thread = std::thread([this] { state_->run(); });
-        debug::log(INFO, "bluetooth: supervising {} (ANCS {})", address, ancs_enabled ? "enabled" : "disabled");
+        debug::log(INFO, "bluetooth: supervising {} (ANCS {})", address, ancs_effective ? "enabled" : "disabled");
         return true;
     }
 
@@ -745,6 +828,32 @@ namespace tether::bluetooth {
         state_->wake.notify_all();
         if (state_->thread.joinable())
             state_->thread.join();
+
+        // MapSession borrows profile_ops' bus connection, and start() replaces
+        // profile_ops. Drop the session before anything can hand out a pointer
+        // into a connection that is about to go away.
+        {
+            std::lock_guard<std::mutex> lock(g_map_mutex);
+            g_map_session.reset();
+        }
+
+        // Everything below is scoped to one device and one set of sessions, and
+        // must not leak into the next start().
+        state_->ancs_client.reset();
+        state_->open_map_path.clear();
+        state_->pulled_pbap_path.clear();
+        state_->map_session_backfill = true;
+        state_->map_failures = 0;
+        state_->next_message_poll = 0;
+        state_->link_was_ready = false;
+        state_->device_was_present = false;
+        {
+            std::lock_guard<std::mutex> lock(state_->status_mutex);
+            state_->current_status = nullptr;
+            state_->last_published = nullptr;
+            state_->ancs_ready = false;
+            state_->ancs_reason.clear();
+        }
     }
 
     void ConnectionManager::set_notification_handlers(NotificationFn on_notification, WithdrawFn on_withdraw) {
@@ -760,21 +869,36 @@ namespace tether::bluetooth {
         nlohmann::json out = nlohmann::json::array();
         if (!state_->ancs_client)
             return out;
-        for (const auto& notification : state_->ancs_client->registry().recent(limit))
+        for (const auto& notification : state_->ancs_client->recent_notifications(limit))
             out.push_back(ancs::to_json(notification));
         return out;
     }
 
     void ConnectionManager::set_device(const std::string& address, bool ancs_enabled) {
         // Restarting is simpler than mutating supervisor state under the worker,
-        // and selecting a device is rare.
+        // and selecting a device is rare. stop() clears the per-device state.
         stop();
-        state_->running = false;
         start(address, ancs_enabled);
     }
 
+    void ConnectionManager::refresh_capability() {
+        if (!state_->running || state_->address.empty())
+            return;
+        const bool wanted = state_->ancs_preference && ancs_available();
+        if (wanted == state_->ancs_enabled)
+            return;
+        debug::log(INFO,
+                   "bluetooth: notification mirroring is now {} (controller capability changed)",
+                   wanted ? "available" : "unavailable");
+        const std::string address = state_->address;
+        set_device(address, state_->ancs_preference);
+    }
+
     nlohmann::json ConnectionManager::status() const {
-        if (!state_->bearers || !state_->profiles) {
+        // The supervisors' own status objects belong to the supervisor thread;
+        // callers get the snapshot it published instead.
+        std::lock_guard<std::mutex> lock(state_->status_mutex);
+        if (state_->current_status.is_null()) {
             nlohmann::json idle;
             idle["command"] = "bt_connection_changed";
             idle["device_present"] = false;
@@ -783,10 +907,7 @@ namespace tether::bluetooth {
             idle["profile_reason"] = "";
             return idle;
         }
-        nlohmann::json payload = to_json(state_->bearers->status(), state_->profiles->status());
-        payload["ancs_ready"] = state_->ancs_ready;
-        payload["ancs_reason"] = state_->ancs_reason;
-        return payload;
+        return state_->current_status;
     }
 
 } // namespace tether::bluetooth

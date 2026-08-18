@@ -66,6 +66,10 @@ namespace tether::bluetooth {
         // Drops both sessions after a disconnect so the next tick reopens them.
         void reset();
 
+        // Drops only the MAP session, for a caller that has found it dead while
+        // the link itself is still up. The next tick reopens it.
+        void drop_map();
+
         const ProfileStatus& status() const { return status_; }
         const std::string& map_session() const { return map_path_; }
         const std::string& pbap_session() const { return pbap_path_; }

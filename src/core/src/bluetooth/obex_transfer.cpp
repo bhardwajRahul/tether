@@ -10,7 +10,7 @@ namespace tether::bluetooth {
         constexpr const char* OBEX_NAME = "org.bluez.obex";
         constexpr const char* IFACE_TRANSFER = "org.bluez.obex.Transfer1";
         constexpr const char* IFACE_PROPS = "org.freedesktop.DBus.Properties";
-        constexpr int POLL_INTERVAL_MS = 200;
+        constexpr int POLL_INTERVAL_MS = 50;
 
         TransferState poll_once(GDBusConnection* bus, const std::string& path) {
             GError* error = nullptr;
@@ -51,10 +51,18 @@ namespace tether::bluetooth {
     TransferState wait_for_transfer(GDBusConnection* bus, const std::string& path, int timeout_seconds) {
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(timeout_seconds);
         TransferState state = TransferState::Active;
+        // obexd removes the transfer object immediately after setting its status
+        bool saw_complete = false;
         while (std::chrono::steady_clock::now() < deadline) {
             state = poll_once(bus, path);
-            if (state != TransferState::Active)
+            if (state == TransferState::Complete) {
+                saw_complete = true;
                 return state;
+            }
+            if (state == TransferState::Error)
+                return state;
+            if (state == TransferState::Gone)
+                return saw_complete ? TransferState::Complete : TransferState::Gone;
             std::this_thread::sleep_for(std::chrono::milliseconds(POLL_INTERVAL_MS));
         }
         return state;

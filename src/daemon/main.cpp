@@ -1,6 +1,7 @@
 #include "notification.hpp"
 #include <csignal>
 #include <ctime>
+#include <mutex>
 #include <nlohmann/json.hpp>
 #include <tether/bluetooth/config.hpp>
 #include <tether/bluetooth/connection.hpp>
@@ -133,16 +134,22 @@ int main(int argc, char** argv) {
             if (backfill || message.outgoing || message.read)
                 return;
 
-            std::string who = tether::bluetooth::contact_store().name_for(message.thread_key);
+            std::string who;
+            {
+                std::lock_guard<std::mutex> lock(tether::bluetooth::message_store_mutex());
+                who = tether::bluetooth::contact_store().name_for(message.thread_key);
+            }
             if (who.empty())
                 who = message.peer_name.empty() ? message.peer_address : message.peer_name;
             notifier.notify(who.empty() ? "iPhone" : who, message.body);
         });
     if (bluez.start()) {
         tether::bluetooth::g_bluez = &bluez;
-        loop.addFd(bluez.event_fd(), [&bluez](int) {
+        loop.addFd(bluez.event_fd(), [&bluez, &connections](int) {
             bluez.drain();
             tether::broadcast_local_event(tether::build_bt_status().dump());
+            // controller capability re-read on every bluez
+            connections.refresh_capability();
         });
         auto cap = bluez.capability();
         debug::log(INFO, "Bluetooth: {} mode", tether::bluetooth::to_string(cap.mode));
@@ -153,14 +160,13 @@ int main(int argc, char** argv) {
         // attempted when the controller can carry it and pairing produced a bond
         // that covers LE.
         auto bt_config = tether::bluetooth::load_config();
-        const bool ancs = bt_config.ancs_enabled && cap.mode == tether::bluetooth::DeliveryMode::Full;
         tether::bluetooth::g_bt_connections = &connections;
 
         tether::bluetooth::set_group_replies_enabled(bt_config.group_messages_enabled &&
                                                      bt_config.ancs_content_enabled);
         tether::bluetooth::reload_group_rosters();
 
-        if (ancs) {
+        {
             connections.set_notification_handlers(
                 [&notifier](const tether::bluetooth::ancs::Notification& notification) {
                     // Messages notifications are the only side channel that says
@@ -192,7 +198,7 @@ int main(int argc, char** argv) {
                 });
         }
 
-        connections.start(bt_config.device_address, ancs);
+        connections.start(bt_config.device_address, bt_config.ancs_enabled);
     } else {
         debug::log(INFO, "Bluetooth unavailable; messages and notifications are disabled");
     }

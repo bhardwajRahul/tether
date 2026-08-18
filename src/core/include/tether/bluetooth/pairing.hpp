@@ -43,6 +43,12 @@ namespace tether::bluetooth {
     // Removes the bond so a clean pairing can be retried.
     PairResult unpair_device(BluezMonitor& monitor, const std::string& address);
 
+    // Puts the ANCS solicitation advertisement back on air without re-pairing.
+    // This is what makes iOS reveal its "Show Message Notifications" and
+    // "Sync Contacts" toggles, and it expires a few minutes after pairing, so
+    // there has to be a way back to it short of removing the bond.
+    bool solicit_ancs(BluezMonitor& monitor, std::string& err);
+
     nlohmann::json to_json(const PairResult& result);
 
     bool confirm_with_dialog(const std::string& device_name, const std::string& code);

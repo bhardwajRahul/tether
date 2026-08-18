@@ -47,11 +47,14 @@ namespace tether::bluetooth {
 
     MapSession::MapSession(GDBusConnection* session_bus, std::string session_path)
         : state_(std::make_unique<MapSessionState>()) {
-        state_->bus = session_bus;
+        // The session bus is owned by the profile ops, which are replaced when the
+        // selected device changes. Hold a reference so an in-flight call cannot
+        // outlive the connection it is using.
+        state_->bus = session_bus ? G_DBUS_CONNECTION(g_object_ref(session_bus)) : nullptr;
         state_->path = std::move(session_path);
     }
 
-    MapSession::~MapSession() = default;
+    MapSession::~MapSession() { g_clear_object(&state_->bus); }
 
     const std::string& MapSession::path() const { return state_->path; }
 
@@ -292,6 +295,13 @@ namespace tether::bluetooth {
         if (state == TransferState::Active) {
             // The transfer is still running, so the message may yet be sent.
             err = "Timed out waiting for the phone to accept the message; it may still be sent.";
+            return false;
+        }
+        if (state == TransferState::Gone) {
+            // The object disappeared before its status was ever seen as complete.
+            // obexd does that for a rejected transfer too, so reporting success
+            // here would tell the user a message was sent that never was.
+            err = "The phone did not confirm the message; check Messages on the iPhone before resending.";
             return false;
         }
         return true;

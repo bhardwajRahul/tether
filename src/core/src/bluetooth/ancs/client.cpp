@@ -28,6 +28,9 @@ namespace tether::bluetooth::ancs {
         AncsClient::StatusFn on_status;
 
         std::string device_path;
+        // The last non-empty device path, so an LE teardown can be told apart
+        // from actually being pointed at a different phone.
+        std::string last_known_device;
         std::string notification_source_path;
         std::string control_point_path;
         std::string data_source_path;
@@ -42,11 +45,17 @@ namespace tether::bluetooth::ancs {
         int64_t next_subscribe = 0;
         int64_t next_probe = 0;
 
-        // Filled on the GLib thread, drained on the caller's thread. Only these
-        // two buffers cross the boundary.
+        // Guards everything that crosses a thread boundary: the two GATT buffers
+        // filled on the GLib thread, the characteristic paths that thread compares
+        // against, and actions queued by whichever thread is serving a command.
         std::mutex inbox;
         std::deque<std::vector<uint8_t>> pending_source;
         std::deque<std::vector<uint8_t>> pending_data;
+        std::deque<Request> pending_actions;
+
+        // The registry is written by tick() and read by whichever thread answers
+        // a "list notifications" command.
+        mutable std::mutex registry_mutex;
 
         guint source_signal = 0;
         guint data_signal = 0;
@@ -173,9 +182,9 @@ namespace tether::bluetooth::ancs {
             return false;
         }
 
-        notification_source_path.clear();
-        control_point_path.clear();
-        data_source_path.clear();
+        // Collected locally, then published under `inbox`: the GLib thread
+        // compares incoming values against these paths.
+        std::string source_path, control_path, data_path;
 
         GVariant* objects = g_variant_get_child_value(reply, 0);
         GVariantIter iter;
@@ -196,11 +205,11 @@ namespace tether::bluetooth::ancs {
             if (uuid_value) {
                 const std::string uuid = g_variant_get_string(uuid_value, nullptr);
                 if (uuid == UUID_NOTIFICATION_SOURCE)
-                    notification_source_path = object_path;
+                    source_path = object_path;
                 else if (uuid == UUID_CONTROL_POINT)
-                    control_point_path = object_path;
+                    control_path = object_path;
                 else if (uuid == UUID_DATA_SOURCE)
-                    data_source_path = object_path;
+                    data_path = object_path;
                 g_variant_unref(uuid_value);
             }
             g_variant_unref(props);
@@ -208,8 +217,15 @@ namespace tether::bluetooth::ancs {
         g_variant_unref(objects);
         g_variant_unref(reply);
 
+        {
+            std::lock_guard<std::mutex> lock(inbox);
+            notification_source_path = source_path;
+            control_point_path = control_path;
+            data_source_path = data_path;
+        }
+
         // All three are needed. A partial tree means BlueZ is still enumerating.
-        return !notification_source_path.empty() && !control_point_path.empty() && !data_source_path.empty();
+        return !source_path.empty() && !control_path.empty() && !data_path.empty();
     }
 
     bool AncsClientState::subscribe() {
@@ -294,12 +310,19 @@ namespace tether::bluetooth::ancs {
 
     void AncsClientState::handle_source_event(const SourceEvent& event, int64_t now) {
         (void)now;
-        switch (registry.classify(event, initial_sync)) {
+        Decision decision;
+        {
+            std::lock_guard<std::mutex> lock(registry_mutex);
+            decision = registry.classify(event, initial_sync);
+            if (decision == Decision::Ignore)
+                registry.remember(event);
+            else if (decision == Decision::Withdraw)
+                registry.forget(event.uid);
+        }
+        switch (decision) {
         case Decision::Ignore:
-            registry.remember(event);
             return;
         case Decision::Withdraw:
-            registry.forget(event.uid);
             if (on_withdraw)
                 on_withdraw(event.uid);
             return;
@@ -315,7 +338,10 @@ namespace tether::bluetooth::ancs {
         }
 
         in_progress[event.uid] = event;
-        registry.remember(event);
+        {
+            std::lock_guard<std::mutex> lock(registry_mutex);
+            registry.remember(event);
+        }
         if (!sequencer->submit(build_notification_request(event.uid, attributes)))
             in_progress.erase(event.uid);
     }
@@ -350,7 +376,10 @@ namespace tether::bluetooth::ancs {
         notification.has_negative_action = event.has_negative_action();
         notification.received = now;
 
-        registry.store(notification);
+        {
+            std::lock_guard<std::mutex> lock(registry_mutex);
+            registry.store(notification);
+        }
         if (on_notification)
             on_notification(notification);
     }
@@ -386,12 +415,19 @@ namespace tether::bluetooth::ancs {
         if (state_->device_path == device_path)
             return;
 
+        // The LE bearer drops and returns constantly, which shows up here as the
+        // path alternating with "". That is one session ending, not a different
+        // phone: wiping the registry for it would empty the notification list on
+        // every blip, and the phone's replay would then be suppressed as
+        // pre-existing, so nothing would ever come back.
+        const bool same_device =
+            device_path.empty() || state_->last_known_device.empty() || device_path == state_->last_known_device;
+        if (!device_path.empty())
+            state_->last_known_device = device_path;
+
         state_->unsubscribe();
         state_->device_path = device_path;
         state_->subscribed = false;
-        state_->notification_source_path.clear();
-        state_->control_point_path.clear();
-        state_->data_source_path.clear();
         state_->next_discover = 0;
         state_->next_subscribe = 0;
         state_->next_probe = 0;
@@ -400,11 +436,18 @@ namespace tether::bluetooth::ancs {
         // A new LE session replays the phone's backlog, so the next batch of
         // pre-existing notifications is a sync rather than news.
         state_->initial_sync = true;
-        state_->registry.clear();
+        if (!same_device) {
+            std::lock_guard<std::mutex> lock(state_->registry_mutex);
+            state_->registry.clear();
+        }
         {
             std::lock_guard<std::mutex> lock(state_->inbox);
+            state_->notification_source_path.clear();
+            state_->control_point_path.clear();
+            state_->data_source_path.clear();
             state_->pending_source.clear();
             state_->pending_data.clear();
+            state_->pending_actions.clear();
         }
 
         if (device_path.empty())
@@ -419,12 +462,21 @@ namespace tether::bluetooth::ancs {
 
     const std::string& AncsClient::status_reason() const { return state_->reason; }
 
-    const NotificationRegistry& AncsClient::registry() const { return state_->registry; }
+    std::vector<Notification> AncsClient::recent_notifications(size_t limit) const {
+        std::lock_guard<std::mutex> lock(state_->registry_mutex);
+        return state_->registry.recent(limit);
+    }
 
     bool AncsClient::perform_action(uint32_t uid, ActionId action) {
         if (!state_->ready)
             return false;
-        return state_->sequencer->submit(build_action_request(uid, action));
+        // The sequencer belongs to tick()'s thread; handing it a request from a
+        // command thread would race the queue it pops from. Queue it instead.
+        std::lock_guard<std::mutex> lock(state_->inbox);
+        if (state_->pending_actions.size() >= MAX_QUEUED_REQUESTS)
+            return false;
+        state_->pending_actions.push_back(build_action_request(uid, action));
+        return true;
     }
 
     void AncsClient::tick(int64_t now) {
@@ -453,13 +505,18 @@ namespace tether::bluetooth::ancs {
             s->subscribed = true;
         }
 
-        // Drain what the GLib thread buffered.
+        // Drain what the other threads buffered.
         std::deque<std::vector<uint8_t>> source, data;
+        std::deque<Request> actions;
         {
             std::lock_guard<std::mutex> lock(s->inbox);
             source.swap(s->pending_source);
             data.swap(s->pending_data);
+            actions.swap(s->pending_actions);
         }
+
+        for (auto& action : actions)
+            s->sequencer->submit(std::move(action));
 
         for (const auto& packet : data)
             s->sequencer->on_data_source(packet.data(), packet.size(), now);

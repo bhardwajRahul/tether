@@ -48,11 +48,11 @@ namespace tether::bluetooth::ancs {
         bool ready() const;
         const std::string& status_reason() const;
 
-        // Invokes a notification's positive or negative action. ANCS offers only
-        // these two — there is no free-text reply.
+        // Queues a notification's positive or negative action. ANCS offers only these two.
         bool perform_action(uint32_t uid, ActionId action);
 
-        const NotificationRegistry& registry() const;
+        // Newest first. Safe from any thread.
+        std::vector<Notification> recent_notifications(size_t limit = 50) const;
 
     private:
         std::unique_ptr<AncsClientState> state_;

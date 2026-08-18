@@ -1,6 +1,10 @@
 #include <gtest/gtest.h>
 #include <tether/bluetooth/journal.hpp>
 
+#include <cstdlib>
+#include <filesystem>
+#include <string>
+
 using namespace tether::bluetooth;
 
 namespace {
@@ -95,4 +99,66 @@ TEST(Journal, RetentionCollapsesRepeatedHandles) {
     auto kept = apply_retention({first, again}, NOW);
     ASSERT_EQ(kept.size(), 1u);
     EXPECT_TRUE(kept[0].read) << "the newest copy carries the current read state";
+}
+
+namespace {
+
+    // journal_path() is derived from $HOME, so the only way to point the journal
+    // at a scratch file is to move HOME for the duration of the test.
+    class ScopedHome {
+    public:
+        explicit ScopedHome(const std::filesystem::path& dir) {
+            if (const char* previous = getenv("HOME"))
+                previous_ = previous;
+            setenv("HOME", dir.c_str(), 1);
+        }
+        ~ScopedHome() {
+            if (previous_.empty())
+                unsetenv("HOME");
+            else
+                setenv("HOME", previous_.c_str(), 1);
+        }
+
+    private:
+        std::string previous_;
+    };
+
+} // namespace
+
+// The unread badge has to survive a daemon restart, so a mark-read is only
+// really applied once it has been written back. The journal is append-only, and
+// retention keeps the last line for a handle: re-appending is the whole fix.
+TEST(Journal, ReadStateSurvivesARestart) {
+    const auto home = std::filesystem::temp_directory_path() / "tether-journal-read-state";
+    std::filesystem::remove_all(home);
+    std::filesystem::create_directories(home);
+    ScopedHome scoped(home);
+
+    const Message arrived = make("/msg/1", NOW);
+    {
+        MessageJournal journal;
+        ASSERT_TRUE(journal.open());
+        journal.append(arrived);
+    }
+
+    // A restart in between: the message comes back exactly as it went in.
+    {
+        MessageJournal journal;
+        ASSERT_TRUE(journal.open());
+        auto loaded = journal.load(NOW);
+        ASSERT_EQ(loaded.size(), 1u);
+        ASSERT_FALSE(loaded[0].read);
+
+        Message seen = arrived;
+        seen.read = true;
+        journal.append(seen);
+    }
+
+    MessageJournal reader;
+    ASSERT_TRUE(reader.open());
+    auto loaded = reader.load(NOW);
+    ASSERT_EQ(loaded.size(), 1u) << "the re-appended line was not collapsed onto the original";
+    EXPECT_TRUE(loaded[0].read) << "the message came back unread, so the badge would refill on every restart";
+
+    std::filesystem::remove_all(home);
 }

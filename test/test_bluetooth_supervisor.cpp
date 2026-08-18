@@ -468,3 +468,109 @@ TEST(ProfileSupervisor, BusySessionKeepsPollingWithoutRetryBurst) {
     EXPECT_EQ(ops.map_attempts, 1);
     EXPECT_EQ(sup.status().map_error, ObexError::Busy);
 }
+
+// A phone that walked out of the room answers with a page timeout, not a
+// refusal. Escalating those to the five-minute ceiling leaves the link down long
+// after the phone is back on the desk.
+TEST(BearerSupervisor, TransientFailuresDoNotEscalateTheBackoff) {
+    for (const char* message : {"org.bluez.Error.InProgress: Operation already in progress",
+                                "org.bluez.Error.NotReady: Resource Not Ready",
+                                "org.bluez.Error.Failed: br-connection-page-timeout",
+                                "org.bluez.Error.Failed: Software caused connection abort",
+                                "org.bluez.Error.Failed: le-connection-abort-by-local"}) {
+        FakeBearer ops;
+        ops.classic_succeeds = false;
+        ops.classic_error = message;
+        BearerSupervisor sup(ops, true);
+
+        int64_t now = 0;
+        for (int attempt = 0; attempt < 6; ++attempt) {
+            sup.tick(now);
+            EXPECT_EQ(sup.status().classic_backoff, BEARER_BACKOFF_MIN_SECONDS) << message;
+            now += sup.status().classic_backoff;
+        }
+    }
+}
+
+// A refusal from the phone is a real answer, and repeating it every five seconds
+// helps nobody.
+TEST(BearerSupervisor, PersistentFailuresStillEscalate) {
+    FakeBearer ops;
+    ops.classic_succeeds = false;
+    ops.classic_error = "org.bluez.Error.AuthenticationFailed";
+    BearerSupervisor sup(ops, true);
+
+    sup.tick(0);
+    const int first = sup.status().classic_backoff;
+    sup.tick(first);
+    EXPECT_GT(sup.status().classic_backoff, first);
+}
+
+// reset() is what a caller reaches for when the phone reappears. The existing
+// coverage stops at a minimum backoff; the case that actually bites is a backoff
+// that grew to minutes while the phone was out of range.
+TEST(BearerSupervisor, ResetClearsAnEscalatedBackoff) {
+    FakeBearer ops;
+    ops.classic_succeeds = false;
+    ops.classic_error = "org.bluez.Error.AuthenticationFailed";
+    BearerSupervisor sup(ops, true);
+
+    int64_t now = 0;
+    sup.tick(now);
+    now += sup.status().classic_backoff;
+    sup.tick(now);
+    ASSERT_GT(sup.status().classic_backoff, BEARER_BACKOFF_MIN_SECONDS);
+    const int attempts = ops.classic_attempts;
+
+    sup.reset();
+    EXPECT_EQ(sup.status().classic_backoff, 0);
+    sup.tick(++now);
+    EXPECT_EQ(ops.classic_attempts, attempts + 1) << "reset() left the grown backoff in place";
+}
+
+// The Forbidden retry exists to drop a stale session left by a previous run.
+// Removing the empty string that the failed CreateSession just wrote drops
+// nothing at all.
+TEST(ProfileSupervisor, ForbiddenRetryRemovesThePreviousSession) {
+    FakeProfiles ops;
+    ProfileSupervisor sup(ops);
+
+    sup.tick(0, true);
+    ASSERT_TRUE(sup.status().map_open);
+    const std::string stale = sup.map_session();
+    ASSERT_FALSE(stale.empty());
+
+    // The session goes sour; the next attempt is refused.
+    sup.drop_map();
+    ops.removed.clear();
+    ops.map_error = "org.bluez.obex.Error.Forbidden";
+    sup.tick(PROFILE_STEADY_POLL_SECONDS * 2, true);
+
+    EXPECT_EQ(sup.status().map_error, ObexError::Forbidden);
+    EXPECT_EQ(ops.map_attempts, 3) << "the one extra retry did not happen";
+}
+
+// A MAP session can die while the Classic link stays up. Nothing else notices,
+// because tick() short-circuits once map_open is set.
+TEST(ProfileSupervisor, DropMapReopensWithoutTouchingPbap) {
+    FakeProfiles ops;
+    ProfileSupervisor sup(ops);
+
+    sup.tick(0, true);
+    ASSERT_TRUE(sup.status().map_open);
+    ASSERT_TRUE(sup.status().pbap_open);
+    const std::string first_map = sup.map_session();
+    const std::string pbap = sup.pbap_session();
+
+    sup.drop_map();
+    EXPECT_FALSE(sup.status().map_open);
+    EXPECT_TRUE(sup.status().pbap_open) << "contacts were dropped along with messages";
+    ASSERT_EQ(ops.removed.size(), 1u);
+    EXPECT_EQ(ops.removed.front(), first_map);
+
+    // And reopens on the very next tick rather than waiting out the steady poll.
+    sup.tick(1, true);
+    EXPECT_TRUE(sup.status().map_open);
+    EXPECT_NE(sup.map_session(), first_map);
+    EXPECT_EQ(sup.pbap_session(), pbap) << "the surviving PBAP session was reopened needlessly";
+}

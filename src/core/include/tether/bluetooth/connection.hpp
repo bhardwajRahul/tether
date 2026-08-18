@@ -53,7 +53,13 @@ namespace tether::bluetooth {
         bool start(const std::string& address, bool ancs_enabled);
         void stop();
 
+        // `ancs_enabled` is the user's preference. Whether the controller can
+        // actually carry ANCS is decided here rather than by the caller.
         void set_device(const std::string& address, bool ancs_enabled);
+
+        // Re-decides whether notification mirroring can run, against the
+        // controller's current capability. Cheap and idempotent
+        void refresh_capability();
 
         nlohmann::json status() const;
 
@@ -67,9 +73,9 @@ namespace tether::bluetooth {
     MessageStore& message_store();
     std::mutex& message_store_mutex();
 
-    // Marks a message read on the phone as well as locally. Returns false with
-    // err_out set when MAP is not currently open.
-    bool mark_message_read(const std::string& handle, bool read, std::string& err_out);
+    // Marks a message read locally, and on the phone when MAP is currently
+    // serving it. Returns false only when the handle is unknown.
+    bool mark_message_read(const std::string& handle, bool read, std::string& err_out, bool* synced_out = nullptr);
 
     // Sends a reply to a one-to-one conversation. Returns false with err_out set
     // when MAP is down, the thread cannot be replied to, or the phone refused.
