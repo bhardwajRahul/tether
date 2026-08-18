@@ -53,6 +53,14 @@ namespace tether::bluetooth {
         bool le_bonded = false;
         bool le_connected = false;
 
+        bool has_classic_bearer = false;
+        bool classic_paired = false;
+        bool classic_bonded = false;
+        bool classic_connected = false;
+        bool classic_state_known = false;
+
+        bool classic_link_up() const { return classic_state_known ? classic_connected : connected; }
+
         bool has_uuid(const std::string& uuid) const;
         bool supports_map() const { return has_uuid(UUID_MAP_MAS); }
         bool supports_pbap() const { return has_uuid(UUID_PBAP_PSE); }

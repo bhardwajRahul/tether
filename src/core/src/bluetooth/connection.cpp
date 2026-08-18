@@ -207,6 +207,7 @@ namespace tether::bluetooth {
         constexpr const char* BLUEZ_NAME = "org.bluez";
         constexpr const char* IFACE_DEVICE = "org.bluez.Device1";
         constexpr const char* IFACE_BEARER_LE = "org.bluez.Bearer.LE1";
+        constexpr const char* IFACE_BEARER_BREDR = "org.bluez.Bearer.BREDR1";
         constexpr const char* IFACE_PROPS = "org.freedesktop.DBus.Properties";
 
         constexpr const char* OBEX_NAME = "org.bluez.obex";
@@ -220,6 +221,7 @@ namespace tether::bluetooth {
         // profile supervisor short-circuits once map_open is set, so nothing else
         // notices. Consecutive listing failures are the cheapest liveness signal.
         constexpr int MAP_FAILURES_BEFORE_REOPEN = 3;
+        constexpr int SENT_EMPTY_LISTINGS_BEFORE_GIVING_UP = 3;
         constexpr int MESSAGE_LIST_MAX = 200;
         constexpr int SUPERVISOR_TICK_SECONDS = 1;
 
@@ -250,7 +252,7 @@ namespace tether::bluetooth {
 
             bool classic_connected() const override {
                 auto device = lookup();
-                return device && device->connected;
+                return device && device->classic_link_up();
             }
 
             bool le_bearer_available() const override {
@@ -292,6 +294,17 @@ namespace tether::bluetooth {
                     err = "device not present";
                     return false;
                 }
+                // bluez only exposes the per-bearer Connect while the device is connected on some bearer
+                if (device->has_classic_bearer && device->connected) {
+                    std::string bearer_err;
+                    if (call(device->path, IFACE_BEARER_BREDR, "Connect", bearer_err))
+                        return true;
+                    // some versions publish the interface without the method
+                    if (bearer_err.find("UnknownMethod") == std::string::npos) {
+                        err = bearer_err;
+                        return false;
+                    }
+                }
                 return call(device->path, IFACE_DEVICE, "Connect", err);
             }
 
@@ -305,7 +318,14 @@ namespace tether::bluetooth {
                     err = "no LE bearer";
                     return false;
                 }
-                return call(device->path, IFACE_BEARER_LE, "Connect", err);
+                std::string bearer_err;
+                if (call(device->path, IFACE_BEARER_LE, "Connect", bearer_err))
+                    return true;
+                if (bearer_err.find("UnknownMethod") == std::string::npos) {
+                    err = bearer_err;
+                    return false;
+                }
+                return call(device->path, IFACE_DEVICE, "Connect", err);
             }
 
         private:
@@ -456,9 +476,8 @@ namespace tether::bluetooth {
         // Whether the phone answers a listing for a child of the message root.
         // Cleared once, permanently for the session, if it turns out not to.
         bool map_lists_subfolders = true;
-        // Not every phone serves the sent folder; losing it must not cost us the
-        // inbox as well.
         bool map_lists_sent = true;
+        int map_empty_sent_listings = 0;
         // The first listing on a new MAP session returns the phone's existing
         // inbox, which on a first run is every message it holds.
         bool map_session_backfill = true;
@@ -568,6 +587,7 @@ namespace tether::bluetooth {
             map_session_backfill = true;
             map_lists_subfolders = true;
             map_lists_sent = true;
+            map_empty_sent_listings = 0;
         }
 
         if (now < next_message_poll)
@@ -625,12 +645,20 @@ namespace tether::bluetooth {
         if (map_lists_sent) {
             std::string sent_err;
             auto sent = session->list_messages(MAP_FOLDER_SENT, MESSAGE_LIST_MAX, sent_err);
-            if (sent_err.empty()) {
-                listings.insert(listings.end(), sent.begin(), sent.end());
-            } else {
+            if (!sent_err.empty()) {
                 debug::log(
                     WARN, "bluetooth: the sent folder is unavailable ({}); showing received messages only", sent_err);
                 map_lists_sent = false;
+            } else if (sent.empty() && !listings.empty()) {
+                if (++map_empty_sent_listings >= SENT_EMPTY_LISTINGS_BEFORE_GIVING_UP) {
+                    debug::log(INFO,
+                               "bluetooth: the phone serves no sent messages over MAP; "
+                               "conversations will show received messages and replies sent from here");
+                    map_lists_sent = false;
+                }
+            } else {
+                map_empty_sent_listings = 0;
+                listings.insert(listings.end(), sent.begin(), sent.end());
             }
         }
 

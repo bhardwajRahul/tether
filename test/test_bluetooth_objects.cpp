@@ -302,3 +302,102 @@ TEST(Capability, PrefersAPoweredAdapter) {
     EXPECT_TRUE(cap.powered);
     EXPECT_TRUE(cap.le_peripheral);
 }
+
+// Device1.Connected is an aggregate across bearers. A phone holding an LE link
+// with no BR/EDR link reports Connected=true while MAP and PBAP — which both
+// ride BR/EDR — are unreachable, so obexd answers every session attempt with
+// "Unable to find service record". Reading the aggregate as the Classic link
+// makes the daemon report a healthy BR/EDR connection and never reconnect it.
+constexpr const char* IPHONE_LE_ONLY_LINK = R"({
+  '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
+    'org.bluez.Device1': {
+      'Address': <'60:57:C8:30:6A:F7'>,
+      'Adapter': <objectpath '/org/bluez/hci0'>,
+      'Paired': <true>,
+      'Bonded': <true>,
+      'Connected': <true>,
+      'UUIDs': <['00001132-0000-1000-8000-00805f9b34fb']>
+    },
+    'org.bluez.Bearer.BREDR1': {
+      'Paired': <true>,
+      'Bonded': <true>,
+      'Connected': <false>
+    },
+    'org.bluez.Bearer.LE1': {
+      'Paired': <true>,
+      'Bonded': <true>,
+      'Connected': <true>
+    }
+  }
+})";
+
+TEST(BluetoothObjects, ClassicLinkComesFromTheBredrBearerNotTheAggregate) {
+    Payload payload(IPHONE_LE_ONLY_LINK);
+    ASSERT_TRUE(payload.v);
+
+    auto objects = parse_managed_objects(payload.v);
+    ASSERT_EQ(objects.devices.size(), 1u);
+    const Device& device = objects.devices.front();
+
+    EXPECT_TRUE(device.connected) << "the aggregate is still reported as BlueZ gave it";
+    EXPECT_TRUE(device.has_classic_bearer);
+    EXPECT_TRUE(device.classic_state_known);
+    EXPECT_FALSE(device.classic_connected);
+    EXPECT_TRUE(device.le_connected);
+
+    EXPECT_FALSE(device.classic_link_up())
+        << "an LE-only link must not be reported as a Classic connection: every OBEX profile rides BR/EDR";
+}
+
+// Not every BlueZ exposes the bearer interfaces. Where they are absent the
+// aggregate is the only signal there is, and it is the right one.
+TEST(BluetoothObjects, ClassicLinkFallsBackToTheAggregateWithoutBearers) {
+    constexpr const char* NO_BEARERS = R"({
+      '/org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF': {
+        'org.bluez.Device1': {
+          'Address': <'AA:BB:CC:DD:EE:FF'>,
+          'Adapter': <objectpath '/org/bluez/hci0'>,
+          'Paired': <true>,
+          'Connected': <true>,
+          'UUIDs': <@as []>
+        }
+      }
+    })";
+    Payload payload(NO_BEARERS);
+    ASSERT_TRUE(payload.v);
+
+    auto objects = parse_managed_objects(payload.v);
+    ASSERT_EQ(objects.devices.size(), 1u);
+    EXPECT_FALSE(objects.devices.front().has_classic_bearer);
+    EXPECT_TRUE(objects.devices.front().classic_link_up());
+}
+
+// BlueZ strips a bearer interface down to a bare signal while the device is
+// disconnected: the name is still in the object tree, but there are no
+// properties to read and no methods to call. Treating that as an authoritative
+// "BR/EDR is down" would let a stub contradict a link that is genuinely up.
+TEST(BluetoothObjects, StubBearerIsNotMistakenForAReading) {
+    constexpr const char* STUB_BEARERS = R"({
+      '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
+        'org.bluez.Device1': {
+          'Address': <'60:57:C8:30:6A:F7'>,
+          'Adapter': <objectpath '/org/bluez/hci0'>,
+          'Paired': <true>,
+          'Connected': <true>,
+          'UUIDs': <@as []>
+        },
+        'org.bluez.Bearer.BREDR1': {},
+        'org.bluez.Bearer.LE1': {}
+      }
+    })";
+    Payload payload(STUB_BEARERS);
+    ASSERT_TRUE(payload.v);
+
+    auto objects = parse_managed_objects(payload.v);
+    ASSERT_EQ(objects.devices.size(), 1u);
+    const Device& device = objects.devices.front();
+
+    EXPECT_TRUE(device.has_classic_bearer) << "the interface is present, which is what confirms the bearer API";
+    EXPECT_FALSE(device.classic_state_known) << "a stub carries no Connected property to believe";
+    EXPECT_TRUE(device.classic_link_up()) << "with nothing to read, the aggregate is the only answer available";
+}

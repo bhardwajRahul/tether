@@ -11,6 +11,7 @@ namespace tether::bluetooth {
         constexpr const char* IFACE_DEVICE = "org.bluez.Device1";
         constexpr const char* IFACE_LE_ADV_MGR = "org.bluez.LEAdvertisingManager1";
         constexpr const char* IFACE_BEARER_LE = "org.bluez.Bearer.LE1";
+        constexpr const char* IFACE_BEARER_BREDR = "org.bluez.Bearer.BREDR1";
 
         bool iequals(const std::string& a, const std::string& b) {
             return a.size() == b.size() &&
@@ -152,6 +153,18 @@ namespace tether::bluetooth {
                 d.le_bonded = get_bool(le, "Bonded", d.le_paired);
                 d.le_connected = get_bool(le, "Connected");
                 g_variant_unref(le);
+            }
+
+            if (GVariant* br = g_variant_lookup_value(ifaces, IFACE_BEARER_BREDR, G_VARIANT_TYPE("a{sv}"))) {
+                d.has_classic_bearer = true;
+                if (GVariant* connected = g_variant_lookup_value(br, "Connected", G_VARIANT_TYPE_BOOLEAN)) {
+                    d.classic_state_known = true;
+                    d.classic_connected = g_variant_get_boolean(connected);
+                    g_variant_unref(connected);
+                }
+                d.classic_paired = get_bool(br, "Paired");
+                d.classic_bonded = get_bool(br, "Bonded", d.classic_paired);
+                g_variant_unref(br);
             }
 
             out.devices.push_back(std::move(d));
@@ -331,6 +344,7 @@ namespace tether::bluetooth {
             {"bonded", d.bonded},
             {"trusted", d.trusted},
             {"connected", d.connected},
+            {"classic_connected", d.classic_link_up()},
             {"le_bearer", d.has_le_bearer},
             {"le_bonded", d.le_bonded},
             {"le_connected", d.le_connected},

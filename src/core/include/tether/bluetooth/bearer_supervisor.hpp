@@ -9,6 +9,9 @@ namespace tether::bluetooth {
     inline constexpr int BEARER_SETTLE_SECONDS = 3;
     inline constexpr int BEARER_BACKOFF_MIN_SECONDS = 5;
     inline constexpr int BEARER_BACKOFF_MAX_SECONDS = 300;
+    // How many refused BR/EDR attempts before the status stops saying "connecting"
+    inline constexpr int CLASSIC_FAILURES_BEFORE_ADVICE = 6;
+    inline constexpr int LE_ATTEMPTS_BEFORE_ADVICE = 6;
 
     // The BlueZ operations the supervisor performs.
     class BearerOps {
@@ -63,6 +66,8 @@ namespace tether::bluetooth {
         bool ancs_enabled_ = true;
 
         BearerStatus status_;
+        int classic_failures_ = 0;
+        int le_attempts_ = 0;
         int64_t classic_connected_since_ = -1;
         int64_t next_classic_attempt_ = 0;
         int64_t next_le_attempt_ = 0;

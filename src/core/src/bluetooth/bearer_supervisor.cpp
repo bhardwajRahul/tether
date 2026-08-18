@@ -19,8 +19,8 @@ namespace tether::bluetooth {
         bool is_transient(const std::string& err) {
             static const char* const transient[] = {
                 "org.bluez.Error.InProgress",
+                "already in progress",
                 "org.bluez.Error.NotReady",
-                // BlueZ spells these as the tail of an Error.Failed message.
                 "page-timeout",
                 "page timeout",
                 "connection-abort",
@@ -29,6 +29,7 @@ namespace tether::bluetooth {
                 "Connection timed out",
                 "br-connection-canceled",
                 "le-connection-abort-by-local",
+                "br-connection-refused",
             };
             for (const char* needle : transient) {
                 if (err.find(needle) != std::string::npos)
@@ -48,6 +49,8 @@ namespace tether::bluetooth {
     void BearerSupervisor::set_ancs_enabled(bool enabled) { ancs_enabled_ = enabled; }
 
     void BearerSupervisor::reset() {
+        classic_failures_ = 0;
+        le_attempts_ = 0;
         classic_connected_since_ = -1;
         next_classic_attempt_ = 0;
         next_le_attempt_ = 0;
@@ -72,16 +75,21 @@ namespace tether::bluetooth {
         status_.classic_connected = ops_.classic_connected();
         status_.le_available = ops_.le_bearer_available();
         status_.le_connected = status_.le_available && ops_.le_connected();
+        if (status_.le_connected)
+            le_attempts_ = 0;
 
         if (status_.classic_connected) {
             if (classic_connected_since_ < 0)
                 classic_connected_since_ = now;
             status_.classic_backoff = 0;
+            classic_failures_ = 0;
         } else {
-            // A dropped link invalidates the settle window and any LE state that
-            // depended on it.
+            // A dropped link invalidates the settle window, so no LE attempt is
+            // made until BR/EDR is back and has settled. An LE link that is
+            // already up is a separate matter and is reported as it is: ANCS
+            // rides LE alone, so calling it down here would switch notification
+            // mirroring off for a phone that is still delivering notifications.
             classic_connected_since_ = -1;
-            status_.le_connected = false;
 
             if (now >= next_classic_attempt_) {
                 ops_.set_preferred_bearer("bredr");
@@ -89,14 +97,24 @@ namespace tether::bluetooth {
                 if (ops_.connect_classic(err)) {
                     status_.classic_backoff = 0;
                     next_classic_attempt_ = 0;
+                    classic_failures_ = 0;
                 } else {
+                    ++classic_failures_;
                     status_.classic_backoff = next_backoff(status_.classic_backoff, err);
                     next_classic_attempt_ = now + status_.classic_backoff;
                     debug::log(
                         WARN, "bluetooth: BR/EDR connect failed ({}), retrying in {}s", err, status_.classic_backoff);
                 }
             }
-            status_.reason = "Connecting to the iPhone over Bluetooth...";
+
+            // An iPhone that keeps refusing while unlocked, with its Bluetooth
+            // permissions already on, is wedged on its own side: nothing here
+            // clears it, and saying "connecting" forever hides that.
+            status_.reason = classic_failures_ >= CLASSIC_FAILURES_BEFORE_ADVICE
+                                 ? "The iPhone keeps refusing the Bluetooth connection. Turn Bluetooth off and "
+                                   "back on on the iPhone — that clears it even when the permissions are already "
+                                   "on. Re-pairing is not the fix."
+                                 : "Connecting to the iPhone over Bluetooth...";
             return !(status_ == previous);
         }
 
@@ -121,10 +139,12 @@ namespace tether::bluetooth {
                 std::string err;
                 const bool ok = ops_.connect_le(err);
                 ops_.set_preferred_bearer("bredr");
+                ++le_attempts_;
 
                 if (ok) {
                     status_.le_backoff = 0;
-                    next_le_attempt_ = 0;
+                    // connect can report success without the link coming up
+                    next_le_attempt_ = now + BEARER_BACKOFF_MIN_SECONDS;
                     status_.le_connected = true;
                 } else {
                     status_.le_backoff = next_backoff(status_.le_backoff, err);
@@ -133,7 +153,12 @@ namespace tether::bluetooth {
                 }
             }
             if (!status_.le_connected) {
-                status_.reason = "Connected. Bringing up the LE link for notifications...";
+                status_.reason = le_attempts_ >= LE_ATTEMPTS_BEFORE_ADVICE
+                                     ? "The iPhone is not opening the LE link that carries notifications. "
+                                       "Run \"tether --bt-solicit\" (or press Show iPhone Permissions) to ask it "
+                                       "to, then check Settings > Bluetooth > (i) on the iPhone. Messages and "
+                                       "contacts are unaffected."
+                                     : "Connected. Bringing up the LE link for notifications...";
                 return !(status_ == previous);
             }
         }

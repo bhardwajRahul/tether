@@ -229,7 +229,7 @@ TEST(BearerSupervisor, RecoversAfterDisconnect) {
     ops.le = false;
     sup.tick(100);
     EXPECT_FALSE(sup.status().classic_connected);
-    EXPECT_FALSE(sup.status().le_connected) << "LE cannot be up while Classic is down";
+    EXPECT_FALSE(sup.status().le_connected);
     EXPECT_EQ(ops.classic_attempts, 2);
 
     // ...and comes back.
@@ -477,7 +477,9 @@ TEST(BearerSupervisor, TransientFailuresDoNotEscalateTheBackoff) {
                                 "org.bluez.Error.NotReady: Resource Not Ready",
                                 "org.bluez.Error.Failed: br-connection-page-timeout",
                                 "org.bluez.Error.Failed: Software caused connection abort",
-                                "org.bluez.Error.Failed: le-connection-abort-by-local"}) {
+                                "org.bluez.Error.Failed: le-connection-abort-by-local",
+                                "org.bluez.Error.Failed: br-connection-refused",
+                                "org.bluez.Error.Failed: Operation already in progress"}) {
         FakeBearer ops;
         ops.classic_succeeds = false;
         ops.classic_error = message;
@@ -573,4 +575,106 @@ TEST(ProfileSupervisor, DropMapReopensWithoutTouchingPbap) {
     EXPECT_TRUE(sup.status().map_open);
     EXPECT_NE(sup.map_session(), first_map);
     EXPECT_EQ(sup.pbap_session(), pbap) << "the surviving PBAP session was reopened needlessly";
+}
+
+// iOS routinely keeps an LE link while letting BR/EDR lapse. ANCS rides LE
+// alone, so notification mirroring keeps working there — reporting LE as down
+// because BR/EDR is would tear down a GATT session that is still delivering.
+TEST(BearerSupervisor, LeStaysReportedWhenOnlyClassicIsDown) {
+    FakeBearer ops;
+    BearerSupervisor sup(ops, true);
+
+    sup.tick(0);
+    sup.tick(1);
+    sup.tick(1 + BEARER_SETTLE_SECONDS);
+    ASSERT_TRUE(sup.status().classic_connected);
+    ASSERT_TRUE(sup.status().le_connected);
+
+    // BR/EDR lapses; the LE link is untouched.
+    ops.classic = false;
+    ops.classic_succeeds = false;
+    sup.tick(100);
+
+    EXPECT_FALSE(sup.status().classic_connected);
+    EXPECT_TRUE(sup.status().le_connected) << "an LE link that is still up must not be reported as down";
+    EXPECT_GT(ops.classic_attempts, 1) << "BR/EDR must still be retried";
+}
+
+// An iPhone that refuses BR/EDR while unlocked with its permissions on is wedged
+// on its own side. Only cycling Bluetooth on the phone clears it, so the status
+// has to say that rather than claiming to still be connecting.
+TEST(BearerSupervisor, RepeatedRefusalNamesTheRemedy) {
+    FakeBearer ops;
+    ops.classic_succeeds = false;
+    ops.classic_error = "org.bluez.Error.Failed: br-connection-refused";
+    BearerSupervisor sup(ops, true);
+
+    int64_t now = 0;
+    sup.tick(now);
+    EXPECT_NE(sup.status().reason.find("Connecting"), std::string::npos)
+        << "one refusal is not yet evidence of anything";
+
+    while (ops.classic_attempts < CLASSIC_FAILURES_BEFORE_ADVICE) {
+        now += sup.status().classic_backoff;
+        sup.tick(now);
+    }
+
+    EXPECT_NE(sup.status().reason.find("Turn Bluetooth off and back on"), std::string::npos)
+        << "the status never names the one thing that clears this";
+    EXPECT_NE(sup.status().reason.find("Re-pairing is not the fix"), std::string::npos);
+
+    // And it goes away the moment the phone accepts. The backoff has to elapse
+    // first, or no attempt is made and the advice rightly still stands.
+    ops.classic_succeeds = true;
+    now += sup.status().classic_backoff;
+    sup.tick(now);
+    EXPECT_EQ(sup.status().reason.find("Turn Bluetooth off"), std::string::npos);
+    sup.tick(++now);
+    EXPECT_TRUE(sup.status().classic_connected);
+}
+
+// BlueZ cannot always dial LE: the per-bearer Connect is gone while the
+// transport is down, and Device1.Connect quietly no-ops once BR/EDR is up, so
+// the attempt "succeeds" without a link. Saying "bringing it up" forever hides
+// that only the phone can open it.
+TEST(BearerSupervisor, UndiallableLeStopsClaimingItIsComingUp) {
+    // The connect reports success but the link never appears, which is exactly
+    // what a Device1.Connect fallback does on an already-connected device.
+    class OptimisticBearer : public FakeBearer {
+    public:
+        bool connect_le(std::string&) override {
+            ++le_attempts;
+            return true;
+        }
+    } optimistic;
+
+    BearerSupervisor sup(optimistic, true);
+    int64_t now = 0;
+    sup.tick(now);
+    sup.tick(++now);
+    now += BEARER_SETTLE_SECONDS;
+    sup.tick(now);
+    // The attempt reports success, so this tick believes it. The next one reads
+    // the real state back and finds nothing there.
+    sup.tick(++now);
+    ASSERT_FALSE(sup.status().le_connected) << "the fake never actually brings LE up";
+    EXPECT_NE(sup.status().reason.find("Bringing up the LE link"), std::string::npos);
+
+    while (optimistic.le_attempts < LE_ATTEMPTS_BEFORE_ADVICE) {
+        now += BEARER_BACKOFF_MIN_SECONDS;
+        sup.tick(now);
+    }
+    // The tick that made the last attempt believed it worked; the one after reads
+    // the truth back, and that is where the status has to change.
+    sup.tick(++now);
+
+    EXPECT_NE(sup.status().reason.find("not opening the LE link"), std::string::npos)
+        << "the status never admits the link is not coming from this end";
+    EXPECT_NE(sup.status().reason.find("Messages and contacts are unaffected"), std::string::npos)
+        << "a user reading this needs to know messages still work";
+
+    // An optimistic success must not turn into a connect attempt every tick.
+    const int attempts = optimistic.le_attempts;
+    sup.tick(++now);
+    EXPECT_EQ(optimistic.le_attempts, attempts) << "LE was re-dialled inside its own backoff";
 }
