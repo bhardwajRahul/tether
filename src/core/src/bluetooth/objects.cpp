@@ -1,6 +1,7 @@
 #include "tether/bluetooth/objects.hpp"
 
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 
@@ -13,6 +14,8 @@ namespace tether::bluetooth {
         constexpr const char* IFACE_LE_ADV_MGR = "org.bluez.LEAdvertisingManager1";
         constexpr const char* IFACE_BEARER_LE = "org.bluez.Bearer.LE1";
         constexpr const char* IFACE_BEARER_BREDR = "org.bluez.Bearer.BREDR1";
+        constexpr const char* IFACE_CHARACTERISTIC = "org.bluez.GattCharacteristic1";
+        constexpr const char* UUID_ANCS_NOTIFICATION_SOURCE = "9fbf120d-6301-42d9-8c58-25e699a21dbd";
 
         bool iequals(const std::string& a, const std::string& b) {
             return a.size() == b.size() &&
@@ -234,12 +237,29 @@ namespace tether::bluetooth {
         GVariantIter iter;
         const gchar* path = nullptr;
         GVariant* ifaces = nullptr;
+        std::vector<std::string> ancs_char_paths;
         g_variant_iter_init(&iter, dict);
         while (g_variant_iter_loop(&iter, "{&o@a{sa{sv}}}", &path, &ifaces)) {
             read_adapter(path, ifaces, out);
             read_device(path, ifaces, out);
+
+            GVariant* chr = g_variant_lookup_value(ifaces, IFACE_CHARACTERISTIC, G_VARIANT_TYPE("a{sv}"));
+            if (!chr)
+                continue;
+            if (iequals(get_string(chr, "UUID"), UUID_ANCS_NOTIFICATION_SOURCE))
+                ancs_char_paths.emplace_back(path);
+            g_variant_unref(chr);
         }
         g_variant_unref(dict);
+
+        // A characteristic lives under its device's path. BlueZ enumerates in an
+        // unspecified order, so this cannot be done in the loop above.
+        for (const auto& char_path : ancs_char_paths) {
+            for (auto& device : out.devices) {
+                if (char_path.rfind(device.path + "/", 0) == 0)
+                    device.has_ancs_gatt = true;
+            }
+        }
 
         // BlueZ enumerates in a stable but unspecified order; sorting keeps
         // snapshot comparison and UI listing deterministic.
@@ -261,6 +281,35 @@ namespace tether::bluetooth {
                     return candidate;
             }
             return "/usr/lib/bluetooth/bluetoothd";
+        }
+
+        // Reads the controller's current mgmt settings. BlueZ exposes Secure
+        // Connections nowhere on D-Bus, and it is the precondition for the
+        // cross-transport key derivation that gives a BR/EDR bond its LE half.
+        // without it the bond is Classic-only and ANCS is unreachable, which is
+        // otherwise indistinguishable from a dozen other failures.
+        //
+        // TODO: shelling out to btmgmt, which reads the mgmt socket
+        // unprivileged. Only worth opening an AF_BLUETOOTH mgmt socket here if
+        // this ever needs to run somewhere btmgmt is not installed.
+        bool read_secure_connections(const std::string& adapter_id, bool& enabled) {
+            const std::string cmd = "btmgmt --index " + adapter_id + " info 2>/dev/null";
+            FILE* pipe = popen(cmd.c_str(), "r");
+            if (!pipe)
+                return false;
+
+            bool found = false;
+            char line[1024];
+            while (std::fgets(line, sizeof(line), pipe)) {
+                const std::string text(line);
+                if (text.find("current settings:") == std::string::npos)
+                    continue;
+                enabled = text.find("secure-conn") != std::string::npos;
+                found = true;
+                break;
+            }
+            pclose(pipe);
+            return found;
         }
 
         // The package ships the drop-in for the user to copy.
@@ -317,9 +366,17 @@ namespace tether::bluetooth {
         for (const auto& d : objects.devices) {
             if (d.has_le_bearer)
                 cap.bearer_api = BearerApi::Confirmed;
+
+            if ((d.bonded || d.paired) && d.looks_like_iphone()) {
+                cap.bonded_device_present = true;
+                if (d.has_le_bearer)
+                    cap.bond_has_le = true;
+            }
         }
         if (cap.bearer_api != BearerApi::Confirmed)
             cap.bearer_api = objects.experimental_api ? BearerApi::Unknown : BearerApi::Absent;
+
+        cap.secure_connections_known = read_secure_connections(cap.adapter_id, cap.secure_connections);
 
         if (!cap.powered) {
             cap.reasons.emplace_back("Bluetooth adapter is powered off.");
@@ -350,8 +407,19 @@ namespace tether::bluetooth {
                                  "pairing: a bond made without it has no LE half.",
                                  enable_experimental_command()});
             cap.mode = DeliveryMode::Compatibility;
-        } else if (cap.bearer_api == BearerApi::Unknown) {
+        } else if (cap.bearer_api == BearerApi::Unknown && !cap.bonded_device_present) {
+            // only an iphone bond can confirm the api
             cap.reasons.emplace_back("Bearer API support is unconfirmed until a device is bonded.");
+        }
+
+        if (cap.bonded_device_present && !cap.bond_has_le) {
+            std::string reason = "A device is bonded, but the bond covers BR/EDR only -- no LE keys were derived, "
+                                 "so notification mirroring cannot work on it. Delete this computer on the iPhone "
+                                 "(Forget This Device) and pair again.";
+            if (cap.secure_connections_known && !cap.secure_connections)
+                reason += " Secure Connections is off on this controller, which is what blocks the derivation; "
+                          "re-pairing will not help until it is on.";
+            cap.reasons.emplace_back(std::move(reason));
         }
         if (!cap.class_ok) {
             cap.setup.push_back({"The iPhone will not offer its Messages and Contacts permissions until this "
@@ -392,6 +460,7 @@ namespace tether::bluetooth {
             {"map", d.supports_map()},
             {"pbap", d.supports_pbap()},
             {"ancs", d.supports_ancs()},
+            {"ancs_gatt", d.has_ancs_gatt},
             {"iphone", d.looks_like_iphone()},
         };
     }
@@ -417,6 +486,10 @@ namespace tether::bluetooth {
             {"le_peripheral", c.le_peripheral},
             {"advertising", c.advertising},
             {"class_ok", c.class_ok},
+            {"bonded_device_present", c.bonded_device_present},
+            {"bond_has_le", c.bond_has_le},
+            {"secure_connections",
+             c.secure_connections_known ? nlohmann::json(c.secure_connections) : nlohmann::json(nullptr)},
             {"adapter_id", c.adapter_id},
             {"reasons", c.reasons},
             {"setup", setup},

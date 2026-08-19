@@ -4,8 +4,10 @@
 #include "tether/bluetooth/monitor.hpp"
 #include "tether/log.hpp"
 
+#include <atomic>
 #include <chrono>
 #include <filesystem>
+#include <mutex>
 #include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
@@ -25,6 +27,9 @@ namespace tether::bluetooth {
 
         constexpr int CLASSIC_SETTLE_SECONDS = 3;
         constexpr int DISCOVERY_TIMEOUT_SECONDS = 30;
+
+        // how long to stand back after bluez refuses to put the solicitation on air
+        constexpr int SOLICIT_RETRY_SECONDS = 30;
 
         std::string normalize_address(std::string address) {
             for (char& c : address)
@@ -262,12 +267,20 @@ namespace tether::bluetooth {
             return objects.adapters.empty() ? std::string{} : objects.adapters.front().path;
         }
 
-        // The solicitation advertise outlives the transaction that started it, so it
-        // is owned here rather than on a stack frame.
+        std::mutex g_advert_mutex;
         AncsAdvertisement* g_advert = nullptr;
 
+        std::atomic<bool> g_pairing_owns_advert{false};
+
+        struct AdvertOwnership {
+            AdvertOwnership() { g_pairing_owns_advert = true; }
+            ~AdvertOwnership() { g_pairing_owns_advert = false; }
+            AdvertOwnership(const AdvertOwnership&) = delete;
+            AdvertOwnership& operator=(const AdvertOwnership&) = delete;
+        };
+
         // An advert soliciting ANCS must never be on air while Classic pairing is in flight
-        void stop_advert(BluezMonitor& monitor) {
+        void stop_advert_locked(BluezMonitor& monitor) {
             if (!g_advert)
                 return;
             g_advert->unregister_with_bluez();
@@ -276,13 +289,19 @@ namespace tether::bluetooth {
             g_advert = nullptr;
         }
 
+        void stop_advert(BluezMonitor& monitor) {
+            std::lock_guard<std::mutex> lock(g_advert_mutex);
+            stop_advert_locked(monitor);
+        }
+
         // Puts the solicitation advert on air, replacing whatever was there.
         bool start_advert(BluezMonitor& monitor, const std::string& adapter_path, std::string& err) {
             if (adapter_path.empty()) {
                 err = "No Bluetooth adapter is available.";
                 return false;
             }
-            stop_advert(monitor);
+            std::lock_guard<std::mutex> lock(g_advert_mutex);
+            stop_advert_locked(monitor);
             auto* advert = new AncsAdvertisement(monitor.connection(), adapter_path);
 
             bool exported = false;
@@ -346,6 +365,38 @@ namespace tether::bluetooth {
         auto objects = monitor.snapshot();
         const std::string adapter = objects.adapters.empty() ? std::string{} : objects.adapters.front().path;
         return start_advert(monitor, adapter, err);
+    }
+
+    bool ancs_solicitation_active() {
+        std::lock_guard<std::mutex> lock(g_advert_mutex);
+        return g_advert && g_advert->active();
+    }
+
+    void stop_ancs_solicitation(BluezMonitor& monitor) { stop_advert(monitor); }
+
+    void supervise_ancs_solicitation(BluezMonitor& monitor, bool want) {
+        if (g_pairing_owns_advert)
+            return;
+        if (!want) {
+            if (ancs_solicitation_active())
+                stop_advert(monitor);
+            return;
+        }
+        if (ancs_solicitation_active())
+            return;
+
+        static std::chrono::steady_clock::time_point next_attempt{};
+        const auto now = std::chrono::steady_clock::now();
+        if (now < next_attempt)
+            return;
+
+        std::string err;
+        if (solicit_ancs(monitor, err)) {
+            next_attempt = {};
+            return;
+        }
+        next_attempt = now + std::chrono::seconds(SOLICIT_RETRY_SECONDS);
+        debug::log(WARN, "bluetooth: could not re-arm the ANCS solicitation ({})", err);
     }
 
     bool confirm_with_dialog(const std::string& device_name, const std::string& code) {
@@ -430,6 +481,7 @@ namespace tether::bluetooth {
             return result;
         }
 
+        AdvertOwnership advert_owned;
         PairableWindow pairable(conn, [&] {
             auto objects = monitor.snapshot();
             return objects.adapters.empty() ? std::string{} : objects.adapters.front().path;

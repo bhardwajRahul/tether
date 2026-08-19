@@ -6,6 +6,7 @@
 #include "tether/bluetooth/journal.hpp"
 #include "tether/bluetooth/map_session.hpp"
 #include "tether/bluetooth/monitor.hpp"
+#include "tether/bluetooth/pairing.hpp"
 #include "tether/bluetooth/pbap_session.hpp"
 #include "tether/log.hpp"
 
@@ -220,6 +221,7 @@ namespace tether::bluetooth {
         // asynchronously and left to run to completion rather than abandoned, so
         // this is generous on purpose.
         constexpr int LE_CONNECT_TIMEOUT_MS = 45000;
+        constexpr int DISCONNECT_TIMEOUT_MS = 10000;
 
         constexpr int MESSAGE_POLL_SECONDS = 15;
         // obexd can drop a MAP session while the Classic link stays up, and the
@@ -266,7 +268,7 @@ namespace tether::bluetooth {
 
             bool le_connected() const override {
                 auto device = lookup();
-                return device && device->le_connected;
+                return device && device->le_link_up();
             }
 
             void set_preferred_bearer(const std::string& bearer) override {
@@ -359,6 +361,36 @@ namespace tether::bluetooth {
                                            on_le_connected,
                                            holder);
                 });
+                return ConnectResult::Requested;
+            }
+
+            // Drops the LE transport so a wedged connect can be retried.
+            ConnectResult disconnect_le(std::string& err) override {
+                auto device = lookup();
+                if (!device) {
+                    err = "device not present";
+                    return ConnectResult::Failed;
+                }
+                if (!device->has_le_bearer) {
+                    err = "no LE bearer";
+                    return ConnectResult::Failed;
+                }
+                // bluez can report the bearer disconnected while gatt is live and ancs is delivering over it.
+                if (device->has_ancs_gatt) {
+                    err = "ANCS is live on this link";
+                    return ConnectResult::Failed;
+                }
+                if (!call(device->path, IFACE_BEARER_LE, "Disconnect", err, DISCONNECT_TIMEOUT_MS)) {
+                    if (err.find("NotConnected") == std::string::npos)
+                        return ConnectResult::Failed;
+                    err.clear();
+                }
+
+                // A dropped bearer cannot still be the subject of our own outstanding connect
+                {
+                    std::lock_guard<std::mutex> lock(le_->mutex);
+                    le_->pending = false;
+                }
                 return ConnectResult::Requested;
             }
 
@@ -885,6 +917,10 @@ namespace tether::bluetooth {
             link_was_ready = link_ready;
 
             profiles->tick(now, link_ready);
+
+            const auto& bearer = bearers->status();
+            supervise_ancs_solicitation(
+                *monitor, ancs_enabled && bearer.classic_connected && bearer.le_available && !bearer.le_connected);
 
             // publish() drops a payload identical to the last one, so refreshing
             // every tick costs nothing and cannot miss a transition.

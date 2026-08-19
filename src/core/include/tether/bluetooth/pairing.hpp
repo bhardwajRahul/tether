@@ -53,6 +53,15 @@ namespace tether::bluetooth {
     // there has to be a way back to it short of removing the bond.
     bool solicit_ancs(BluezMonitor& monitor, std::string& err);
 
+    // Whether that advertisement is on air right now
+    bool ancs_solicitation_active();
+
+    // Takes it off air, freeing the LE advertising instance
+    void stop_ancs_solicitation(BluezMonitor& monitor);
+
+    // Holds the solicitation on air for exactly as long as `want`
+    void supervise_ancs_solicitation(BluezMonitor& monitor, bool want);
+
     nlohmann::json to_json(const PairResult& result);
 
     bool confirm_with_dialog(const std::string& device_name, const std::string& code);

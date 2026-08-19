@@ -53,6 +53,19 @@ namespace {
             le = true;
             return ConnectResult::Requested;
         }
+
+        int le_disconnects = 0;
+        bool disconnect_le_succeeds = true;
+
+        ConnectResult disconnect_le(std::string& err) override {
+            ++le_disconnects;
+            if (!disconnect_le_succeeds) {
+                err = "no LE bearer";
+                return ConnectResult::Failed;
+            }
+            le = false;
+            return ConnectResult::Requested;
+        }
     };
 
     class FakeProfiles : public ProfileOps {
@@ -658,11 +671,12 @@ TEST(BearerSupervisor, RepeatedRefusalNamesTheRemedy) {
     EXPECT_TRUE(sup.status().classic_connected);
 }
 
-// BlueZ cannot always dial LE: the per-bearer Connect is gone while the
-// transport is down, and Device1.Connect quietly no-ops once BR/EDR is up, so
-// the attempt "succeeds" without a link. Saying "bringing it up" forever hides
-// that only the phone can open it.
-TEST(BearerSupervisor, GivesUpDiallingLeInsteadOfSpinningForever) {
+// BR/EDR can stay up for days, so the LE half is the only one that ever needs
+// re-dialling, and nothing else in the daemon dials it. Standing down for good
+// after a run of failures left notification mirroring dead until a restart even
+// though the phone had long since become willing. The backoff ceiling, not a
+// attempt cap, is what keeps this from being a storm.
+TEST(BearerSupervisor, KeepsDiallingLeAtTheCappedCadence) {
     // A phone that will not accept an inbound LE connect: BlueZ keeps working
     // after our call gives up, so the next attempts collide with it.
     class RefusingBearer : public FakeBearer {
@@ -684,16 +698,124 @@ TEST(BearerSupervisor, GivesUpDiallingLeInsteadOfSpinningForever) {
         sup.tick(now);
     }
 
-    EXPECT_EQ(refusing.le_attempts, LE_ATTEMPTS_BEFORE_ADVICE) << "LE was dialled forever against a phone refusing it";
+    EXPECT_GT(refusing.le_attempts, LE_ATTEMPTS_BEFORE_ADVICE) << "LE was abandoned for the daemon's whole lifetime";
     EXPECT_NE(sup.status().reason.find("LE link that carries notifications"), std::string::npos);
 
-    // A reconnect is a new session and has to try again.
-    sup.reset();
+    // ...but no faster than the ceiling. Every tick above is a full backoff
+    // window apart, so one attempt per window is the most that may happen.
+    EXPECT_LE(refusing.le_attempts, 202) << "the backoff ceiling is not pacing the retries";
+
+    // And it recovers the moment the phone becomes willing, with no reset() and
+    // no restart.
+    refusing.le = true;
     now += BEARER_BACKOFF_MAX_SECONDS;
     sup.tick(now);
-    now += BEARER_SETTLE_SECONDS + 1;
+    EXPECT_TRUE(sup.status().le_connected);
+}
+
+// An LE link that needed a few tries, then held, must not resume at the backoff
+// those tries grew to. Inheriting it means the first drop after a healthy day
+// costs five minutes of dead notification mirroring.
+TEST(BearerSupervisor, ASuccessfulLeLinkClearsTheBackoffItGrew) {
+    FakeBearer ops;
+    ops.le_succeeds = false;
+    BearerSupervisor sup(ops, true);
+
+    // Classic is observed connected on the tick after it is dialed, and the
+    // settle window runs from there.
+    sup.tick(0);
+    sup.tick(1);
+    int64_t now = 1 + BEARER_SETTLE_SECONDS;
+    for (int i = 0; i < 4; ++i) {
+        sup.tick(now);
+        now += sup.status().le_backoff;
+    }
+    ASSERT_GT(sup.status().le_backoff, BEARER_BACKOFF_MIN_SECONDS);
+
+    // The phone accepts, and the link holds.
+    ops.le_succeeds = true;
+    ops.le = true;
     sup.tick(now);
-    EXPECT_GT(refusing.le_attempts, LE_ATTEMPTS_BEFORE_ADVICE) << "reset must re-arm LE for the next session";
+    ASSERT_TRUE(sup.status().le_connected);
+    EXPECT_EQ(sup.status().le_backoff, 0) << "carried the old backoff into a healthy link";
+
+    // It drops much later. The retry is prompt, not held over from before.
+    ops.le = false;
+    ops.le_succeeds = false;
+    now += 100000;
+    const int attempts = ops.le_attempts;
+    sup.tick(now);
+    EXPECT_EQ(ops.le_attempts, attempts + 1) << "sat out a backoff inherited from a previous outage";
+    EXPECT_EQ(sup.status().le_backoff, BEARER_BACKOFF_MIN_SECONDS);
+}
+
+// A connect that keeps colliding is BlueZ holding one that never finished.
+// Waiting does not clear it; dropping the bearer does. Without this the only
+// documented remedy was restarting bluetoothd.
+TEST(BearerSupervisor, DropsAStuckLeBearerBeforeRedialling) {
+    class StuckBearer : public FakeBearer {
+    public:
+        ConnectResult connect_le(std::string& err) override {
+            ++le_attempts;
+            err = "GDBus.Error:org.bluez.Error.InProgress: In Progress";
+            return ConnectResult::Busy;
+        }
+    } stuck;
+
+    BearerSupervisor sup(stuck, true);
+    int64_t now = 0;
+    sup.tick(now);
+    now += BEARER_SETTLE_SECONDS + 1;
+
+    // Nothing is dropped while the run is still short enough to be ordinary.
+    while (stuck.le_attempts < LE_ATTEMPTS_BEFORE_ADVICE) {
+        sup.tick(now);
+        now += BEARER_BACKOFF_MAX_SECONDS;
+    }
+    EXPECT_EQ(stuck.le_disconnects, 0) << "dropped the bearer before the collisions meant anything";
+
+    sup.tick(now);
+    EXPECT_EQ(stuck.le_disconnects, 1) << "a wedged bearer was never dropped";
+
+    // One per backoff window at most, not one per tick.
+    sup.tick(now + 1);
+    EXPECT_EQ(stuck.le_disconnects, 1) << "dropped the bearer again inside its own backoff";
+}
+
+// A refusal from the phone is not a collision, and tearing the transport down
+// over one would interrupt a link that is merely unwelcome, not stuck.
+TEST(BearerSupervisor, DoesNotDropTheBearerOverAPlainRefusal) {
+    FakeBearer ops;
+    ops.le_succeeds = false;
+    ops.le_error = "org.bluez.Error.Failed: le-connection-abort-by-local";
+    BearerSupervisor sup(ops, true);
+
+    int64_t now = 0;
+    sup.tick(now);
+    now += BEARER_SETTLE_SECONDS + 1;
+    for (int i = 0; i < LE_ATTEMPTS_BEFORE_ADVICE * 3; ++i) {
+        sup.tick(now);
+        now += BEARER_BACKOFF_MAX_SECONDS;
+    }
+
+    EXPECT_GT(ops.le_attempts, LE_ATTEMPTS_BEFORE_ADVICE);
+    EXPECT_EQ(ops.le_disconnects, 0) << "a refusal is the phone's answer, not a wedged bearer";
+}
+
+// A link that is up must never be torn down by the recovery path.
+TEST(BearerSupervisor, NeverDropsAConnectedLeBearer) {
+    FakeBearer ops;
+    BearerSupervisor sup(ops, true);
+
+    sup.tick(0);
+    sup.tick(1);
+    sup.tick(1 + BEARER_SETTLE_SECONDS);
+    sup.tick(2 + BEARER_SETTLE_SECONDS);
+    ASSERT_TRUE(sup.status().le_connected);
+
+    for (int i = 0; i < 50; ++i)
+        sup.tick(10 + BEARER_BACKOFF_MAX_SECONDS * i);
+    EXPECT_EQ(ops.le_disconnects, 0);
 }
 
 // A wedged bluetoothd and a phone that declines both end in a dead LE link, but

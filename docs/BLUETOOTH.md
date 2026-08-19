@@ -121,7 +121,9 @@ checks the daemon does not make.
 | MAP reports `busy`, or the transport says `Connection refused (111)` | Another computer holds the iPhone's single MAP session | Stop the other client |
 | Pairing fails with `br-connection-key-missing` | A stale bond on one side, or the adapter is not `Pairable` | Delete the computer's entry on the phone (Forget This Device) and `tether --bt-unpair <addr>` locally, then pair again |
 | The phone shows two entries for this computer | A failed pairing left both a Classic and an LE record | Delete both on the phone before retrying |
-| LE never connects and the log repeats `org.bluez.Error.InProgress` | BlueZ is holding a connect operation that never completed | `sudo systemctl restart bluetooth`. Disconnecting the device does not clear it. With `tether-btclass@hci0` enabled the class survives the restart |
+| LE never connects and the log repeats `org.bluez.Error.InProgress` | BlueZ is holding a connect operation that never completed | The daemon now drops the LE bearer itself and redials, which clears it without a restart. If it persists, `sudo systemctl restart bluetooth`. With `tether-btclass@hci0` enabled the class survives the restart |
+| Notifications stopped and never came back, while messages and contacts kept working | Fixed. The bearer supervisor used to stop retrying LE after six attempts, and only a Classic drop or a daemon restart re-armed it | Nothing. LE is now retried indefinitely at the five-minute ceiling, and the ANCS solicitation is kept on air whenever LE is down |
+| `tether --bt-status` reports `Bond: BR/EDR only` | The bond was made without cross-transport key derivation, so it has no LE half and can never carry ANCS | Forget this computer on the iPhone and pair again. Check `secure-connections` in the same output first: re-pairing cannot help while it is off |
 | Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
 | A group conversation cannot be replied to | Working as designed until the route is unambiguous | The thread's `reply_reason` says which condition failed |
 
@@ -329,6 +331,56 @@ The supervisor previously did its retry backoff on this error the same way it do
 refusal. It now retries `InProgress` at the base interval and reserves the exponential growth for refusals,
 which is what the phone actually sends when it declines. That does not fix the stuck state, but it stops the daemon from
 sleeping through the recovery.
+
+### 2026-08-19 - `Bearer.LE1.Connected` is false on a working ANCS link
+
+| | |
+|---|---|
+| Controller | MediaTek MT7925 (RZ717) Wi-Fi 7 |
+| BlueZ | 5.87, running with `--experimental` |
+| Phone | iPhone 15 Pro |
+
+Captured with notification mirroring demonstrably live -- `ancs: Notification
+mirroring is active`, the full GATT tree enumerated under the device including
+all three ANCS characteristics, notifications arriving:
+
+- `org.bluez.Bearer.LE1.Connected` read **false** throughout, while
+  `Paired` and `Bonded` on the same interface read true.
+- The link was opened by the phone, inbound, in answer to the solicitation
+  advert. BlueZ appears not to credit the LE bearer for a connection it did not
+  initiate. An outbound `Bearer.LE1.Connect()` sets it true as expected.
+
+So `Bearer.LE1.Connected` is evidence that LE is up, not evidence that it is
+down. Trusting it alone reported "notifications are unavailable" over a session
+that was delivering them, and kept the supervisor dialling a link that was
+already open.
+
+The ANCS characteristics in the object tree are the better signal, and are what
+Tether now reads (`Device::le_link_up()`). GATT exists only over LE, and BlueZ
+withdraws those objects when the link drops -- confirmed on this hardware, where
+an LE-down device shows only `avrcp` and `sep1-6` under its path and no
+`service*` objects at all. Anything that tears the bearer down now refuses to do
+so while that tree is present.
+
+### 2026-08-19 - The solicitation advert was a one-shot
+
+Same hardware. `LEAdvertisingManager1.ActiveInstances` sat at `0` on a machine
+whose LE link had been down for hours, with BR/EDR, MAP and PBAP up throughout.
+
+The advert carries `Timeout = 180`, BlueZ retires it and calls `Release`, and
+nothing re-registered it: the only callers were `pair_device()` and
+`--bt-solicit`. Since iOS reveals the notification permission, and dials the LE
+link, only while it is broadcasting, a bond went permanently quiet three minutes
+after pairing unless a human kept running `--bt-solicit`.
+
+It is now driven from the connection loop: on air whenever BR/EDR is up, ANCS is
+enabled and LE is down, re-armed each time BlueZ retires it, and unregistered as
+soon as LE connects so the advertising instance is freed. A pairing transaction
+still owns it outright while it runs.
+
+Measured on the machine above, which had been in the broken state all day: the
+daemon brought LE up 12 seconds after starting, with no manual step, and reported
+`Notification mirroring is active`.
 
 ### PBAP
 

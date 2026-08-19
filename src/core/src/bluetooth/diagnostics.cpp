@@ -1,6 +1,7 @@
 #include "tether/bluetooth/diagnostics.hpp"
 
 #include "tether/bluetooth/config.hpp"
+#include "tether/bluetooth/pairing.hpp"
 #include "tether/version.hpp"
 
 #include <algorithm>
@@ -190,6 +191,7 @@ namespace tether::bluetooth {
         report["ancs_enabled"] = config.ancs_enabled;
         report["ancs_content_enabled"] = config.ancs_content_enabled;
         report["group_messages_enabled"] = config.group_messages_enabled;
+        report["ancs_soliciting"] = ancs_solicitation_active();
         report["status"] = redactor.value(status);
         report["connection"] = redactor.value(connection);
         report["timeline"] = redactor.value(diagnostic_timeline());

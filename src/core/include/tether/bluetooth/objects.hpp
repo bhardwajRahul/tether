@@ -48,6 +48,8 @@ namespace tether::bluetooth {
         bool connected = false;
         std::vector<std::string> uuids;
 
+        bool has_ancs_gatt = false;
+
         bool has_le_bearer = false;
         bool le_paired = false;
         bool le_bonded = false;
@@ -60,6 +62,7 @@ namespace tether::bluetooth {
         bool classic_state_known = false;
 
         bool classic_link_up() const { return classic_state_known ? classic_connected : connected; }
+        bool le_link_up() const { return le_connected || has_ancs_gatt; }
 
         bool has_uuid(const std::string& uuid) const;
         bool supports_map() const { return has_uuid(UUID_MAP_MAS); }
@@ -106,6 +109,10 @@ namespace tether::bluetooth {
         bool le_peripheral = false;
         bool advertising = false;
         bool class_ok = false;
+        bool bonded_device_present = false;
+        bool bond_has_le = false;
+        bool secure_connections = false;
+        bool secure_connections_known = false;
         // Adapter the steps below apply to, e.g. "hci0". The class unit is templated on it.
         std::string adapter_id;
         // Human-readable explanations for anything short of full mode, shown verbatim
