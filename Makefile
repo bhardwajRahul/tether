@@ -15,7 +15,7 @@ test: debug
 	cd extension && npm test
 
 install: release
-	cmake --install build/release
+	sudo cmake --install build/release
 
 package: release
 	cd build/release && cpack
@@ -44,6 +44,16 @@ fmt:
 .PHONY: extension
 extension:
 	@./extension/build.sh
+
+.PHONY: reset reset-wifi reset-bt
+reset:
+	@./scripts/tether-reset.sh all
+
+reset-wifi:
+	@./scripts/tether-reset.sh wifi
+
+reset-bt:
+	@./scripts/tether-reset.sh bt
 
 clean:
 	rm -rf build

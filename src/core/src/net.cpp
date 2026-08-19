@@ -10,12 +10,19 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "tether/bluetooth/config.hpp"
+#include "tether/bluetooth/connection.hpp"
+#include "tether/bluetooth/contacts.hpp"
+#include "tether/bluetooth/diagnostics.hpp"
+#include "tether/bluetooth/monitor.hpp"
+#include "tether/bluetooth/pairing.hpp"
 #include "tether/client.hpp"
 #include "tether/crypto.hpp"
 #include "tether/discovery.hpp"
 #include "tether/file_transfer.hpp"
 #include "tether/otp.hpp"
 #include "tether/wayland.hpp"
+#include <atomic>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -128,6 +135,53 @@ namespace tether {
         return total_written;
     }
 
+    // Plain-socket counterpart to robust_ssl_write. These packets are
+    // newline-delimited JSON and the local client fds are non-blocking, so a
+    // short write splits one event across the framing boundary: every later
+    // event on that socket is then misparsed and the client goes silently deaf
+    // rather than erroring. Either the whole packet goes out or none of it does.
+    static std::mutex g_write_locks_mutex;
+    static std::map<int, std::mutex> g_write_locks;
+
+    static std::mutex& write_lock_for(int fd) {
+        std::lock_guard<std::mutex> lock(g_write_locks_mutex);
+        return g_write_locks[fd];
+    }
+
+    static bool robust_plain_write(int fd, const void* buf, size_t num) {
+        std::lock_guard<std::mutex> lock(write_lock_for(fd));
+        const char* p = static_cast<const char*>(buf);
+        size_t written = 0;
+        int stalls = 0;
+        // Before the first byte, a socket that will not drain just costs us the
+        // packet. After it there is no way back, so a committed write waits far
+        // longer before abandoning a stream it has already framed.
+        constexpr int STALL_LIMIT_UNCOMMITTED = 200;
+        constexpr int STALL_LIMIT_COMMITTED = 5000;
+
+        while (written < num) {
+            const ssize_t n = write(fd, p + written, num - written);
+            if (n > 0) {
+                written += static_cast<size_t>(n);
+                stalls = 0;
+                continue;
+            }
+            if (n < 0 && errno == EINTR)
+                continue;
+            if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                if (++stalls > (written == 0 ? STALL_LIMIT_UNCOMMITTED : STALL_LIMIT_COMMITTED)) {
+                    debug::log(ERR, "net: fd {} is not draining; {} of {} bytes written", fd, written, num);
+                    return false;
+                }
+                usleep(1000);
+                continue;
+            }
+            debug::log(ERR, "net write error on fd {}: {}", fd, std::strerror(errno));
+            return false;
+        }
+        return true;
+    }
+
     void broadcast_message(const std::string& msg, int exclude_fd) {
         std::string packet = msg;
         if (!packet.empty() && packet.back() != '\n')
@@ -140,23 +194,27 @@ namespace tether {
             if (session.ssl) {
                 robust_ssl_write(session.ssl, packet.c_str(), packet.size());
             } else {
-                if (write(fd, packet.c_str(), packet.size()) < 0) {
-                    debug::log(ERR, "net write error\n");
-                }
+                robust_plain_write(fd, packet.c_str(), packet.size());
             }
         }
     }
 
     static void write_plain_packet(int fd, const std::string& packet) {
-        if (write(fd, packet.c_str(), packet.size()) < 0) {
-            debug::log(ERR, "net write error\n");
-        }
+        robust_plain_write(fd, packet.c_str(), packet.size());
     }
 
     void broadcast_local_event(const std::string& msg, int exclude_fd) {
         std::string packet = msg;
         if (packet.empty() || packet.back() != '\n')
             packet += '\n';
+
+        // Bluetooth state events feed the diagnostic timeline.
+        if (packet.find("\"bt_") != std::string::npos) {
+            try {
+                bluetooth::record_diagnostic_event(nlohmann::json::parse(packet));
+            } catch (...) {
+            }
+        }
 
         std::lock_guard<std::mutex> lock(g_subscribers_mutex);
         for (int fd : local_subscribers) {
@@ -194,6 +252,213 @@ namespace tether {
         }
 
         return "";
+    }
+
+    static nlohmann::json build_bt_connection_status() {
+        if (bluetooth::g_bt_connections)
+            return bluetooth::g_bt_connections->status();
+        return nlohmann::json{{"command", "bt_connection_changed"},
+                              {"device_present", false},
+                              {"link_reason", "Bluetooth is unavailable."},
+                              {"profile_reason", ""}};
+    }
+
+    nlohmann::json build_bt_status() {
+        nlohmann::json status;
+        status["command"] = "bt_status";
+        status["available"] = bluetooth::g_bluez != nullptr && bluetooth::g_bluez->running();
+        const auto config = bluetooth::load_config();
+        status["device_address"] = config.device_address;
+        status["ancs_enabled"] = config.ancs_enabled;
+        status["ancs_content_enabled"] = config.ancs_content_enabled;
+        if (!bluetooth::g_bluez) {
+            status["capability"] = nullptr;
+            status["adapters"] = nlohmann::json::array();
+            return status;
+        }
+
+        status["capability"] = bluetooth::to_json(bluetooth::g_bluez->capability());
+        nlohmann::json adapters = nlohmann::json::array();
+        for (const auto& adapter : bluetooth::g_bluez->snapshot().adapters)
+            adapters.push_back(bluetooth::to_json(adapter));
+        status["adapters"] = adapters;
+        return status;
+    }
+
+    // Guards against two pairing transactions racing for the same agent and
+    // advertisement object paths.
+    static std::atomic<bool> g_bt_pair_busy{false};
+
+    // A second StartDiscovery while one is running just gets stopped early by the
+    // first one's StopDiscovery.
+    static std::atomic<bool> g_bt_scan_busy{false};
+
+    static constexpr int BT_SCAN_SECONDS = 20;
+
+    static void run_bt_scan() {
+        nlohmann::json event;
+        event["command"] = "bt_scan_result";
+
+        if (g_bt_scan_busy.exchange(true)) {
+            event["success"] = false;
+            event["message"] = "A Bluetooth scan is already running.";
+            broadcast_local_event(event.dump());
+            return;
+        }
+
+        std::string err;
+        // Each tick republishes the device list, so the UI fills in as the phone
+        // shows up rather than only at the end of the scan.
+        const bool ok =
+            bluetooth::g_bluez &&
+            bluetooth::scan_devices(
+                *bluetooth::g_bluez, BT_SCAN_SECONDS, []() { broadcast_local_event(build_bt_devices().dump()); }, err);
+
+        g_bt_scan_busy = false;
+        event["success"] = ok;
+        event["message"] = ok ? "Bluetooth scan finished." : (err.empty() ? "Bluetooth is unavailable." : err);
+        broadcast_local_event(build_bt_devices().dump());
+        broadcast_local_event(event.dump());
+    }
+
+    static void run_bt_pair(const std::string& address) {
+        if (!bluetooth::g_bluez) {
+            nlohmann::json event;
+            event["command"] = "bt_pair_result";
+            event["success"] = false;
+            event["status"] = "error";
+            event["message"] = "Bluetooth is unavailable.";
+            broadcast_local_event(event.dump());
+            return;
+        }
+
+        if (g_bt_pair_busy.exchange(true)) {
+            nlohmann::json event;
+            event["command"] = "bt_pair_result";
+            event["success"] = false;
+            event["status"] = "busy";
+            event["message"] = "Another pairing attempt is already in progress.";
+            broadcast_local_event(event.dump());
+            return;
+        }
+
+        auto config = bluetooth::load_config();
+        auto result = bluetooth::pair_device(
+            *bluetooth::g_bluez,
+            address,
+            config.auth_strategy,
+            [](const std::string& step, const std::string& detail) {
+                nlohmann::json event;
+                event["command"] = "bt_pair_progress";
+                event["step"] = step;
+                event["detail"] = detail;
+                broadcast_local_event(event.dump());
+            },
+            nullptr);
+
+        if (result.success) {
+            config.device_address = result.device_address;
+            // A BR/EDR-only bond can never have ANCS. Only a bond this transaction
+            // actually created settles that: an "already_paired" result, or a phone
+            // that merely wasn't exposing its LE bearer at this instant, must not
+            // latch mirroring off — nothing in the UI could turn it back on.
+            if (result.dual_bond)
+                config.ancs_enabled = true;
+            else if (result.status == "paired")
+                config.ancs_enabled = false;
+            bluetooth::save_config(config);
+            // Point supervision at the device we just bonded with.
+            if (bluetooth::g_bt_connections)
+                bluetooth::g_bt_connections->set_device(config.device_address, config.ancs_enabled);
+        }
+
+        g_bt_pair_busy = false;
+        broadcast_local_event(bluetooth::to_json(result).dump());
+        broadcast_local_event(build_bt_status().dump());
+    }
+
+    static void run_bt_unpair(const std::string& address) {
+        if (!bluetooth::g_bluez)
+            return;
+        auto result = bluetooth::unpair_device(*bluetooth::g_bluez, address);
+        nlohmann::json event = bluetooth::to_json(result);
+        event["command"] = "bt_unpair_result";
+        broadcast_local_event(event.dump());
+        broadcast_local_event(build_bt_status().dump());
+    }
+
+    nlohmann::json build_bt_threads() {
+        nlohmann::json result;
+        result["command"] = "bt_threads";
+        nlohmann::json threads = nlohmann::json::array();
+        {
+            std::lock_guard<std::mutex> lock(bluetooth::message_store_mutex());
+            for (const auto& thread : bluetooth::message_store().threads()) {
+                auto entry = bluetooth::to_json(thread);
+                // Contact names are applied for display only. Key on addresses, so a renamed or ambiguous contact can
+                // never change which conversation a message belongs to.
+                if (auto name = bluetooth::contact_store().name_for(thread.key); !name.empty())
+                    entry["name"] = name;
+                entry["group"] = thread.key.rfind("group:", 0) == 0;
+                threads.push_back(std::move(entry));
+            }
+        }
+
+        // Resolved after the store lock is released, not underneath it: deciding
+        // who a group reply would go to reads the contacts, which the same lock
+        // guards, and std::mutex is not recursive.
+        for (auto& entry : threads) {
+            if (!entry.value("group", false)) {
+                entry["repliable"] = true;
+                bluetooth::Recipient recipient;
+                std::string parse_err;
+                if (bluetooth::recipient_from_thread_key(entry.value("thread", ""), recipient, parse_err)) {
+                    if (std::string why = bluetooth::delivery_warning(recipient); !why.empty())
+                        entry["reply_warning"] = why;
+                }
+                continue;
+            }
+            std::string reason;
+            const auto eligibility = bluetooth::group_reply_status(entry.value("thread", ""), reason);
+            entry["repliable"] = eligibility == bluetooth::ReplyEligibility::Allowed;
+            entry["reply_status"] = bluetooth::to_string(eligibility);
+            if (!reason.empty())
+                entry["reply_reason"] = reason;
+        }
+
+        result["threads"] = threads;
+        return result;
+    }
+
+    nlohmann::json build_bt_messages(const std::string& thread_key) {
+        nlohmann::json result;
+        result["command"] = "bt_messages";
+        result["thread"] = thread_key;
+        nlohmann::json messages = nlohmann::json::array();
+        {
+            std::lock_guard<std::mutex> lock(bluetooth::message_store_mutex());
+            const std::string name = bluetooth::contact_store().name_for(thread_key);
+            for (const auto& message : bluetooth::message_store().messages(thread_key)) {
+                auto entry = bluetooth::to_json(message);
+                if (!name.empty() && !message.outgoing)
+                    entry["name"] = name;
+                messages.push_back(std::move(entry));
+            }
+        }
+        result["messages"] = messages;
+        return result;
+    }
+
+    nlohmann::json build_bt_devices() {
+        nlohmann::json result;
+        result["command"] = "bt_devices";
+        nlohmann::json devices = nlohmann::json::array();
+        if (bluetooth::g_bluez) {
+            for (const auto& device : bluetooth::g_bluez->snapshot().devices)
+                devices.push_back(bluetooth::to_json(device));
+        }
+        result["devices"] = devices;
+        return result;
     }
 
     static nlohmann::json build_local_state_snapshot() {
@@ -427,9 +692,7 @@ namespace tether {
                     if (j.contains("command") && j["command"] == "subscribe") {
                         register_local_subscriber(client_fd);
                         std::string payload = build_local_state_snapshot().dump() + "\n";
-                        if (write(client_fd, payload.c_str(), payload.size()) < 0) {
-                            debug::log(ERR, "net write error\n");
-                        }
+                        write_plain_packet(client_fd, payload);
                         // Replay any current OTP so a freshly reconnected extension
                         // (MV3 service worker restart) gets it without waiting for a
                         // new_otp push it may have missed while disconnected. Skip the
@@ -437,23 +700,200 @@ namespace tether {
                         // restart re-injects it into whatever site the user is on now.
                         if (Otp otp = otp_peek(); otp && !otp_is_claimed()) {
                             std::string otp_payload = make_otp_event(otp).dump() + "\n";
-                            if (write(client_fd, otp_payload.c_str(), otp_payload.size()) < 0) {
-                                debug::log(ERR, "net write error\n");
-                            }
+                            write_plain_packet(client_fd, otp_payload);
                         }
+                        // Same reasoning for Bluetooth: connection status is only
+                        // broadcast when it changes, so a client that subscribed
+                        // after the last change would otherwise never learn whether
+                        // messages are connected, and would keep its composer shut.
+                        write_plain_packet(client_fd, build_bt_connection_status().dump() + "\n");
                         continue;
                     } else if (j.contains("command") && j["command"] == "unsubscribe") {
                         unregister_local_subscriber(client_fd);
                         std::string payload = "{\"command\":\"unsubscribed\"}\n";
-                        if (write(client_fd, payload.c_str(), payload.size()) < 0) {
-                            debug::log(ERR, "net write error\n");
-                        }
+                        write_plain_packet(client_fd, payload);
                         continue;
                     } else if (j.contains("command") && j["command"] == "state_snapshot") {
                         std::string payload = build_local_state_snapshot().dump() + "\n";
-                        if (write(client_fd, payload.c_str(), payload.size()) < 0) {
-                            debug::log(ERR, "net write error\n");
+                        write_plain_packet(client_fd, payload);
+                        continue;
+                    } else if (j.contains("command") && j["command"] == "bt_status") {
+                        std::string payload = build_bt_status().dump() + "\n";
+                        write_plain_packet(client_fd, payload);
+                        continue;
+                    } else if (j.contains("command") && j["command"] == "bt_scan") {
+                        std::thread(run_bt_scan).detach();
+                    } else if (j.contains("command") && j["command"] == "bt_list_devices") {
+                        std::string payload = build_bt_devices().dump() + "\n";
+                        write_plain_packet(client_fd, payload);
+                        continue;
+                    } else if (j.contains("command") && j["command"] == "bt_pair" && j.contains("address")) {
+                        // Pairing waits on the user and the phone, so it runs on
+                        // its own thread; progress and the result arrive as events.
+                        std::string address = j["address"];
+                        std::thread([address]() { run_bt_pair(address); }).detach();
+                    } else if (j.contains("command") && j["command"] == "bt_unpair" && j.contains("address")) {
+                        std::string address = j["address"];
+                        std::thread([address]() { run_bt_unpair(address); }).detach();
+                    } else if (j.contains("command") && j["command"] == "bt_set_device" && j.contains("address")) {
+                        auto config = bluetooth::load_config();
+                        config.device_address = j["address"];
+                        bluetooth::save_config(config);
+                        if (bluetooth::g_bt_connections)
+                            bluetooth::g_bt_connections->set_device(config.device_address, config.ancs_enabled);
+                        broadcast_local_event(build_bt_status().dump());
+                    } else if (j.contains("command") && j["command"] == "bt_list_threads") {
+                        std::string payload = build_bt_threads().dump() + "\n";
+                        write_plain_packet(client_fd, payload);
+                        continue;
+                    } else if (j.contains("command") && j["command"] == "bt_list_messages" && j.contains("thread")) {
+                        std::string payload = build_bt_messages(j["thread"]).dump() + "\n";
+                        write_plain_packet(client_fd, payload);
+                        continue;
+                    } else if (j.contains("command") && j["command"] == "bt_mark_read" &&
+                               (j.contains("handle") || j.contains("handles"))) {
+                        std::vector<std::string> handles;
+                        if (j.contains("handles") && j["handles"].is_array()) {
+                            for (const auto& h : j["handles"])
+                                if (h.is_string())
+                                    handles.push_back(h.get<std::string>());
+                        } else if (j["handle"].is_string()) {
+                            handles.push_back(j["handle"].get<std::string>());
                         }
+                        const bool read = j.value("read", true);
+                        // Each write-through is a blocking OBEX call against a
+                        // session that serves them one at a time, so the batch gets
+                        // one worker rather than a thread per message, and reports
+                        // once rather than making the UI refresh per handle.
+                        if (!handles.empty()) {
+                            std::thread([handles, read]() {
+                                int changed = 0;
+                                int synced = 0;
+                                std::string last_err;
+                                for (const auto& handle : handles) {
+                                    std::string err;
+                                    bool handle_synced = false;
+                                    if (bluetooth::mark_message_read(handle, read, err, &handle_synced))
+                                        ++changed;
+                                    if (handle_synced)
+                                        ++synced;
+                                    if (!err.empty())
+                                        last_err = err;
+                                }
+                                nlohmann::json event;
+                                event["command"] = "bt_message_read";
+                                event["handles"] = handles;
+                                event["read"] = read;
+                                event["success"] = changed > 0;
+                                event["synced"] = synced;
+                                if (!last_err.empty())
+                                    event["message"] = last_err;
+                                broadcast_local_event(event.dump());
+                            }).detach();
+                        }
+                    } else if (j.contains("command") && j["command"] == "bt_send_message" && j.contains("thread") &&
+                               j.contains("body")) {
+                        std::string thread = j["thread"];
+                        std::string body = j["body"];
+                        // PushMessage is a blocking OBEX transfer, so it cannot
+                        // run on the loop that has to keep serving the UI.
+                        std::thread([thread, body]() {
+                            std::string err;
+                            bluetooth::Message sent;
+                            nlohmann::json event;
+                            event["command"] = "bt_send_result";
+                            event["thread"] = thread;
+                            event["success"] = bluetooth::send_message(thread, body, sent, err);
+                            if (event["success"]) {
+                                // The phone reports nothing about a sent message,
+                                // so the local record is announced the same way an
+                                // incoming one would be.
+                                nlohmann::json message = bluetooth::to_json(sent);
+                                message["command"] = "bt_message";
+                                broadcast_local_event(message.dump());
+                            } else {
+                                event["message"] = err;
+                            }
+                            broadcast_local_event(event.dump());
+                        }).detach();
+                    } else if (j.contains("command") && j["command"] == "bt_solicit") {
+                        // The advertisement that makes iOS reveal its Messages and
+                        // Contacts permission toggles is otherwise only on air for a
+                        // few minutes after pairing, leaving a full unpair/re-pair as
+                        // the only way back.
+                        std::thread([]() {
+                            nlohmann::json event;
+                            event["command"] = "bt_solicit_result";
+
+                            // Telling someone to switch on what is already on and
+                            // already working reads as the app not knowing its own
+                            // state. Nothing needs soliciting in that case.
+                            if (build_bt_connection_status().value("ancs_ready", false)) {
+                                event["success"] = true;
+                                event["message"] = "Notification mirroring is already active; nothing to do.";
+                                broadcast_local_event(event.dump());
+                                return;
+                            }
+
+                            std::string err;
+                            event["success"] = bluetooth::g_bluez && bluetooth::solicit_ancs(*bluetooth::g_bluez, err);
+                            event["message"] =
+                                event["success"]
+                                    ? "Asked the iPhone to re-offer notification access. Watch the connection "
+                                      "status. If it does not go active within a minute or two, toggle Show "
+                                      "Message Notifications off and on in Settings > Bluetooth > (i) -- it can "
+                                      "need re-granting even when it already looks enabled."
+                                    : (err.empty() ? "Bluetooth is unavailable." : err);
+                            broadcast_local_event(event.dump());
+                        }).detach();
+                    } else if (j.contains("command") && j["command"] == "bt_set_ancs") {
+                        auto config = bluetooth::load_config();
+                        config.ancs_enabled = j.value("enabled", true);
+                        bluetooth::save_config(config);
+                        if (bluetooth::g_bt_connections)
+                            bluetooth::g_bt_connections->set_device(config.device_address, config.ancs_enabled);
+                        broadcast_local_event(build_bt_status().dump());
+                    } else if (j.contains("command") && j["command"] == "bt_set_ancs_content") {
+                        auto config = bluetooth::load_config();
+                        config.ancs_content_enabled = j.value("enabled", true);
+                        bluetooth::save_config(config);
+                        if (bluetooth::g_bt_connections)
+                            bluetooth::g_bt_connections->set_ancs_content_enabled(config.ancs_content_enabled);
+                        // Group correlation reads notification bodies, so it
+                        // follows this toggle.
+                        bluetooth::set_group_replies_enabled(config.group_messages_enabled &&
+                                                             config.ancs_content_enabled);
+                        broadcast_local_event(build_bt_status().dump());
+                    } else if (j.contains("command") && j["command"] == "bt_list_notifications") {
+                        nlohmann::json payload;
+                        payload["command"] = "bt_notifications";
+                        payload["notifications"] = bluetooth::g_bt_connections
+                                                       ? bluetooth::g_bt_connections->notifications()
+                                                       : nlohmann::json::array();
+                        std::string out = payload.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace) + "\n";
+                        write_plain_packet(client_fd, out);
+                        continue;
+                    } else if (j.contains("command") && j["command"] == "bt_notification_action" && j.contains("uid")) {
+                        // ANCS offers positive and negative only; there is no
+                        // free-text reply to expose here.
+                        const bool positive = j.value("action", "positive") == "positive";
+                        nlohmann::json payload;
+                        payload["command"] = "bt_notification_action_result";
+                        payload["uid"] = j["uid"];
+                        payload["success"] =
+                            bluetooth::g_bt_connections &&
+                            bluetooth::g_bt_connections->perform_notification_action(
+                                j["uid"].get<uint32_t>(),
+                                positive ? bluetooth::ancs::ActionId::Positive : bluetooth::ancs::ActionId::Negative);
+                        broadcast_local_event(payload.dump());
+                    } else if (j.contains("command") && j["command"] == "bt_connection") {
+                        std::string out = build_bt_connection_status().dump() + "\n";
+                        write_plain_packet(client_fd, out);
+                        continue;
+                    } else if (j.contains("command") && j["command"] == "bt_diagnostics") {
+                        nlohmann::json connection = build_bt_connection_status();
+                        std::string out = bluetooth::build_diagnostics(build_bt_status(), connection).dump() + "\n";
+                        write_plain_packet(client_fd, out);
                         continue;
                     } else if (j.contains("command") && j["command"] == "clipboard_set" && j.contains("content")) {
                         std::string content = j["content"];
@@ -465,9 +905,7 @@ namespace tether {
                             resp["command"] = "clipboard_content";
                             resp["content"] = g_wayland->get_clipboard();
                             std::string payload = resp.dump() + "\n";
-                            if (write(client_fd, payload.c_str(), payload.size()) < 0) {
-                                debug::log(ERR, "net write error\n");
-                            }
+                            write_plain_packet(client_fd, payload);
                             continue;
                         }
                     } else if (j.contains("command") && j["command"] == "new_otp" && j.contains("otp")) {
@@ -477,18 +915,14 @@ namespace tether {
                         // so the browser fills it without depending on its polling timing.
                         broadcast_local_event(make_otp_event({code, id}).dump(), client_fd);
                         std::string payload = "{\"status\":\"ok\"}\n";
-                        if (write(client_fd, payload.c_str(), payload.size()) < 0) {
-                            debug::log(ERR, "net write error\n");
-                        }
+                        write_plain_packet(client_fd, payload);
                         continue;
                     } else if (j.contains("command") && j["command"] == "request_otp") {
                         // Claimed by the first site that polls for it, so the next site
                         // the user visits doesn't get handed the previous site's code.
                         Otp otp = otp_take_for_host(j.value("url", std::string{}));
                         std::string payload = make_otp_event(otp).dump() + "\n";
-                        if (write(client_fd, payload.c_str(), payload.size()) < 0) {
-                            debug::log(ERR, "net write error\n");
-                        }
+                        write_plain_packet(client_fd, payload);
                         continue;
                     } else if (j.contains("command") && j["command"] == "consume_otp") {
                         // A page filled the code; retire it so it isn't re-served. Scoped
@@ -496,9 +930,7 @@ namespace tether {
                         // the code that just arrived for the current one.
                         otp_consume(j.value("otp_id", static_cast<uint64_t>(0)));
                         std::string payload = "{\"status\":\"ok\"}\n";
-                        if (write(client_fd, payload.c_str(), payload.size()) < 0) {
-                            debug::log(ERR, "net write error\n");
-                        }
+                        write_plain_packet(client_fd, payload);
                         continue;
                     } else if (j.contains("command") && j["command"] == "file_start") {
                         if (broadcast_tcp_message(msg) == 0) {
@@ -506,9 +938,7 @@ namespace tether {
                             resp["command"] = "error";
                             resp["message"] = "no_connected_mobile_client";
                             std::string payload = resp.dump() + "\n";
-                            if (write(client_fd, payload.c_str(), payload.size()) < 0) {
-                                debug::log(ERR, "net write error\n");
-                            }
+                            write_plain_packet(client_fd, payload);
                             continue;
                         }
                     } else if (j.contains("command") && j["command"] == "file_chunk") {
@@ -517,9 +947,7 @@ namespace tether {
                             resp["command"] = "error";
                             resp["message"] = "no_connected_mobile_client";
                             std::string payload = resp.dump() + "\n";
-                            if (write(client_fd, payload.c_str(), payload.size()) < 0) {
-                                debug::log(ERR, "net write error\n");
-                            }
+                            write_plain_packet(client_fd, payload);
                             continue;
                         }
                     } else if (j.contains("command") && j["command"] == "file_end") {
@@ -528,9 +956,7 @@ namespace tether {
                             resp["command"] = "error";
                             resp["message"] = "no_connected_mobile_client";
                             std::string payload = resp.dump() + "\n";
-                            if (write(client_fd, payload.c_str(), payload.size()) < 0) {
-                                debug::log(ERR, "net write error\n");
-                            }
+                            write_plain_packet(client_fd, payload);
                             continue;
                         }
 
@@ -539,9 +965,7 @@ namespace tether {
                         resp["transfer_id"] = j["transfer_id"];
                         resp["status"] = "success";
                         std::string payload = resp.dump() + "\n";
-                        if (write(client_fd, payload.c_str(), payload.size()) < 0) {
-                            debug::log(ERR, "net write error\n");
-                        }
+                        write_plain_packet(client_fd, payload);
                         continue;
                     } else if (j.contains("command") && j["command"] == "accept_device" && j.contains("fingerprint")) {
                         std::string print = j["fingerprint"];
@@ -648,9 +1072,7 @@ namespace tether {
                 }
 
                 std::string response = "OK\n";
-                if (write(client_fd, response.c_str(), response.size()) < 0) {
-                    debug::log(ERR, "net write error\n");
-                }
+                write_plain_packet(client_fd, response);
             }
 
             if (start > 0) {

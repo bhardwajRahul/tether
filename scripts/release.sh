@@ -71,10 +71,11 @@ gh release create "$TAG" "$TARBALL" "$DEB" "$RPM" --title "Release $TAG" --gener
 if [ -d "$AUR_GIT_DIR" ]; then
     echo "🧬 Updating tether-git AUR..."
     sed -i "s/^pkgver=.*/pkgver=$VERSION/" "$AUR_GIT_DIR/PKGBUILD"
+    cp "$REPO_ROOT/packaging/tether.install" "$AUR_GIT_DIR/tether.install"
     (
         cd "$AUR_GIT_DIR"
         makepkg --printsrcinfo > .SRCINFO
-        git add PKGBUILD .SRCINFO
+        git add PKGBUILD .SRCINFO tether.install
         git commit -m "update to $VERSION"
         git push
     )
@@ -89,10 +90,11 @@ if [ -d "$AUR_BIN_DIR" ]; then
     SHA256=$(sha256sum "$TARBALL" | cut -d' ' -f1)
     sed -i "s/^pkgver=.*/pkgver=$VERSION/" "$AUR_BIN_DIR/PKGBUILD"
     sed -i "s/^sha256sums=.*/sha256sums=('$SHA256')/" "$AUR_BIN_DIR/PKGBUILD"
+    cp "$REPO_ROOT/packaging/tether.install" "$AUR_BIN_DIR/tether.install"
     (
         cd "$AUR_BIN_DIR"
         makepkg --printsrcinfo > .SRCINFO
-        git add PKGBUILD .SRCINFO
+        git add PKGBUILD .SRCINFO tether.install
         git commit -m "update to $VERSION"
         git push
     )
