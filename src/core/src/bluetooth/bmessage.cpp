@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <cstdlib>
 #include <ctime>
 
 namespace tether::bluetooth {
@@ -50,6 +51,13 @@ namespace tether::bluetooth {
         using tether::bluetooth::vcard_name_from_n;
         using tether::bluetooth::vcard_split_property;
 
+        // iOS tags address values with a one-character scheme prefix and a colon
+        // ("TEL:7:+15035551234"). Neither a phone number nor an email address can
+        // contain a colon, so a colon in second position is always such a tag.
+        std::string strip_scheme_tag(const std::string& value) {
+            return value.size() > 2 && value[1] == ':' ? value.substr(2) : value;
+        }
+
         // Reads one BEGIN:VCARD..END:VCARD block starting at `index`, which must
         // point at the BEGIN line. Leaves `index` on the END line.
         VCardParty read_vcard(const std::vector<std::string>& lines, size_t& index) {
@@ -66,9 +74,9 @@ namespace tether::bluetooth {
                     continue;
 
                 if (name == "TEL" && party.tel.empty())
-                    party.tel = value;
+                    party.tel = strip_scheme_tag(value);
                 else if (name == "EMAIL" && party.email.empty())
-                    party.email = value;
+                    party.email = strip_scheme_tag(value);
                 else if (name == "FN")
                     party.name = value;
                 else if (name == "N")
@@ -268,6 +276,11 @@ namespace tether::bluetooth {
         // silently losing its leading space.
         bool line_needs_stuffing(const std::string& line) { return is_stuffable_token(line); }
 
+        const char* env_or(const char* name, const char* fallback) {
+            const char* value = std::getenv(name);
+            return value && *value ? value : fallback;
+        }
+
     } // namespace
 
     bool validate_recipient(const Recipient& recipient, std::string& err_out) {
@@ -328,13 +341,6 @@ namespace tether::bluetooth {
         return true;
     }
 
-    std::string delivery_warning(const Recipient& recipient) {
-        if (recipient.kind == RecipientKind::Email)
-            return "The iPhone corrupts Apple ID email addresses in Bluetooth messages, so this probably will not "
-                   "arrive. It reports the send as successful either way. Send from the iPhone to be sure.";
-        return {};
-    }
-
     bool recipient_from_thread_key(const std::string& thread_key, Recipient& out, std::string& err_out) {
         if (thread_key.rfind("tel:", 0) == 0) {
             out.kind = RecipientKind::Tel;
@@ -347,6 +353,22 @@ namespace tether::bluetooth {
             return false;
         }
         return validate_recipient(out, err_out);
+    }
+
+    bool recipient_from_input(const std::string& text, Recipient& out, std::string& err_out) {
+        out.address = trim(text);
+        // phone number never contains '@', and an AppleID address always does
+        out.kind = out.address.find('@') == std::string::npos ? RecipientKind::Tel : RecipientKind::Email;
+        return validate_recipient(out, err_out);
+    }
+
+    std::string thread_key_for(const Recipient& recipient) {
+        if (recipient.kind == RecipientKind::Email) {
+            std::string email = normalize_email(recipient.address);
+            return email.empty() ? std::string{} : "email:" + email;
+        }
+        std::string tel = normalize_phone(recipient.address);
+        return tel.empty() ? std::string{} : "tel:" + tel;
     }
 
     std::string stuff_body(const std::string& body) {
@@ -384,7 +406,8 @@ namespace tether::bluetooth {
         out += "BEGIN:BMSG\r\n";
         out += "VERSION:1.0\r\n";
         out += "STATUS:UNREAD\r\n";
-        // Always SMS_GSM, even for an Apple-ID recipient; iOS picks the transport.
+        // Always SMS_GSM, even for an Apple-ID recipient; iOS picks the transport,
+        // and its own inbound Apple-ID messages arrive typed SMS_GSM too.
         out += "TYPE:SMS_GSM\r\n";
         out += "FOLDER:telecom/msg/outbox\r\n";
 
@@ -397,12 +420,26 @@ namespace tether::bluetooth {
         out += "TEL:\r\n";
         out += "END:VCARD\r\n";
 
+        // iOS discards the first two characters of an EMAIL property value, so a
+        // bare address arrives two characters short and reaches nobody. Its own
+        // vCards tag address values with a two-character scheme prefix
+        // ("TEL:7:+15035551234"); emitting one gives the parser something to
+        // consume other than the address. TEL values are not truncated and take
+        // no tag.
+        //
+        // The tag was read off the phone's own vCards rather than any spec, so
+        // TETHER_BMSG_ADDR_PREFIX overrides it if a future iOS expects another.
+        const char* email_tag = env_or("TETHER_BMSG_ADDR_PREFIX", "7:");
+
         out += "BEGIN:BENV\r\n";
         for (const auto& recipient : recipients) {
             out += "BEGIN:VCARD\r\n";
             out += "VERSION:2.1\r\n";
             out += "N:;;;;\r\n";
-            out += (recipient.kind == RecipientKind::Tel ? "TEL:" : "EMAIL:");
+            const bool is_email = recipient.kind == RecipientKind::Email;
+            out += is_email ? "EMAIL:" : "TEL:";
+            if (is_email)
+                out += email_tag;
             out += recipient.address;
             out += "\r\n";
             out += "END:VCARD\r\n";
@@ -410,9 +447,9 @@ namespace tether::bluetooth {
 
         out += "BEGIN:BBODY\r\n";
         out += "CHARSET:UTF-8\r\n";
-        // LENGTH counts the body alone, without the BEGIN:MSG/END:MSG delimiters
-        // that surround it.
-        out += "LENGTH:" + std::to_string(stuffed.size()) + "\r\n";
+        // MAP 3.1.3: LENGTH is the byte count of the whole BEGIN:MSG..END:MSG
+        // block, delimiters and their CRLFs included, not of the payload alone.
+        out += "LENGTH:" + std::to_string(message_block.size()) + "\r\n";
         out += message_block;
         out += "END:BBODY\r\n";
         out += "END:BENV\r\n";

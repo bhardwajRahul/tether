@@ -68,22 +68,22 @@ namespace tether::bluetooth {
         bool operator==(const Recipient&) const = default;
     };
 
-    // Why a message to this recipient may not arrive, or an empty string when
-    // there is no known problem. Advisory: the send still goes out.
-    //
-    // An iPhone truncates the EMAIL address in a pushed bMessage and delivers to
-    // the result, which is not an address anyone owns: "foo.bar@icloud.com"
-    // arrives as "o.bar@icloud.com" and the message reaches nobody. Confirmed
-    // against two independent senders emitting byte-identical bMessages, so this
-    // is the phone's behaviour and no wording of the message avoids it.
-    std::string delivery_warning(const Recipient& recipient);
-
     // Returns false with err_out set when the address must not be used.
     bool validate_recipient(const Recipient& recipient, std::string& err_out);
 
     // Parses a namespaced thread key ("tel:+15551234567", "email:a@b.com") into a
     // validated recipient. Returns false for unknown prefixes.
     bool recipient_from_thread_key(const std::string& thread_key, Recipient& out, std::string& err_out);
+
+    // Parses freeform text as typed into a "To:" field. An '@' anywhere means an
+    // email/AppleID address; anything else is read as a phone number. The address
+    // is kept as written so err_out names what is actually wrong with it rather
+    // than describing something normalization already threw away.
+    bool recipient_from_input(const std::string& text, Recipient& out, std::string& err_out);
+
+    // The conversation key this recipient's messages group under. Round trips
+    // through recipient_from_thread_key.
+    std::string thread_key_for(const Recipient& recipient);
 
     // MAP byte-stuffing: a body line that would otherwise a structural
     // token is prefixed with a space. Mirrors what the parser undoes, so a body
@@ -93,9 +93,8 @@ namespace tether::bluetooth {
     // Builds a MAP 1.4 bMessage for PushMessage. Recipients must already be
     // validated
     //
-    // TYPE is always SMS_GSM, including for AppleID recipients: iOS decides
-    // between SMS and iMessage itself, and nothing here can force or observe
-    // that choice.
+    // TYPE is SMS_GSM, including for AppleID recipients: iOS decides between SMS
+    // and iMessage itself, and nothing here can force or observe that choice.
     std::string build_bmessage(const std::vector<Recipient>& recipients, const std::string& body);
 
 } // namespace tether::bluetooth

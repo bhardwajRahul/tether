@@ -114,14 +114,42 @@ TEST(ContactStore, ResolvesNamesByTelAndEmail) {
     EXPECT_EQ(store.name_for("tel:+15559999999"), "");
 }
 
-// Tether never invents a country code, so the two forms stay distinct keys. A
-// contact stored one way must not silently label the other.
-TEST(ContactStore, DoesNotEquateNationalAndE164Forms) {
+// Most contacts are saved without a country code while the phone keys threads
+// in E.164, so a strict match leaves the majority of conversations labelled with
+// a bare number. A display name is not routing -- the thread key is untouched
+// and a reply still goes to the address on the thread -- so the two forms are
+// allowed to meet here, and only here.
+TEST(ContactStore, MatchesNationalAndE164FormsForDisplay) {
     ContactStore store;
-    store.set(parse_vcards("BEGIN:VCARD\nFN:Ada\nTEL:+15551234567\nEND:VCARD\n"));
+    store.set(parse_vcards("BEGIN:VCARD\nFN:Ada\nTEL:+15551234567\nEND:VCARD\n"
+                           "BEGIN:VCARD\nFN:Grace\nTEL:5039998888\nEND:VCARD\n"));
 
     EXPECT_EQ(store.name_for("tel:+15551234567"), "Ada");
-    EXPECT_EQ(store.name_for("tel:5551234567"), "");
+    EXPECT_EQ(store.name_for("tel:5551234567"), "Ada") << "a contact saved in E.164 must label a national thread";
+    EXPECT_EQ(store.name_for("tel:+15039998888"), "Grace") << "and the reverse, which is the common case";
+
+    EXPECT_EQ(store.name_for("tel:+15550000000"), "") << "an unknown number stays unlabelled";
+}
+
+// Two people cannot be told apart by the fallback alone, and labelling a thread
+// with the wrong person's name is worse than labelling it with a number.
+TEST(ContactStore, RefusesToGuessWhenTwoContactsShareASuffix) {
+    ContactStore store;
+    store.set(parse_vcards("BEGIN:VCARD\nFN:Ada\nTEL:+15551234567\nEND:VCARD\n"
+                           "BEGIN:VCARD\nFN:Grace\nTEL:+445551234567\nEND:VCARD\n"));
+
+    EXPECT_EQ(store.name_for("tel:+15551234567"), "Ada") << "an exact key still wins outright";
+    EXPECT_EQ(store.name_for("tel:5551234567"), "") << "an ambiguous suffix resolves to no name";
+}
+
+// Shortcodes and extensions are too short to carry a country code, so they match
+// exactly or not at all.
+TEST(ContactStore, DoesNotSuffixMatchShortNumbers) {
+    ContactStore store;
+    store.set(parse_vcards("BEGIN:VCARD\nFN:Alerts\nTEL:4125\nEND:VCARD\n"));
+
+    EXPECT_EQ(store.name_for("tel:4125"), "Alerts");
+    EXPECT_EQ(store.name_for("tel:+15554125"), "");
 }
 
 TEST(ContactStore, SurvivesJsonRoundTrip) {

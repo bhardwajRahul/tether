@@ -2,10 +2,14 @@
 #include "daemon_client.hpp"
 #include "ui_util.hpp"
 
+#include <cstring>
 #include <ctime>
 #include <gdk/gdkkeysyms.h>
+#include <map>
 #include <set>
 #include <string>
+#include <tether/bluetooth/bmessage.hpp>
+#include <tether/bluetooth/contacts.hpp>
 #include <vector>
 
 namespace tether::ui {
@@ -47,12 +51,21 @@ namespace tether::ui {
             // why not when it cannot.
             bool selected_repliable = false;
             std::string selected_block_reason;
-            std::string selected_warning;
+
+            // Addressing a message to someone with no conversation yet.
+            bool composing = false;
+            GtkWidget* compose_bar = nullptr;
+            GtkWidget* compose_entry = nullptr;
+            GtkListStore* compose_model = nullptr;
+            std::map<std::string, std::string> compose_names;
+            std::string compose_requested_key;
         };
 
         MessagesState g_messages;
 
         constexpr int SEND_TIMEOUT_SECONDS = 60;
+
+        enum ComposeColumn { COMPOSE_COL_DISPLAY, COMPOSE_COL_ADDRESS, COMPOSE_COL_SEARCH, COMPOSE_COL_COUNT };
 
         void update_composer_sensitivity();
         void apply_row_selection(GtkWidget* row);
@@ -61,6 +74,8 @@ namespace tether::ui {
         // Bluetooth toggles, which only helps when that is the actual problem.
         void set_banner(const std::string& text, bool offer_permissions = false);
         std::string composer_text();
+        void leave_compose();
+        void on_recipient_changed(GtkEditable*, gpointer);
 
         std::string format_timestamp(int64_t epoch) {
             if (epoch <= 0)
@@ -110,8 +125,6 @@ namespace tether::ui {
             // The daemon owns the decision about whether a group can be replied
             // to; the UI must not re-derive it from the key shape.
             g_object_set_data(G_OBJECT(row), "repliable", GINT_TO_POINTER(thread.value("repliable", true) ? 1 : 0));
-            g_object_set_data_full(
-                G_OBJECT(row), "reply_warning", g_strdup(thread.value("reply_warning", "").c_str()), g_free);
             g_object_set_data_full(
                 G_OBJECT(row), "reply_reason", g_strdup(thread.value("reply_reason", "").c_str()), g_free);
             g_object_set_data(G_OBJECT(row), "group", GINT_TO_POINTER(thread.value("group", false) ? 1 : 0));
@@ -173,20 +186,12 @@ namespace tether::ui {
             GtkStyleContext* bubble_style = gtk_widget_get_style_context(bubble);
             gtk_style_context_add_class(bubble_style, "tether-bubble");
             gtk_style_context_add_class(bubble_style, outgoing ? "tether-bubble-out" : "tether-bubble-in");
-            // The phone reports every send as delivered, including the ones it addressed to nobody.
-            const bool unconfirmed = outgoing && !g_messages.selected_warning.empty();
-            if (unconfirmed)
-                gtk_style_context_add_class(bubble_style, "tether-bubble-unconfirmed");
             gtk_box_pack_start(GTK_BOX(box), bubble, FALSE, FALSE, 0);
 
-            const std::string meta =
-                unconfirmed ? (stamp.empty() ? std::string("not confirmed") : stamp + " \u00b7 not confirmed") : stamp;
-            if (!meta.empty()) {
-                GtkWidget* time_label = gtk_label_new(meta.c_str());
+            if (!stamp.empty()) {
+                GtkWidget* time_label = gtk_label_new(stamp.c_str());
                 gtk_label_set_xalign(GTK_LABEL(time_label), outgoing ? 1.0 : 0.0);
                 gtk_style_context_add_class(gtk_widget_get_style_context(time_label), "muted");
-                if (unconfirmed)
-                    gtk_widget_set_tooltip_text(time_label, g_messages.selected_warning.c_str());
                 gtk_box_pack_start(GTK_BOX(box), time_label, FALSE, FALSE, 0);
             }
 
@@ -245,10 +250,15 @@ namespace tether::ui {
             // Restoring the selection keeps the open conversation from closing
             // every time a message arrives. The row is new, so the reply
             // eligibility attached to it has to be re-read.
+            // While composing, the selection is driven by the To: field, and the
+            // thread being addressed usually has no row yet. Letting the refresh
+            // fall through to clear_selection() would wipe a half-typed message
+            // every time anything arrived.
             if (reselect) {
                 gtk_list_box_select_row(GTK_LIST_BOX(g_messages.thread_list), GTK_LIST_BOX_ROW(reselect));
-                apply_row_selection(reselect);
-            } else if (!g_messages.selected_thread.empty()) {
+                if (!g_messages.composing)
+                    apply_row_selection(reselect);
+            } else if (!g_messages.selected_thread.empty() && !g_messages.composing) {
                 clear_selection();
             }
 
@@ -367,7 +377,10 @@ namespace tether::ui {
             else if (!g_messages.map_open)
                 reason = "Messages are not connected.";
             else if (g_messages.selected_thread.empty())
-                reason = "Select a conversation first.";
+                reason = g_messages.composing
+                             ? (g_messages.selected_block_reason.empty() ? "Enter a recipient."
+                                                                         : g_messages.selected_block_reason.c_str())
+                             : "Select a conversation first.";
             else if (!g_messages.selected_block_reason.empty())
                 reason = g_messages.selected_block_reason.c_str();
             else if (!can_send)
@@ -375,14 +388,10 @@ namespace tether::ui {
             gtk_widget_set_tooltip_text(g_messages.send_button, reason);
 
             if (g_messages.composer_notice) {
-                // Why the box is shut, or -- when it is open but the phone is
-                // known to mangle this conversation's address -- why a send that
-                // reports success may still not arrive.
+                // Why the box is shut.
                 const char* notice = nullptr;
                 if (reason && !composer_live && !g_messages.sending)
                     notice = reason;
-                else if (composer_live && !g_messages.selected_warning.empty())
-                    notice = g_messages.selected_warning.c_str();
                 if (notice)
                     set_text(g_messages.composer_notice, notice);
                 gtk_widget_set_visible(g_messages.composer_notice, notice != nullptr);
@@ -468,6 +477,9 @@ namespace tether::ui {
                 // leaves the text where the user can retry or copy it out.
                 GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(g_messages.composer));
                 gtk_text_buffer_set_text(buffer, "", -1);
+                // The conversation now exists under this key, so the thread list
+                // refresh that follows will select it like any other.
+                leave_compose();
                 set_status_main("Sent");
                 return;
             }
@@ -479,7 +491,6 @@ namespace tether::ui {
             g_messages.selected_name.clear();
             g_messages.selected_repliable = false;
             g_messages.selected_block_reason.clear();
-            g_messages.selected_warning.clear();
             update_composer_sensitivity();
             gtk_stack_set_visible_child_name(GTK_STACK(g_messages.placeholder_stack), "placeholder");
         }
@@ -490,12 +501,10 @@ namespace tether::ui {
             const char* thread = (const char*)g_object_get_data(G_OBJECT(row), "thread");
             const char* name = (const char*)g_object_get_data(G_OBJECT(row), "name");
             const char* block_reason = (const char*)g_object_get_data(G_OBJECT(row), "reply_reason");
-            const char* warning = (const char*)g_object_get_data(G_OBJECT(row), "reply_warning");
             g_messages.selected_thread = thread ? thread : "";
             g_messages.selected_name = name ? name : "";
             g_messages.selected_repliable = g_object_get_data(G_OBJECT(row), "repliable") != nullptr;
             g_messages.selected_block_reason = block_reason ? block_reason : "";
-            g_messages.selected_warning = warning ? warning : "";
             // Which conversation is open is otherwise only legible from the
             // selection highlight in the list beside it.
             set_markup(g_messages.conversation_header,
@@ -506,7 +515,191 @@ namespace tether::ui {
             update_composer_sensitivity();
         }
 
+        // Matches what GtkEntryCompletion does to the typed key before handing it
+        // to the match function, so the two are comparable.
+        std::string fold(const std::string& text) {
+            gchar* normalized = g_utf8_normalize(text.c_str(), -1, G_NORMALIZE_ALL);
+            gchar* folded = g_utf8_casefold(normalized ? normalized : text.c_str(), -1);
+            std::string out = folded ? folded : "";
+            g_free(normalized);
+            g_free(folded);
+            return out;
+        }
+
+        // Read from disk rather than held: the daemon rewrites this cache after
+        // every PBAP sync, and the app outlives several of them.
+        // ponytail: a bt_list_contacts command would give the live store instead
+        // of the last saved snapshot; add it if the cache proves too stale.
+        void rebuild_contact_completion() {
+            gtk_list_store_clear(g_messages.compose_model);
+            g_messages.compose_names.clear();
+
+            const bluetooth::ContactStore contacts = bluetooth::load_contacts();
+            std::set<std::string> seen;
+            for (const auto& card : contacts.contacts()) {
+                std::vector<std::string> addresses = card.tels;
+                addresses.insert(addresses.end(), card.emails.begin(), card.emails.end());
+                for (const auto& address : addresses) {
+                    // The same validation a typed address gets, so the popup can
+                    // never offer something the send path would then refuse.
+                    bluetooth::Recipient recipient;
+                    std::string err;
+                    if (!bluetooth::recipient_from_input(address, recipient, err))
+                        continue;
+                    const std::string key = bluetooth::thread_key_for(recipient);
+                    if (key.empty() || !seen.insert(key).second)
+                        continue;
+                    if (!card.name.empty())
+                        g_messages.compose_names.emplace(key, card.name);
+
+                    const std::string display =
+                        card.name.empty() ? recipient.address : card.name + " · " + recipient.address;
+                    // The normalized form is in the haystack too, so "5551234567"
+                    // finds a contact whose number is stored as "+1 (555) 123-4567".
+                    const std::string search =
+                        fold(card.name + " " + recipient.address + " " + key.substr(key.find(':') + 1));
+
+                    GtkTreeIter iter;
+                    gtk_list_store_append(g_messages.compose_model, &iter);
+                    gtk_list_store_set(g_messages.compose_model,
+                                       &iter,
+                                       COMPOSE_COL_DISPLAY,
+                                       display.c_str(),
+                                       COMPOSE_COL_ADDRESS,
+                                       recipient.address.c_str(),
+                                       COMPOSE_COL_SEARCH,
+                                       search.c_str(),
+                                       -1);
+                }
+            }
+        }
+
+        // Substring, over the name and the number alike. The default match is a
+        // prefix test on the display column, which would miss both a surname and
+        // any number typed without its formatting.
+        gboolean completion_match(GtkEntryCompletion* completion, const gchar* key, GtkTreeIter* iter, gpointer) {
+            if (!key || !*key)
+                return FALSE;
+            GtkTreeModel* model = gtk_entry_completion_get_model(completion);
+            gchar* haystack = nullptr;
+            gtk_tree_model_get(model, iter, COMPOSE_COL_SEARCH, &haystack, -1);
+            const gboolean hit = haystack && std::strstr(haystack, key) != nullptr;
+            g_free(haystack);
+            return hit;
+        }
+
+        // The entry always ends up holding a bare address, never a display name,
+        // so there is exactly one path from what is in the box to the thread key
+        // and no separate selection to fall out of sync with an edit.
+        gboolean on_completion_match_selected(GtkEntryCompletion*, GtkTreeModel* model, GtkTreeIter* iter, gpointer) {
+            gchar* address = nullptr;
+            gtk_tree_model_get(model, iter, COMPOSE_COL_ADDRESS, &address, -1);
+            if (address)
+                gtk_entry_set_text(GTK_ENTRY(g_messages.compose_entry), address);
+            g_free(address);
+            gtk_editable_set_position(GTK_EDITABLE(g_messages.compose_entry), -1);
+            return TRUE;
+        }
+
+        void on_recipient_changed(GtkEditable*, gpointer) {
+            if (!g_messages.composing)
+                return;
+
+            const std::string text = gtk_entry_get_text(GTK_ENTRY(g_messages.compose_entry));
+            g_messages.selected_thread.clear();
+            g_messages.selected_name.clear();
+            g_messages.selected_repliable = false;
+            g_messages.selected_block_reason.clear();
+
+            bluetooth::Recipient recipient;
+            std::string err;
+            if (text.empty()) {
+                // Nothing typed yet is not an error worth shouting about.
+            } else if (bluetooth::recipient_from_input(text, recipient, err)) {
+                g_messages.selected_thread = bluetooth::thread_key_for(recipient);
+                g_messages.selected_repliable = !g_messages.selected_thread.empty();
+                if (auto known = g_messages.compose_names.find(g_messages.selected_thread);
+                    known != g_messages.compose_names.end())
+                    g_messages.selected_name = known->second;
+            } else {
+                g_messages.selected_block_reason = err;
+            }
+
+            const bool bad = !g_messages.selected_block_reason.empty();
+            gtk_entry_set_icon_from_icon_name(
+                GTK_ENTRY(g_messages.compose_entry), GTK_ENTRY_ICON_SECONDARY, bad ? "dialog-error-symbolic" : nullptr);
+            gtk_entry_set_icon_tooltip_text(GTK_ENTRY(g_messages.compose_entry),
+                                            GTK_ENTRY_ICON_SECONDARY,
+                                            bad ? g_messages.selected_block_reason.c_str() : nullptr);
+
+            std::string header = "New Message";
+            if (!g_messages.selected_name.empty())
+                header = g_messages.selected_name;
+            else if (!g_messages.selected_thread.empty())
+                header = recipient.address;
+            set_markup(g_messages.conversation_header, "<b>" + escape_markup(header) + "</b>");
+
+            update_composer_sensitivity();
+
+            // Whatever has already been said to this person belongs above the
+            // composer. Only on a change, so this is not a request per keystroke;
+            // the daemon serves it from memory either way.
+            if (g_messages.selected_thread != g_messages.compose_requested_key) {
+                g_messages.compose_requested_key = g_messages.selected_thread;
+                clear_list_box(g_messages.conversation);
+                gtk_widget_show_all(g_messages.conversation);
+                request_messages(g_messages.selected_thread);
+            }
+        }
+
+        void enter_compose() {
+            // Dropping the selection fires row-selected(nullptr), which would run
+            // clear_selection() over the state set just below.
+            if (g_messages.thread_selected_handler)
+                g_signal_handler_block(g_messages.thread_list, g_messages.thread_selected_handler);
+            gtk_list_box_unselect_all(GTK_LIST_BOX(g_messages.thread_list));
+            if (g_messages.thread_selected_handler)
+                g_signal_handler_unblock(g_messages.thread_list, g_messages.thread_selected_handler);
+
+            g_messages.composing = true;
+            g_messages.compose_requested_key.clear();
+            rebuild_contact_completion();
+
+            clear_list_box(g_messages.conversation);
+            gtk_widget_show_all(g_messages.conversation);
+            gtk_widget_show(g_messages.compose_bar);
+            gtk_stack_set_visible_child_name(GTK_STACK(g_messages.placeholder_stack), "conversation");
+
+            gtk_entry_set_text(GTK_ENTRY(g_messages.compose_entry), "");
+            // set_text only emits "changed" when the text actually differs, so the
+            // reset state is applied here rather than relied on.
+            on_recipient_changed(nullptr, nullptr);
+            gtk_widget_grab_focus(g_messages.compose_entry);
+        }
+
+        void leave_compose() {
+            if (!g_messages.composing)
+                return;
+            g_messages.composing = false;
+            g_messages.compose_requested_key.clear();
+            gtk_widget_hide(g_messages.compose_bar);
+            gtk_entry_set_icon_from_icon_name(GTK_ENTRY(g_messages.compose_entry), GTK_ENTRY_ICON_SECONDARY, nullptr);
+        }
+
+        void on_compose_cancel(GtkWidget*, gpointer) {
+            leave_compose();
+            clear_selection();
+        }
+
+        gboolean on_compose_entry_key(GtkWidget*, GdkEventKey* event, gpointer) {
+            if (event->keyval != GDK_KEY_Escape)
+                return FALSE;
+            on_compose_cancel(nullptr, nullptr);
+            return TRUE;
+        }
+
         void on_thread_selected(GtkListBox*, GtkListBoxRow* row, gpointer) {
+            leave_compose();
             if (!row) {
                 clear_selection();
                 return;
@@ -614,7 +807,20 @@ namespace tether::ui {
         g_messages.thread_selected_handler =
             g_signal_connect(g_messages.thread_list, "row-selected", G_CALLBACK(on_thread_selected), nullptr);
         gtk_container_add(GTK_CONTAINER(thread_scroll), g_messages.thread_list);
-        gtk_paned_pack1(GTK_PANED(paned), thread_scroll, FALSE, FALSE);
+
+        GtkWidget* thread_side = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+        GtkWidget* new_message = gtk_button_new_with_label("New Message");
+        gtk_button_set_image(GTK_BUTTON(new_message),
+                             gtk_image_new_from_icon_name("list-add-symbolic", GTK_ICON_SIZE_BUTTON));
+        gtk_button_set_always_show_image(GTK_BUTTON(new_message), TRUE);
+        gtk_widget_set_margin_top(new_message, 8);
+        gtk_widget_set_margin_bottom(new_message, 8);
+        gtk_widget_set_margin_start(new_message, 8);
+        gtk_widget_set_margin_end(new_message, 8);
+        g_signal_connect(new_message, "clicked", G_CALLBACK(+[](GtkWidget*, gpointer) { enter_compose(); }), nullptr);
+        gtk_box_pack_start(GTK_BOX(thread_side), new_message, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(thread_side), thread_scroll, TRUE, TRUE, 0);
+        gtk_paned_pack1(GTK_PANED(paned), thread_side, FALSE, FALSE);
 
         g_messages.placeholder_stack = gtk_stack_new();
 
@@ -629,6 +835,55 @@ namespace tether::ui {
         gtk_stack_add_named(GTK_STACK(g_messages.placeholder_stack), placeholder, "placeholder");
 
         GtkWidget* conversation_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+
+        g_messages.compose_bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        gtk_container_set_border_width(GTK_CONTAINER(g_messages.compose_bar), 8);
+        gtk_box_pack_start(GTK_BOX(g_messages.compose_bar), gtk_label_new("To:"), FALSE, FALSE, 0);
+
+        g_messages.compose_entry = gtk_entry_new();
+        gtk_entry_set_placeholder_text(GTK_ENTRY(g_messages.compose_entry), "Phone number or email");
+        // Lets the entry shrink with the pane. At its natural minimum the Cancel
+        // button beside it is pushed off the edge of a narrow window.
+        gtk_entry_set_width_chars(GTK_ENTRY(g_messages.compose_entry), 12);
+        gtk_box_pack_start(GTK_BOX(g_messages.compose_bar), g_messages.compose_entry, TRUE, TRUE, 0);
+
+        g_messages.compose_model = gtk_list_store_new(COMPOSE_COL_COUNT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+        GtkEntryCompletion* completion = gtk_entry_completion_new();
+        gtk_entry_completion_set_model(completion, GTK_TREE_MODEL(g_messages.compose_model));
+        gtk_entry_completion_set_text_column(completion, COMPOSE_COL_DISPLAY);
+        gtk_entry_completion_set_match_func(completion, completion_match, nullptr, nullptr);
+        gtk_entry_completion_set_minimum_key_length(completion, 1);
+        // Inline completion would rewrite a half-typed number into whichever
+        // contact happens to start with those digits.
+        gtk_entry_completion_set_inline_completion(completion, FALSE);
+        g_signal_connect(completion, "match-selected", G_CALLBACK(on_completion_match_selected), nullptr);
+        gtk_entry_set_completion(GTK_ENTRY(g_messages.compose_entry), completion);
+        g_object_unref(completion);
+
+        GtkWidget* compose_cancel = gtk_button_new_with_label("Cancel");
+        g_signal_connect(compose_cancel, "clicked", G_CALLBACK(on_compose_cancel), nullptr);
+        gtk_box_pack_start(GTK_BOX(g_messages.compose_bar), compose_cancel, FALSE, FALSE, 0);
+
+        g_signal_connect(g_messages.compose_entry, "changed", G_CALLBACK(on_recipient_changed), nullptr);
+        // Enter in the To: field means "done addressing"; the body is empty and
+        // sending from here would be an accident every time. Connected after the
+        // completion, so a popup selection consumes the key first.
+        g_signal_connect(g_messages.compose_entry,
+                         "activate",
+                         G_CALLBACK(+[](GtkEntry*, gpointer) {
+                             if (gtk_widget_is_sensitive(g_messages.composer))
+                                 gtk_widget_grab_focus(g_messages.composer);
+                         }),
+                         nullptr);
+        g_signal_connect_after(g_messages.compose_entry, "key-press-event", G_CALLBACK(on_compose_entry_key), nullptr);
+
+        // The children are shown once here, then the bar itself is toggled. A
+        // no-show-all container is skipped by gtk_widget_show_all outright, so
+        // showing it later has to be gtk_widget_show on an already-built tree.
+        gtk_box_pack_start(GTK_BOX(conversation_box), g_messages.compose_bar, FALSE, FALSE, 0);
+        gtk_widget_show_all(g_messages.compose_bar);
+        gtk_widget_hide(g_messages.compose_bar);
+        gtk_widget_set_no_show_all(g_messages.compose_bar, TRUE);
 
         GtkWidget* conversation_header_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
         gtk_container_set_border_width(GTK_CONTAINER(conversation_header_box), 10);

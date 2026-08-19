@@ -511,3 +511,35 @@ TEST(MessageStore, EchoIsCollapsedOnReplayToo) {
     EXPECT_EQ(store.size(), 1u);
     EXPECT_EQ(store.threads().size(), 1u);
 }
+
+// Captured from the phone's own sent folder: iOS writes the originator's number
+// scheme-tagged. The tag is transport framing, not part of the address, and
+// leaving it on would key the conversation under an address nobody has.
+TEST(BMessageParse, StripsTheSchemeTagIosPutsOnAddresses) {
+    const BMessage m = parse_bmessage("BEGIN:BMSG\r\n"
+                                      "VERSION:1.0\r\n"
+                                      "STATUS:READ\r\n"
+                                      "TYPE:SMS_GSM\r\n"
+                                      "FOLDER:telecom/msg/sent\r\n"
+                                      "BEGIN:VCARD\r\nVERSION:2.1\r\nTEL:7:+15033201884\r\nEND:VCARD\r\n"
+                                      "BEGIN:BENV\r\n"
+                                      "BEGIN:VCARD\r\nVERSION:2.1\r\nEMAIL:7:cece.blair@icloud.com\r\nEND:VCARD\r\n"
+                                      "BEGIN:BBODY\r\nCHARSET:UTF-8\r\nLENGTH:26\r\n"
+                                      "BEGIN:MSG\r\ntest\r\nEND:MSG\r\n"
+                                      "END:BBODY\r\nEND:BENV\r\nEND:BMSG\r\n");
+
+    ASSERT_TRUE(m.valid);
+    EXPECT_EQ(m.originator.tel, "+15033201884");
+    ASSERT_EQ(m.recipients.size(), 1u);
+    EXPECT_EQ(m.recipients.front().email, "cece.blair@icloud.com");
+    EXPECT_EQ(thread_key_for(m.recipients.front()), "email:cece.blair@icloud.com");
+}
+
+// An untagged address is the common case and must survive untouched.
+TEST(BMessageParse, LeavesAnUntaggedAddressAlone) {
+    const BMessage m = parse_bmessage("BEGIN:BMSG\r\nVERSION:1.0\r\nTYPE:SMS_GSM\r\n"
+                                      "BEGIN:VCARD\r\nVERSION:2.1\r\nEMAIL:ab@icloud.com\r\nEND:VCARD\r\n"
+                                      "END:BMSG\r\n");
+    ASSERT_TRUE(m.valid);
+    EXPECT_EQ(m.originator.email, "ab@icloud.com");
+}

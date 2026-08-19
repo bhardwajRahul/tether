@@ -43,7 +43,7 @@ TEST(BMessageBuild, AlwaysUsesSmsGsmEvenForAppleIdRecipients) {
     const std::string out = build_bmessage({email("someone@example.com")}, "hi");
 
     EXPECT_NE(out.find("TYPE:SMS_GSM"), std::string::npos);
-    EXPECT_NE(out.find("EMAIL:someone@example.com"), std::string::npos);
+    EXPECT_NE(out.find("EMAIL:7:someone@example.com"), std::string::npos);
     // The originator carries an empty TEL; no TEL may carry an address.
     EXPECT_EQ(out.find("TEL:+"), std::string::npos);
     EXPECT_EQ(out.find("TEL:someone"), std::string::npos);
@@ -52,6 +52,22 @@ TEST(BMessageBuild, AlwaysUsesSmsGsmEvenForAppleIdRecipients) {
 // iOS was observed recording a recipient with characters missing from the front
 // of the address, against an envelope that differed from a known-good sender's
 // only in these details. Pinned so the shape cannot drift back.
+// iOS discards the first two characters of an EMAIL value. A two-character
+// scheme tag, the same shape iOS writes its own addresses with, is eaten in the
+// address's place; without it "cece.blair@..." is recorded as "ce.blair@..." and
+// the message reaches nobody. Verified against the phone's own sent folder.
+TEST(BMessageBuild, AppleIdAddressesCarryASchemeTagSoIosCannotEatThem) {
+    const std::string out = build_bmessage({email("cece.blair@icloud.com")}, "hi");
+
+    EXPECT_NE(out.find("EMAIL:7:cece.blair@icloud.com"), std::string::npos);
+    EXPECT_EQ(out.find("EMAIL:cece.blair"), std::string::npos) << "an untagged address loses two characters";
+
+    // A phone number is not truncated and must stay untagged.
+    const std::string tel_out = build_bmessage({tel("+15551234567")}, "hi");
+    EXPECT_NE(tel_out.find("TEL:+15551234567"), std::string::npos);
+    EXPECT_EQ(tel_out.find("TEL:7:"), std::string::npos);
+}
+
 TEST(BMessageBuild, UsesTheVcardShapeIosParsesCorrectly) {
     const std::string out = build_bmessage({email("cece.blair@icloud.com")}, "hi");
 
@@ -73,32 +89,22 @@ TEST(BMessageBuild, EmailRecipientSurvivesAParseOfWhatWasBuilt) {
     EXPECT_EQ(parsed.recipients.front().email, address) << "the recipient lost characters between build and parse";
 }
 
-// An iPhone truncates the EMAIL address in a pushed bMessage and delivers to the
-// result, so the message reaches nobody -- and reports the transfer complete
-// either way. Verified against two independent senders emitting byte-identical
-// bMessages. The send is allowed, so the warning is the only thing standing
-// between the user and a message they believe arrived.
-TEST(BMessageBuild, AppleIdRecipientsCarryADeliveryWarning) {
-    const std::string why = delivery_warning(email("cece.blair@icloud.com"));
-    ASSERT_FALSE(why.empty()) << "an Apple ID recipient was reported as reliable";
-    EXPECT_NE(why.find("not arrive"), std::string::npos) << "the warning does not say what goes wrong";
-
-    EXPECT_TRUE(delivery_warning(tel("+15551234567")).empty()) << "phone recipients are unaffected";
-}
-
-TEST(BMessageBuild, LengthCountsTheBodyWithoutItsDelimiters) {
+// MAP 3.1.3 counts the whole BEGIN:MSG..END:MSG block, delimiters and their
+// CRLFs included -- the "body + 22" every other MAP implementation encodes.
+TEST(BMessageBuild, LengthCountsTheWholeMessageBlock) {
     const std::string out = build_bmessage({tel("+15551234567")}, "hello");
 
     const size_t length_at = out.find("LENGTH:");
     ASSERT_NE(length_at, std::string::npos);
     const size_t declared = std::stoul(out.substr(length_at + 7));
 
-    const std::string open = "BEGIN:MSG\r\n";
-    const size_t begin = out.find(open);
-    const size_t end = out.find("\r\nEND:MSG");
+    const std::string close = "END:MSG\r\n";
+    const size_t begin = out.find("BEGIN:MSG\r\n");
+    const size_t end = out.find(close, begin);
     ASSERT_NE(begin, std::string::npos);
     ASSERT_NE(end, std::string::npos);
-    EXPECT_EQ(declared, end - (begin + open.size()));
+    EXPECT_EQ(declared, end + close.size() - begin);
+    EXPECT_EQ(declared, std::string("hello").size() + 22);
 }
 
 // --- The trust boundary --------------------------------------------------
@@ -243,4 +249,46 @@ TEST(BMessageBuild, RefusesThreadKeysItDoesNotUnderstand) {
     EXPECT_FALSE(recipient_from_thread_key("", out, err));
     EXPECT_FALSE(recipient_from_thread_key("tel:+1555\r\nTEL:+1999", out, err))
         << "an injected key must not pass just because its prefix is known";
+}
+
+// What the compose field hands over: whatever the user typed, in whatever shape
+// they habitually write it.
+TEST(BMessageBuild, ParsesRecipientsFromTypedInput) {
+    Recipient out;
+    std::string err;
+
+    ASSERT_TRUE(recipient_from_input("+1 (555) 123-4567", out, err)) << err;
+    EXPECT_EQ(out.kind, RecipientKind::Tel);
+    EXPECT_EQ(thread_key_for(out), "tel:+15551234567");
+
+    ASSERT_TRUE(recipient_from_input("  Alice@iCloud.com ", out, err)) << err;
+    EXPECT_EQ(out.kind, RecipientKind::Email);
+    EXPECT_EQ(thread_key_for(out), "email:alice@icloud.com");
+
+    // The key a composed message gets has to be the one the thread it belongs to
+    // already uses, or the reply lands in a second conversation with the same
+    // person.
+    ASSERT_TRUE(recipient_from_input("555-1234", out, err)) << err;
+    Recipient round_trip;
+    ASSERT_TRUE(recipient_from_thread_key(thread_key_for(out), round_trip, err)) << err;
+    EXPECT_EQ(round_trip.kind, out.kind);
+    EXPECT_EQ(thread_key_for(round_trip), thread_key_for(out));
+}
+
+TEST(BMessageBuild, RefusesTypedInputThatIsNotAnAddress) {
+    Recipient out;
+    std::string err;
+
+    // A contact name typed without picking a completion. Rejected on the text as
+    // written, so the reason names the letters rather than reporting an empty
+    // number normalization already discarded.
+    EXPECT_FALSE(recipient_from_input("Alice", out, err));
+    EXPECT_FALSE(err.empty());
+
+    EXPECT_FALSE(recipient_from_input("", out, err));
+    EXPECT_FALSE(recipient_from_input("   \t ", out, err));
+    EXPECT_FALSE(recipient_from_input("a@b;c@d", out, err)) << "a vCard delimiter must not reach the phone";
+    EXPECT_FALSE(recipient_from_input("a@b\r\nTEL:+1999", out, err));
+    EXPECT_FALSE(recipient_from_input("a@b@c.com", out, err));
+    EXPECT_FALSE(recipient_from_input("@nobody.com", out, err));
 }

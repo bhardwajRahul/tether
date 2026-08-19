@@ -28,6 +28,8 @@ namespace tether::bluetooth {
     private:
         std::vector<VCard> contacts_;
         std::map<std::string, std::string> by_key_;
+        // Last ten digits of each contact number, for the national-vs-international fallback in name_for.
+        std::map<std::string, std::string> by_tel_suffix_;
     };
 
     // Cached at ~/.local/share/tether/contacts.json so names survive a restart
