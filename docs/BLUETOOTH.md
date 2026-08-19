@@ -20,14 +20,22 @@ Not every machine can do all of it, so Tether resolves one of two modes from liv
   BlueZ >= 5.86 running with its experimental bearer API (org.bluez.Bearer.LE1).
 - Compatibility mode: MAP + PBAP only. Messages and contacts work, notification mirroring does not (older BlueZ).
 
-Run the probe to find out which applies:
-
-```bash
-./scripts/bt-probe.sh              # read-only
-./scripts/bt-probe.sh --set-class  # also fixes the adapter Class of Device
-```
+`tether --bt-status` reports which applies. `scripts/bt-probe.sh` is a
+repo-only development probe that covers a few things the daemon does not check
+(BlueZ version, `obex.service`, tooling); it is not installed by any package.
 
 ## Setup requirements
+
+Two of them need a system change, and both are reported with the exact command by:
+
+```bash
+tether --bt-setup
+```
+
+It prints only what is still missing and never applies anything: both steps
+change how the machine behaves over Bluetooth outside Tether. The GTK app shows
+the same list on the Devices page with a "Copy commands" button. The rest of this
+section is what those commands do and why.
 
 Class of Device must be A/V Hands-Free (major 4, minor 8). iOS only offers the
 "Show Message Notifications" and "Sync Contacts" permissions to a device presenting this
@@ -90,8 +98,11 @@ These are properties of what iOS exposes:
 
 ## Troubleshooting
 
-Start with the two read-only checks. `./scripts/bt-probe.sh` says what the hardware and the
-stack can do. `tether --bt-connection` says what is actually up right now.
+Start with the read-only checks. `tether --bt-setup` says what system setup is
+still missing, `tether --bt-status` says what the hardware and the stack can do,
+and `tether --bt-connection` says what is actually up right now. From a source
+checkout, `./scripts/bt-probe.sh` adds BlueZ-version, tooling, and `obexd`
+checks the daemon does not make.
 
 | Symptom | Cause | What to do |
 |---|---|---|

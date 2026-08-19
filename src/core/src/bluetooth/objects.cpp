@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <filesystem>
 
 namespace tether::bluetooth {
 
@@ -249,6 +250,20 @@ namespace tether::bluetooth {
         return out;
     }
 
+    namespace {
+
+        // Arch = /usr/lib, Debian and Fedora = /usr/libexec.
+        std::string bluetoothd_path() {
+            for (const char* candidate : {"/usr/lib/bluetooth/bluetoothd", "/usr/libexec/bluetooth/bluetoothd"}) {
+                std::error_code ec;
+                if (std::filesystem::exists(candidate, ec))
+                    return candidate;
+            }
+            return "/usr/lib/bluetooth/bluetoothd";
+        }
+
+    } // namespace
+
     Capability resolve_capability(const BluezObjects& objects) {
         Capability cap;
 
@@ -270,6 +285,7 @@ namespace tether::bluetooth {
         }
 
         cap.adapter_present = true;
+        cap.adapter_id = adapter->path.substr(adapter->path.find_last_of('/') + 1);
         cap.powered = adapter->powered;
         cap.le_central = adapter->has_role("central");
         cap.le_peripheral = adapter->has_role("peripheral");
@@ -277,7 +293,7 @@ namespace tether::bluetooth {
         cap.class_ok = adapter->class_is_handsfree();
 
         for (const auto& d : objects.devices) {
-            if (d.has_le_bearer)
+            if (d.has_le_bearer || d.has_classic_bearer)
                 cap.bearer_api = BearerApi::Confirmed;
         }
         if (cap.bearer_api != BearerApi::Confirmed)
@@ -307,15 +323,22 @@ namespace tether::bluetooth {
             cap.mode = DeliveryMode::Compatibility;
         }
         if (cap.bearer_api == BearerApi::Absent) {
-            cap.reasons.emplace_back("BlueZ is not exposing org.bluez.Bearer.LE1. Run bluetoothd with "
-                                     "--experimental to enable notification mirroring.");
+            cap.setup.push_back({"Notification mirroring needs BlueZ's experimental bearer API "
+                                 "(org.bluez.Bearer.LE1), which bluetoothd is not exposing.",
+                                 "sudo mkdir -p /etc/systemd/system/bluetooth.service.d\n"
+                                 "printf '[Service]\\nExecStart=\\nExecStart=" +
+                                     bluetoothd_path() +
+                                     " --experimental\\n' \\\n"
+                                     "  | sudo tee /etc/systemd/system/bluetooth.service.d/experimental.conf\n"
+                                     "sudo systemctl daemon-reload && sudo systemctl restart bluetooth"});
             cap.mode = DeliveryMode::Compatibility;
         } else if (cap.bearer_api == BearerApi::Unknown) {
             cap.reasons.emplace_back("Bearer API support is unconfirmed until a device is bonded.");
         }
         if (!cap.class_ok) {
-            cap.reasons.emplace_back("Adapter Class of Device is not A/V Hands-Free (major 4, minor 8); "
-                                     "the iPhone will not offer its Messages and Contacts permissions.");
+            cap.setup.push_back({"The iPhone will not offer its Messages and Contacts permissions until this "
+                                 "adapter presents itself as A/V Hands-Free (major 4, minor 8).",
+                                 "sudo systemctl enable --now tether-btclass@" + cap.adapter_id});
         }
 
         return cap;
@@ -355,7 +378,18 @@ namespace tether::bluetooth {
         };
     }
 
+    nlohmann::json to_json(const SetupStep& s) {
+        return {
+            {"what", s.what},
+            {"command", s.command},
+        };
+    }
+
     nlohmann::json to_json(const Capability& c) {
+        nlohmann::json setup = nlohmann::json::array();
+        for (const auto& step : c.setup)
+            setup.push_back(to_json(step));
+
         return {
             {"mode", to_string(c.mode)},
             {"bearer_api", to_string(c.bearer_api)},
@@ -365,7 +399,9 @@ namespace tether::bluetooth {
             {"le_peripheral", c.le_peripheral},
             {"advertising", c.advertising},
             {"class_ok", c.class_ok},
+            {"adapter_id", c.adapter_id},
             {"reasons", c.reasons},
+            {"setup", setup},
         };
     }
 

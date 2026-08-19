@@ -43,6 +43,10 @@ namespace tether::ui {
             std::string selected_bt_name;
 
             GtkWidget* lbl_bt_name = nullptr;
+            GtkWidget* bt_setup_box = nullptr;
+            GtkWidget* lbl_bt_setup_what = nullptr;
+            GtkWidget* lbl_bt_setup_command = nullptr;
+            std::string bt_setup_commands;
             GtkWidget* lbl_bt_mode = nullptr;
             GtkWidget* lbl_bt_link = nullptr;
             GtkWidget* lbl_bt_messages = nullptr;
@@ -113,9 +117,28 @@ namespace tether::ui {
 
             set_markup(g_devices.lbl_bt_name, "<b>" + escape_markup(g_devices.selected_bt_name) + "</b>");
 
+            const nlohmann::json capability = g_devices.bt_status.value("capability", nlohmann::json());
+
+            std::string what;
+            std::string commands;
+            if (capability.is_object() && capability.contains("setup")) {
+                int n = 0;
+                for (const auto& step : capability["setup"]) {
+                    if (!what.empty())
+                        what += "\n";
+                    what += std::to_string(++n) + ". " + step.value("what", "");
+                    if (!commands.empty())
+                        commands += "\n";
+                    commands += step.value("command", "");
+                }
+            }
+            g_devices.bt_setup_commands = commands;
+            set_text(g_devices.lbl_bt_setup_what, what);
+            set_text(g_devices.lbl_bt_setup_command, commands);
+            gtk_widget_set_visible(g_devices.bt_setup_box, !commands.empty());
+
             std::string mode;
             if (!g_devices.bt_status.empty()) {
-                const nlohmann::json capability = g_devices.bt_status.value("capability", nlohmann::json());
                 if (!available || capability.is_null()) {
                     mode = "Bluetooth is unavailable on this machine.";
                 } else if (capability.value("mode", "") == "full") {
@@ -321,6 +344,11 @@ namespace tether::ui {
         void on_bt_content_toggled(GtkWidget* widget, gpointer) {
             daemon_send({{"command", "bt_set_ancs_content"},
                          {"enabled", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) == TRUE}});
+        }
+
+        void on_bt_setup_copy_click(GtkWidget*, gpointer) {
+            gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), g_devices.bt_setup_commands.c_str(), -1);
+            set_status_main("Setup commands copied to the clipboard.");
         }
 
         void on_bt_solicit_click(GtkWidget*, gpointer) {
@@ -891,6 +919,39 @@ namespace tether::ui {
         g_devices.lbl_bt_name = gtk_label_new(nullptr);
         gtk_label_set_xalign(GTK_LABEL(g_devices.lbl_bt_name), 0.0);
         gtk_box_pack_start(GTK_BOX(bt_box), g_devices.lbl_bt_name, FALSE, FALSE, 0);
+
+        // One-time system setup, shown only while something is actually missing.
+        g_devices.bt_setup_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+        gtk_style_context_add_class(gtk_widget_get_style_context(g_devices.bt_setup_box), "tether-setup");
+        gtk_box_pack_start(GTK_BOX(bt_box), g_devices.bt_setup_box, FALSE, FALSE, 0);
+
+        GtkWidget* lbl_setup_title = gtk_label_new(nullptr);
+        gtk_label_set_xalign(GTK_LABEL(lbl_setup_title), 0.0);
+        gtk_label_set_markup(GTK_LABEL(lbl_setup_title), "<b>Bluetooth needs one-time system setup</b>");
+        gtk_box_pack_start(GTK_BOX(g_devices.bt_setup_box), lbl_setup_title, FALSE, FALSE, 0);
+
+        g_devices.lbl_bt_setup_what = gtk_label_new(nullptr);
+        gtk_label_set_xalign(GTK_LABEL(g_devices.lbl_bt_setup_what), 0.0);
+        gtk_label_set_line_wrap(GTK_LABEL(g_devices.lbl_bt_setup_what), TRUE);
+        gtk_box_pack_start(GTK_BOX(g_devices.bt_setup_box), g_devices.lbl_bt_setup_what, FALSE, FALSE, 0);
+
+        // Selectable so the command can be copied by hand as well as by the button.
+        g_devices.lbl_bt_setup_command = gtk_label_new(nullptr);
+        gtk_label_set_xalign(GTK_LABEL(g_devices.lbl_bt_setup_command), 0.0);
+        gtk_label_set_selectable(GTK_LABEL(g_devices.lbl_bt_setup_command), TRUE);
+        gtk_label_set_line_wrap(GTK_LABEL(g_devices.lbl_bt_setup_command), TRUE);
+        gtk_style_context_add_class(gtk_widget_get_style_context(g_devices.lbl_bt_setup_command),
+                                    "tether-setup-command");
+        gtk_box_pack_start(GTK_BOX(g_devices.bt_setup_box), g_devices.lbl_bt_setup_command, FALSE, FALSE, 0);
+
+        GtkWidget* setup_actions = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget* btn_setup_copy = gtk_button_new_with_label("Copy commands");
+        gtk_widget_set_tooltip_text(btn_setup_copy,
+                                    "Run these in a terminal. Tether does not change your Bluetooth "
+                                    "adapter or bluetoothd on its own.");
+        g_signal_connect(btn_setup_copy, "clicked", G_CALLBACK(on_bt_setup_copy_click), nullptr);
+        gtk_box_pack_start(GTK_BOX(setup_actions), btn_setup_copy, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(g_devices.bt_setup_box), setup_actions, FALSE, FALSE, 0);
 
         g_devices.lbl_bt_mode = gtk_label_new(nullptr);
         gtk_label_set_xalign(GTK_LABEL(g_devices.lbl_bt_mode), 0.0);

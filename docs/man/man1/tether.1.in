@@ -46,6 +46,55 @@ Accept a pending pairing request locally for the specified device fingerprint.
 .TP
 \fB\-\-pair\fR
 Send a pairing request over TCP to the daemon.
+.SH BLUETOOTH OPTIONS
+Bluetooth carries iPhone messages (MAP), contacts (PBAP), and notification
+mirroring (ANCS). It is independent of the Wi-Fi pairing above.
+.TP
+\fB\-\-bt-setup\fR
+Show the one-time system setup Bluetooth still needs, with the command for each
+step. Nothing is applied: the steps change how the machine behaves over
+Bluetooth outside Tether, so running them is left to the user. One step enables
+\fBtether-btclass@\fR\fIADAPTER\fR\fB.service\fR, which is installed by the
+package but never enabled for you.
+.TP
+\fB\-\-bt-status\fR
+Show Bluetooth adapter capability and delivery mode.
+.TP
+\fB\-\-bt-devices\fR
+List Bluetooth devices known to BlueZ.
+.TP
+\fB\-\-bt-connection\fR
+Show Bluetooth link and profile connection state.
+.TP
+\fB\-\-bt-pair\fR \fIADDRESS\fR
+Pair with an iPhone over Bluetooth.
+.TP
+\fB\-\-bt-unpair\fR \fIADDRESS\fR
+Remove a Bluetooth bond.
+.TP
+\fB\-\-bt-solicit\fR
+Re-advertise for ANCS so the iPhone shows its permission toggles again.
+.TP
+\fB\-\-bt-threads\fR
+List iPhone message conversations.
+.TP
+\fB\-\-bt-messages\fR \fITHREAD\fR
+Show messages in one conversation.
+.TP
+\fB\-\-bt-send\fR \fITHREAD\fR \fITEXT\fR
+Reply in one conversation.
+.TP
+\fB\-\-bt-notifications\fR
+List mirrored iPhone notifications.
+.TP
+\fB\-\-bt-ancs\fR \fIon\fR|\fIoff\fR
+Turn notification mirroring on or off.
+.TP
+\fB\-\-bt-ancs-content\fR \fIon\fR|\fIoff\fR
+Mirror notification titles and bodies, not just the app.
+.TP
+\fB\-\-bt-diagnostics\fR
+Print a redacted Bluetooth report for a bug report.
 .SH EXAMPLES
 Retrieve clipboard:
 .IP
@@ -62,6 +111,16 @@ tether \-\-discover
 Send a file:
 .IP
 tether \-f document.pdf
+.PP
+See what Bluetooth still needs before pairing an iPhone:
+.IP
+tether \-\-bt-setup
+.SH FILES
+.TP
+\fB/usr/lib/systemd/system/tether\-btclass@.service\fR
+Sets the Bluetooth adapter's Class of Device to A/V Hands\-Free, which iOS
+requires before it will offer its Messages and Contacts permissions. Installed
+but not enabled; see \fB\-\-bt-setup\fR.
 .SH SEE ALSO
 .BR tetherd (8),
 .BR tether-gtk (1)

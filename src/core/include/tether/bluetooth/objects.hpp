@@ -90,6 +90,13 @@ namespace tether::bluetooth {
     // only meaningful once a bond exists.
     enum class BearerApi { Unknown, Confirmed, Absent };
 
+    struct SetupStep {
+        std::string what;
+        std::string command;
+
+        bool operator==(const SetupStep&) const = default;
+    };
+
     struct Capability {
         DeliveryMode mode = DeliveryMode::Blocked;
         BearerApi bearer_api = BearerApi::Unknown;
@@ -99,8 +106,12 @@ namespace tether::bluetooth {
         bool le_peripheral = false;
         bool advertising = false;
         bool class_ok = false;
+        // Adapter the steps below apply to, e.g. "hci0". The class unit is templated on it.
+        std::string adapter_id;
         // Human-readable explanations for anything short of full mode, shown verbatim
         std::vector<std::string> reasons;
+        // Remediable gaps only. Anything the user cannot act on stays in reasons.
+        std::vector<SetupStep> setup;
 
         bool operator==(const Capability&) const = default;
     };
@@ -117,6 +128,7 @@ namespace tether::bluetooth {
 
     nlohmann::json to_json(const Adapter& adapter);
     nlohmann::json to_json(const Device& device);
+    nlohmann::json to_json(const SetupStep& step);
     nlohmann::json to_json(const Capability& capability);
 
 } // namespace tether::bluetooth

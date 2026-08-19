@@ -3,6 +3,7 @@
 #include <ctime>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <sstream>
 #include <string>
 #include <tether/client.hpp>
 #include <tether/crypto.hpp>
@@ -106,6 +107,7 @@ void print_help() {
               << "  --port <num>             Connect over TCP port (default 5134).\n"
               << "  --timeout <ms>           Discovery scan duration in milliseconds (default 3000).\n"
               << "  --list-devices           List all paired connection devices.\n"
+              << "  --bt-setup               Show the one-time system setup Bluetooth still needs.\n"
               << "  --bt-status              Show Bluetooth adapter capability and delivery mode.\n"
               << "  --bt-devices             List Bluetooth devices known to BlueZ.\n"
               << "  --bt-connection          Show Bluetooth link and profile connection state.\n"
@@ -130,6 +132,47 @@ void print_help() {
               << "  tether --discover --timeout 5000\n"
               << "  tether -f ./report.pdf\n"
               << "  tether --accept 9a4f21...\n";
+}
+
+// The two known gaps (adapter class, experimental API) change the machine
+// outside Tether, so they are printed for the user to run, never applied here.
+static int print_bt_setup(tether::Client& client) {
+    nlohmann::json resp;
+    try {
+        resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_status\"}\n"));
+    } catch (const std::exception&) {
+        debug::log(ERR, "Could not read Bluetooth status from the daemon.\n");
+        return 1;
+    }
+
+    if (!resp.value("available", false)) {
+        fprintf(stdout, "Bluetooth: unavailable (is bluetoothd running?)\n");
+        return 1;
+    }
+
+    const auto& cap = resp["capability"];
+    const auto& setup = cap["setup"];
+    if (setup.empty()) {
+        fprintf(stdout, "Bluetooth setup is complete. Nothing to do.\n");
+        return 0;
+    }
+
+    fprintf(stdout,
+            "\n%zu step%s left before the iPhone Bluetooth features work:\n",
+            setup.size(),
+            setup.size() == 1 ? "" : "s");
+
+    size_t n = 0;
+    for (const auto& step : setup) {
+        fprintf(stdout, "\n%zu. %s\n\n", ++n, step.value("what", "").c_str());
+        // Indent every line so a multi-line command still reads as one block.
+        std::istringstream lines(step.value("command", ""));
+        for (std::string line; std::getline(lines, line);)
+            fprintf(stdout, "     %s\n", line.c_str());
+    }
+
+    fprintf(stdout, "\nRe-run 'tether --bt-setup' afterwards to confirm.\n");
+    return 0;
 }
 
 static int print_bt_status(tether::Client& client) {
@@ -166,6 +209,10 @@ static int print_bt_status(tether::Client& client) {
         for (const auto& reason : cap["reasons"])
             fprintf(stdout, "  - %s\n", reason.get<std::string>().c_str());
     }
+
+    const size_t pending = cap.contains("setup") ? cap["setup"].size() : 0;
+    if (pending > 0)
+        fprintf(stdout, "\n%zu setup step%s remaining. Run: tether --bt-setup\n", pending, pending == 1 ? "" : "s");
     return 0;
 }
 
@@ -496,6 +543,8 @@ int main(int argc, char* argv[]) {
             action = "discover";
         } else if (arg == "--list-devices") {
             action = "list";
+        } else if (arg == "--bt-setup") {
+            action = "bt_setup";
         } else if (arg == "--bt-status") {
             action = "bt_status";
         } else if (arg == "--bt-devices") {
@@ -654,6 +703,8 @@ int main(int argc, char* argv[]) {
         debug::log(INFO, "File transfer delivered.\n");
     } else if (action == "native") {
         run_native_messaging_host(client);
+    } else if (action == "bt_setup") {
+        return print_bt_setup(client);
     } else if (action == "bt_status") {
         return print_bt_status(client);
     } else if (action == "bt_devices") {

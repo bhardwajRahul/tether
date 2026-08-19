@@ -128,7 +128,8 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/man/tetherd.8"
         DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
 
 # Bluetooth CoD unit. Installed but not enabled: it changes how the machine presents itself over Bluetooth, so turning it on is the user's call.
-set(SYSTEMD_UNIT_DIR "${CMAKE_INSTALL_LIBDIR}/systemd/system" CACHE PATH "systemd system unit directory")
+# Not CMAKE_INSTALL_LIBDIR: that is multiarch on Debian, where units still live in /usr/lib/systemd.
+set(SYSTEMD_UNIT_DIR "lib/systemd/system" CACHE PATH "systemd system unit directory")
 install(FILES packaging/systemd/tether-btclass@.service
         DESTINATION "${SYSTEMD_UNIT_DIR}")
 

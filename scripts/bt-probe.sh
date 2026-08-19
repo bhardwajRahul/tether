@@ -150,12 +150,6 @@ fi
 # which looks nothing like a permissions problem and wastes a lot of debugging.
 echo
 echo "Conflicts"
-if systemctl --user is-active --quiet blueferry.service 2>/dev/null; then
-    clash "blueferry.service is running and will hold the iPhone's MAP session"
-    note "Stop it while testing Tether: systemctl --user stop blueferry.service"
-else
-    ok "no other known MAP consumer running"
-fi
 
 if systemctl --user is-active --quiet obex.service 2>/dev/null; then
     ok "obexd active (required for MAP and PBAP)"

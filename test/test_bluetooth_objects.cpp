@@ -184,6 +184,7 @@ TEST(Capability, FullModeWhenBearerConfirmed) {
     EXPECT_TRUE(cap.advertising);
     EXPECT_TRUE(cap.class_ok);
     EXPECT_TRUE(cap.reasons.empty());
+    EXPECT_TRUE(cap.setup.empty());
 }
 
 // Without --experimental the bearer interface can never appear, so its absence
@@ -201,7 +202,30 @@ TEST(Capability, CompatibilityWhenExperimentalIsOff) {
 
     EXPECT_EQ(cap.mode, DeliveryMode::Compatibility);
     EXPECT_EQ(cap.bearer_api, BearerApi::Absent);
-    EXPECT_FALSE(cap.reasons.empty());
+    ASSERT_EQ(cap.setup.size(), 1u);
+    EXPECT_NE(cap.setup[0].command.find("--experimental"), std::string::npos);
+}
+
+// BlueZ stopped gating the Bearer API on --experimental, so bluetoothd's command
+// line is not evidence against it. Reading it as proof told users whose
+// notification mirroring already worked to install a drop-in that changes nothing.
+// A bearer object is the observation that settles it, and BREDR1 answers the
+// question without an LE phone in range.
+TEST(Capability, AClassicBearerConfirmsTheApiWithoutTheExperimentalFlag) {
+    Payload p(join(ADAPTER_FULL, R"({
+      '/org/bluez/hci0/dev_F8_D3_F0_3C_84_4A': {
+        'org.bluez.Device1': { 'Paired': <true>, 'Bonded': <true> },
+        'org.bluez.Bearer.BREDR1': { 'Bonded': <true>, 'Connected': <false> }
+      }
+    })")
+                  .c_str());
+    auto objects = parse_managed_objects(p.v);
+    objects.experimental_api = false;
+    auto cap = resolve_capability(objects);
+
+    EXPECT_EQ(cap.bearer_api, BearerApi::Confirmed);
+    EXPECT_EQ(cap.mode, DeliveryMode::Full);
+    EXPECT_TRUE(cap.setup.empty());
 }
 
 // Headsets and game controllers are bonded but never expose a bearer under any
@@ -286,7 +310,10 @@ TEST(Capability, WrongClassIsReportedButDoesNotDowngradeMode) {
 
     EXPECT_EQ(cap.mode, DeliveryMode::Full);
     EXPECT_FALSE(cap.class_ok);
-    EXPECT_FALSE(cap.reasons.empty());
+    // The unit is templated on the adapter, so the wrong id makes the command a no-op.
+    EXPECT_EQ(cap.adapter_id, "hci0");
+    ASSERT_EQ(cap.setup.size(), 1u);
+    EXPECT_EQ(cap.setup[0].command, "sudo systemctl enable --now tether-btclass@hci0");
 }
 
 TEST(Capability, PrefersAPoweredAdapter) {

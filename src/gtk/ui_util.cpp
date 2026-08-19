@@ -52,6 +52,18 @@ namespace tether::ui {
     opacity: 0.5;
 }
 
+.tether-setup {
+    background-color: alpha(@theme_fg_color, 0.07);
+    border: 1px solid alpha(@theme_fg_color, 0.18);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.tether-setup-command {
+    font-family: monospace;
+    font-size: 92%;
+}
+
 .tether-badge {
     background-color: @theme_selected_bg_color;
     color: @theme_selected_fg_color;

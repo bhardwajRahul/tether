@@ -9,6 +9,7 @@ depends=('gtk3' 'libnotify' 'openssl' 'wayland' 'avahi' 'glib2' 'bluez' 'bluez-u
 makedepends=('cmake' 'ninja' 'git')
 provides=('tether' 'tether-bin')
 conflicts=('tether' 'tether-bin')
+install=packaging/tether.install
 source=("git+https://github.com/zackb/tether.git")
 sha256sums=('SKIP')
 

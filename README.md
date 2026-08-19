@@ -138,21 +138,22 @@ make install
    tether pair
    ```
 
-3. Bluetooth pair via GUI or CLI (for Messages and Notifications):
+3. Bluetooth (for Messages and Notifications):
 
-   Check that your machine has the Bluetooth features first.
-
-   This sets the Bluetooth adapter class to "A/V Hands-Free" instead of "Computer":
+   First, one-time system setup. This prints only the steps your machine still
+   needs, with the exact commands:
 
    ```bash
-   ./scripts/bt-probe.sh --set-class
+   tether --bt-setup
    ```
 
-   Then, in the GTK app, pick your iPhone under BLUETOOTH on the Devices page
-   and press "Pair over Bluetooth". Confirm the code on both the iPhone and
-   Linux. Afterwards the iPhone offers "Show Message Notifications" and "Sync
-   Contacts" under Settings > Bluetooth > (i) for this computer. Enable these, both are needed. 
-   They can take a few minutes to appear. "Show iPhone Permissions" in the same pane can re-advertise so they show up again.
+   Tether never applies these itself: they change how the machine behaves over
+   Bluetooth outside of Tether, so running them is your call. The same steps
+   appear in the GTK app's Devices page, with a "Copy commands" button.
+
+   Then pair. In the GTK app, pick your iPhone under BLUETOOTH on the Devices
+   page and press "Pair over Bluetooth". Confirm the code on both the iPhone and
+   Linux.
 
    or
 
@@ -161,6 +162,11 @@ make install
    tether --bt-pair <address>
    tether --bt-connection       # what is up, and what is not
    ```
+
+4. On the iPhone, under Settings > Bluetooth > (i) for this computer, enable
+   "Show Message Notifications" and "Sync Contacts". Both are needed. They can
+   take a few minutes to appear; "Show iPhone Permissions" in the GTK app
+   re-advertises so they show up again.
 
 ## Roadmap
 
