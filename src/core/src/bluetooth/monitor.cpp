@@ -2,6 +2,7 @@
 #include "tether/log.hpp"
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <filesystem>
 #include <fstream>
@@ -111,10 +112,20 @@ namespace tether::bluetooth {
         return false;
     }
 
-    // Walking /proc is not free, and refresh() runs on every debounced BlueZ
-    // signal. The answer cannot change without bluetoothd restarting.
+    // Walking /proc costs about 2ms and refresh() runs on every debounced BlueZ
+    // signal, so the answer is cached. It cannot change without bluetoothd
+    // restarting, but that is exactly what applying the drop-in does, and
+    // bluetoothd routinely restarts after tetherd is already up.
     bool bluetoothd_has_experimental() {
-        static const bool value = scan_bluetoothd_cmdline();
+        static constexpr auto kRecheckAfter = std::chrono::seconds(3);
+        static std::chrono::steady_clock::time_point checked_at{};
+        static bool value = false;
+
+        const auto now = std::chrono::steady_clock::now();
+        if (checked_at == std::chrono::steady_clock::time_point{} || now - checked_at >= kRecheckAfter) {
+            value = scan_bluetoothd_cmdline();
+            checked_at = now;
+        }
         return value;
     }
 
