@@ -245,6 +245,126 @@ TEST(Capability, ClassicOnlyBondDoesNotDisproveBearerApi) {
     EXPECT_EQ(cap.mode, DeliveryMode::Full);
 }
 
+// A bonded iPhone whose Device1 carries no LE bearer is a bond that was made
+// without cross-transport key derivation: it can never carry ANCS, and no amount
+// of re-soliciting or restarting bluetoothd changes that. Reporting it as
+// "unconfirmed until a device is bonded" -- to someone looking at a bonded device
+// -- was a dead end in every bug report it produced.
+TEST(Capability, ClassicOnlyIphoneBondIsNamedAsSuch) {
+    Payload p(join(ADAPTER_FULL, R"({
+      '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
+        'org.bluez.Device1': {
+          'Paired': <true>,
+          'Bonded': <true>,
+          'UUIDs': <['00001132-0000-1000-8000-00805f9b34fb', '0000112f-0000-1000-8000-00805f9b34fb']>
+        }
+      }
+    })")
+                  .c_str());
+    auto objects = parse_managed_objects(p.v);
+    objects.experimental_api = true;
+    auto cap = resolve_capability(objects);
+
+    EXPECT_TRUE(cap.bonded_device_present);
+    EXPECT_FALSE(cap.bond_has_le);
+
+    bool named = false;
+    for (const auto& reason : cap.reasons) {
+        if (reason.find("BR/EDR only") != std::string::npos) {
+            named = true;
+            EXPECT_NE(reason.find("Forget This Device"), std::string::npos) << "names no remedy";
+        }
+        EXPECT_EQ(reason.find("unconfirmed until a device is bonded"), std::string::npos)
+            << "still claims nothing is bonded";
+    }
+    EXPECT_TRUE(named) << "a bond with no LE half went unreported";
+
+    // The controller can still do ANCS; it is this bond that cannot. Downgrading
+    // the mode would be a claim about the hardware.
+    EXPECT_EQ(cap.mode, DeliveryMode::Full);
+}
+
+// Headsets and controllers bond over BR/EDR alone by design. Reading one of
+// those as a broken bond fires on nearly every machine.
+TEST(Capability, ClassicOnlyBondOnANonPhoneIsNotReported) {
+    Payload p(join(ADAPTER_FULL, R"({
+      '/org/bluez/hci0/dev_F8_D3_F0_3C_84_4A': {
+        'org.bluez.Device1': { 'Paired': <true>, 'Bonded': <true>, 'Alias': <'ZBZ AirPros'> }
+      }
+    })")
+                  .c_str());
+    auto objects = parse_managed_objects(p.v);
+    objects.experimental_api = true;
+    auto cap = resolve_capability(objects);
+
+    EXPECT_FALSE(cap.bonded_device_present);
+    for (const auto& reason : cap.reasons)
+        EXPECT_EQ(reason.find("BR/EDR only"), std::string::npos) << "blamed a headset for having no LE bond";
+}
+
+// Observed on a MediaTek MT7925 with the phone's ANCS session live and
+// delivering: Bearer.LE1.Connected read false the whole time, because the phone
+// opened the link inbound in answer to the solicitation advert. GATT exists only
+// over LE and BlueZ withdraws these objects when the link drops, so their
+// presence is the more trustworthy signal of the two.
+TEST(DeviceParsing, AncsCharacteristicsProveTheLeLinkIsUp) {
+    Payload p(join(ADAPTER_FULL, R"({
+      '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
+        'org.bluez.Device1': { 'Paired': <true>, 'Bonded': <true>, 'Connected': <true> },
+        'org.bluez.Bearer.LE1': { 'Paired': <true>, 'Bonded': <true>, 'Connected': <false> }
+      },
+      '/org/bluez/hci0/dev_60_57_C8_30_6A_F7/service004f/char0050': {
+        'org.bluez.GattCharacteristic1': { 'UUID': <'9FBF120D-6301-42D9-8C58-25E699A21DBD'> }
+      }
+    })")
+                  .c_str());
+    auto objects = parse_managed_objects(p.v);
+
+    ASSERT_EQ(objects.devices.size(), 1u);
+    EXPECT_FALSE(objects.devices[0].le_connected) << "the fixture is not reproducing the disagreement";
+    EXPECT_TRUE(objects.devices[0].has_ancs_gatt);
+    EXPECT_TRUE(objects.devices[0].le_link_up()) << "a live ANCS session was reported as no LE link";
+}
+
+// The characteristic has to belong to this device. A sibling device's GATT tree
+// saying nothing about ours is the whole reason the paths are matched.
+TEST(DeviceParsing, AncsCharacteristicsBelongToOneDeviceOnly) {
+    Payload p(join(ADAPTER_FULL, R"({
+      '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
+        'org.bluez.Device1': { 'Paired': <true>, 'Bonded': <true> }
+      },
+      '/org/bluez/hci0/dev_F8_D3_F0_3C_84_4A': {
+        'org.bluez.Device1': { 'Paired': <true>, 'Bonded': <true> }
+      },
+      '/org/bluez/hci0/dev_F8_D3_F0_3C_84_4A/service004f/char0050': {
+        'org.bluez.GattCharacteristic1': { 'UUID': <'9fbf120d-6301-42d9-8c58-25e699a21dbd'> }
+      }
+    })")
+                  .c_str());
+    auto objects = parse_managed_objects(p.v);
+
+    ASSERT_EQ(objects.devices.size(), 2u);
+    EXPECT_FALSE(objects.devices[0].has_ancs_gatt) << "borrowed a sibling device's GATT tree";
+    EXPECT_TRUE(objects.devices[1].has_ancs_gatt);
+}
+
+// An LE link that is down has no GATT tree, which is what makes its presence
+// mean anything.
+TEST(DeviceParsing, NoGattTreeMeansNoLeLink) {
+    Payload p(join(ADAPTER_FULL, R"({
+      '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
+        'org.bluez.Device1': { 'Paired': <true>, 'Bonded': <true>, 'Connected': <true> },
+        'org.bluez.Bearer.LE1': { 'Paired': <true>, 'Bonded': <true>, 'Connected': <false> }
+      }
+    })")
+                  .c_str());
+    auto objects = parse_managed_objects(p.v);
+
+    ASSERT_EQ(objects.devices.size(), 1u);
+    EXPECT_FALSE(objects.devices[0].has_ancs_gatt);
+    EXPECT_FALSE(objects.devices[0].le_link_up());
+}
+
 TEST(Capability, BearerUnknownWithoutAnyBondStaysFull) {
     Payload p(ADAPTER_FULL);
     auto objects = parse_managed_objects(p.v);

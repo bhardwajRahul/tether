@@ -93,6 +93,8 @@ namespace tether::bluetooth {
         if (status_.le_connected) {
             le_attempts_ = 0;
             le_stuck_locally_ = false;
+            status_.le_backoff = 0;
+            next_le_attempt_ = 0;
         }
 
         if (status_.classic_connected) {
@@ -158,11 +160,17 @@ namespace tether::bluetooth {
         if (!status_.le_connected) {
             const bool settled =
                 classic_connected_since_ >= 0 && now - classic_connected_since_ >= BEARER_SETTLE_SECONDS;
-            // Dialling LE from this side only works if the phone is willing to be
-            // dialled. When it is not, every attempt either times out or collides
-            // with the previous one still running inside bluez, stop after
-            // LE_ATTEMPTS_BEFORE_ADVICE and leave it to the phone.
-            if (settled && le_attempts_ < LE_ATTEMPTS_BEFORE_ADVICE && now >= next_le_attempt_) {
+
+            if (settled && now >= next_le_attempt_) {
+                // connect that keeps colliding is bluez still holding one that never finished
+                if (le_stuck_locally_ && le_attempts_ >= LE_ATTEMPTS_BEFORE_ADVICE) {
+                    std::string drop_err;
+                    if (ops_.disconnect_le(drop_err) == ConnectResult::Failed)
+                        debug::log(WARN, "bluetooth: LE bearer disconnect failed ({})", drop_err);
+                    else
+                        debug::log(INFO, "bluetooth: dropped a stuck LE bearer before retrying");
+                }
+
                 // Select LE only for this attempt, then hand the preference back
                 // so LE is never left preferred while idle.
                 ops_.set_preferred_bearer("le");
@@ -206,16 +214,14 @@ namespace tether::bluetooth {
                     // local remedy first and the phone second rather than
                     // sending the user to settings that may be fine already.
                     status_.reason = "Nothing is bringing up the LE link that carries notifications. BlueZ is "
-                                     "holding a connect that never completed: run \"sudo systemctl restart "
-                                     "bluetooth\" -- disconnecting the iPhone does not clear it. If it still "
-                                     "will not come up, run \"tether --bt-solicit\" (or press Show iPhone "
-                                     "Permissions) and check Settings > Bluetooth > (i) on the iPhone. Messages "
-                                     "and contacts are unaffected.";
+                                     "holding a connect that never completed; Tether keeps dropping and "
+                                     "redialling the LE bearer. If it still will not come up, run \"sudo "
+                                     "systemctl restart bluetooth\" -- disconnecting the iPhone does not clear "
+                                     "it. Messages and contacts are unaffected.";
                 else
-                    status_.reason = "The iPhone is not opening the LE link that carries notifications. "
-                                     "Run \"tether --bt-solicit\" (or press Show iPhone Permissions) to ask it "
-                                     "to, then check Settings > Bluetooth > (i) on the iPhone. Messages and "
-                                     "contacts are unaffected.";
+                    status_.reason = "The iPhone is not opening the LE link that carries notifications. Tether "
+                                     "keeps asking; open Settings > Bluetooth > (i) on the iPhone and turn on "
+                                     "Share System Notifications. Messages and contacts are unaffected.";
                 return !(status_ == previous);
             }
         }

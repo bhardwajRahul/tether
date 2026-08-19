@@ -199,6 +199,13 @@ static int print_bt_status(tether::Client& client) {
             cap.value("le_peripheral", false) ? "yes" : "no",
             cap.value("advertising", false) ? "yes" : "no",
             cap.value("class_ok", false) ? "ok" : "wrong");
+    fprintf(stdout,
+            "            secure-connections=%s\n",
+            cap.contains("secure_connections") && cap["secure_connections"].is_boolean()
+                ? (cap["secure_connections"].get<bool>() ? "on" : "OFF")
+                : "unknown");
+    if (cap.value("bonded_device_present", false))
+        fprintf(stdout, "Bond:       %s\n", cap.value("bond_has_le", false) ? "BR/EDR + LE" : "BR/EDR only");
 
     for (const auto& adapter : resp["adapters"]) {
         fprintf(stdout, "  %s  %s\n", adapter.value("address", "").c_str(), adapter.value("name", "").c_str());
