@@ -349,6 +349,22 @@ namespace tether::bluetooth {
         return validate_recipient(out, err_out);
     }
 
+    bool recipient_from_input(const std::string& text, Recipient& out, std::string& err_out) {
+        out.address = trim(text);
+        // phone number never contains '@', and an AppleID address always does
+        out.kind = out.address.find('@') == std::string::npos ? RecipientKind::Tel : RecipientKind::Email;
+        return validate_recipient(out, err_out);
+    }
+
+    std::string thread_key_for(const Recipient& recipient) {
+        if (recipient.kind == RecipientKind::Email) {
+            std::string email = normalize_email(recipient.address);
+            return email.empty() ? std::string{} : "email:" + email;
+        }
+        std::string tel = normalize_phone(recipient.address);
+        return tel.empty() ? std::string{} : "tel:" + tel;
+    }
+
     std::string stuff_body(const std::string& body) {
         std::string out;
         for (const std::string& line : split_lines(body)) {

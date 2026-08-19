@@ -244,3 +244,45 @@ TEST(BMessageBuild, RefusesThreadKeysItDoesNotUnderstand) {
     EXPECT_FALSE(recipient_from_thread_key("tel:+1555\r\nTEL:+1999", out, err))
         << "an injected key must not pass just because its prefix is known";
 }
+
+// What the compose field hands over: whatever the user typed, in whatever shape
+// they habitually write it.
+TEST(BMessageBuild, ParsesRecipientsFromTypedInput) {
+    Recipient out;
+    std::string err;
+
+    ASSERT_TRUE(recipient_from_input("+1 (555) 123-4567", out, err)) << err;
+    EXPECT_EQ(out.kind, RecipientKind::Tel);
+    EXPECT_EQ(thread_key_for(out), "tel:+15551234567");
+
+    ASSERT_TRUE(recipient_from_input("  Alice@iCloud.com ", out, err)) << err;
+    EXPECT_EQ(out.kind, RecipientKind::Email);
+    EXPECT_EQ(thread_key_for(out), "email:alice@icloud.com");
+
+    // The key a composed message gets has to be the one the thread it belongs to
+    // already uses, or the reply lands in a second conversation with the same
+    // person.
+    ASSERT_TRUE(recipient_from_input("555-1234", out, err)) << err;
+    Recipient round_trip;
+    ASSERT_TRUE(recipient_from_thread_key(thread_key_for(out), round_trip, err)) << err;
+    EXPECT_EQ(round_trip.kind, out.kind);
+    EXPECT_EQ(thread_key_for(round_trip), thread_key_for(out));
+}
+
+TEST(BMessageBuild, RefusesTypedInputThatIsNotAnAddress) {
+    Recipient out;
+    std::string err;
+
+    // A contact name typed without picking a completion. Rejected on the text as
+    // written, so the reason names the letters rather than reporting an empty
+    // number normalization already discarded.
+    EXPECT_FALSE(recipient_from_input("Alice", out, err));
+    EXPECT_FALSE(err.empty());
+
+    EXPECT_FALSE(recipient_from_input("", out, err));
+    EXPECT_FALSE(recipient_from_input("   \t ", out, err));
+    EXPECT_FALSE(recipient_from_input("a@b;c@d", out, err)) << "a vCard delimiter must not reach the phone";
+    EXPECT_FALSE(recipient_from_input("a@b\r\nTEL:+1999", out, err));
+    EXPECT_FALSE(recipient_from_input("a@b@c.com", out, err));
+    EXPECT_FALSE(recipient_from_input("@nobody.com", out, err));
+}

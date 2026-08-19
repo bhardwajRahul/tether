@@ -85,6 +85,16 @@ namespace tether::bluetooth {
     // validated recipient. Returns false for unknown prefixes.
     bool recipient_from_thread_key(const std::string& thread_key, Recipient& out, std::string& err_out);
 
+    // Parses freeform text as typed into a "To:" field. An '@' anywhere means an
+    // email/AppleID address; anything else is read as a phone number. The address
+    // is kept as written so err_out names what is actually wrong with it rather
+    // than describing something normalization already threw away.
+    bool recipient_from_input(const std::string& text, Recipient& out, std::string& err_out);
+
+    // The conversation key this recipient's messages group under. Round trips
+    // through recipient_from_thread_key.
+    std::string thread_key_for(const Recipient& recipient);
+
     // MAP byte-stuffing: a body line that would otherwise a structural
     // token is prefixed with a space. Mirrors what the parser undoes, so a body
     // does a round trip unchanged.
