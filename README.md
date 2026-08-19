@@ -60,42 +60,6 @@ A unified WebExtension that works in Thunderbird/Betterbird and Firefox/Chromium
 
 The extension communicates with `tetherd` via native messaging. This allows users to autofill OTP codes into websites when the email arrives. 
 
-## Components
-
-1. **`tetherd` (Linux Daemon)**: A background process running on Linux manages Bluetooth, TCP+mTLS, and Wayland integration.
-
-2. **`tether`**: A CLI to communicate with the daemon. This also allows the WebExtension to interface with the daemon via native messaging.
-
-3. **`tether-gtk`**: An application for Linux that provides a graphical interface to manage devices, send files, trigger clipboard sync, read and reply to iPhone messages, see mirrored notifications, and monitor connection status.
-
-4. **iPhone App**: Discovers the daemon via Bonjour/mDNS, utilizing Apple's `Network.framework` for secure TLS negotiation. Not required for SMS/iMessage and notification mirroring, which use Bluetooth.
-
-5. **Browser/Mail Extension**: WebExtension that interfaces with the daemon via native messaging. Use with Thunderbird/Betterbird and Firefox or Chromium-based browsers.
-
-## Requirements
-
-### Linux
-- Wayland compositor with `wlr-data-control` protocol (Hyprland, Sway, [Fenriz](https://github.com/zackb/fenriz) etc.)
-- Build tools: cmake, ninja, pkg-config
-
-### Dependencies
-- `wayland-client`
-- `openssl`
-- `pkg-config`
-- `ninja`
-- `gtk3` (for `tether-gtk`)
-- `nlohmann-json`
-- `glib2`
-- `avahi`
-- `bluez`, `bluez-utils`, and `bluez-obex` (for messages and notifications)
-
-#### Bluetooth (for Messages and Notifications)
-- BlueZ 5.86+ must be running with experimental bearer API. Tether ships the
-  systemd drop-in; `tether --bt-setup` prints the one command that applies it.
-  Do this **before** pairing.
-- A controller with BR/EDR, LE, and advertising support.
-- Notification mirroring does not work on iOS 18 and earlier.
-
 ### iOS App
 - Get the app: [Tether - Linux Companion](https://apps.apple.com/us/app/tether-linux-companion/id6762097135)
 
@@ -170,6 +134,43 @@ make install
    take a few minutes to appear; "Show iPhone Permissions" in the GTK app
    re-advertises so they show up again.
 
+
+## Components
+
+1. **`tetherd`**: A background process running on Linux manages Bluetooth, TCP+mTLS, and Wayland integration.
+
+2. **`tether`**: A CLI to communicate with the daemon. This also allows the WebExtension to interface with the daemon via native messaging.
+
+3. **`tether-gtk`**: An application for Linux that provides a graphical interface to manage devices, send files, trigger clipboard sync, read and reply to iPhone messages, see mirrored notifications, and monitor connection status.
+
+4. **iPhone App**: Discovers the daemon via Bonjour/mDNS, utilizing Apple's `Network.framework` for secure TLS negotiation. Not required for SMS/iMessage and notification mirroring, which use Bluetooth.
+
+5. **Browser/Mail Extension**: WebExtension that interfaces with the daemon via native messaging. Use with Thunderbird/Betterbird and Firefox or Chromium-based browsers.
+
+## Requirements
+
+### Linux
+- Wayland compositor with `wlr-data-control` protocol (Hyprland, Sway, [Fenriz](https://github.com/zackb/fenriz) etc.)
+- Build tools: cmake, ninja, pkg-config
+
+### Dependencies
+- `wayland-client`
+- `openssl`
+- `pkg-config`
+- `ninja`
+- `gtk3` (for `tether-gtk`)
+- `nlohmann-json`
+- `glib2`
+- `avahi`
+- `bluez`, `bluez-utils`, and `bluez-obex` (for messages and notifications)
+
+#### Bluetooth (for Messages and Notifications)
+- BlueZ 5.86+ must be running with experimental bearer API. Tether ships the
+  systemd drop-in; `tether --bt-setup` prints the one command that applies it.
+  Do this **before** pairing.
+- A controller with BR/EDR, LE, and advertising support.
+- Notification mirroring does not work on iOS 18 and earlier.
+
 ## Roadmap
 
 - [x] Complete iOS app development
@@ -177,8 +178,7 @@ make install
 - [x] Release browser extension for Firefox
 - [x] Release mail extension for Thunderbird
 - [x] Read and reply to iPhone messages over Bluetooth
-- [x] Mirror iPhone notifications over Bluetooth
-- [-] Bluetooth for messages and notifications
+- [x] Bluetooth for messages and notifications
 - [ ] Implement TOTP/OTP vault with Safari autofill
 - [ ] Explore macOS support
 
