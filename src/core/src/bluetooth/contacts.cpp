@@ -22,19 +22,39 @@ namespace tether::bluetooth {
             return {};
         }
 
+        // The nationally significant part of a number
+        constexpr size_t TEL_SUFFIX_DIGITS = 10;
+
+        std::string tel_suffix(const std::string& normalized) {
+            std::string digits;
+            for (char c : normalized) {
+                if (std::isdigit(static_cast<unsigned char>(c)))
+                    digits += c;
+            }
+            return digits.size() < TEL_SUFFIX_DIGITS ? std::string{} : digits.substr(digits.size() - TEL_SUFFIX_DIGITS);
+        }
+
     } // namespace
 
     void ContactStore::set(std::vector<VCard> contacts) {
         contacts_ = std::move(contacts);
         by_key_.clear();
+        by_tel_suffix_.clear();
 
         for (const auto& card : contacts_) {
             if (card.name.empty())
                 continue;
             for (const auto& tel : card.tels) {
                 std::string normalized = normalize_phone(tel);
-                if (!normalized.empty())
-                    by_key_.emplace("tel:" + normalized, card.name);
+                if (normalized.empty())
+                    continue;
+                by_key_.emplace("tel:" + normalized, card.name);
+
+                if (std::string suffix = tel_suffix(normalized); !suffix.empty()) {
+                    auto [at, fresh] = by_tel_suffix_.emplace(suffix, card.name);
+                    if (!fresh && at->second != card.name)
+                        at->second.clear();
+                }
             }
             for (const auto& email : card.emails) {
                 std::string normalized = normalize_email(email);
@@ -45,8 +65,16 @@ namespace tether::bluetooth {
     }
 
     std::string ContactStore::name_for(const std::string& thread_key) const {
-        auto it = by_key_.find(thread_key);
-        return it == by_key_.end() ? std::string{} : it->second;
+        if (auto it = by_key_.find(thread_key); it != by_key_.end())
+            return it->second;
+
+        if (thread_key.rfind("tel:", 0) == 0) {
+            if (std::string suffix = tel_suffix(thread_key.substr(4)); !suffix.empty()) {
+                if (auto it = by_tel_suffix_.find(suffix); it != by_tel_suffix_.end())
+                    return it->second;
+            }
+        }
+        return {};
     }
 
     std::vector<std::string> ContactStore::addresses_for_name(const std::string& name) const {
