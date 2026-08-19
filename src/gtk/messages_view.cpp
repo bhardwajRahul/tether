@@ -51,7 +51,6 @@ namespace tether::ui {
             // why not when it cannot.
             bool selected_repliable = false;
             std::string selected_block_reason;
-            std::string selected_warning;
 
             // Addressing a message to someone with no conversation yet.
             bool composing = false;
@@ -127,8 +126,6 @@ namespace tether::ui {
             // to; the UI must not re-derive it from the key shape.
             g_object_set_data(G_OBJECT(row), "repliable", GINT_TO_POINTER(thread.value("repliable", true) ? 1 : 0));
             g_object_set_data_full(
-                G_OBJECT(row), "reply_warning", g_strdup(thread.value("reply_warning", "").c_str()), g_free);
-            g_object_set_data_full(
                 G_OBJECT(row), "reply_reason", g_strdup(thread.value("reply_reason", "").c_str()), g_free);
             g_object_set_data(G_OBJECT(row), "group", GINT_TO_POINTER(thread.value("group", false) ? 1 : 0));
 
@@ -189,20 +186,12 @@ namespace tether::ui {
             GtkStyleContext* bubble_style = gtk_widget_get_style_context(bubble);
             gtk_style_context_add_class(bubble_style, "tether-bubble");
             gtk_style_context_add_class(bubble_style, outgoing ? "tether-bubble-out" : "tether-bubble-in");
-            // The phone reports every send as delivered, including the ones it addressed to nobody.
-            const bool unconfirmed = outgoing && !g_messages.selected_warning.empty();
-            if (unconfirmed)
-                gtk_style_context_add_class(bubble_style, "tether-bubble-unconfirmed");
             gtk_box_pack_start(GTK_BOX(box), bubble, FALSE, FALSE, 0);
 
-            const std::string meta =
-                unconfirmed ? (stamp.empty() ? std::string("not confirmed") : stamp + " \u00b7 not confirmed") : stamp;
-            if (!meta.empty()) {
-                GtkWidget* time_label = gtk_label_new(meta.c_str());
+            if (!stamp.empty()) {
+                GtkWidget* time_label = gtk_label_new(stamp.c_str());
                 gtk_label_set_xalign(GTK_LABEL(time_label), outgoing ? 1.0 : 0.0);
                 gtk_style_context_add_class(gtk_widget_get_style_context(time_label), "muted");
-                if (unconfirmed)
-                    gtk_widget_set_tooltip_text(time_label, g_messages.selected_warning.c_str());
                 gtk_box_pack_start(GTK_BOX(box), time_label, FALSE, FALSE, 0);
             }
 
@@ -399,14 +388,10 @@ namespace tether::ui {
             gtk_widget_set_tooltip_text(g_messages.send_button, reason);
 
             if (g_messages.composer_notice) {
-                // Why the box is shut, or -- when it is open but the phone is
-                // known to mangle this conversation's address -- why a send that
-                // reports success may still not arrive.
+                // Why the box is shut.
                 const char* notice = nullptr;
                 if (reason && !composer_live && !g_messages.sending)
                     notice = reason;
-                else if (composer_live && !g_messages.selected_warning.empty())
-                    notice = g_messages.selected_warning.c_str();
                 if (notice)
                     set_text(g_messages.composer_notice, notice);
                 gtk_widget_set_visible(g_messages.composer_notice, notice != nullptr);
@@ -506,7 +491,6 @@ namespace tether::ui {
             g_messages.selected_name.clear();
             g_messages.selected_repliable = false;
             g_messages.selected_block_reason.clear();
-            g_messages.selected_warning.clear();
             update_composer_sensitivity();
             gtk_stack_set_visible_child_name(GTK_STACK(g_messages.placeholder_stack), "placeholder");
         }
@@ -517,12 +501,10 @@ namespace tether::ui {
             const char* thread = (const char*)g_object_get_data(G_OBJECT(row), "thread");
             const char* name = (const char*)g_object_get_data(G_OBJECT(row), "name");
             const char* block_reason = (const char*)g_object_get_data(G_OBJECT(row), "reply_reason");
-            const char* warning = (const char*)g_object_get_data(G_OBJECT(row), "reply_warning");
             g_messages.selected_thread = thread ? thread : "";
             g_messages.selected_name = name ? name : "";
             g_messages.selected_repliable = g_object_get_data(G_OBJECT(row), "repliable") != nullptr;
             g_messages.selected_block_reason = block_reason ? block_reason : "";
-            g_messages.selected_warning = warning ? warning : "";
             // Which conversation is open is otherwise only legible from the
             // selection highlight in the list beside it.
             set_markup(g_messages.conversation_header,
@@ -628,7 +610,6 @@ namespace tether::ui {
             g_messages.selected_name.clear();
             g_messages.selected_repliable = false;
             g_messages.selected_block_reason.clear();
-            g_messages.selected_warning.clear();
 
             bluetooth::Recipient recipient;
             std::string err;
@@ -637,9 +618,6 @@ namespace tether::ui {
             } else if (bluetooth::recipient_from_input(text, recipient, err)) {
                 g_messages.selected_thread = bluetooth::thread_key_for(recipient);
                 g_messages.selected_repliable = !g_messages.selected_thread.empty();
-                // Worth knowing before the message goes out, not only after the
-                // phone reports a send that reached nobody.
-                g_messages.selected_warning = bluetooth::delivery_warning(recipient);
                 if (auto known = g_messages.compose_names.find(g_messages.selected_thread);
                     known != g_messages.compose_names.end())
                     g_messages.selected_name = known->second;

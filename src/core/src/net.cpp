@@ -410,12 +410,6 @@ namespace tether {
         for (auto& entry : threads) {
             if (!entry.value("group", false)) {
                 entry["repliable"] = true;
-                bluetooth::Recipient recipient;
-                std::string parse_err;
-                if (bluetooth::recipient_from_thread_key(entry.value("thread", ""), recipient, parse_err)) {
-                    if (std::string why = bluetooth::delivery_warning(recipient); !why.empty())
-                        entry["reply_warning"] = why;
-                }
                 continue;
             }
             std::string reason;
