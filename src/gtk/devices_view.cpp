@@ -56,6 +56,7 @@ namespace tether::ui {
             GtkWidget* lbl_bt_progress = nullptr;
             GtkWidget* btn_bt_pair = nullptr;
             GtkWidget* btn_bt_solicit = nullptr;
+            GtkWidget* chk_bt_ancs = nullptr;
             GtkWidget* chk_bt_content = nullptr;
             GtkWidget* btn_bt_unpair = nullptr;
 
@@ -106,6 +107,7 @@ namespace tether::ui {
             set_text(g_devices.lbl_welcome_bt, bt_note);
         }
 
+        void on_bt_ancs_toggled(GtkWidget* widget, gpointer);
         void on_bt_content_toggled(GtkWidget* widget, gpointer);
 
         void update_bt_pane() {
@@ -208,9 +210,18 @@ namespace tether::ui {
                                    available && supervised &&
                                        (map_error == "forbidden" || map_error == "no_record" || !ancs_ready));
 
+            const bool ancs_on = g_devices.bt_status.value("ancs_enabled", true);
+
+            gtk_widget_set_visible(g_devices.chk_bt_ancs, available && supervised);
             gtk_widget_set_visible(g_devices.chk_bt_content, available && supervised);
-            // The daemon's broadcast is the source of truth, so reflecting it
-            // must not look like the user clicking the box.
+            gtk_widget_set_sensitive(g_devices.chk_bt_content, ancs_on);
+
+            g_signal_handlers_block_by_func(
+                g_devices.chk_bt_ancs, reinterpret_cast<gpointer>(on_bt_ancs_toggled), nullptr);
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(g_devices.chk_bt_ancs), ancs_on);
+            g_signal_handlers_unblock_by_func(
+                g_devices.chk_bt_ancs, reinterpret_cast<gpointer>(on_bt_ancs_toggled), nullptr);
+
             g_signal_handlers_block_by_func(
                 g_devices.chk_bt_content, reinterpret_cast<gpointer>(on_bt_content_toggled), nullptr);
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(g_devices.chk_bt_content),
@@ -341,6 +352,11 @@ namespace tether::ui {
         // The advertisement that makes iOS reveal its Messages and Contacts
         // permission toggles expires a few minutes after pairing. Without this the
         // only way back to those toggles is to remove the bond and pair again.
+        void on_bt_ancs_toggled(GtkWidget* widget, gpointer) {
+            daemon_send({{"command", "bt_set_ancs"},
+                         {"enabled", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) == TRUE}});
+        }
+
         void on_bt_content_toggled(GtkWidget* widget, gpointer) {
             daemon_send({{"command", "bt_set_ancs_content"},
                          {"enabled", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) == TRUE}});
@@ -624,10 +640,6 @@ namespace tether::ui {
                 gtk_list_box_insert(GTK_LIST_BOX(g_devices.list_devices), r, -1);
         }
 
-        // ponytail: iPhones, plus whatever Tether is actually bonded to. Every
-        // other paired thing BlueZ knows about -- headphones, controllers,
-        // keyboards -- is noise on this page. Widen the filter only if someone
-        // needs to pair a phone that does not look like an iPhone.
         std::vector<GtkWidget*> bt_rows;
         for (const auto& device : g_devices.bt_devices) {
             if (!device.value("iphone", false) && !is_supervised_bt_device(device.value("address", "")))
@@ -970,6 +982,15 @@ namespace tether::ui {
             gtk_box_pack_start(GTK_BOX(capabilities), *label, FALSE, FALSE, 0);
         }
         gtk_box_pack_start(GTK_BOX(bt_box), capabilities, FALSE, FALSE, 0);
+
+        // pairing that produced no LE half latches mirroring off, and this is the only way back to it without the CLI.
+        g_devices.chk_bt_ancs = gtk_check_button_new_with_label("Mirror iPhone notifications");
+        gtk_widget_set_tooltip_text(g_devices.chk_bt_ancs,
+                                    "Show notifications from the iPhone on this desktop. Turned off "
+                                    "automatically when pairing produces no LE bond; turn it back on after "
+                                    "re-pairing.");
+        g_signal_connect(g_devices.chk_bt_ancs, "toggled", G_CALLBACK(on_bt_ancs_toggled), nullptr);
+        gtk_box_pack_start(GTK_BOX(bt_box), g_devices.chk_bt_ancs, FALSE, FALSE, 0);
 
         g_devices.chk_bt_content = gtk_check_button_new_with_label("Show notification contents");
         gtk_widget_set_tooltip_text(g_devices.chk_bt_content,
