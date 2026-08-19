@@ -52,6 +52,7 @@ namespace tether::ui {
             GtkWidget* lbl_bt_progress = nullptr;
             GtkWidget* btn_bt_pair = nullptr;
             GtkWidget* btn_bt_solicit = nullptr;
+            GtkWidget* chk_bt_content = nullptr;
             GtkWidget* btn_bt_unpair = nullptr;
 
             GtkWidget* lbl_welcome_wifi = nullptr;
@@ -100,6 +101,8 @@ namespace tether::ui {
                 bt_note = "Bluetooth is unavailable on this machine.";
             set_text(g_devices.lbl_welcome_bt, bt_note);
         }
+
+        void on_bt_content_toggled(GtkWidget* widget, gpointer);
 
         void update_bt_pane() {
             const std::string address = g_devices.selected_bt_address;
@@ -181,6 +184,16 @@ namespace tether::ui {
             gtk_widget_set_visible(g_devices.btn_bt_solicit,
                                    available && supervised &&
                                        (map_error == "forbidden" || map_error == "no_record" || !ancs_ready));
+
+            gtk_widget_set_visible(g_devices.chk_bt_content, available && supervised);
+            // The daemon's broadcast is the source of truth, so reflecting it
+            // must not look like the user clicking the box.
+            g_signal_handlers_block_by_func(
+                g_devices.chk_bt_content, reinterpret_cast<gpointer>(on_bt_content_toggled), nullptr);
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(g_devices.chk_bt_content),
+                                         g_devices.bt_status.value("ancs_content_enabled", true));
+            g_signal_handlers_unblock_by_func(
+                g_devices.chk_bt_content, reinterpret_cast<gpointer>(on_bt_content_toggled), nullptr);
         }
 
         void update_right_pane() {
@@ -305,6 +318,11 @@ namespace tether::ui {
         // The advertisement that makes iOS reveal its Messages and Contacts
         // permission toggles expires a few minutes after pairing. Without this the
         // only way back to those toggles is to remove the bond and pair again.
+        void on_bt_content_toggled(GtkWidget* widget, gpointer) {
+            daemon_send({{"command", "bt_set_ancs_content"},
+                         {"enabled", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) == TRUE}});
+        }
+
         void on_bt_solicit_click(GtkWidget*, gpointer) {
             if (!daemon_send({{"command", "bt_solicit"}})) {
                 set_text(g_devices.lbl_bt_progress, "Could not reach the Tether daemon.");
@@ -891,6 +909,14 @@ namespace tether::ui {
             gtk_box_pack_start(GTK_BOX(capabilities), *label, FALSE, FALSE, 0);
         }
         gtk_box_pack_start(GTK_BOX(bt_box), capabilities, FALSE, FALSE, 0);
+
+        g_devices.chk_bt_content = gtk_check_button_new_with_label("Show notification contents");
+        gtk_widget_set_tooltip_text(g_devices.chk_bt_content,
+                                    "Ask the iPhone for each notification's title and message text, not just "
+                                    "which app sent it. The phone's own Show Message Notifications toggle still "
+                                    "has to be on.");
+        g_signal_connect(g_devices.chk_bt_content, "toggled", G_CALLBACK(on_bt_content_toggled), nullptr);
+        gtk_box_pack_start(GTK_BOX(bt_box), g_devices.chk_bt_content, FALSE, FALSE, 0);
 
         g_devices.lbl_bt_reason = gtk_label_new(nullptr);
         gtk_label_set_xalign(GTK_LABEL(g_devices.lbl_bt_reason), 0.0);

@@ -39,6 +39,7 @@ namespace tether::ui {
         GtkWidget* build_row(const nlohmann::json& notification) {
             const std::string app = notification.value("app_name", notification.value("app_id", ""));
             const std::string title = notification.value("title", "");
+            const std::string subtitle = notification.value("subtitle", "");
             const std::string body = notification.value("body", "");
             const std::string stamp = format_timestamp(notification.value("timestamp", static_cast<int64_t>(0)));
 
@@ -61,16 +62,23 @@ namespace tether::ui {
             }
             gtk_box_pack_start(GTK_BOX(box), header, FALSE, FALSE, 0);
 
-            // With content mirroring off, only the app is known — which is the
-            // point of that default, so the row says so rather than looking broken.
+            // With content mirroring off only the app is known, so the row says
+            // so rather than looking broken.
             const std::string detail = !title.empty() ? title : (!body.empty() ? body : "New notification");
             GtkWidget* detail_label = gtk_label_new(detail.c_str());
             gtk_label_set_xalign(GTK_LABEL(detail_label), 0.0);
             gtk_label_set_line_wrap(GTK_LABEL(detail_label), TRUE);
             gtk_box_pack_start(GTK_BOX(box), detail_label, FALSE, FALSE, 0);
 
-            if (!title.empty() && !body.empty()) {
-                GtkWidget* body_label = gtk_label_new(body.c_str());
+            // Whatever is left over after the primary line claimed one of them.
+            std::string secondary = subtitle;
+            if (!body.empty() && body != detail) {
+                if (!secondary.empty())
+                    secondary += "\n";
+                secondary += body;
+            }
+            if (!secondary.empty()) {
+                GtkWidget* body_label = gtk_label_new(secondary.c_str());
                 gtk_label_set_xalign(GTK_LABEL(body_label), 0.0);
                 gtk_label_set_line_wrap(GTK_LABEL(body_label), TRUE);
                 gtk_style_context_add_class(gtk_widget_get_style_context(body_label), "muted");

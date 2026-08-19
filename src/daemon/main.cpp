@@ -188,7 +188,9 @@ int main(int argc, char** argv) {
                         return;
 
                     const std::string title = notification.title.empty() ? notification.app_name : notification.title;
-                    notifier.notify(title.empty() ? "iPhone" : title, notification.body);
+                    // Some apps put the whole notification in the subtitle and leave the message empty.
+                    const std::string body = notification.body.empty() ? notification.subtitle : notification.body;
+                    notifier.notify(title.empty() ? "iPhone" : title, body);
                 },
                 [](uint32_t uid) {
                     nlohmann::json event;

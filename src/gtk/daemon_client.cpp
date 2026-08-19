@@ -88,7 +88,10 @@ namespace tether::ui {
                         try {
                             if (g_on_event)
                                 g_on_event(nlohmann::json::parse(std::string(line, length)));
-                        } catch (...) {
+                        } catch (const std::exception& e) {
+                            // Silence here hides a dropped update as a view that
+                            // simply did not refresh.
+                            debug::log(WARN, "daemon: discarding an unreadable event ({})", e.what());
                         }
                     }
                     if (line)

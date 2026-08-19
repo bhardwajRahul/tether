@@ -335,10 +335,23 @@ Broadcast once per newly observed message, incoming or locally sent.
 `app_id`, `app_name`, `title`, `subtitle`, `body`, `category`, `timestamp`, and which
 actions the notification offers.
 
-Bodies are present only when notification content mirroring is enabled; by default the
-daemon requests the owning app and nothing more. Messages notifications
-(`com.apple.MobileSMS`) are retained but never raise a desktop popup, since MAP already
-delivers those with working read state.
+`app_name` is the app's display name, resolved over ANCS `GetAppAttributes` and cached
+per bundle id for the session. The first notification from an app carries a name derived
+from its bundle id (`com.burbn.instagram` -> `Instagram`) and is corrected in place once
+the phone answers.
+
+Titles, subtitles and bodies are present when notification content mirroring is enabled,
+which is the default -- the iPhone's own *Settings > Bluetooth > (i) > Show Message
+Notifications* toggle is the consent gate. With it off, only `app_id` and `app_name` are
+populated. Messages notifications (`com.apple.MobileSMS`) are retained but never raise a
+desktop popup, since MAP already delivers those with working read state.
+
+#### `bt_set_ancs_content` (Client -> Daemon, broadcast)
+**Payload**: `{"command": "bt_set_ancs_content", "enabled": true}`
+Turns notification content mirroring on or off. Persists to
+`ancs_content_enabled` in `~/.config/tether/bluetooth.json`, applies to the running ANCS
+client without a restart, and answers with a fresh `bt_status`. `bt_status` carries
+`ancs_enabled` and `ancs_content_enabled` so a client can render the current state.
 
 #### `bt_notification_action` (Client -> Daemon, broadcast)
 **Payload**: `{"command": "bt_notification_action", "uid": 42, "action": "positive"}`

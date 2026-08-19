@@ -7,6 +7,7 @@ add_executable(tether_test
     test_bmessage_build.cpp
     test_ancs_parser.cpp
     test_ancs_sequencer.cpp
+    test_ancs_notifications.cpp
     test_groups.cpp
     test_bt_diagnostics.cpp
     test_vcard.cpp

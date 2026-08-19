@@ -34,24 +34,24 @@ namespace {
         std::string classic_error = "br/edr refused";
         std::string le_error = "le refused";
 
-        bool connect_classic(std::string& err) override {
+        ConnectResult connect_classic(std::string& err) override {
             ++classic_attempts;
             if (!classic_succeeds) {
                 err = classic_error;
-                return false;
+                return ConnectResult::Failed;
             }
             classic = true;
-            return true;
+            return ConnectResult::Requested;
         }
 
-        bool connect_le(std::string& err) override {
+        ConnectResult connect_le(std::string& err) override {
             ++le_attempts;
             if (!le_succeeds) {
                 err = le_error;
-                return false;
+                return ConnectResult::Failed;
             }
             le = true;
-            return true;
+            return ConnectResult::Requested;
         }
     };
 
@@ -98,6 +98,10 @@ TEST(BearerSupervisor, ConnectsClassicThenLeAfterSettling) {
 
     sup.tick(1 + BEARER_SETTLE_SECONDS);
     EXPECT_EQ(ops.le_attempts, 1);
+    EXPECT_FALSE(sup.status().le_connected) << "BlueZ accepting a connect is not a link";
+
+    // Only an observed Connected is one.
+    sup.tick(2 + BEARER_SETTLE_SECONDS);
     EXPECT_TRUE(sup.status().le_connected);
 }
 
@@ -152,22 +156,28 @@ TEST(BearerSupervisor, ClassicBackoffGrowsAndCaps) {
 // InProgress means BlueZ is still finishing an operation of its own, which
 // clears without help. Treating it like a refusal pushed the retry out to
 // minutes and left LE — and so ANCS — down long after the cause was gone.
-TEST(BearerSupervisor, InProgressDoesNotGrowTheClassicBackoff) {
+// InProgress means BlueZ is still working on the last connect, which it keeps
+// doing long after a caller gives up. Retrying at the same cadence guarantees
+// the next attempt collides with it too, so one stalled connect becomes a
+// permanent storm. Standing further back is the only thing that clears it.
+TEST(BearerSupervisor, InProgressWidensTheClassicWindow) {
     FakeBearer ops;
     ops.classic_succeeds = false;
     ops.classic_error = "GDBus.Error:org.bluez.Error.InProgress: In Progress";
     BearerSupervisor sup(ops, true);
 
     int64_t now = 0;
-    for (int i = 0; i < 10; ++i) {
+    int previous = 0;
+    for (int i = 0; i < 5; ++i) {
         sup.tick(now);
-        EXPECT_EQ(sup.status().classic_backoff, BEARER_BACKOFF_MIN_SECONDS);
-        now += BEARER_BACKOFF_MIN_SECONDS;
+        EXPECT_GT(sup.status().classic_backoff, previous) << "collided again at the same cadence";
+        previous = sup.status().classic_backoff;
+        now += previous;
     }
-    EXPECT_EQ(ops.classic_attempts, 10);
+    EXPECT_EQ(ops.classic_attempts, 5);
 }
 
-TEST(BearerSupervisor, InProgressDoesNotGrowTheLeBackoff) {
+TEST(BearerSupervisor, InProgressWidensTheLeWindow) {
     FakeBearer ops;
     ops.le_succeeds = false;
     ops.le_error = "GDBus.Error:org.bluez.Error.InProgress: In Progress";
@@ -178,10 +188,12 @@ TEST(BearerSupervisor, InProgressDoesNotGrowTheLeBackoff) {
     sup.tick(0);
     sup.tick(1);
     int64_t now = 1 + BEARER_SETTLE_SECONDS;
+    int previous = 0;
     for (int i = 0; i < LE_ATTEMPTS_BEFORE_ADVICE; ++i) {
         sup.tick(now);
-        EXPECT_EQ(sup.status().le_backoff, BEARER_BACKOFF_MIN_SECONDS);
-        now += BEARER_BACKOFF_MIN_SECONDS;
+        EXPECT_GT(sup.status().le_backoff, previous) << "collided again at the same cadence";
+        previous = sup.status().le_backoff;
+        now += previous;
     }
     EXPECT_EQ(ops.le_attempts, LE_ATTEMPTS_BEFORE_ADVICE);
 }
@@ -222,6 +234,7 @@ TEST(BearerSupervisor, RecoversAfterDisconnect) {
     sup.tick(0);
     sup.tick(1);
     sup.tick(1 + BEARER_SETTLE_SECONDS);
+    sup.tick(2 + BEARER_SETTLE_SECONDS);
     ASSERT_TRUE(sup.status().le_connected);
 
     // The phone walks out of range.
@@ -235,6 +248,7 @@ TEST(BearerSupervisor, RecoversAfterDisconnect) {
     // ...and comes back.
     sup.tick(101);
     sup.tick(101 + BEARER_SETTLE_SECONDS);
+    sup.tick(102 + BEARER_SETTLE_SECONDS);
     EXPECT_TRUE(sup.status().classic_connected);
     EXPECT_TRUE(sup.status().le_connected);
 }
@@ -485,13 +499,11 @@ TEST(ProfileSupervisor, BusySessionKeepsPollingWithoutRetryBurst) {
 // refusal. Escalating those to the five-minute ceiling leaves the link down long
 // after the phone is back on the desk.
 TEST(BearerSupervisor, TransientFailuresDoNotEscalateTheBackoff) {
-    for (const char* message : {"org.bluez.Error.InProgress: Operation already in progress",
-                                "org.bluez.Error.NotReady: Resource Not Ready",
+    for (const char* message : {"org.bluez.Error.NotReady: Resource Not Ready",
                                 "org.bluez.Error.Failed: br-connection-page-timeout",
                                 "org.bluez.Error.Failed: Software caused connection abort",
                                 "org.bluez.Error.Failed: le-connection-abort-by-local",
-                                "org.bluez.Error.Failed: br-connection-refused",
-                                "org.bluez.Error.Failed: Operation already in progress"}) {
+                                "org.bluez.Error.Failed: br-connection-refused"}) {
         FakeBearer ops;
         ops.classic_succeeds = false;
         ops.classic_error = message;
@@ -599,6 +611,7 @@ TEST(BearerSupervisor, LeStaysReportedWhenOnlyClassicIsDown) {
     sup.tick(0);
     sup.tick(1);
     sup.tick(1 + BEARER_SETTLE_SECONDS);
+    sup.tick(2 + BEARER_SETTLE_SECONDS);
     ASSERT_TRUE(sup.status().classic_connected);
     ASSERT_TRUE(sup.status().le_connected);
 
@@ -654,10 +667,10 @@ TEST(BearerSupervisor, GivesUpDiallingLeInsteadOfSpinningForever) {
     // after our call gives up, so the next attempts collide with it.
     class RefusingBearer : public FakeBearer {
     public:
-        bool connect_le(std::string& err) override {
+        ConnectResult connect_le(std::string& err) override {
             ++le_attempts;
             err = (le_attempts % 2) ? "Timeout was reached" : "GDBus.Error:org.bluez.Error.InProgress: In Progress";
-            return false;
+            return ConnectResult::Failed;
         }
     } refusing;
 
@@ -672,7 +685,7 @@ TEST(BearerSupervisor, GivesUpDiallingLeInsteadOfSpinningForever) {
     }
 
     EXPECT_EQ(refusing.le_attempts, LE_ATTEMPTS_BEFORE_ADVICE) << "LE was dialled forever against a phone refusing it";
-    EXPECT_NE(sup.status().reason.find("not opening the LE link"), std::string::npos);
+    EXPECT_NE(sup.status().reason.find("LE link that carries notifications"), std::string::npos);
 
     // A reconnect is a new session and has to try again.
     sup.reset();
@@ -683,14 +696,58 @@ TEST(BearerSupervisor, GivesUpDiallingLeInsteadOfSpinningForever) {
     EXPECT_GT(refusing.le_attempts, LE_ATTEMPTS_BEFORE_ADVICE) << "reset must re-arm LE for the next session";
 }
 
+// A wedged bluetoothd and a phone that declines both end in a dead LE link, but
+// only one of them is fixed on the phone. Sending the user to iOS settings for a
+// stuck local connect is the wrong errand.
+TEST(BearerSupervisor, StuckBluezAdviceNamesTheDaemonRestart) {
+    class StuckBearer : public FakeBearer {
+    public:
+        ConnectResult connect_le(std::string& err) override {
+            ++le_attempts;
+            err = "GDBus.Error:org.bluez.Error.InProgress: In Progress";
+            return ConnectResult::Failed;
+        }
+    } stuck;
+
+    BearerSupervisor sup(stuck, true);
+    int64_t now = 0;
+    sup.tick(now);
+    now += BEARER_SETTLE_SECONDS + 1;
+    while (stuck.le_attempts < LE_ATTEMPTS_BEFORE_ADVICE) {
+        now += BEARER_BACKOFF_MAX_SECONDS;
+        sup.tick(now);
+    }
+
+    EXPECT_NE(sup.status().reason.find("systemctl restart bluetooth"), std::string::npos)
+        << "the one thing that clears a stuck connect is never named";
+    EXPECT_NE(sup.status().reason.find("Messages and contacts are unaffected"), std::string::npos);
+
+    // A refusal that never collides is the phone's to fix, and must not send the
+    // user restarting daemons.
+    FakeBearer refusing;
+    refusing.le_succeeds = false;
+    refusing.le_error = "org.bluez.Error.Failed: le-connection-abort-by-local";
+    BearerSupervisor other(refusing, true);
+    now = 0;
+    other.tick(now);
+    now += BEARER_SETTLE_SECONDS + 1;
+    while (refusing.le_attempts < LE_ATTEMPTS_BEFORE_ADVICE) {
+        now += BEARER_BACKOFF_MAX_SECONDS;
+        other.tick(now);
+    }
+
+    EXPECT_NE(other.status().reason.find("not opening the LE link"), std::string::npos);
+    EXPECT_EQ(other.status().reason.find("systemctl"), std::string::npos) << "nothing here says BlueZ is wedged";
+}
+
 TEST(BearerSupervisor, UndiallableLeStopsClaimingItIsComingUp) {
     // The connect reports success but the link never appears, which is exactly
     // what a Device1.Connect fallback does on an already-connected device.
     class OptimisticBearer : public FakeBearer {
     public:
-        bool connect_le(std::string&) override {
+        ConnectResult connect_le(std::string&) override {
             ++le_attempts;
-            return true;
+            return ConnectResult::Requested;
         }
     } optimistic;
 

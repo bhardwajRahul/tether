@@ -1,6 +1,7 @@
 #include "tether/bluetooth/ancs/notifications.hpp"
 
 #include <algorithm>
+#include <cctype>
 
 namespace tether::bluetooth::ancs {
 
@@ -60,6 +61,24 @@ namespace tether::bluetooth::ancs {
                 out.push_back(found->second);
         }
         return out;
+    }
+
+    void NotificationRegistry::rename_app(const std::string& app_id, const std::string& name) {
+        if (app_id.empty() || name.empty())
+            return;
+        for (auto& [uid, notification] : notifications_) {
+            if (notification.app_id == app_id)
+                notification.app_name = name;
+        }
+    }
+
+    std::string derive_app_name(const std::string& app_id) {
+        const size_t dot = app_id.rfind('.');
+        if (dot == std::string::npos || dot + 1 == app_id.size())
+            return app_id;
+        std::string name = app_id.substr(dot + 1);
+        name[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(name[0])));
+        return name;
     }
 
     bool should_show_desktop_popup(const Notification& notification) {

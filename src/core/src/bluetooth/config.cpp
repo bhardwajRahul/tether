@@ -22,6 +22,10 @@ namespace tether::bluetooth {
 
     } // namespace
 
+    namespace {
+        constexpr int CONFIG_VERSION = 1;
+    } // namespace
+
     const char* to_string(AuthStrategy strategy) {
         return strategy == AuthStrategy::ExplicitPair ? "explicit-pair" : "connect-first";
     }
@@ -39,6 +43,7 @@ namespace tether::bluetooth {
 
     std::string serialize_config(const Config& config) {
         nlohmann::json j;
+        j["config_version"] = CONFIG_VERSION;
         j["device_address"] = config.device_address;
         j["auth_strategy"] = to_string(config.auth_strategy);
         j["ancs_enabled"] = config.ancs_enabled;
@@ -56,7 +61,8 @@ namespace tether::bluetooth {
             config.device_address = j.value("device_address", "");
             config.auth_strategy = auth_strategy_from_string(j.value("auth_strategy", ""));
             config.ancs_enabled = j.value("ancs_enabled", true);
-            config.ancs_content_enabled = j.value("ancs_content_enabled", false);
+            const int version = j.value("config_version", 0);
+            config.ancs_content_enabled = version < 1 ? true : j.value("ancs_content_enabled", true);
             config.group_messages_enabled = j.value("group_messages_enabled", false);
         } catch (const std::exception&) {
             // A corrupt file must not stop the daemon; defaults are safe.

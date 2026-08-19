@@ -67,6 +67,11 @@ namespace tether::bluetooth::ancs {
         // rebuilt when its response lands.
         std::map<uint32_t, SourceEvent> in_progress;
 
+        // Bundle id -> display name, as answered by GetAppAttributes. Only
+        // touched from tick()'s thread. An entry with an empty value marks a
+        // request already in flight, so an app is asked about once per session.
+        std::map<std::string, std::string> app_names;
+
         bool write_control_point(const std::vector<uint8_t>& payload);
         void set_status(bool now_ready, const std::string& text);
         bool discover();
@@ -74,6 +79,7 @@ namespace tether::bluetooth::ancs {
         void unsubscribe();
         void handle_source_event(const SourceEvent& event, int64_t now);
         void handle_response(const Request& request, const Response& response, int64_t now);
+        std::string app_display_name(const std::string& app_id);
     };
 
     namespace {
@@ -346,12 +352,32 @@ namespace tether::bluetooth::ancs {
             in_progress.erase(event.uid);
     }
 
+    // Never blocks on the phone: the derived name is used now and the real one
+    // backfills the registry when GetAppAttributes answers.
+    std::string AncsClientState::app_display_name(const std::string& app_id) {
+        if (app_id.empty())
+            return {};
+        auto [entry, inserted] = app_names.try_emplace(app_id);
+        if (inserted)
+            sequencer->submit(build_app_request(app_id));
+        return entry->second.empty() ? derive_app_name(app_id) : entry->second;
+    }
+
     void AncsClientState::handle_response(const Request& request, const Response& response, int64_t now) {
         if (response.command == CommandId::GetAppAttributes) {
             // The readiness probe: a Data Source answer proves the phone has
             // authorized notification access, which StartNotify alone does not.
             if (!ready)
                 set_status(true, "Notification mirroring is active.");
+
+            const std::string name = response.attribute(static_cast<uint8_t>(AppAttributeId::DisplayName));
+            if (!response.app_id.empty() && !name.empty()) {
+                app_names[response.app_id] = name;
+                // The name arrives after the notifications that triggered the
+                // lookup were already stored and broadcast.
+                std::lock_guard<std::mutex> lock(registry_mutex);
+                registry.rename_app(response.app_id, name);
+            }
             return;
         }
         if (response.command != CommandId::GetNotificationAttributes)
@@ -366,7 +392,7 @@ namespace tether::bluetooth::ancs {
         Notification notification;
         notification.uid = request.uid;
         notification.app_id = response.attribute(static_cast<uint8_t>(NotificationAttributeId::AppIdentifier));
-        notification.app_name = notification.app_id;
+        notification.app_name = app_display_name(notification.app_id);
         notification.title = response.attribute(static_cast<uint8_t>(NotificationAttributeId::Title));
         notification.subtitle = response.attribute(static_cast<uint8_t>(NotificationAttributeId::Subtitle));
         notification.body = response.attribute(static_cast<uint8_t>(NotificationAttributeId::Message));
@@ -437,6 +463,7 @@ namespace tether::bluetooth::ancs {
         // pre-existing notifications is a sync rather than news.
         state_->initial_sync = true;
         if (!same_device) {
+            state_->app_names.clear();
             std::lock_guard<std::mutex> lock(state_->registry_mutex);
             state_->registry.clear();
         }

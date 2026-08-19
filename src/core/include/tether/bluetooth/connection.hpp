@@ -40,6 +40,10 @@ namespace tether::bluetooth {
         // for a GATT session it will not use.
         void set_notification_handlers(NotificationFn on_notification, WithdrawFn on_withdraw);
 
+        // Whether mirrored notifications carry their title and body, or only
+        // which app sent them. Takes effect on the next notification.
+        void set_ancs_content_enabled(bool enabled);
+
         // Invokes a mirrored notification's action.
         bool perform_notification_action(uint32_t uid, ancs::ActionId action);
 

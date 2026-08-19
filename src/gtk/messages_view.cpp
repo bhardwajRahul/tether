@@ -534,8 +534,10 @@ namespace tether::ui {
 
     void messages_view_set_visible(bool visible) {
         g_messages.visible = visible;
-        if (visible)
-            request_threads();
+        if (!visible)
+            return;
+        request_threads();
+        request_messages(g_messages.selected_thread);
     }
 
     bool messages_view_handle_event(const nlohmann::json& event) {

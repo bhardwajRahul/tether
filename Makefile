@@ -15,7 +15,7 @@ test: debug
 	cd extension && npm test
 
 install: release
-	cmake --install build/release
+	sudo cmake --install build/release
 
 package: release
 	cd build/release && cpack

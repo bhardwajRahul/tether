@@ -260,8 +260,9 @@ are why the sequencer exists.
 
 ### Group messages
 
-Off by default, `group_messages_enabled` and
-`ancs_content_enabled` in `~/.config/tether/bluetooth.json`, so group support cannot work without content mirroring.
+Off by default, `group_messages_enabled` in `~/.config/tether/bluetooth.json`. It also
+needs `ancs_content_enabled` (on by default, `tether --bt-ancs-content off` to disable),
+so group support cannot work without content mirroring.
 
 MAP delivers a group message with one sender, no participant list and no conversation
 identifier. The only other hint is to correlate Apple Messages ANCS notification:

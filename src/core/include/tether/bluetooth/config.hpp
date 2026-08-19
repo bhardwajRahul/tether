@@ -24,8 +24,9 @@ namespace tether::bluetooth {
         // not keep trying to bring up an LE bearer the phone will not answer.
         bool ancs_enabled = true;
         // Whether to request notification contents rather than only the app
-        // they came from. Off by default.
-        bool ancs_content_enabled = false;
+        // they came from. The iPhone's own notification-access toggle is the
+        // consent gate, so this is on and stays available as an opt-out.
+        bool ancs_content_enabled = true;
         // Group replies are off until deliberately enabled
         bool group_messages_enabled = false;
 

@@ -140,7 +140,16 @@ namespace tether {
     // short write splits one event across the framing boundary: every later
     // event on that socket is then misparsed and the client goes silently deaf
     // rather than erroring. Either the whole packet goes out or none of it does.
+    static std::mutex g_write_locks_mutex;
+    static std::map<int, std::mutex> g_write_locks;
+
+    static std::mutex& write_lock_for(int fd) {
+        std::lock_guard<std::mutex> lock(g_write_locks_mutex);
+        return g_write_locks[fd];
+    }
+
     static bool robust_plain_write(int fd, const void* buf, size_t num) {
+        std::lock_guard<std::mutex> lock(write_lock_for(fd));
         const char* p = static_cast<const char*>(buf);
         size_t written = 0;
         int stalls = 0;
@@ -258,7 +267,10 @@ namespace tether {
         nlohmann::json status;
         status["command"] = "bt_status";
         status["available"] = bluetooth::g_bluez != nullptr && bluetooth::g_bluez->running();
-        status["device_address"] = bluetooth::load_config().device_address;
+        const auto config = bluetooth::load_config();
+        status["device_address"] = config.device_address;
+        status["ancs_enabled"] = config.ancs_enabled;
+        status["ancs_content_enabled"] = config.ancs_content_enabled;
         if (!bluetooth::g_bluez) {
             status["capability"] = nullptr;
             status["adapters"] = nlohmann::json::array();
@@ -840,6 +852,17 @@ namespace tether {
                         bluetooth::save_config(config);
                         if (bluetooth::g_bt_connections)
                             bluetooth::g_bt_connections->set_device(config.device_address, config.ancs_enabled);
+                        broadcast_local_event(build_bt_status().dump());
+                    } else if (j.contains("command") && j["command"] == "bt_set_ancs_content") {
+                        auto config = bluetooth::load_config();
+                        config.ancs_content_enabled = j.value("enabled", true);
+                        bluetooth::save_config(config);
+                        if (bluetooth::g_bt_connections)
+                            bluetooth::g_bt_connections->set_ancs_content_enabled(config.ancs_content_enabled);
+                        // Group correlation reads notification bodies, so it
+                        // follows this toggle.
+                        bluetooth::set_group_replies_enabled(config.group_messages_enabled &&
+                                                             config.ancs_content_enabled);
                         broadcast_local_event(build_bt_status().dump());
                     } else if (j.contains("command") && j["command"] == "bt_list_notifications") {
                         nlohmann::json payload;

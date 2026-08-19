@@ -215,11 +215,11 @@ namespace tether::bluetooth {
         constexpr const char* OBEX_CLIENT = "org.bluez.obex.Client1";
 
         constexpr int CONNECT_TIMEOUT_MS = 30000;
-        // Paging a phone over BR/EDR is slow, but an LE connect to a bonded device
-        // already in range either answers quickly or is not going to. Waiting the
-        // full 30s only stalls the supervisor thread and piles up InProgress on the
-        // next attempts, since BlueZ keeps working after the call gives up.
-        constexpr int LE_CONNECT_TIMEOUT_MS = 5000;
+        // BlueZ keeps working on a connect long after a caller gives up, and every
+        // later attempt then collides with it. The LE connect is issued
+        // asynchronously and left to run to completion rather than abandoned, so
+        // this is generous on purpose.
+        constexpr int LE_CONNECT_TIMEOUT_MS = 45000;
 
         constexpr int MESSAGE_POLL_SECONDS = 15;
         // obexd can drop a MAP session while the Classic link stays up, and the
@@ -292,47 +292,109 @@ namespace tether::bluetooth {
                 g_clear_error(&error);
             }
 
-            bool connect_classic(std::string& err) override {
+            ConnectResult connect_classic(std::string& err) override {
                 auto device = lookup();
                 if (!device) {
                     err = "device not present";
-                    return false;
+                    return ConnectResult::Failed;
                 }
                 // bluez only exposes the per-bearer Connect while the device is connected on some bearer
                 if (device->has_classic_bearer && device->connected) {
                     std::string bearer_err;
                     if (call(device->path, IFACE_BEARER_BREDR, "Connect", bearer_err))
-                        return true;
+                        return ConnectResult::Requested;
                     // some versions publish the interface without the method
                     if (bearer_err.find("UnknownMethod") == std::string::npos) {
                         err = bearer_err;
-                        return false;
+                        return ConnectResult::Failed;
                     }
                 }
-                return call(device->path, IFACE_DEVICE, "Connect", err);
+                return call(device->path, IFACE_DEVICE, "Connect", err) ? ConnectResult::Requested
+                                                                        : ConnectResult::Failed;
             }
 
-            bool connect_le(std::string& err) override {
+            // Issued asynchronously and never abandoned: a synchronous call that
+            // times out leaves BlueZ still connecting, and the next attempt then
+            // collides with it forever.
+            ConnectResult connect_le(std::string& err) override {
                 auto device = lookup();
                 if (!device) {
                     err = "device not present";
-                    return false;
+                    return ConnectResult::Failed;
                 }
                 if (!device->has_le_bearer) {
                     err = "no LE bearer";
-                    return false;
+                    return ConnectResult::Failed;
                 }
-                std::string bearer_err;
-                if (call(device->path, IFACE_BEARER_LE, "Connect", bearer_err, LE_CONNECT_TIMEOUT_MS))
-                    return true;
-                if (bearer_err.find("UnknownMethod") == std::string::npos) {
-                    err = bearer_err;
-                    return false;
+
+                {
+                    std::lock_guard<std::mutex> lock(le_->mutex);
+                    if (le_->pending)
+                        return ConnectResult::Busy;
+                    if (!le_->error.empty()) {
+                        err = le_->error;
+                        le_->error.clear();
+                        return ConnectResult::Failed;
+                    }
+                    le_->pending = true;
                 }
-                return call(device->path, IFACE_DEVICE, "Connect", err, LE_CONNECT_TIMEOUT_MS);
+
+                // Some BlueZ builds publish Bearer.LE1 without Connect; the first
+                // reply says which, and every later attempt uses the one that
+                // exists.
+                const char* iface = le_->bearer_connect_missing ? IFACE_DEVICE : IFACE_BEARER_LE;
+                auto* holder = new std::shared_ptr<LeConnect>(le_);
+                const std::string path = device->path;
+                monitor_.invoke_sync([this, path, iface, holder] {
+                    g_dbus_connection_call(monitor_.connection(),
+                                           BLUEZ_NAME,
+                                           path.c_str(),
+                                           iface,
+                                           "Connect",
+                                           nullptr,
+                                           nullptr,
+                                           G_DBUS_CALL_FLAGS_NONE,
+                                           LE_CONNECT_TIMEOUT_MS,
+                                           nullptr,
+                                           on_le_connected,
+                                           holder);
+                });
+                return ConnectResult::Requested;
             }
 
         private:
+            // Outlives the ops object: a reply can land after the supervised
+            // device is torn down and replaced.
+            struct LeConnect {
+                std::mutex mutex;
+                bool pending = false;
+                std::string error;
+                bool bearer_connect_missing = false;
+            };
+            std::shared_ptr<LeConnect> le_ = std::make_shared<LeConnect>();
+
+            static void on_le_connected(GObject* source, GAsyncResult* result, gpointer user_data) {
+                std::unique_ptr<std::shared_ptr<LeConnect>> holder(static_cast<std::shared_ptr<LeConnect>*>(user_data));
+                GError* error = nullptr;
+                GVariant* reply = g_dbus_connection_call_finish(G_DBUS_CONNECTION(source), result, &error);
+                std::string message;
+                if (reply)
+                    g_variant_unref(reply);
+                else {
+                    message = error ? error->message : "unknown error";
+                    g_clear_error(&error);
+                }
+
+                std::lock_guard<std::mutex> lock((*holder)->mutex);
+                (*holder)->pending = false;
+                // Not a failure of the connect, just the wrong interface. Retry on
+                // the next tick against Device1 and report nothing.
+                if (message.find("UnknownMethod") != std::string::npos)
+                    (*holder)->bearer_connect_missing = true;
+                else
+                    (*holder)->error = message;
+            }
+
             std::optional<Device> lookup() const {
                 for (const auto& device : monitor_.snapshot().devices) {
                     if (normalize_address(device.address) == address_)
@@ -478,6 +540,9 @@ namespace tether::bluetooth {
         bool ancs_enabled = true;
         bool link_was_ready = false;
         bool device_was_present = false;
+        // When the LE bearer was last seen down, so a blip can be told from a
+        // session that is really gone. -1 while it is up.
+        int64_t le_down_since = -1;
         int map_failures = 0;
         int64_t next_message_poll = 0;
         std::string open_map_path;
@@ -754,11 +819,32 @@ namespace tether::bluetooth {
         if (!ancs_client)
             return;
 
-        // ANCS rides the LE bearer. Without it there is nothing to talk to, and
-        // pointing the client at an empty path is what makes it forget a session
-        // that no longer exists.
+        // ANCS rides the LE bearer, but BlueZ keeps exposing the bonded
+        // characteristics while that bearer reads disconnected, and the bearer
+        // flaps far faster than a GATT subscription can be rebuilt. Dropping the
+        // path on every blip resets discovery and the sequencer, so the readiness
+        // probe never lives long enough to be answered. Hold the session across a
+        // short outage and let discovery decide; a real loss still clears it,
+        // because an empty path is what makes the client forget a dead session.
+        const bool le_up = bearers->status().le_connected;
+        if (le_up)
+            le_down_since = -1;
+        else if (le_down_since < 0)
+            le_down_since = now;
+        // A live subscription outranks the property: an iPhone that is answering
+        // ANCS is reachable whatever Bearer.LE1 says, and dropping the path under
+        // it would end a session that is working.
+        bool ready;
+        {
+            std::lock_guard<std::mutex> lock(status_mutex);
+            ready = ancs_ready;
+        }
+        // ponytail: one fixed grace window rather than per-phase tuning. Widen it
+        // if a controller is seen flapping slower than this.
+        const bool hold = ready || le_up || now - le_down_since < ANCS_BEARER_GRACE_SECONDS;
+
         std::string device_path;
-        if (bearers->status().le_connected) {
+        if (hold && bearers->status().device_present) {
             auto objects = monitor->snapshot();
             for (const auto& device : objects.devices) {
                 if (device.address == address || normalize_address(device.address) == normalize_address(address)) {
@@ -941,6 +1027,11 @@ namespace tether::bluetooth {
     void ConnectionManager::set_notification_handlers(NotificationFn on_notification, WithdrawFn on_withdraw) {
         state_->on_notification = std::move(on_notification);
         state_->on_withdraw = std::move(on_withdraw);
+    }
+
+    void ConnectionManager::set_ancs_content_enabled(bool enabled) {
+        if (state_->ancs_client)
+            state_->ancs_client->set_content_enabled(enabled);
     }
 
     bool ConnectionManager::perform_notification_action(uint32_t uid, ancs::ActionId action) {

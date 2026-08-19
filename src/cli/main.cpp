@@ -117,6 +117,8 @@ void print_help() {
               << "  --bt-solicit             Re-advertise for ANCS so the iPhone shows its permission\n"
               << "                           toggles again, without removing the bond.\n"
               << "  --bt-ancs <on|off>       Turn notification mirroring on or off.\n"
+              << "  --bt-ancs-content <on|off>  Mirror notification titles and bodies, not just the app.\n"
+              << "  --bt-notifications       List mirrored iPhone notifications.\n"
               << "  --bt-diagnostics         Print a redacted Bluetooth report for a bug report.\n"
               << "  --accept <fingerprint>   Accept a pending pairing request locally.\n"
               << "  --pair                   Send a pair_request over TCP to the daemon.\n\n"
@@ -322,6 +324,40 @@ static std::string format_time(int64_t epoch) {
     return buf;
 }
 
+static int print_bt_notifications(tether::Client& client) {
+    nlohmann::json resp;
+    try {
+        resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_list_notifications\"}\n"));
+    } catch (const std::exception&) {
+        debug::log(ERR, "Could not read notifications from the daemon.\n");
+        return 1;
+    }
+
+    const auto& notifications = resp["notifications"];
+    if (notifications.empty()) {
+        fprintf(stdout, "No notifications yet. Check 'tether --bt-connection'.\n");
+        return 0;
+    }
+
+    for (const auto& n : notifications) {
+        const std::string app = n.value("app_name", n.value("app_id", ""));
+        const std::string title = n.value("title", "");
+        const std::string subtitle = n.value("subtitle", "");
+        const std::string body = n.value("body", "");
+        fprintf(stdout,
+                "%s  %s%s%s\n",
+                format_time(n.value("timestamp", static_cast<int64_t>(0))).c_str(),
+                app.c_str(),
+                title.empty() ? "" : "  -  ",
+                title.c_str());
+        for (const std::string& line : {subtitle, body}) {
+            if (!line.empty())
+                fprintf(stdout, "    %s\n", line.c_str());
+        }
+    }
+    return 0;
+}
+
 static int print_bt_threads(tether::Client& client) {
     nlohmann::json resp;
     try {
@@ -486,6 +522,12 @@ int main(int argc, char* argv[]) {
             action = "bt_ancs";
             if (i + 1 < argc && argv[i + 1][0] != '-')
                 arg_val = argv[++i];
+        } else if (arg == "--bt-ancs-content") {
+            action = "bt_ancs_content";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
+        } else if (arg == "--bt-notifications") {
+            action = "bt_notifications";
         } else if (arg == "--bt-pair") {
             action = "bt_pair";
             if (i + 1 < argc && argv[i + 1][0] != '-')
@@ -622,6 +664,8 @@ int main(int argc, char* argv[]) {
         return print_bt_diagnostics(client);
     } else if (action == "bt_threads") {
         return print_bt_threads(client);
+    } else if (action == "bt_notifications") {
+        return print_bt_notifications(client);
     } else if (action == "bt_messages") {
         if (arg_val.empty()) {
             debug::log(ERR, "A thread key is required, e.g. --bt-messages tel:+15551234567\n");
@@ -642,19 +686,23 @@ int main(int argc, char* argv[]) {
         return run_bt_transaction(client, action == "bt_pair" ? "bt_pair" : "bt_unpair", arg_val);
     } else if (action == "bt_solicit") {
         return run_bt_transaction(client, "bt_solicit");
-    } else if (action == "bt_ancs") {
+    } else if (action == "bt_ancs" || action == "bt_ancs_content") {
+        const bool content = action == "bt_ancs_content";
         if (arg_val != "on" && arg_val != "off") {
-            debug::log(ERR, "Expected on or off, e.g. --bt-ancs on\n");
+            debug::log(ERR, "Expected on or off, e.g. {} on\n", content ? "--bt-ancs-content" : "--bt-ancs");
             return 1;
         }
         nlohmann::json request;
-        request["command"] = "bt_set_ancs";
+        request["command"] = content ? "bt_set_ancs_content" : "bt_set_ancs";
         request["enabled"] = arg_val == "on";
         if (!client.send(request.dump() + "\n")) {
             debug::log(ERR, "Could not reach the daemon.\n");
             return 1;
         }
-        fprintf(stdout, "Notification mirroring %s.\n", arg_val == "on" ? "enabled" : "disabled");
+        fprintf(stdout,
+                "%s %s.\n",
+                content ? "Notification contents" : "Notification mirroring",
+                arg_val == "on" ? "enabled" : "disabled");
     }
 
     return 0;

@@ -52,6 +52,8 @@ namespace tether::bluetooth::ancs {
         void clear();
 
         void store(const Notification& notification);
+        // Applies a display name resolved after the notifications were stored.
+        void rename_app(const std::string& app_id, const std::string& name);
         const Notification* find(uint32_t uid) const;
         // Newest first.
         std::vector<Notification> recent(size_t limit = 50) const;
@@ -64,6 +66,10 @@ namespace tether::bluetooth::ancs {
         std::map<uint32_t, Notification> notifications_;
         std::vector<uint32_t> order_;
     };
+
+    // "com.burbn.instagram" -> "Instagram". Stands in until the phone answers
+    // with the app's real display name, and when it never does.
+    std::string derive_app_name(const std::string& app_id);
 
     // Messages arrive over MAP already, with read state that stays in sync. The
     // ANCS copy is kept for correlation but must never raise a second popup.
