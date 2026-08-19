@@ -141,7 +141,8 @@ make install
 3. Bluetooth pair via GUI or CLI (for Messages and Notifications):
 
    Check that your machine has the Bluetooth features first.
-   This sets the Bluetooth adapter class to "A/V Hands-Free" instead of "Computer"
+
+   This sets the Bluetooth adapter class to "A/V Hands-Free" instead of "Computer":
 
    ```bash
    ./scripts/bt-probe.sh --set-class

@@ -384,10 +384,10 @@ namespace tether::ui {
 
     void devices_view_trigger_discovery() {
         set_status_main("Scanning for nearby devices...");
-        // Refresh means both routes: mDNS for Wi-Fi peers, BlueZ for Bluetooth.
+        // Refresh means both routes: mDNS for Wi-Fi peers, and a real BlueZ discovery for Bluetooth.
         daemon_send({{"command", "discover"}});
         daemon_send({{"command", "bt_status"}});
-        daemon_send({{"command", "bt_list_devices"}});
+        daemon_send({{"command", "bt_scan"}});
     }
 
     // Refresh the device list based on Discovered (unpaired), Paired (offline), Paired (online)
@@ -736,6 +736,20 @@ namespace tether::ui {
             // A status broadcast, not a command this view owns: the Messages and
             // Notifications views need the same event.
             return false;
+        }
+        if (command == "bt_scan_result") {
+            const std::string message = event.value("message", "");
+            set_status_main(message);
+            set_text(g_devices.lbl_bt_progress, message);
+            // A failed scan already carries the reason; only a scan that really
+            // ran and found nothing wants the "check the phone" advice.
+            if (event.value("success", false) && g_devices.bt_devices.empty())
+                set_text(g_devices.lbl_welcome_bt,
+                         "No iPhone found. Unlock the phone and open Settings > Bluetooth so it advertises, "
+                         "then scan again.");
+            else if (!event.value("success", false))
+                set_text(g_devices.lbl_welcome_bt, message);
+            return true;
         }
         if (command == "bt_solicit_result") {
             set_text(g_devices.lbl_bt_progress, event.value("message", ""));

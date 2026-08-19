@@ -277,6 +277,38 @@ namespace tether {
     // advertisement object paths.
     static std::atomic<bool> g_bt_pair_busy{false};
 
+    // A second StartDiscovery while one is running just gets stopped early by the
+    // first one's StopDiscovery.
+    static std::atomic<bool> g_bt_scan_busy{false};
+
+    static constexpr int BT_SCAN_SECONDS = 20;
+
+    static void run_bt_scan() {
+        nlohmann::json event;
+        event["command"] = "bt_scan_result";
+
+        if (g_bt_scan_busy.exchange(true)) {
+            event["success"] = false;
+            event["message"] = "A Bluetooth scan is already running.";
+            broadcast_local_event(event.dump());
+            return;
+        }
+
+        std::string err;
+        // Each tick republishes the device list, so the UI fills in as the phone
+        // shows up rather than only at the end of the scan.
+        const bool ok =
+            bluetooth::g_bluez &&
+            bluetooth::scan_devices(
+                *bluetooth::g_bluez, BT_SCAN_SECONDS, []() { broadcast_local_event(build_bt_devices().dump()); }, err);
+
+        g_bt_scan_busy = false;
+        event["success"] = ok;
+        event["message"] = ok ? "Bluetooth scan finished." : (err.empty() ? "Bluetooth is unavailable." : err);
+        broadcast_local_event(build_bt_devices().dump());
+        broadcast_local_event(event.dump());
+    }
+
     static void run_bt_pair(const std::string& address) {
         if (!bluetooth::g_bluez) {
             nlohmann::json event;
@@ -677,6 +709,8 @@ namespace tether {
                         std::string payload = build_bt_status().dump() + "\n";
                         write_plain_packet(client_fd, payload);
                         continue;
+                    } else if (j.contains("command") && j["command"] == "bt_scan") {
+                        std::thread(run_bt_scan).detach();
                     } else if (j.contains("command") && j["command"] == "bt_list_devices") {
                         std::string payload = build_bt_devices().dump() + "\n";
                         write_plain_packet(client_fd, payload);

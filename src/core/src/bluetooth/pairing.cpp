@@ -108,7 +108,10 @@ namespace tether::bluetooth {
             return false;
         }
 
-        bool call_adapter(GDBusConnection* conn, const std::string& path, const char* method) {
+        bool call_adapter(GDBusConnection* conn,
+                          const std::string& path,
+                          const char* method,
+                          std::string* err_out = nullptr) {
             GError* error = nullptr;
             GVariant* reply = g_dbus_connection_call_sync(conn,
                                                           BLUEZ_NAME,
@@ -122,12 +125,41 @@ namespace tether::bluetooth {
                                                           nullptr,
                                                           &error);
             if (!reply) {
-                debug::log(WARN, "bluetooth: {} failed: {}", method, error ? error->message : "unknown");
+                const std::string message = error && error->message ? error->message : "unknown";
+                debug::log(WARN, "bluetooth: {} failed: {}", method, message);
+                if (err_out)
+                    *err_out = message;
                 g_clear_error(&error);
                 return false;
             }
             g_variant_unref(reply);
             return true;
+        }
+
+        bool get_adapter_bool(GDBusConnection* conn, const std::string& adapter, const char* name) {
+            GError* error = nullptr;
+            GVariant* reply = g_dbus_connection_call_sync(conn,
+                                                          BLUEZ_NAME,
+                                                          adapter.c_str(),
+                                                          IFACE_PROPS,
+                                                          "Get",
+                                                          g_variant_new("(ss)", IFACE_ADAPTER, name),
+                                                          G_VARIANT_TYPE("(v)"),
+                                                          G_DBUS_CALL_FLAGS_NONE,
+                                                          5000,
+                                                          nullptr,
+                                                          &error);
+            if (!reply) {
+                g_clear_error(&error);
+                return false;
+            }
+            GVariant* boxed = nullptr;
+            g_variant_get(reply, "(v)", &boxed);
+            const bool value = boxed && g_variant_get_boolean(boxed);
+            if (boxed)
+                g_variant_unref(boxed);
+            g_variant_unref(reply);
+            return value;
         }
 
         // Scans until the device shows up. Needed because an unpair makes BlueZ
@@ -522,6 +554,49 @@ namespace tether::bluetooth {
                               "mirroring will not.";
         }
         return result;
+    }
+
+    bool scan_devices(BluezMonitor& monitor, int seconds, const std::function<void()>& on_tick, std::string& err) {
+        GDBusConnection* conn = monitor.connection();
+        if (!conn) {
+            err = "Bluetooth is unavailable.";
+            return false;
+        }
+
+        auto objects = monitor.snapshot();
+        if (objects.adapters.empty()) {
+            err = "No Bluetooth adapter is present.";
+            return false;
+        }
+        const std::string adapter = objects.adapters.front().path;
+
+        // InProgress means BlueZ believes a discovery is already running.
+        std::string start_err;
+        bool owns_discovery = call_adapter(conn, adapter, "StartDiscovery", &start_err);
+        if (!owns_discovery) {
+            if (start_err.find("InProgress") == std::string::npos) {
+                err = start_err.empty() ? "BlueZ refused to start scanning." : start_err;
+                return false;
+            }
+            if (!get_adapter_bool(conn, adapter, "Discovering")) {
+                err = "BlueZ is holding a discovery session that never ended, so scanning cannot start. "
+                      "Restart the Bluetooth service (sudo systemctl restart bluetooth) and try again.";
+                return false;
+            }
+        }
+
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(seconds);
+        while (std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            if (on_tick)
+                on_tick();
+        }
+
+        // A discovery left running blocks the pairing transaction that usually
+        // follows it, so it stops even when the caller loses interest.
+        if (owns_discovery)
+            call_adapter(conn, adapter, "StopDiscovery");
+        return true;
     }
 
     PairResult unpair_device(BluezMonitor& monitor, const std::string& address) {
