@@ -53,16 +53,25 @@ sudo systemctl enable --now tether-btclass@hci0
 `PartOf=bluetooth.service` re-runs it on every `bluetooth.service` restart. It writes the
 class, reads it back, and retries for ten seconds.
 
-**BlueZ needs the experimental bearer API** for ANCS. On Arch:
+**BlueZ needs the experimental bearer API** for ANCS, and it must be active
+*before* pairing: a bond made without it has no LE half. The package ships the
+drop-in, already pointing at this distro's `bluetoothd`:
 
 ```bash
 sudo mkdir -p /etc/systemd/system/bluetooth.service.d
-printf '[Service]\nExecStart=\nExecStart=/usr/lib/bluetooth/bluetoothd --experimental\n' \
-  | sudo tee /etc/systemd/system/bluetooth.service.d/experimental.conf
+sudo cp /usr/share/tether/bluetooth-experimental.conf /etc/systemd/system/bluetooth.service.d/
 sudo systemctl daemon-reload && sudo systemctl restart bluetooth
 ```
 
-The executable lives at `/usr/libexec/bluetooth/bluetoothd` on Debian based.
+It is shipped to `/usr/share` rather than installed into
+`bluetooth.service.d` directly, because a drop-in there takes effect the moment
+the package lands, and changing how `bluetoothd` runs for the whole machine is
+the user's decision.
+
+Without it `bluetoothd` still registers `org.bluez.Bearer.LE1`, but as an empty
+marker: no properties, no `Connect()`. So the interface being present is not
+evidence the API is available, and code that reads it that way sees an LE bearer
+that can never connect and a bond that never looks dual.
 
 **`obexd` must be running** (user service `obex`) for MAP and PBAP. It is socket-activated under normal use.
 

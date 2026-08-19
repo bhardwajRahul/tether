@@ -121,6 +121,12 @@ tether \-\-bt-setup
 Sets the Bluetooth adapter's Class of Device to A/V Hands\-Free, which iOS
 requires before it will offer its Messages and Contacts permissions. Installed
 but not enabled; see \fB\-\-bt-setup\fR.
+.TP
+\fB/usr/share/tether/bluetooth\-experimental.conf\fR
+systemd drop\-in that runs \fBbluetoothd\fR with \fB\-\-experimental\fR, which
+exposes the LE bearer interface ANCS notification mirroring needs. Copy it into
+\fB/etc/systemd/system/bluetooth.service.d/\fR to apply it; see
+\fB\-\-bt-setup\fR. It must be in place before pairing.
 .SH SEE ALSO
 .BR tetherd (8),
 .BR tether-gtk (1)

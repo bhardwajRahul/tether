@@ -90,7 +90,9 @@ The extension communicates with `tetherd` via native messaging. This allows user
 - `bluez`, `bluez-utils`, and `bluez-obex` (for messages and notifications)
 
 #### Bluetooth (for Messages and Notifications)
-- BlueZ 5.86+ must be running with experimental bearer API.
+- BlueZ 5.86+ must be running with experimental bearer API. Tether ships the
+  systemd drop-in; `tether --bt-setup` prints the one command that applies it.
+  Do this **before** pairing.
 - A controller with BR/EDR, LE, and advertising support.
 - Notification mirroring does not work on iOS 18 and earlier.
 

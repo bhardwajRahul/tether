@@ -44,6 +44,11 @@ target_include_directories(tether PUBLIC
     ${CMAKE_BINARY_DIR}/generated
 )
 
+# Where the bluetooth.service drop-in is shipped, so --bt-setup can name it.
+target_compile_definitions(tether PRIVATE
+    TETHER_DATADIR="${CMAKE_INSTALL_FULL_DATADIR}/tether"
+)
+
 
 target_link_libraries(tether PUBLIC
     nlohmann_json::nlohmann_json

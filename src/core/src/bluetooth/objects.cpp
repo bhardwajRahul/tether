@@ -149,7 +149,8 @@ namespace tether::bluetooth {
             g_variant_unref(props);
 
             if (GVariant* le = g_variant_lookup_value(ifaces, IFACE_BEARER_LE, G_VARIANT_TYPE("a{sv}"))) {
-                d.has_le_bearer = true;
+                // without --experimental bluetoothd still registers the interface name, but empty.
+                d.has_le_bearer = g_variant_n_children(le) > 0;
                 d.le_paired = get_bool(le, "Paired");
                 d.le_bonded = get_bool(le, "Bonded", d.le_paired);
                 d.le_connected = get_bool(le, "Connected");
@@ -262,6 +263,25 @@ namespace tether::bluetooth {
             return "/usr/lib/bluetooth/bluetoothd";
         }
 
+        // The package ships the drop-in for the user to copy.
+        std::string enable_experimental_command() {
+            const std::string shipped = std::string(TETHER_DATADIR) + "/bluetooth-experimental.conf";
+            std::error_code ec;
+            if (std::filesystem::exists(shipped, ec))
+                return "sudo mkdir -p /etc/systemd/system/bluetooth.service.d\n"
+                       "sudo cp " +
+                       shipped +
+                       " /etc/systemd/system/bluetooth.service.d/\n"
+                       "sudo systemctl daemon-reload && sudo systemctl restart bluetooth";
+
+            return "sudo mkdir -p /etc/systemd/system/bluetooth.service.d\n"
+                   "printf '[Service]\\nExecStart=\\nExecStart=" +
+                   bluetoothd_path() +
+                   " --experimental\\n' \\\n"
+                   "  | sudo tee /etc/systemd/system/bluetooth.service.d/experimental.conf\n"
+                   "sudo systemctl daemon-reload && sudo systemctl restart bluetooth";
+        }
+
     } // namespace
 
     Capability resolve_capability(const BluezObjects& objects) {
@@ -292,8 +312,10 @@ namespace tether::bluetooth {
         cap.advertising = adapter->has_advertising_manager && adapter->advertising_instances > 0;
         cap.class_ok = adapter->class_is_handsfree();
 
+        // Only a populated Bearer.LE1 settles this. Bearer.BREDR1 is marker-only on
+        // some packaged builds, so it is not evidence either way.
         for (const auto& d : objects.devices) {
-            if (d.has_le_bearer || d.has_classic_bearer)
+            if (d.has_le_bearer)
                 cap.bearer_api = BearerApi::Confirmed;
         }
         if (cap.bearer_api != BearerApi::Confirmed)
@@ -324,13 +346,9 @@ namespace tether::bluetooth {
         }
         if (cap.bearer_api == BearerApi::Absent) {
             cap.setup.push_back({"Notification mirroring needs BlueZ's experimental bearer API "
-                                 "(org.bluez.Bearer.LE1), which bluetoothd is not exposing.",
-                                 "sudo mkdir -p /etc/systemd/system/bluetooth.service.d\n"
-                                 "printf '[Service]\\nExecStart=\\nExecStart=" +
-                                     bluetoothd_path() +
-                                     " --experimental\\n' \\\n"
-                                     "  | sudo tee /etc/systemd/system/bluetooth.service.d/experimental.conf\n"
-                                     "sudo systemctl daemon-reload && sudo systemctl restart bluetooth"});
+                                 "(org.bluez.Bearer.LE1), which bluetoothd is not exposing. Set this up before "
+                                 "pairing: a bond made without it has no LE half.",
+                                 enable_experimental_command()});
             cap.mode = DeliveryMode::Compatibility;
         } else if (cap.bearer_api == BearerApi::Unknown) {
             cap.reasons.emplace_back("Bearer API support is unconfirmed until a device is bonded.");

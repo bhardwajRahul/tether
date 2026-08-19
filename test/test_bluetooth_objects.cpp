@@ -206,16 +206,16 @@ TEST(Capability, CompatibilityWhenExperimentalIsOff) {
     EXPECT_NE(cap.setup[0].command.find("--experimental"), std::string::npos);
 }
 
-// BlueZ stopped gating the Bearer API on --experimental, so bluetoothd's command
-// line is not evidence against it. Reading it as proof told users whose
-// notification mirroring already worked to install a drop-in that changes nothing.
-// A bearer object is the observation that settles it, and BREDR1 answers the
-// question without an LE phone in range.
-TEST(Capability, AClassicBearerConfirmsTheApiWithoutTheExperimentalFlag) {
+// Without --experimental bluetoothd registers Bearer.LE1 as an empty marker: no
+// properties, no Connect(). Reading its mere presence as proof reported a usable
+// LE bearer, suppressed the drop-in advice, and left le_bonded permanently false
+// -- which in turn latched notification mirroring off after every pairing.
+TEST(Capability, AnEmptyBearerInterfaceIsNotProofOfTheApi) {
     Payload p(join(ADAPTER_FULL, R"({
-      '/org/bluez/hci0/dev_F8_D3_F0_3C_84_4A': {
+      '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
         'org.bluez.Device1': { 'Paired': <true>, 'Bonded': <true> },
-        'org.bluez.Bearer.BREDR1': { 'Bonded': <true>, 'Connected': <false> }
+        'org.bluez.Bearer.LE1': {},
+        'org.bluez.Bearer.BREDR1': {}
       }
     })")
                   .c_str());
@@ -223,14 +223,13 @@ TEST(Capability, AClassicBearerConfirmsTheApiWithoutTheExperimentalFlag) {
     objects.experimental_api = false;
     auto cap = resolve_capability(objects);
 
-    EXPECT_EQ(cap.bearer_api, BearerApi::Confirmed);
-    EXPECT_EQ(cap.mode, DeliveryMode::Full);
-    EXPECT_TRUE(cap.setup.empty());
+    ASSERT_FALSE(objects.devices.empty());
+    EXPECT_FALSE(objects.devices[0].has_le_bearer);
+    EXPECT_EQ(cap.bearer_api, BearerApi::Absent);
+    ASSERT_EQ(cap.setup.size(), 1u);
+    EXPECT_NE(cap.setup[0].command.find("--experimental"), std::string::npos);
 }
 
-// Headsets and game controllers are bonded but never expose a bearer under any
-// build, so treating any bond as proof of absence gives a false negative and
-// silently disables ANCS on a machine that supports it.
 TEST(Capability, ClassicOnlyBondDoesNotDisproveBearerApi) {
     Payload p(join(ADAPTER_FULL, R"({
       '/org/bluez/hci0/dev_F8_D3_F0_3C_84_4A': {
