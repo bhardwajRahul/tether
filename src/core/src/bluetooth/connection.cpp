@@ -221,7 +221,6 @@ namespace tether::bluetooth {
         // asynchronously and left to run to completion rather than abandoned, so
         // this is generous on purpose.
         constexpr int LE_CONNECT_TIMEOUT_MS = 45000;
-        constexpr int DISCONNECT_TIMEOUT_MS = 10000;
 
         constexpr int MESSAGE_POLL_SECONDS = 15;
         // obexd can drop a MAP session while the Classic link stays up, and the
@@ -315,6 +314,11 @@ namespace tether::bluetooth {
                                                                         : ConnectResult::Failed;
             }
 
+            bool le_connect_outstanding() const override {
+                std::lock_guard<std::mutex> lock(le_->mutex);
+                return le_->pending;
+            }
+
             // Issued asynchronously and never abandoned: a synchronous call that
             // times out leaves BlueZ still connecting, and the next attempt then
             // collides with it forever.
@@ -364,41 +368,11 @@ namespace tether::bluetooth {
                 return ConnectResult::Requested;
             }
 
-            // Drops the LE transport so a wedged connect can be retried.
-            ConnectResult disconnect_le(std::string& err) override {
-                auto device = lookup();
-                if (!device) {
-                    err = "device not present";
-                    return ConnectResult::Failed;
-                }
-                if (!device->has_le_bearer) {
-                    err = "no LE bearer";
-                    return ConnectResult::Failed;
-                }
-                // bluez can report the bearer disconnected while gatt is live and ancs is delivering over it.
-                if (device->has_ancs_gatt) {
-                    err = "ANCS is live on this link";
-                    return ConnectResult::Failed;
-                }
-                if (!call(device->path, IFACE_BEARER_LE, "Disconnect", err, DISCONNECT_TIMEOUT_MS)) {
-                    if (err.find("NotConnected") == std::string::npos)
-                        return ConnectResult::Failed;
-                    err.clear();
-                }
-
-                // A dropped bearer cannot still be the subject of our own outstanding connect
-                {
-                    std::lock_guard<std::mutex> lock(le_->mutex);
-                    le_->pending = false;
-                }
-                return ConnectResult::Requested;
-            }
-
         private:
             // Outlives the ops object: a reply can land after the supervised
             // device is torn down and replaced.
             struct LeConnect {
-                std::mutex mutex;
+                mutable std::mutex mutex;
                 bool pending = false;
                 std::string error;
                 bool bearer_connect_missing = false;

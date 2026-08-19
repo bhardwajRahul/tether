@@ -44,6 +44,7 @@ namespace tether::bluetooth::ancs {
         int64_t next_discover = 0;
         int64_t next_subscribe = 0;
         int64_t next_probe = 0;
+        int64_t next_verify = 0;
 
         // Guards everything that crosses a thread boundary: the two GATT buffers
         // filled on the GLib thread, the characteristic paths that thread compares
@@ -77,6 +78,7 @@ namespace tether::bluetooth::ancs {
         bool discover();
         bool subscribe();
         void unsubscribe();
+        void verify_subscription();
         void handle_source_event(const SourceEvent& event, int64_t now);
         void handle_response(const Request& request, const Response& response, int64_t now);
         std::string app_display_name(const std::string& app_id);
@@ -314,6 +316,62 @@ namespace tether::bluetooth::ancs {
         }
     }
 
+    // `subscribed` records that StartNotify once succeeded, which is not the same as a subscription that is still live.
+    void AncsClientState::verify_subscription() {
+        if (!monitor || !monitor->connection())
+            return;
+        GDBusConnection* conn = monitor->connection();
+
+        bool object_gone = false;
+        bool notifying = true;
+        for (const std::string& path : {notification_source_path, data_source_path}) {
+            if (path.empty())
+                continue;
+            GError* error = nullptr;
+            GVariant* reply = g_dbus_connection_call_sync(conn,
+                                                          BLUEZ_NAME,
+                                                          path.c_str(),
+                                                          IFACE_PROPS,
+                                                          "Get",
+                                                          g_variant_new("(ss)", IFACE_CHARACTERISTIC, "Notifying"),
+                                                          G_VARIANT_TYPE("(v)"),
+                                                          G_DBUS_CALL_FLAGS_NONE,
+                                                          CALL_TIMEOUT_MS,
+                                                          nullptr,
+                                                          &error);
+            if (!reply) {
+                object_gone = true;
+                g_clear_error(&error);
+                continue;
+            }
+            GVariant* boxed = nullptr;
+            g_variant_get(reply, "(v)", &boxed);
+            if (!boxed || !g_variant_is_of_type(boxed, G_VARIANT_TYPE_BOOLEAN) || !g_variant_get_boolean(boxed))
+                notifying = false;
+            if (boxed)
+                g_variant_unref(boxed);
+            g_variant_unref(reply);
+        }
+
+        if (!object_gone && notifying)
+            return;
+
+        debug::log(INFO,
+                   "ancs: the notification subscription is no longer live ({}), rebuilding it",
+                   object_gone ? "characteristics gone" : "BlueZ cleared Notifying");
+        unsubscribe();
+        subscribed = false;
+        next_subscribe = 0;
+        if (object_gone) {
+            notification_source_path.clear();
+            control_point_path.clear();
+            data_source_path.clear();
+            next_discover = 0;
+        }
+        sequencer->reset();
+        in_progress.clear();
+    }
+
     void AncsClientState::handle_source_event(const SourceEvent& event, int64_t now) {
         (void)now;
         Decision decision;
@@ -457,6 +515,7 @@ namespace tether::bluetooth::ancs {
         state_->next_discover = 0;
         state_->next_subscribe = 0;
         state_->next_probe = 0;
+        state_->next_verify = 0;
         state_->sequencer->reset();
         state_->in_progress.clear();
         // A new LE session replays the phone's backlog, so the next batch of
@@ -510,6 +569,11 @@ namespace tether::bluetooth::ancs {
         auto* s = state_.get();
         if (s->device_path.empty())
             return;
+
+        if (s->subscribed && !s->ready && now >= s->next_verify) {
+            s->next_verify = now + ANCS_RETRY_SECONDS;
+            s->verify_subscription();
+        }
 
         if (s->notification_source_path.empty()) {
             if (now < s->next_discover)
@@ -568,7 +632,9 @@ namespace tether::bluetooth::ancs {
         // that iOS authorized notification access.
         if (!s->ready && now >= s->next_probe) {
             s->next_probe = now + ANCS_RETRY_SECONDS;
-            s->set_status(false, "Waiting for notification access to be allowed on the iPhone.");
+            s->set_status(false,
+                          "Waiting for the iPhone to allow notification access. Settings > Bluetooth > (i) > "
+                          "Share System Notifications.");
             s->sequencer->submit(build_app_request(APP_ID_MESSAGES));
         }
     }

@@ -307,14 +307,14 @@ TEST(Capability, ClassicOnlyBondOnANonPhoneIsNotReported) {
 // opened the link inbound in answer to the solicitation advert. GATT exists only
 // over LE and BlueZ withdraws these objects when the link drops, so their
 // presence is the more trustworthy signal of the two.
-TEST(DeviceParsing, AncsCharacteristicsProveTheLeLinkIsUp) {
+TEST(DeviceParsing, AnAncsNotifySessionProvesTheLeLinkIsUp) {
     Payload p(join(ADAPTER_FULL, R"({
       '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
         'org.bluez.Device1': { 'Paired': <true>, 'Bonded': <true>, 'Connected': <true> },
         'org.bluez.Bearer.LE1': { 'Paired': <true>, 'Bonded': <true>, 'Connected': <false> }
       },
       '/org/bluez/hci0/dev_60_57_C8_30_6A_F7/service004f/char0050': {
-        'org.bluez.GattCharacteristic1': { 'UUID': <'9FBF120D-6301-42D9-8C58-25E699A21DBD'> }
+        'org.bluez.GattCharacteristic1': { 'UUID': <'9FBF120D-6301-42D9-8C58-25E699A21DBD'>, 'Notifying': <true> }
       }
     })")
                   .c_str());
@@ -322,13 +322,13 @@ TEST(DeviceParsing, AncsCharacteristicsProveTheLeLinkIsUp) {
 
     ASSERT_EQ(objects.devices.size(), 1u);
     EXPECT_FALSE(objects.devices[0].le_connected) << "the fixture is not reproducing the disagreement";
-    EXPECT_TRUE(objects.devices[0].has_ancs_gatt);
+    EXPECT_TRUE(objects.devices[0].ancs_notifying);
     EXPECT_TRUE(objects.devices[0].le_link_up()) << "a live ANCS session was reported as no LE link";
 }
 
 // The characteristic has to belong to this device. A sibling device's GATT tree
 // saying nothing about ours is the whole reason the paths are matched.
-TEST(DeviceParsing, AncsCharacteristicsBelongToOneDeviceOnly) {
+TEST(DeviceParsing, AnAncsNotifySessionBelongsToOneDeviceOnly) {
     Payload p(join(ADAPTER_FULL, R"({
       '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
         'org.bluez.Device1': { 'Paired': <true>, 'Bonded': <true> }
@@ -337,20 +337,42 @@ TEST(DeviceParsing, AncsCharacteristicsBelongToOneDeviceOnly) {
         'org.bluez.Device1': { 'Paired': <true>, 'Bonded': <true> }
       },
       '/org/bluez/hci0/dev_F8_D3_F0_3C_84_4A/service004f/char0050': {
-        'org.bluez.GattCharacteristic1': { 'UUID': <'9fbf120d-6301-42d9-8c58-25e699a21dbd'> }
+        'org.bluez.GattCharacteristic1': { 'UUID': <'9fbf120d-6301-42d9-8c58-25e699a21dbd'>, 'Notifying': <true> }
       }
     })")
                   .c_str());
     auto objects = parse_managed_objects(p.v);
 
     ASSERT_EQ(objects.devices.size(), 2u);
-    EXPECT_FALSE(objects.devices[0].has_ancs_gatt) << "borrowed a sibling device's GATT tree";
-    EXPECT_TRUE(objects.devices[1].has_ancs_gatt);
+    EXPECT_FALSE(objects.devices[0].ancs_notifying) << "borrowed a sibling device's notify session";
+    EXPECT_TRUE(objects.devices[1].ancs_notifying);
 }
 
 // An LE link that is down has no GATT tree, which is what makes its presence
 // mean anything.
-TEST(DeviceParsing, NoGattTreeMeansNoLeLink) {
+// BlueZ caches a bonded device's attributes (main.conf [GATT] Cache, default
+// always), so the ANCS characteristics stay in the object tree long after the LE
+// link is gone. Reading their presence as a live link reported LE up on a dead
+// one, which stopped the bearer supervisor dialling it at all.
+TEST(DeviceParsing, CachedCharacteristicsWithoutNotifyAreNotALink) {
+    Payload p(join(ADAPTER_FULL, R"({
+      '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
+        'org.bluez.Device1': { 'Paired': <true>, 'Bonded': <true>, 'Connected': <true>, 'ServicesResolved': <true> },
+        'org.bluez.Bearer.LE1': { 'Paired': <true>, 'Bonded': <true>, 'Connected': <false> }
+      },
+      '/org/bluez/hci0/dev_60_57_C8_30_6A_F7/service006f/char0073': {
+        'org.bluez.GattCharacteristic1': { 'UUID': <'9fbf120d-6301-42d9-8c58-25e699a21dbd'>, 'Notifying': <false> }
+      }
+    })")
+                  .c_str());
+    auto objects = parse_managed_objects(p.v);
+
+    ASSERT_EQ(objects.devices.size(), 1u);
+    EXPECT_FALSE(objects.devices[0].ancs_notifying);
+    EXPECT_FALSE(objects.devices[0].le_link_up()) << "a cached GATT tree was read as a live LE link";
+}
+
+TEST(DeviceParsing, NoGattTreeAtAllMeansNoLeLink) {
     Payload p(join(ADAPTER_FULL, R"({
       '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
         'org.bluez.Device1': { 'Paired': <true>, 'Bonded': <true>, 'Connected': <true> },
@@ -361,7 +383,7 @@ TEST(DeviceParsing, NoGattTreeMeansNoLeLink) {
     auto objects = parse_managed_objects(p.v);
 
     ASSERT_EQ(objects.devices.size(), 1u);
-    EXPECT_FALSE(objects.devices[0].has_ancs_gatt);
+    EXPECT_FALSE(objects.devices[0].ancs_notifying);
     EXPECT_FALSE(objects.devices[0].le_link_up());
 }
 

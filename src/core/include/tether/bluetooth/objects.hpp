@@ -48,7 +48,7 @@ namespace tether::bluetooth {
         bool connected = false;
         std::vector<std::string> uuids;
 
-        bool has_ancs_gatt = false;
+        bool ancs_notifying = false;
 
         bool has_le_bearer = false;
         bool le_paired = false;
@@ -62,7 +62,7 @@ namespace tether::bluetooth {
         bool classic_state_known = false;
 
         bool classic_link_up() const { return classic_state_known ? classic_connected : connected; }
-        bool le_link_up() const { return le_connected || has_ancs_gatt; }
+        bool le_link_up() const { return le_connected || ancs_notifying; }
 
         bool has_uuid(const std::string& uuid) const;
         bool supports_map() const { return has_uuid(UUID_MAP_MAS); }

@@ -64,7 +64,8 @@ namespace tether::bluetooth {
 
     void BearerSupervisor::reset() {
         classic_failures_ = 0;
-        le_attempts_ = 0;
+        le_failures_ = 0;
+        le_listening_ = false;
         le_stuck_locally_ = false;
         classic_connected_since_ = -1;
         next_classic_attempt_ = 0;
@@ -91,7 +92,7 @@ namespace tether::bluetooth {
         status_.le_available = ops_.le_bearer_available();
         status_.le_connected = status_.le_available && ops_.le_connected();
         if (status_.le_connected) {
-            le_attempts_ = 0;
+            le_failures_ = 0;
             le_stuck_locally_ = false;
             status_.le_backoff = 0;
             next_le_attempt_ = 0;
@@ -161,16 +162,8 @@ namespace tether::bluetooth {
             const bool settled =
                 classic_connected_since_ >= 0 && now - classic_connected_since_ >= BEARER_SETTLE_SECONDS;
 
-            if (settled && now >= next_le_attempt_) {
-                // connect that keeps colliding is bluez still holding one that never finished
-                if (le_stuck_locally_ && le_attempts_ >= LE_ATTEMPTS_BEFORE_ADVICE) {
-                    std::string drop_err;
-                    if (ops_.disconnect_le(drop_err) == ConnectResult::Failed)
-                        debug::log(WARN, "bluetooth: LE bearer disconnect failed ({})", drop_err);
-                    else
-                        debug::log(INFO, "bluetooth: dropped a stuck LE bearer before retrying");
-                }
-
+            if (settled && !ops_.le_connect_outstanding() && le_failures_ < LE_ATTEMPTS_BEFORE_ADVICE &&
+                now >= next_le_attempt_) {
                 // Select LE only for this attempt, then hand the preference back
                 // so LE is never left preferred while idle.
                 ops_.set_preferred_bearer("le");
@@ -180,25 +173,15 @@ namespace tether::bluetooth {
 
                 switch (result) {
                 case ConnectResult::Requested:
-                    // BlueZ accepting the request is not a link. Believe only an
-                    // observed Connected, and widen the window each time so the
-                    // next attempt cannot race a connect still running inside it.
-                    ++le_attempts_;
-                    le_stuck_locally_ = false;
-                    status_.le_backoff = grow_backoff(status_.le_backoff);
-                    next_le_attempt_ = now + status_.le_backoff;
-                    break;
                 case ConnectResult::Busy:
-                    // A collision says nothing about the phone, so it selects
-                    // different advice -- but it still counts, or a permanently
-                    // wedged BlueZ would never reach any advice at all.
-                    ++le_attempts_;
-                    le_stuck_locally_ = true;
-                    status_.le_backoff = grow_backoff(status_.le_backoff);
-                    next_le_attempt_ = now + status_.le_backoff;
+                    le_listening_ = true;
+                    le_stuck_locally_ = false;
+                    status_.le_backoff = 0;
+                    next_le_attempt_ = now + BEARER_POLL_SECONDS;
                     break;
                 case ConnectResult::Failed:
-                    ++le_attempts_;
+                    ++le_failures_;
+                    le_listening_ = false;
                     le_stuck_locally_ = false;
                     status_.le_backoff = next_backoff(status_.le_backoff, err);
                     next_le_attempt_ = now + status_.le_backoff;
@@ -207,21 +190,14 @@ namespace tether::bluetooth {
                 }
             }
             if (!status_.le_connected) {
-                if (le_attempts_ < LE_ATTEMPTS_BEFORE_ADVICE)
-                    status_.reason = "Connected. Bringing up the LE link for notifications...";
-                else if (le_stuck_locally_)
-                    // Indistinguishable from a phone that declines, so name the
-                    // local remedy first and the phone second rather than
-                    // sending the user to settings that may be fine already.
-                    status_.reason = "Nothing is bringing up the LE link that carries notifications. BlueZ is "
-                                     "holding a connect that never completed; Tether keeps dropping and "
-                                     "redialling the LE bearer. If it still will not come up, run \"sudo "
-                                     "systemctl restart bluetooth\" -- disconnecting the iPhone does not clear "
-                                     "it. Messages and contacts are unaffected.";
+                if (ops_.le_connect_outstanding() || le_listening_)
+                    status_.reason = "Connected. Waiting for the iPhone to open the LE link that carries "
+                                     "notifications. If it does not, open Settings > Bluetooth > (i) on the "
+                                     "iPhone and check Share System Notifications.";
                 else
-                    status_.reason = "The iPhone is not opening the LE link that carries notifications. Tether "
-                                     "keeps asking; open Settings > Bluetooth > (i) on the iPhone and turn on "
-                                     "Share System Notifications. Messages and contacts are unaffected.";
+                    status_.reason = "Nothing is listening for the iPhone's LE link. BlueZ refused to register "
+                                     "for it, which only \"sudo systemctl restart bluetooth\" clears. Messages "
+                                     "and contacts are unaffected.";
                 return !(status_ == previous);
             }
         }

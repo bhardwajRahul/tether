@@ -43,8 +43,8 @@ namespace tether::bluetooth {
         // Must not block: BlueZ keeps working on a connect after a synchronous
         // call gives up, and every later attempt then collides with it.
         virtual ConnectResult connect_le(std::string& err) = 0;
-        // Drops the LE transport alone
-        virtual ConnectResult disconnect_le(std::string& err) = 0;
+        // Whether a connect request is still outstanding
+        virtual bool le_connect_outstanding() const = 0;
     };
 
     struct BearerStatus {
@@ -84,9 +84,8 @@ namespace tether::bluetooth {
 
         BearerStatus status_;
         int classic_failures_ = 0;
-        int le_attempts_ = 0;
-        // Whether LE attempts keep colliding with a connect BlueZ never
-        // finished, rather than the phone declining. Needs opposite advice.
+        int le_failures_ = 0;
+        bool le_listening_ = false;
         bool le_stuck_locally_ = false;
         int64_t classic_connected_since_ = -1;
         int64_t next_classic_attempt_ = 0;

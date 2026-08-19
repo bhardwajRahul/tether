@@ -246,7 +246,7 @@ namespace tether::bluetooth {
             GVariant* chr = g_variant_lookup_value(ifaces, IFACE_CHARACTERISTIC, G_VARIANT_TYPE("a{sv}"));
             if (!chr)
                 continue;
-            if (iequals(get_string(chr, "UUID"), UUID_ANCS_NOTIFICATION_SOURCE))
+            if (iequals(get_string(chr, "UUID"), UUID_ANCS_NOTIFICATION_SOURCE) && get_bool(chr, "Notifying"))
                 ancs_char_paths.emplace_back(path);
             g_variant_unref(chr);
         }
@@ -257,7 +257,7 @@ namespace tether::bluetooth {
         for (const auto& char_path : ancs_char_paths) {
             for (auto& device : out.devices) {
                 if (char_path.rfind(device.path + "/", 0) == 0)
-                    device.has_ancs_gatt = true;
+                    device.ancs_notifying = true;
             }
         }
 
@@ -460,7 +460,7 @@ namespace tether::bluetooth {
             {"map", d.supports_map()},
             {"pbap", d.supports_pbap()},
             {"ancs", d.supports_ancs()},
-            {"ancs_gatt", d.has_ancs_gatt},
+            {"ancs_notifying", d.ancs_notifying},
             {"iphone", d.looks_like_iphone()},
         };
     }

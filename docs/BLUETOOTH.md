@@ -121,7 +121,8 @@ checks the daemon does not make.
 | MAP reports `busy`, or the transport says `Connection refused (111)` | Another computer holds the iPhone's single MAP session | Stop the other client |
 | Pairing fails with `br-connection-key-missing` | A stale bond on one side, or the adapter is not `Pairable` | Delete the computer's entry on the phone (Forget This Device) and `tether --bt-unpair <addr>` locally, then pair again |
 | The phone shows two entries for this computer | A failed pairing left both a Classic and an LE record | Delete both on the phone before retrying |
-| LE never connects and the log repeats `org.bluez.Error.InProgress` | BlueZ is holding a connect operation that never completed | The daemon now drops the LE bearer itself and redials, which clears it without a restart. If it persists, `sudo systemctl restart bluetooth`. With `tether-btclass@hci0` enabled the class survives the restart |
+| LE never connects and the log repeats `org.bluez.Error.InProgress` | BlueZ is holding an auto-connect registration that never completed | `sudo systemctl restart bluetooth` -- nothing short of that clears it, see 2026-08-19 below. With `tether-btclass@hci0` enabled the class survives the restart |
+| The status says "Nothing is listening for the iPhone's LE link" | BlueZ refused to register for the phone's LE connection, so nothing is waiting for it | `sudo systemctl restart bluetooth`. This is different from waiting on the phone, which the status says instead when a registration is open |
 | Notifications stopped and never came back, while messages and contacts kept working | Fixed. The bearer supervisor used to stop retrying LE after six attempts, and only a Classic drop or a daemon restart re-armed it | Nothing. LE is now retried indefinitely at the five-minute ceiling, and the ANCS solicitation is kept on air whenever LE is down |
 | `tether --bt-status` reports `Bond: BR/EDR only` | The bond was made without cross-transport key derivation, so it has no LE half and can never carry ANCS | Forget this computer on the iPhone and pair again. Check `secure-connections` in the same output first: re-pairing cannot help while it is off |
 | Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
@@ -355,12 +356,27 @@ down. Trusting it alone reported "notifications are unavailable" over a session
 that was delivering them, and kept the supervisor dialling a link that was
 already open.
 
-The ANCS characteristics in the object tree are the better signal, and are what
-Tether now reads (`Device::le_link_up()`). GATT exists only over LE, and BlueZ
-withdraws those objects when the link drops -- confirmed on this hardware, where
-an LE-down device shows only `avrcp` and `sep1-6` under its path and no
-`service*` objects at all. Anything that tears the bearer down now refuses to do
-so while that tree is present.
+**Corrected later the same day.** The first version of this entry concluded that
+the presence of the ANCS characteristics in the object tree was the better
+signal, on the evidence that an LE-down device showed only `avrcp` and `sep1-6`
+under its path. That evidence was from a boot in which no LE session had yet been
+established. BlueZ caches a bonded device's attributes (`main.conf` `[GATT]
+Cache`, default `always`), so once a session has existed the `service*` objects
+persist across a disconnect, and reading their presence as a live link reported
+LE up on a dead one -- which stopped the bearer supervisor dialling it at all.
+
+Neither obvious property can be trusted alone:
+
+| Signal | Fails when |
+|---|---|
+| `Bearer.LE1.Connected` | reads false on a live link the phone opened inbound |
+| ANCS characteristics present | survive the disconnect, because BlueZ caches them |
+
+`Notifying` on the Notification Source characteristic is the one that holds. A
+notify session needs a live ATT link to exist, so it cannot outlive the link the
+way a cached attribute does, and it was true throughout the working session
+above. That is what `Device::le_link_up()` reads, and what anything tearing the
+bearer down refuses to act against.
 
 ### 2026-08-19 - The solicitation advert was a one-shot
 
@@ -381,6 +397,122 @@ still owns it outright while it runs.
 Measured on the machine above, which had been in the broken state all day: the
 daemon brought LE up 12 seconds after starting, with no manual step, and reported
 `Notification mirroring is active`.
+
+### 2026-08-19 - A subscription latch reported the phone's permission as missing
+
+Same hardware, with all three iPhone toggles granted and verified.
+
+`ancs_ready` stayed false with the reason "Waiting for notification access to be
+allowed on the iPhone", which sends the user to settings that are already
+correct. `Notifying` on both notify characteristics read false at the time.
+
+`AncsClientState::subscribed` recorded that `StartNotify` had once succeeded, and
+nothing re-read it. BlueZ clears `Notifying` when the LE link goes and restores
+the characteristics without it, so the flag outlived what it described. The only
+thing that used to clear it was `set_device()` seeing the device path change,
+which the ANCS grace window and the cached GATT tree together prevented.
+
+`tick()` now re-reads `Notifying` from BlueZ once per retry interval while
+`ready` is false, and rebuilds the subscription -- or the whole discovery, when
+the characteristics are gone -- rather than trusting the flag. The status text is
+reached only with the subscription verified live, so it now names the toggle
+(`Share System Notifications`) and means it.
+
+### 2026-08-19 - A hung LE dial poisons the path until bluetoothd restarts
+
+Same hardware, immediately after the above. Every `Bearer.LE1.Connect` was
+*accepted* -- `ConnectResult::Requested`, no error -- and no link ever appeared,
+while `StartNotify` on the same device answered `org.bluez.Error.InProgress`
+indefinitely. `Bearer.LE1.Disconnect` succeeded and changed nothing.
+
+This is worse than the `InProgress` case recorded on 2026-07-16. Three ways out
+were tried against it directly, with the daemon stopped so nothing raced them:
+
+| Attempt | Result |
+|---|---|
+| `Bearer.LE1.Disconnect` | `Not Connected`. Does not cancel a pending connect |
+| `Device1.Disconnect` | Succeeds, BR/EDR returns within seconds, LE still `In Progress` |
+| Waiting | `In Progress` indefinitely |
+
+**`sudo systemctl restart bluetooth` is the only thing that clears it**, and a
+bearer-level recovery built on `Bearer.LE1.Disconnect` was removed again after
+this measurement rather than shipped as a remedy that does not remedy anything.
+
+The consequence for the retry policy is the important part. A hung dial is not
+free: it poisons `Bearer.LE1.Connect` for that device for the rest of
+bluetoothd's life. Six dials after a clean restart were enough to do it. So the
+cap on outbound LE attempts is deliberate and stays, and the link is expected to
+come from the phone answering the solicitation advert instead -- which is why
+that advert now stays on air the whole time LE is down. `reset()` re-arms the
+attempts when the device or the Classic link returns, which includes every
+bluetoothd restart, so a machine that recovers gets fresh dials without ever
+accumulating them.
+
+### 2026-08-19 - What an LE "connect" actually is, captured
+
+`btmon` over a full session, including a clean re-pair. Two findings that change
+how the LE half should be driven.
+
+**`Bearer.LE1.Connect` does not dial.** Six Connect calls produced six
+`Add Device` with `Action: Auto-connect remote device (0x02)`, one
+`LE Add Device To Accept List`, one `LE Add Device To Resolving List`, eighteen
+`LE Set Extended Scan Enable` -- and **zero** `LE Create Connection`. BlueZ
+registers the phone for background auto-connect and waits for it to advertise.
+An iPhone that is already BR/EDR-connected does not advertise, so the request
+simply expires.
+
+So the supervisor now holds exactly one registration open for as long as LE is
+down (`BearerOps::le_connect_outstanding()`) instead of repeating a dial.
+Repeating was what wedged BlueZ: the request runs for `LE_CONNECT_TIMEOUT_MS`
+(45s) while the backoff re-fired after five, so registrations overlapped and
+every later one answered `InProgress`. `Requested` and `Busy` are both the
+healthy state now -- BlueZ is listening -- and only a refusal counts or backs off.
+
+**The advertisement is correct**, which rules out a long-standing suspicion. It
+goes out as `Use legacy advertising PDUs: ADV_IND`, connectable and scannable,
+public address, 31 bytes exactly:
+
+```
+11 15 <ANCS UUID, little-endian>   solicitation, AD type 0x15
+04 ff ff ff 00                     manufacturer data, company 0xffff
+04 16 99 99 00                     service data, 16-bit UUID 0x9999
+02 01 06                           flags: LE General Discoverable, BR/EDR Not Supported
+```
+
+with `Tether` in an 8-byte scan response. The 16-bit form of the service data is
+what keeps it inside the legacy 31-byte limit. Nothing here needs trimming.
+
+### 2026-08-19 - Cross-transport key derivation, captured
+
+The re-pair produced a dual bond, and the capture shows exactly how. Immediately
+after the BR/EDR link key lands, SMP runs **over the BR/EDR channel**:
+
+```
+HCI Event: Link Key Notification
+BR/EDR SMP: Pairing Request    Authentication requirement: ... CT2 (0x20)
+                               Responder key distribution: EncKey IdKey Sign
+BR/EDR SMP: Pairing Response   Responder key distribution: EncKey IdKey
+BR/EDR SMP: Identity Information          (the phone's IRK)
+BR/EDR SMP: Identity Address Information
+MGMT Event: New Identity Resolving Key
+MGMT Event: New Long Term Key  Key type: Authenticated key from P-256 (0x03)
+```
+
+`Authenticated key from P-256` is the point: the LE LTK is derived from the
+BR/EDR Secure Connections link key, which is why Secure Connections is a hard
+precondition and why `--bt-status` reports it. The `CT2` bit in the
+authentication requirements is what asks for the derivation.
+
+**This is the check for a bond that has no LE half.** Capture a pairing with
+`sudo btmon -w /tmp/pair.btsnoop` and look for `BR/EDR SMP: Pairing Request`
+followed by `New Long Term Key`. If the SMP exchange never happens, or the key
+type is not a P-256 one, the bond is BR/EDR-only and no amount of re-soliciting
+or restarting will give it ANCS -- it has to be re-made, and Secure Connections
+has to be on first.
+
+The `Role Change ... Role: Peripheral` right before the exchange is also worth
+noting: the iPhone takes the central role on the ACL, which is what connect-first
+pairing exists to allow.
 
 ### PBAP
 
