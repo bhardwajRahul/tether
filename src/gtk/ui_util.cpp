@@ -65,6 +65,17 @@ namespace tether::ui {
     border-radius: 10px;
     padding: 0 8px;
 }
+
+.tether-dropzone {
+    border: 2px dashed alpha(@theme_fg_color, 0.28);
+    border-radius: 12px;
+    padding: 20px 28px;
+}
+
+.tether-dropzone-active {
+    border-color: @theme_selected_bg_color;
+    background-color: alpha(@theme_selected_bg_color, 0.12);
+}
 )CSS";
     } // namespace
 
