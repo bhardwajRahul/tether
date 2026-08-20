@@ -13,6 +13,9 @@ namespace tether::bluetooth {
     inline constexpr int CLASSIC_FAILURES_BEFORE_ADVICE = 6;
     inline constexpr int LE_ATTEMPTS_BEFORE_ADVICE = 6;
 
+    inline constexpr int LE_DIAL_WINDOW_SECONDS = 45;
+    inline constexpr int LE_SOLICIT_WINDOW_SECONDS = 180;
+
     // How long an ANCS session is held across an LE outage before the path is
     // dropped. The bearer flaps faster than a GATT subscription can be rebuilt,
     // so a blip must not reset discovery, while a genuine loss still clears.
@@ -53,6 +56,7 @@ namespace tether::bluetooth {
         bool classic_connected = false;
         bool le_connected = false;
         bool le_available = false;
+        bool le_dialling = false;
         int classic_backoff = 0;
         int le_backoff = 0;
         std::string reason;
@@ -86,8 +90,10 @@ namespace tether::bluetooth {
         int classic_failures_ = 0;
         int le_failures_ = 0;
         bool le_listening_ = false;
+        bool le_phone_silent_ = false;
         bool le_stuck_locally_ = false;
         int64_t classic_connected_since_ = -1;
+        int64_t le_down_since_ = -1;
         int64_t next_classic_attempt_ = 0;
         int64_t next_le_attempt_ = 0;
     };
