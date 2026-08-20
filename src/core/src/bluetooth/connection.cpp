@@ -348,6 +348,8 @@ namespace tether::bluetooth {
                 // Some BlueZ builds publish Bearer.LE1 without Connect; the first
                 // reply says which, and every later attempt uses the one that
                 // exists.
+                if (le_->bearer_connect_missing)
+                    set_preferred_bearer("le");
                 const char* iface = le_->bearer_connect_missing ? IFACE_DEVICE : IFACE_BEARER_LE;
                 auto* holder = new std::shared_ptr<LeConnect>(le_);
                 const std::string path = device->path;
@@ -893,8 +895,9 @@ namespace tether::bluetooth {
             profiles->tick(now, link_ready);
 
             const auto& bearer = bearers->status();
-            supervise_ancs_solicitation(
-                *monitor, ancs_enabled && bearer.classic_connected && bearer.le_available && !bearer.le_connected);
+            supervise_ancs_solicitation(*monitor,
+                                        ancs_enabled && bearer.classic_connected && bearer.le_available &&
+                                            !bearer.le_connected && !bearer.le_dialling);
 
             // publish() drops a payload identical to the last one, so refreshing
             // every tick costs nothing and cannot miss a transition.

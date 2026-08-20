@@ -66,6 +66,8 @@ namespace tether::bluetooth {
         classic_failures_ = 0;
         le_failures_ = 0;
         le_listening_ = false;
+        le_phone_silent_ = false;
+        le_down_since_ = -1;
         le_stuck_locally_ = false;
         classic_connected_since_ = -1;
         next_classic_attempt_ = 0;
@@ -91,7 +93,14 @@ namespace tether::bluetooth {
         status_.classic_connected = ops_.classic_connected();
         status_.le_available = ops_.le_bearer_available();
         status_.le_connected = status_.le_available && ops_.le_connected();
+        if (status_.le_connected)
+            le_down_since_ = -1;
+        else if (le_down_since_ < 0)
+            le_down_since_ = now;
+
         if (status_.le_connected) {
+            // Neither route is in use once the link is up.
+            status_.le_dialling = false;
             le_failures_ = 0;
             le_stuck_locally_ = false;
             status_.le_backoff = 0;
@@ -159,17 +168,17 @@ namespace tether::bluetooth {
         }
 
         if (!status_.le_connected) {
+            // alternate the two routes rather than running both
+            const int64_t phase = (now - le_down_since_) % (LE_DIAL_WINDOW_SECONDS + LE_SOLICIT_WINDOW_SECONDS);
+            status_.le_dialling = phase < LE_DIAL_WINDOW_SECONDS;
+
             const bool settled =
                 classic_connected_since_ >= 0 && now - classic_connected_since_ >= BEARER_SETTLE_SECONDS;
 
-            if (settled && !ops_.le_connect_outstanding() && le_failures_ < LE_ATTEMPTS_BEFORE_ADVICE &&
-                now >= next_le_attempt_) {
-                // Select LE only for this attempt, then hand the preference back
-                // so LE is never left preferred while idle.
-                ops_.set_preferred_bearer("le");
+            if (settled && status_.le_dialling && !ops_.le_connect_outstanding() &&
+                le_failures_ < LE_ATTEMPTS_BEFORE_ADVICE && now >= next_le_attempt_) {
                 std::string err;
                 const ConnectResult result = classify(ops_.connect_le(err), err);
-                ops_.set_preferred_bearer("bredr");
 
                 switch (result) {
                 case ConnectResult::Requested:
@@ -183,6 +192,7 @@ namespace tether::bluetooth {
                     ++le_failures_;
                     le_listening_ = false;
                     le_stuck_locally_ = false;
+                    le_phone_silent_ = is_transient(err);
                     status_.le_backoff = next_backoff(status_.le_backoff, err);
                     next_le_attempt_ = now + status_.le_backoff;
                     debug::log(WARN, "bluetooth: LE connect failed ({}), retrying in {}s", err, status_.le_backoff);
@@ -194,6 +204,11 @@ namespace tether::bluetooth {
                     status_.reason = "Connected. Waiting for the iPhone to open the LE link that carries "
                                      "notifications. If it does not, open Settings > Bluetooth > (i) on the "
                                      "iPhone and check Share System Notifications.";
+                else if (le_phone_silent_)
+                    status_.reason = "The iPhone is not answering on LE. Its Bluetooth is wedged on its own "
+                                     "side: turn Bluetooth off and back on on the iPhone, which clears this even "
+                                     "when Share System Notifications is already on. Messages and contacts are "
+                                     "unaffected.";
                 else
                     status_.reason = "Nothing is listening for the iPhone's LE link. BlueZ refused to register "
                                      "for it, which only \"sudo systemctl restart bluetooth\" clears. Messages "

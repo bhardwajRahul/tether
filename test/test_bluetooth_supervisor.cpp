@@ -111,26 +111,25 @@ TEST(BearerSupervisor, ConnectsClassicThenLeAfterSettling) {
     EXPECT_TRUE(sup.status().le_connected);
 }
 
-// PreferredBearer is an instruction for the next connection, not a durable
-// setting. Leaving LE preferred while idle changes later reconnect behavior.
-TEST(BearerSupervisor, NeverLeavesLePreferredWhileIdle) {
+// PreferredBearer steers Device1.Connect, but the LE path calls the per-bearer
+// Connect, which already names the transport. Writing "le" and then "bredr" back
+// milliseconds later raced the asynchronous connect that was still in flight and
+// produced le-connection-abort-by-local, so the LE path must not touch it at all.
+TEST(BearerSupervisor, DoesNotSteerPreferredBearerWhenDiallingLe) {
     FakeBearer ops;
     BearerSupervisor sup(ops, true);
 
     sup.tick(0);
     sup.tick(1);
     sup.tick(1 + BEARER_SETTLE_SECONDS);
+    ASSERT_EQ(ops.le_attempts, 1) << "the LE attempt this is about never happened";
 
+    for (const auto& choice : ops.preferred)
+        EXPECT_NE(choice, "le") << "raced the async LE connect by rewriting PreferredBearer under it";
+
+    // Classic still selects it, and must leave it there rather than clearing it.
     ASSERT_FALSE(ops.preferred.empty());
     EXPECT_EQ(ops.preferred.back(), "bredr");
-
-    // Every "le" selection must be immediately followed by a return to "bredr".
-    for (size_t i = 0; i < ops.preferred.size(); ++i) {
-        if (ops.preferred[i] == "le") {
-            ASSERT_LT(i + 1, ops.preferred.size()) << "left LE preferred at the end";
-            EXPECT_EQ(ops.preferred[i + 1], "bredr");
-        }
-    }
 }
 
 TEST(BearerSupervisor, ClassicBackoffGrowsAndCaps) {
@@ -526,8 +525,8 @@ TEST(BearerSupervisor, HoldsOneLeRegistrationRatherThanRepeatingIt) {
     sup.tick(now);
     EXPECT_EQ(listening.le_attempts, 1);
 
-    // Hours of ticks while BlueZ is listening must not add a second one.
-    for (int i = 0; i < 500; ++i)
+    // Ticks throughout the dial window must not add a second one.
+    for (int i = 0; i < LE_DIAL_WINDOW_SECONDS - BEARER_SETTLE_SECONDS - 3; ++i)
         sup.tick(++now);
     EXPECT_EQ(listening.le_attempts, 1) << "re-registered on top of a live registration";
     EXPECT_NE(sup.status().reason.find("Waiting for the iPhone to open the LE link"), std::string::npos);
@@ -585,6 +584,103 @@ TEST(BearerSupervisor, ARefusedRegistrationSaysNothingIsListening) {
     EXPECT_NE(sup.status().reason.find("systemctl restart bluetooth"), std::string::npos);
     EXPECT_NE(sup.status().reason.find("Messages and contacts are unaffected"), std::string::npos);
     EXPECT_GT(sup.status().le_backoff, BEARER_BACKOFF_MIN_SECONDS) << "a refusal must still back off";
+}
+
+// The two routes to an LE link cannot run together. Measured 2026-08-19 with the
+// PreferredBearer race already removed: advert off -> connects first attempt, zero
+// aborts; advert on -> four le-connection-abort-by-local and no link. So they
+// alternate, and the phase has to be bounded by time rather than by failures --
+// an outstanding registration suppresses new attempts, so failures stop accruing
+// and a failure-counted phase would never end, leaving the advert off forever.
+TEST(BearerSupervisor, AlternatesBetweenDiallingAndSoliciting) {
+    class ListeningBearer : public FakeBearer {
+    public:
+        ConnectResult connect_le(std::string&) override {
+            ++le_attempts;
+            outstanding = true; // BlueZ holds the registration, as it really does
+            return ConnectResult::Requested;
+        }
+    } ops;
+
+    BearerSupervisor sup(ops, true);
+    int64_t now = 0;
+    sup.tick(now);
+    sup.tick(++now);
+    now += BEARER_SETTLE_SECONDS;
+    sup.tick(now);
+    EXPECT_TRUE(sup.status().le_dialling) << "the dial window should come first";
+    EXPECT_EQ(ops.le_attempts, 1);
+
+    // The registration never completes. The phase must still end.
+    now += LE_DIAL_WINDOW_SECONDS;
+    sup.tick(now);
+    EXPECT_FALSE(sup.status().le_dialling) << "deadlocked: an open registration froze the dial phase";
+
+    // No connect may be issued anywhere in the solicitation window.
+    const int attempts = ops.le_attempts;
+    const int64_t cycle = LE_DIAL_WINDOW_SECONDS + LE_SOLICIT_WINDOW_SECONDS;
+    while (now < cycle - 2) {
+        sup.tick(++now);
+        ASSERT_FALSE(sup.status().le_dialling) << "left the solicitation window early, at t=" << now;
+    }
+    EXPECT_EQ(ops.le_attempts, attempts) << "dialled while the solicitation was broadcasting";
+
+    // ...and then it comes back around to dialling.
+    now = cycle + 1;
+    sup.tick(now);
+    EXPECT_TRUE(sup.status().le_dialling) << "never returned to the dial route";
+}
+
+// A link that is up needs neither route, so nothing should be suppressed by it.
+TEST(BearerSupervisor, NotDiallingOnceLeIsUp) {
+    FakeBearer ops;
+    BearerSupervisor sup(ops, true);
+
+    sup.tick(0);
+    sup.tick(1);
+    sup.tick(1 + BEARER_SETTLE_SECONDS);
+    sup.tick(2 + BEARER_SETTLE_SECONDS);
+    ASSERT_TRUE(sup.status().le_connected);
+    EXPECT_FALSE(sup.status().le_dialling);
+}
+
+// A dead LE link has two very different causes. A timeout is the phone ignoring
+// us, which only cycling Bluetooth on the phone clears; a refusal is BlueZ
+// declining to register, which needs bluetoothd restarted. Sharing one message
+// sent debugging to the wrong machine.
+TEST(BearerSupervisor, TellsPhoneSilenceApartFromABlueZRefusal) {
+    FakeBearer silent;
+    silent.le_succeeds = false;
+    silent.le_error = "GDBus.Error:org.bluez.Error.Failed: Connection timed out";
+    BearerSupervisor a(silent, true);
+    int64_t now = 0;
+    a.tick(now);
+    a.tick(++now);
+    now += BEARER_SETTLE_SECONDS;
+    while (silent.le_attempts < LE_ATTEMPTS_BEFORE_ADVICE) {
+        a.tick(now);
+        now += BEARER_BACKOFF_MAX_SECONDS;
+    }
+    a.tick(now);
+    EXPECT_NE(a.status().reason.find("not answering on LE"), std::string::npos);
+    EXPECT_NE(a.status().reason.find("turn Bluetooth off and back on on the iPhone"), std::string::npos);
+    EXPECT_EQ(a.status().reason.find("systemctl"), std::string::npos) << "blamed the local stack for the phone";
+
+    FakeBearer refused;
+    refused.le_succeeds = false;
+    refused.le_error = "org.bluez.Error.AuthenticationFailed";
+    BearerSupervisor b(refused, true);
+    now = 0;
+    b.tick(now);
+    b.tick(++now);
+    now += BEARER_SETTLE_SECONDS;
+    while (refused.le_attempts < LE_ATTEMPTS_BEFORE_ADVICE) {
+        b.tick(now);
+        now += BEARER_BACKOFF_MAX_SECONDS;
+    }
+    b.tick(now);
+    EXPECT_NE(b.status().reason.find("Nothing is listening"), std::string::npos);
+    EXPECT_EQ(b.status().reason.find("not answering"), std::string::npos);
 }
 
 // A refusal from the phone is a real answer, and repeating it every five seconds

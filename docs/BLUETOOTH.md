@@ -123,6 +123,7 @@ checks the daemon does not make.
 | The phone shows two entries for this computer | A failed pairing left both a Classic and an LE record | Delete both on the phone before retrying |
 | LE never connects and the log repeats `org.bluez.Error.InProgress` | BlueZ is holding an auto-connect registration that never completed | `sudo systemctl restart bluetooth` -- nothing short of that clears it, see 2026-08-19 below. With `tether-btclass@hci0` enabled the class survives the restart |
 | The status says "Nothing is listening for the iPhone's LE link" | BlueZ refused to register for the phone's LE connection, so nothing is waiting for it | `sudo systemctl restart bluetooth`. This is different from waiting on the phone, which the status says instead when a registration is open |
+| LE never connects and the log repeats `le-connection-abort-by-local` | Something on this side is cancelling the connection. Tether's own cause was a `PreferredBearer` write racing the async connect, fixed; anything else writing that property during a connect will do the same | Check no other Bluetooth tool is driving the same device. The phone is not the cause: `abort-by-local` means the local host cancelled |
 | Notifications stopped and never came back, while messages and contacts kept working | Fixed. The bearer supervisor used to stop retrying LE after six attempts, and only a Classic drop or a daemon restart re-armed it | Nothing. LE is now retried indefinitely at the five-minute ceiling, and the ANCS solicitation is kept on air whenever LE is down |
 | `tether --bt-status` reports `Bond: BR/EDR only` | The bond was made without cross-transport key derivation, so it has no LE half and can never carry ANCS | Forget this computer on the iPhone and pair again. Check `secure-connections` in the same output first: re-pairing cannot help while it is off |
 | Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
@@ -513,6 +514,44 @@ has to be on first.
 The `Role Change ... Role: Peripheral` right before the exchange is also worth
 noting: the iPhone takes the central role on the ACL, which is what connect-first
 pairing exists to allow.
+
+### 2026-08-19 - `le-connection-abort-by-local` was our own PreferredBearer write
+
+After a reboot, LE would not come up at all: every attempt logged
+`org.bluez.Error.Failed: le-connection-abort-by-local`, while the same
+`Bearer.LE1.Connect` issued by hand succeeded immediately.
+
+The difference was not the advertisement. The supervisor used to do this:
+
+```
+set PreferredBearer = "le"
+Bearer.LE1.Connect()          <- asynchronous, returns at once
+set PreferredBearer = "bredr" <- milliseconds later, connect still in flight
+```
+
+The second write lands while BlueZ is still setting the LE connection up, and
+BlueZ abandons it -- which is exactly what `abort-by-local` says: the local host
+cancelled it, not the phone.
+
+`PreferredBearer` steers `Device1.Connect`. This path calls the per-bearer
+`Bearer.LE1.Connect`, which already names the transport, so the property was
+never needed here. It is now written only on the `Device1.Connect` fallback used
+by BlueZ builds that publish `Bearer.LE1` without a `Connect` method. With the
+writes removed, LE connected on the first attempt from a cold LE-down state and
+held for a three-minute soak with zero aborts.
+
+**An earlier reading of this was wrong and is corrected here.** The first
+experiment compared "advert on air" against "advert off" and concluded that
+advertising and initiating could not coexist without the kernel's Simultaneous
+Central and Peripheral feature. That comparison was confounded: the advert was
+only ever off while the *daemon was stopped*, so it was also the only condition
+in which nothing was rewriting `PreferredBearer`. The advert was not shown to
+interfere, and no evidence here says it does.
+
+Tether still sequences the two -- the solicitation stays off air while outbound
+attempts are being spent (`BearerStatus::le_dialling`) -- because doing one thing
+at a time is cheap now that the connect succeeds on the first attempt. That is a
+conservative choice, not a measured requirement.
 
 ### PBAP
 
