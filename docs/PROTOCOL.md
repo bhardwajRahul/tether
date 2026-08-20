@@ -184,6 +184,8 @@ Offloads an entire file transfer to the daemon. The daemon spawns a thread to re
 
 Tether uses the local UNIX socket to coordinate OTP syncing between mail clients (Thunderbird/Betterbird) and web browsers (Firefox/Chrome). The daemon acts as an ephemeral secure vault for these codes.
 
+The daemon also fills the vault itself: incoming Bluetooth messages (MAP) and iPhone notifications (ANCS) are scanned for OTP codes, and a hit is pushed to local subscribers as `otp_available` exactly as a `new_otp` from the mail extension would be. The same code arriving twice (once over MAP, once over ANCS) is published only once.
+
 ### `new_otp` (Mail Extension -> Daemon)
 **Description**: Sent by the mail extension via native messaging when an OTP code is scraped from a new email.
 **Payload**:

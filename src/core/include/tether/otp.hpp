@@ -32,4 +32,7 @@ namespace tether {
 
     void otp_reset(); // tests
 
+    // Best OTP candidate in a short message body or notification, or "" when no OTP.
+    std::string otp_extract(const std::string& text);
+
 } // namespace tether
