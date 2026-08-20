@@ -126,6 +126,7 @@ checks the daemon does not make.
 | LE never connects and the log repeats `le-connection-abort-by-local` | Something on this side is cancelling the connection. Tether's own cause was a `PreferredBearer` write racing the async connect, fixed; anything else writing that property during a connect will do the same | Check no other Bluetooth tool is driving the same device. The phone is not the cause: `abort-by-local` means the local host cancelled |
 | Notifications stopped and never came back, while messages and contacts kept working | Fixed. The bearer supervisor used to stop retrying LE after six attempts, and only a Classic drop or a daemon restart re-armed it | Nothing. LE is now retried indefinitely at the five-minute ceiling, and the ANCS solicitation is kept on air whenever LE is down |
 | `tether --bt-status` reports `Bond: BR/EDR only` | The bond was made without cross-transport key derivation, so it has no LE half and can never carry ANCS | Forget this computer on the iPhone and pair again. Check `secure-connections` in the same output first: re-pairing cannot help while it is off |
+| The status says the iPhone is not answering on LE, and its permission is on | The phone's Bluetooth stack is wedged, which the granted permission does not prevent | Turn Bluetooth off and back on **on the iPhone**. Re-pairing and re-toggling the permission do not clear this |
 | Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
 | A group conversation cannot be replied to | Working as designed until the route is unambiguous | The thread's `reply_reason` says which condition failed |
 
@@ -552,6 +553,40 @@ Tether still sequences the two -- the solicitation stays off air while outbound
 attempts are being spent (`BearerStatus::le_dialling`) -- because doing one thing
 at a time is cheap now that the connect succeeds on the first attempt. That is a
 conservative choice, not a measured requirement.
+
+### 2026-08-19 - The iPhone can go silent on LE with the permission still granted
+
+After a long debugging session -- many connect attempts, several bluetoothd
+restarts, a re-pair and a reboot -- LE stopped coming up at all, with everything
+on the Linux side verifiable and correct:
+
+- bond dual (`Bearer.LE1` Paired and Bonded), Secure Connections on, class ok
+- `Share System Notifications` present **and on** in the iPhone's settings
+- both routes provably running: the dial and solicitation phases alternating,
+  the advertisement on air 180 seconds at a time
+- phone unlocked, in range, BR/EDR + MAP + PBAP working throughout
+
+The failure had changed shape, which is what identified it. A quiescent
+`Bearer.LE1.Connect` -- daemon stopped, nothing advertising -- returned
+`Connection timed out`, where the same call earlier in the day had returned
+success. Not `abort-by-local` (this side cancelling), not `In Progress` (BlueZ
+wedged): a properly issued request that nothing answered.
+
+**Cycling Bluetooth off and on on the iPhone cleared it immediately.** The link
+came up, ANCS subscribed, `Notifying` true on both characteristics, and a
+three-minute soak held with no errors. Nothing on the Linux side changed.
+
+So an iPhone will stop answering on LE while still showing the permission as
+granted, and neither toggling that permission nor re-pairing is the remedy --
+only cycling the phone's Bluetooth. This is the same shape as the BR/EDR refusal
+recorded above, and likely provoked by the sheer volume of connect attempts the
+session put at the phone.
+
+Because the two causes need opposite remedies, the status text now separates
+them: a transient failure reports that the iPhone is not answering and names the
+phone-side Bluetooth cycle, while a refused registration still points at
+`systemctl restart bluetooth`. Sharing one message for both is what sent this
+session chasing the local stack for an hour.
 
 ### PBAP
 
