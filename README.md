@@ -52,7 +52,7 @@ Streamline two-factor authentication across your devices:
 - iOS Share Extension: Send OTP codes from your iPhone to your Linux clipboard.
 - Thunderbird Addon: Automatically parse OTP codes from incoming email messages.
 - Browser Extension: Autofill OTP codes into login forms from the iOS app or the mail extension.
-- SMS / iMessage: Receive OTP codes from SMS or iMessage and send them to the Linux clipboard (Experimental).
+- SMS / iMessage: Detects OTP codes in incoming messages and notifications and offers them to the browser extension for autofill.
 
 ### Browser & Mail Extensions
 A unified WebExtension that works in Thunderbird/Betterbird and Firefox/Chromium browsers:

@@ -25,6 +25,9 @@ namespace tether {
     void register_local_subscriber(int fd);
     void unregister_local_subscriber(int fd);
     void broadcast_local_event(const std::string& msg, int exclude_fd = -1);
+
+    // Store an OTP and push it to local subscribers (browser extension, GTK).
+    void otp_publish(const std::string& code, int exclude_fd = -1);
     void record_received_file(const std::filesystem::path& path, size_t bytes_written);
     size_t broadcast_tcp_message(const std::string& msg, int exclude_fd = -1);
 

@@ -139,3 +139,28 @@ TEST_F(OtpTest, ConsumingClearsTheClaim) {
     otp_consume(id);
     EXPECT_FALSE(otp_is_claimed());
 }
+
+TEST(OtpExtractTest, TypicalSmsCodes) {
+    EXPECT_EQ(otp_extract("Your verification code is 123456"), "123456");
+    EXPECT_EQ(otp_extract("847291 is your Amazon OTP. Do not share it."), "847291");
+    EXPECT_EQ(otp_extract("G-593012 is your Google verification code."), "593012");
+    EXPECT_EQ(otp_extract("Your login code: 123 456"), "123456");
+    EXPECT_EQ(otp_extract("Your code is 4821. Expires in 10 minutes."), "4821");
+    EXPECT_EQ(otp_extract("Use passcode X7F2QK9 to sign in."), "X7F2QK9");
+}
+
+TEST(OtpExtractTest, IgnoresTextWithoutAnOtpCue) {
+    EXPECT_EQ(otp_extract("Running late, be there at 1830"), "");
+    EXPECT_EQ(otp_extract("Call me back on 5551234"), "");
+    EXPECT_EQ(otp_extract(""), "");
+}
+
+TEST(OtpExtractTest, RejectsLookalikes) {
+    EXPECT_EQ(otp_extract("Your order 8891234 shipped, tracking code below"), "");
+    EXPECT_EQ(otp_extract("Security alert: charge of $4500 confirmed"), "");
+    EXPECT_EQ(otp_extract("Your code is here"), "");
+}
+
+TEST(OtpExtractTest, PrefersTheNumberNearestTheCue) {
+    EXPECT_EQ(otp_extract("Ref 987654 for the ticket. Your verification code is 112233."), "112233");
+}

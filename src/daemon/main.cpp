@@ -14,6 +14,7 @@
 #include <tether/file_transfer.hpp>
 #include <tether/log.hpp>
 #include <tether/net.hpp>
+#include <tether/otp.hpp>
 #include <tether/wayland.hpp>
 #include <unistd.h>
 
@@ -129,6 +130,9 @@ int main(int argc, char** argv) {
             event["command"] = "bt_message";
             tether::broadcast_local_event(event.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
 
+            if (!backfill && !message.outgoing)
+                tether::otp_publish(tether::otp_extract(message.body));
+
             // ANCS deliberately shows no popup for Messages, because MAP is the
             // copy whose read state stays in sync with the phone. This is that popup.
             if (backfill || message.outgoing || message.read)
@@ -182,6 +186,9 @@ int main(int argc, char** argv) {
                                                                         notification.body,
                                                                         static_cast<int64_t>(std::time(nullptr)));
                     }
+
+                    tether::otp_publish(tether::otp_extract(notification.title + "\n" + notification.subtitle + "\n" +
+                                                            notification.body));
 
                     nlohmann::json event = tether::bluetooth::ancs::to_json(notification);
                     event["command"] = "bt_notification";

@@ -103,6 +103,15 @@ namespace tether {
         return event;
     }
 
+    void otp_publish(const std::string& code, int exclude_fd) {
+        if (code.empty())
+            return;
+        if (Otp current = otp_peek(); current && current.code == code)
+            return;
+        uint64_t id = otp_store(code);
+        broadcast_local_event(make_otp_event({code, id}).dump(), exclude_fd);
+    }
+
     void register_local_subscriber(int fd) {
         std::lock_guard<std::mutex> lock(g_subscribers_mutex);
         local_subscribers.insert(fd);
@@ -903,11 +912,7 @@ namespace tether {
                             continue;
                         }
                     } else if (j.contains("command") && j["command"] == "new_otp" && j.contains("otp")) {
-                        std::string code = otp_from_json(j["otp"]);
-                        uint64_t id = otp_store(code);
-                        // Push the code to local subscribers (browser extension, GTK, etc.)
-                        // so the browser fills it without depending on its polling timing.
-                        broadcast_local_event(make_otp_event({code, id}).dump(), client_fd);
+                        otp_publish(otp_from_json(j["otp"]), client_fd);
                         std::string payload = "{\"status\":\"ok\"}\n";
                         write_plain_packet(client_fd, payload);
                         continue;
@@ -1328,12 +1333,7 @@ namespace tether {
                         }
                     } else if (j.contains("command") && j["command"] == "new_otp" && j.contains("otp")) {
                         // OTP sent from a mobile client (iPhone Share Extension) over mTLS.
-                        // Store it in the global vault so the browser extension can retrieve it.
-                        std::string code = otp_from_json(j["otp"]);
-                        uint64_t id = otp_store(code);
-                        // Notify local subscribers (GTK, browser ext, etc.) using the
-                        // otp_available shape the browser extension listens for.
-                        broadcast_local_event(make_otp_event({code, id}).dump());
+                        otp_publish(otp_from_json(j["otp"]));
                         std::string payload = "{\"status\":\"ok\"}\n";
                         robust_ssl_write(ssl, payload.c_str(), payload.size());
                         continue;
