@@ -1,5 +1,4 @@
 ![tether](docs/img/tether_header.png)
-![tether](docs/img/screenshot_messages.png)
 
 # Tether
 
@@ -14,6 +13,8 @@
 [![Get the Thunderbird / Betterbird Add-on](https://img.shields.io/badge/Thunderbird-Add--on-orange.svg)](https://addons.thunderbird.net/en-US/thunderbird/addon/tether-mail-extension/)
 
 [![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/tether-linux-companion/id6762097135)
+
+![tether](docs/img/screenshot_messages.png)
 
 ## Features
 
