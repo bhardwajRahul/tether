@@ -14,6 +14,8 @@
 
 [![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/tether-linux-companion/id6762097135)
 
+![tether](docs/img/screenshot_messages.png)
+
 ## Features
 
 | Feature | Status |
