@@ -73,6 +73,8 @@ namespace tether::bluetooth::ancs {
 
     // Messages arrive over MAP already, with read state that stays in sync. The
     // ANCS copy is kept for correlation but must never raise a second popup.
+    // Everything else is shown, silent included: iOS sets FlagSilent whenever the
+    // phone is muted or in a Focus mode, which means "make no noise", not "hide".
     bool should_show_desktop_popup(const Notification& notification);
 
     // Freedesktop icon names to try for a notification, best first: the app's

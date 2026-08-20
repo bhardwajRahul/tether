@@ -190,6 +190,7 @@ namespace tether {
                 return G_SOURCE_REMOVE;
 
             set_identity(notification, spec->app_name);
+            notify_notification_set_urgency(notification, spec->quiet ? NOTIFY_URGENCY_LOW : NOTIFY_URGENCY_NORMAL);
 
             GError* error = nullptr;
             if (!notify_notification_show(notification, &error)) {

@@ -15,6 +15,7 @@ namespace tether {
         std::string body;
         // Freedesktop icon names, best first.
         std::vector<std::string> icons;
+        bool quiet = false;
     };
 
     class DesktopNotifier {

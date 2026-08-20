@@ -205,7 +205,8 @@ int main(int argc, char** argv) {
                     notifier.notify({notification.app_name,
                                      title.empty() ? "iPhone" : title,
                                      body,
-                                     tether::bluetooth::ancs::icon_candidates(notification)});
+                                     tether::bluetooth::ancs::icon_candidates(notification),
+                                     notification.silent});
                 },
                 [](uint32_t uid) {
                     nlohmann::json event;

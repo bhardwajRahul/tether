@@ -115,11 +115,7 @@ namespace tether::bluetooth::ancs {
         return name;
     }
 
-    bool should_show_desktop_popup(const Notification& notification) {
-        if (notification.app_id == APP_ID_MESSAGES)
-            return false;
-        return !notification.silent;
-    }
+    bool should_show_desktop_popup(const Notification& notification) { return notification.app_id != APP_ID_MESSAGES; }
 
     std::vector<std::string> icon_candidates(const Notification& notification) {
         std::vector<std::string> out;
