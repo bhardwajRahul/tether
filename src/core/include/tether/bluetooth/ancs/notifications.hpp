@@ -75,6 +75,10 @@ namespace tether::bluetooth::ancs {
     // ANCS copy is kept for correlation but must never raise a second popup.
     bool should_show_desktop_popup(const Notification& notification);
 
+    // Freedesktop icon names to try for a notification, best first: the app's
+    // own logo, then something generic for its category.
+    std::vector<std::string> icon_candidates(const Notification& notification);
+
     nlohmann::json to_json(const Notification& notification);
 
 } // namespace tether::bluetooth::ancs

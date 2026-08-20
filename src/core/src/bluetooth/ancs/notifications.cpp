@@ -2,11 +2,45 @@
 
 #include <algorithm>
 #include <cctype>
+#include <map>
 
 namespace tether::bluetooth::ancs {
 
     namespace {
         constexpr size_t MAX_RETAINED = 200;
+
+        // Generic stand-ins for an app whose own logo is unknown or absent from
+        // the theme. Two per category, because Breeze and Adwaita disagree on
+        // several of these names and only one of them has to land.
+        std::vector<const char*> category_icons(CategoryId category) {
+            switch (category) {
+            case CategoryId::IncomingCall:
+                return {"call-start", "call-incoming"};
+            case CategoryId::MissedCall:
+                return {"call-stop", "call-missed"};
+            case CategoryId::Voicemail:
+                return {"media-playback-start", "audio-input-microphone"};
+            case CategoryId::Social:
+                return {"internet-chat", "im-user"};
+            case CategoryId::Schedule:
+                return {"office-calendar", "x-office-calendar"};
+            case CategoryId::Email:
+                return {"mail-unread", "mail-message-new"};
+            case CategoryId::News:
+                return {"application-rss+xml", "internet-news-reader"};
+            case CategoryId::HealthAndFitness:
+                return {"applications-health", "preferences-desktop-personal"};
+            case CategoryId::BusinessAndFinance:
+                return {"wallet-open", "office-chart-line"};
+            case CategoryId::Location:
+                return {"mark-location", "find-location"};
+            case CategoryId::Entertainment:
+                return {"applications-multimedia", "multimedia-player"};
+            case CategoryId::Other:
+                break;
+            }
+            return {"phone-symbolic", "phone"};
+        }
     } // namespace
 
     Decision NotificationRegistry::classify(const SourceEvent& event, bool initial) const {
@@ -85,6 +119,60 @@ namespace tether::bluetooth::ancs {
         if (notification.app_id == APP_ID_MESSAGES)
             return false;
         return !notification.silent;
+    }
+
+    std::vector<std::string> icon_candidates(const Notification& notification) {
+        std::vector<std::string> out;
+
+        // Brand logos, named the way icon themes that carry them do (Papirus is
+        // the common one; Breeze and Adwaita ship none of these, which is why
+        // the category names below have to stand on their own).
+        static const std::map<std::string, const char*> by_app_id{
+            {"com.amazon.Amazon", "amazon"},
+            {"com.apple.MobileAddressBook", "x-office-address-book"},
+            {"com.apple.MobileSMS", "internet-chat"},
+            {"com.apple.Music", "multimedia-player"},
+            {"com.apple.facetime", "camera-web"},
+            {"com.apple.mobilecal", "office-calendar"},
+            {"com.apple.mobilemail", "mail-unread"},
+            {"com.apple.mobilenotes", "accessories-text-editor"},
+            {"com.apple.mobilephone", "call-start"},
+            {"com.apple.mobileslideshow", "multimedia-photo-viewer"},
+            {"com.apple.news", "application-rss+xml"},
+            {"com.apple.podcasts", "podcasts"},
+            {"com.apple.reminders", "view-task"},
+            {"com.atebits.Tweetie2", "twitter"},
+            {"com.burbn.instagram", "instagram"},
+            {"com.facebook.Facebook", "facebook"},
+            {"com.facebook.Messenger", "messenger"},
+            {"com.github.stormbreaker.prod", "github"},
+            {"com.google.Gmail", "gmail"},
+            {"com.google.Maps", "google-maps"},
+            {"com.google.ios.youtube", "youtube"},
+            {"com.hammerandchisel.discord", "discord"},
+            {"com.linkedin.LinkedIn", "linkedin"},
+            {"com.microsoft.Office.Outlook", "ms-outlook"},
+            {"com.reddit.Reddit", "reddit"},
+            {"com.spotify.client", "spotify"},
+            {"com.tinyspeck.chatlyio", "slack"},
+            {"com.toyopagroup.picaboo", "snapchat"},
+            {"com.ubercab.UberClient", "uber"},
+            {"com.zhiliaoapp.musically", "tiktok"},
+            {"net.whatsapp.WhatsApp", "whatsapp"},
+            {"org.telegram.messenger", "telegram"},
+            {"org.whispersystems.signal", "signal-desktop"},
+            {"ph.telegra.Telegraph", "telegram"},
+            {"us.zoom.videomeetings", "zoom"},
+        };
+
+        if (auto found = by_app_id.find(notification.app_id); found != by_app_id.end())
+            out.emplace_back(found->second);
+
+        for (const char* name : category_icons(notification.category))
+            out.emplace_back(name);
+
+        out.emplace_back("tether");
+        return out;
     }
 
     nlohmann::json to_json(const Notification& notification) {

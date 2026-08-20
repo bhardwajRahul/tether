@@ -4,6 +4,7 @@
 
 #include <ctime>
 #include <string>
+#include <tether/bluetooth/ancs/notifications.hpp>
 
 namespace tether::ui {
 
@@ -36,6 +37,22 @@ namespace tether::ui {
             daemon_send(j);
         }
 
+        // Same per-app icon the desktop popup uses, narrowed to what this
+        // theme has.
+        GtkWidget* app_icon(const nlohmann::json& notification) {
+            bluetooth::ancs::Notification resolved;
+            resolved.app_id = notification.value("app_id", "");
+            resolved.category = static_cast<bluetooth::ancs::CategoryId>(notification.value("category", 0));
+
+            GtkIconTheme* theme = gtk_icon_theme_get_default();
+            for (const auto& name : bluetooth::ancs::icon_candidates(resolved)) {
+                if (gtk_icon_theme_has_icon(theme, name.c_str()))
+                    return gtk_image_new_from_icon_name(name.c_str(), GTK_ICON_SIZE_LARGE_TOOLBAR);
+            }
+            return gtk_image_new_from_icon_name("preferences-system-notifications-symbolic",
+                                                GTK_ICON_SIZE_LARGE_TOOLBAR);
+        }
+
         GtkWidget* build_row(const nlohmann::json& notification) {
             const std::string app = notification.value("app_name", notification.value("app_id", ""));
             const std::string title = notification.value("title", "");
@@ -50,6 +67,7 @@ namespace tether::ui {
             gtk_container_set_border_width(GTK_CONTAINER(box), 10);
 
             GtkWidget* header = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+            gtk_box_pack_start(GTK_BOX(header), app_icon(notification), FALSE, FALSE, 0);
             GtkWidget* app_label = gtk_label_new(nullptr);
             gtk_label_set_markup(GTK_LABEL(app_label), ("<b>" + escape_markup(app) + "</b>").c_str());
             gtk_label_set_xalign(GTK_LABEL(app_label), 0.0);
