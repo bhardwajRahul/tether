@@ -3,6 +3,7 @@
 #include "ui_util.hpp"
 
 #include <algorithm>
+#include <deque>
 #include <filesystem>
 #include <string>
 #include <tether/crypto.hpp>
@@ -62,6 +63,14 @@ namespace tether::ui {
 
             GtkWidget* lbl_welcome_wifi = nullptr;
             GtkWidget* lbl_welcome_bt = nullptr;
+
+            // Files waiting to go to the phone, front is in flight.
+            GtkWidget* dropzone = nullptr;
+            std::deque<std::filesystem::path> send_queue;
+            size_t send_batch_total = 0;
+            size_t send_failed = 0;
+            size_t send_skipped = 0;
+            std::string send_last_error;
         };
 
         DevicesState g_devices;
@@ -376,16 +385,46 @@ namespace tether::ui {
             set_text(g_devices.lbl_bt_progress, "Asking the iPhone to show its Bluetooth permissions\u2026");
         }
 
-        void send_file_async(const std::filesystem::path& path) {
-            if (!daemon_connected()) {
-                set_status_action("Daemon unavailable.");
+        // The daemon opens a fresh connection per send_file, batch one file at a time
+        void start_next_send() {
+            if (g_devices.send_queue.empty())
                 return;
+            const std::filesystem::path& path = g_devices.send_queue.front();
+            std::string status = "Sending " + path.filename().string() + "…";
+            if (g_devices.send_batch_total > 1) {
+                const size_t index = g_devices.send_batch_total - g_devices.send_queue.size() + 1;
+                status += " (" + std::to_string(index) + " of " + std::to_string(g_devices.send_batch_total) + ")";
             }
-            set_status_action("Sending " + path.filename().string() + "…");
+            set_status_action(status);
             nlohmann::json j;
             j["command"] = "send_file";
             j["path"] = path.string();
             daemon_send(j);
+        }
+
+        // skipped counts items that came in with the batch but are not sendable
+        // files, so the final status can admit they were dropped.
+        void queue_files(std::vector<std::filesystem::path> paths, size_t skipped = 0) {
+            if (paths.empty())
+                return;
+            if (!daemon_connected()) {
+                set_status_action("Daemon unavailable.");
+                return;
+            }
+            const bool idle = g_devices.send_queue.empty();
+            if (idle) {
+                g_devices.send_batch_total = paths.size();
+                g_devices.send_failed = 0;
+                g_devices.send_skipped = skipped;
+                g_devices.send_last_error.clear();
+            } else {
+                g_devices.send_batch_total += paths.size();
+                g_devices.send_skipped += skipped;
+            }
+            for (auto& path : paths)
+                g_devices.send_queue.push_back(std::move(path));
+            if (idle)
+                start_next_send();
         }
 
         void on_choose_file(GtkWidget*, gpointer) {
@@ -397,14 +436,73 @@ namespace tether::ui {
                                                             "_Send",
                                                             GTK_RESPONSE_ACCEPT,
                                                             nullptr);
+            gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), TRUE);
+            std::vector<std::filesystem::path> files;
             if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-                char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-                if (filename) {
-                    send_file_async(filename);
-                    g_free(filename);
+                GSList* names = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog));
+                for (GSList* node = names; node; node = node->next) {
+                    files.emplace_back(static_cast<char*>(node->data));
+                    g_free(node->data);
                 }
+                g_slist_free(names);
             }
             gtk_widget_destroy(dialog);
+            queue_files(std::move(files));
+        }
+
+        void set_dropzone_active(bool active) {
+            if (!g_devices.dropzone)
+                return;
+            GtkStyleContext* ctx = gtk_widget_get_style_context(g_devices.dropzone);
+            if (active)
+                gtk_style_context_add_class(ctx, "tether-dropzone-active");
+            else
+                gtk_style_context_remove_class(ctx, "tether-dropzone-active");
+        }
+
+        gboolean on_drop_motion(GtkWidget*, GdkDragContext*, gint, gint, guint, gpointer) {
+            set_dropzone_active(true);
+            return FALSE; // let GTK_DEST_DEFAULT_MOTION answer the drag
+        }
+
+        void on_drop_leave(GtkWidget*, GdkDragContext*, guint, gpointer) { set_dropzone_active(false); }
+
+        void on_drop_received(
+            GtkWidget*, GdkDragContext* context, gint, gint, GtkSelectionData* data, guint, guint time, gpointer) {
+            // drag-leave is not guaranteed once the drop lands.
+            set_dropzone_active(false);
+
+            gchar** uris = gtk_selection_data_get_uris(data);
+            if (!uris) {
+                gtk_drag_finish(context, FALSE, FALSE, time);
+                return;
+            }
+
+            std::vector<std::filesystem::path> files;
+            size_t skipped = 0;
+            for (gchar** uri = uris; *uri; ++uri) {
+                // Non-file:// URIs have no local path and cannot be streamed.
+                gchar* local = g_filename_from_uri(*uri, nullptr, nullptr);
+                if (!local) {
+                    ++skipped;
+                    continue;
+                }
+                std::filesystem::path path(local);
+                g_free(local);
+                std::error_code ec;
+                if (std::filesystem::is_directory(path, ec))
+                    ++skipped;
+                else
+                    files.push_back(std::move(path));
+            }
+            g_strfreev(uris);
+
+            gtk_drag_finish(context, !files.empty(), FALSE, time);
+            if (files.empty()) {
+                set_status_action("Folders can't be sent — drop files instead.");
+                return;
+            }
+            queue_files(std::move(files), skipped);
         }
 
         void update_wifi_indicator() {
@@ -444,6 +542,14 @@ namespace tether::ui {
         }
 
     } // namespace
+
+    void devices_view_handle_disconnect() {
+        g_devices.send_queue.clear();
+        g_devices.send_batch_total = 0;
+        g_devices.send_failed = 0;
+        g_devices.send_skipped = 0;
+        g_devices.send_last_error.clear();
+    }
 
     void devices_view_trigger_discovery() {
         set_status_main("Scanning for nearby devices...");
@@ -759,7 +865,35 @@ namespace tether::ui {
             return true;
         }
         if (command == "file_send_complete") {
-            set_status_action(event.value("message", ""));
+            if (!event.value("success", true)) {
+                ++g_devices.send_failed;
+                g_devices.send_last_error = event.value("message", "");
+            }
+            if (!g_devices.send_queue.empty())
+                g_devices.send_queue.pop_front();
+            if (!g_devices.send_queue.empty()) {
+                start_next_send();
+                return true;
+            }
+
+            // The daemon's own message is exact for a single file; a batch needs
+            // a tally, otherwise a failure halfway through is never seen.
+            std::string message = event.value("message", "");
+            if (g_devices.send_batch_total > 1) {
+                const size_t sent = g_devices.send_batch_total - g_devices.send_failed;
+                message =
+                    "Sent " + std::to_string(sent) + " of " + std::to_string(g_devices.send_batch_total) + " files.";
+                if (g_devices.send_failed > 0 && !g_devices.send_last_error.empty())
+                    message += " " + g_devices.send_last_error;
+            }
+            if (g_devices.send_skipped > 0)
+                message += " Skipped " + std::to_string(g_devices.send_skipped) + " non-file item(s).";
+            set_status_action(message);
+
+            g_devices.send_batch_total = 0;
+            g_devices.send_failed = 0;
+            g_devices.send_skipped = 0;
+            g_devices.send_last_error.clear();
             return true;
         }
         if (command == "clipboard_content") {
@@ -1068,10 +1202,20 @@ namespace tether::ui {
         gtk_widget_set_halign(btn_grid, GTK_ALIGN_CENTER);
         g_devices.btn_grid = btn_grid;
 
+        // drop zone
+        GtkWidget* dropzone = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
+        gtk_style_context_add_class(gtk_widget_get_style_context(dropzone), "tether-dropzone");
+        g_devices.dropzone = dropzone;
+        gtk_box_pack_start(GTK_BOX(btn_grid), dropzone, FALSE, FALSE, 0);
+
+        GtkWidget* lbl_drop = gtk_label_new("Drop files here to send");
+        gtk_style_context_add_class(gtk_widget_get_style_context(lbl_drop), "muted");
+        gtk_box_pack_start(GTK_BOX(dropzone), lbl_drop, FALSE, FALSE, 0);
+
         GtkWidget* btn_send_file = gtk_button_new_with_label("Send File");
         gtk_style_context_add_class(gtk_widget_get_style_context(btn_send_file), "suggested-action");
         g_signal_connect(btn_send_file, "clicked", G_CALLBACK(on_choose_file), nullptr);
-        gtk_box_pack_start(GTK_BOX(btn_grid), btn_send_file, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(dropzone), btn_send_file, FALSE, FALSE, 0);
 
         GtkWidget* btn_send_clip = gtk_button_new_with_label("Send Clipboard");
         g_signal_connect(btn_send_clip,
@@ -1092,7 +1236,21 @@ namespace tether::ui {
         gtk_style_context_add_class(gtk_widget_get_style_context(g_devices.lbl_action_status), "muted");
         gtk_box_pack_start(GTK_BOX(action_box), g_devices.lbl_action_status, FALSE, FALSE, 0);
 
-        gtk_stack_add_named(GTK_STACK(g_devices.right_pane_stack), action_box, "action");
+        GtkWidget* action_page = gtk_event_box_new();
+        gtk_container_add(GTK_CONTAINER(action_page), action_box);
+
+        static const GtkTargetEntry kUriTargets[] = {{const_cast<gchar*>("text/uri-list"), 0, 0}};
+
+        gtk_drag_dest_set(action_page,
+                          static_cast<GtkDestDefaults>(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_DROP),
+                          kUriTargets,
+                          G_N_ELEMENTS(kUriTargets),
+                          GDK_ACTION_COPY);
+        g_signal_connect(action_page, "drag-motion", G_CALLBACK(on_drop_motion), nullptr);
+        g_signal_connect(action_page, "drag-leave", G_CALLBACK(on_drop_leave), nullptr);
+        g_signal_connect(action_page, "drag-data-received", G_CALLBACK(on_drop_received), nullptr);
+
+        gtk_stack_add_named(GTK_STACK(g_devices.right_pane_stack), action_page, "action");
 
         gtk_paned_pack2(GTK_PANED(paned), g_devices.right_pane_stack, TRUE, FALSE);
         gtk_stack_set_visible_child_name(GTK_STACK(g_devices.right_pane_stack), "placeholder");

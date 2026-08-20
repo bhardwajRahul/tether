@@ -12,6 +12,9 @@ namespace tether::ui {
     // Returns true when the event belonged to this view.
     bool devices_view_handle_event(const nlohmann::json& event);
 
+    // Drops the queue of files waiting on a daemon that is no longer there.
+    void devices_view_handle_disconnect();
+
     void devices_view_refresh();
     void devices_view_trigger_discovery();
 

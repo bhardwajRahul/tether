@@ -67,7 +67,10 @@ namespace {
 
         // One feed, dispatched to whichever view owns the event; the views never
         // hold the socket themselves.
-        daemon_client_on_disconnect([] { messages_view_handle_disconnect(); });
+        daemon_client_on_disconnect([] {
+            devices_view_handle_disconnect();
+            messages_view_handle_disconnect();
+        });
 
         daemon_client_start([](const nlohmann::json& event) {
             if (devices_view_handle_event(event))
