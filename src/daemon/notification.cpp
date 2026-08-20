@@ -4,17 +4,94 @@
 #include <glib.h>
 #include <libnotify/notify.h>
 
+#include <mutex>
 #include <string>
 #include <tether/log.hpp>
 #include <thread>
+#include <unordered_set>
 
 namespace tether {
 
     namespace {
 
+        constexpr const char* DESKTOP_ENTRY = "tether-gtk";
+
         struct NotificationRequest {
             std::filesystem::path path;
         };
+
+        // Every icon name installed by any theme on this machine.
+        // scanned once and cached for the life of the process.
+        const std::unordered_set<std::string>& installed_icons() {
+            static const std::unordered_set<std::string> names = [] {
+                std::unordered_set<std::string> found;
+                std::vector<std::filesystem::path> roots;
+
+                const char* home = std::getenv("HOME");
+                if (const char* data_home = std::getenv("XDG_DATA_HOME"); data_home && *data_home)
+                    roots.emplace_back(std::filesystem::path(data_home) / "icons");
+                else if (home)
+                    roots.emplace_back(std::filesystem::path(home) / ".local/share/icons");
+                if (home)
+                    roots.emplace_back(std::filesystem::path(home) / ".icons");
+
+                const char* data_dirs = std::getenv("XDG_DATA_DIRS");
+                std::string dirs = data_dirs && *data_dirs ? data_dirs : "/usr/local/share:/usr/share";
+                for (size_t start = 0; start <= dirs.size();) {
+                    const size_t end = dirs.find(':', start);
+                    const std::string dir = dirs.substr(start, end - start);
+                    if (!dir.empty())
+                        roots.emplace_back(std::filesystem::path(dir) / "icons");
+                    if (end == std::string::npos)
+                        break;
+                    start = end + 1;
+                }
+                roots.emplace_back("/usr/share/pixmaps");
+
+                std::error_code ec;
+                for (const auto& root : roots) {
+                    auto it = std::filesystem::recursive_directory_iterator(
+                        root, std::filesystem::directory_options::skip_permission_denied, ec);
+                    if (ec) {
+                        ec.clear();
+                        continue;
+                    }
+                    for (const auto& entry : it) {
+                        const auto ext = entry.path().extension();
+                        if (ext == ".png" || ext == ".svg" || ext == ".xpm")
+                            found.insert(entry.path().stem().string());
+                    }
+                }
+                debug::log(INFO, "Found {} icon names across the installed themes", found.size());
+                return found;
+            }();
+            return names;
+        }
+
+        // The first candidate this machine can actually draw. Handing the server
+        // a name no theme has leaves the popup with no icon at all, which is
+        // worse than a generic one.
+        std::string resolve_icon(const std::vector<std::string>& candidates) {
+            const auto& installed = installed_icons();
+            for (const auto& name : candidates) {
+                if (installed.count(name))
+                    return name;
+            }
+            return {};
+        }
+
+        // Identifies the sending application to the notification server. Without
+        // this KDE shows the popup and then forgets it.
+        void set_identity(NotifyNotification* notification, const std::string& app_name) {
+            notify_notification_set_hint(notification, "desktop-entry", g_variant_new_string(DESKTOP_ENTRY));
+            if (!app_name.empty()) {
+                // Keeps history and configuration grouped under Tether while the
+                // header names the iPhone app the notification came from.
+                notify_notification_set_hint(
+                    notification, "x-kde-display-appname", g_variant_new_string(app_name.c_str()));
+            }
+            notify_notification_set_hint(notification, "x-kde-origin-name", g_variant_new_string("iPhone"));
+        }
 
         struct NotificationActionData {
             std::string uri;
@@ -72,7 +149,7 @@ namespace tether {
             NotifyNotification* notification =
                 notify_notification_new("File arrived", file.filename().c_str(), "document-save");
 
-            notify_notification_set_hint(notification, "desktop-entry", g_variant_new_string("tether"));
+            set_identity(notification, "");
             notify_notification_set_hint(notification, "resident", g_variant_new_boolean(TRUE));
             notify_notification_set_timeout(notification, 15000);
 
@@ -98,6 +175,28 @@ namespace tether {
             }
             g_free(file_uri);
             g_free(folder_uri);
+            return G_SOURCE_REMOVE;
+        }
+
+        gboolean show_spec_on_main(gpointer user_data) {
+            std::unique_ptr<NotificationSpec> spec(static_cast<NotificationSpec*>(user_data));
+
+            const std::string icon = resolve_icon(spec->icons);
+            NotifyNotification* notification =
+                notify_notification_new(spec->summary.c_str(),
+                                        spec->body.empty() ? nullptr : spec->body.c_str(),
+                                        icon.empty() ? nullptr : icon.c_str());
+            if (!notification)
+                return G_SOURCE_REMOVE;
+
+            set_identity(notification, spec->app_name);
+
+            GError* error = nullptr;
+            if (!notify_notification_show(notification, &error)) {
+                debug::log(ERR, "Failed to show notification: {}", error ? error->message : "unknown");
+                g_clear_error(&error);
+            }
+            g_object_unref(notification);
             return G_SOURCE_REMOVE;
         }
 
@@ -140,7 +239,7 @@ namespace tether {
             return true;
         }
 
-        if (!notify_init("tetherd")) {
+        if (!notify_init("Tether")) {
             debug::log(ERR, "Failed to initialize libnotify");
             return false;
         }
@@ -149,6 +248,9 @@ namespace tether {
         impl_->loop = g_main_loop_new(impl_->context, FALSE);
         impl_->thread = std::thread([ctx = impl_->context, loop = impl_->loop]() {
             g_main_context_push_thread_default(ctx);
+            // Walking the icon themes takes long enough to be worth doing before
+            // the first notification rather than during it.
+            installed_icons();
             g_main_loop_run(loop);
             g_main_context_pop_thread_default(ctx);
         });
@@ -156,23 +258,15 @@ namespace tether {
         return true;
     }
 
-    void DesktopNotifier::notify(const std::string& summary, const std::string& body) {
+    void DesktopNotifier::notify(const NotificationSpec& spec) {
         if (!impl_ || !impl_->initialized) {
             return;
         }
 
-        NotifyNotification* notification =
-            notify_notification_new(summary.c_str(), body.empty() ? nullptr : body.c_str(), "phone-symbolic");
-        if (!notification) {
-            return;
-        }
-
-        GError* error = nullptr;
-        if (!notify_notification_show(notification, &error)) {
-            debug::log(ERR, "Failed to show notification: {}", error ? error->message : "unknown");
-            g_clear_error(&error);
-        }
-        g_object_unref(notification);
+        // Bluetooth delivers on its own thread; libnotify's proxy belongs to the
+        // notifier's loop.
+        auto* copy = new NotificationSpec(spec);
+        g_main_context_invoke_full(impl_->context, G_PRIORITY_DEFAULT, show_spec_on_main, copy, nullptr);
     }
 
     void DesktopNotifier::notify_file_arrived(const std::filesystem::path& path) {

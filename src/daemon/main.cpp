@@ -141,7 +141,12 @@ int main(int argc, char** argv) {
             }
             if (who.empty())
                 who = message.peer_name.empty() ? message.peer_address : message.peer_name;
-            notifier.notify(who.empty() ? "iPhone" : who, message.body);
+            tether::bluetooth::ancs::Notification as_notification;
+            as_notification.app_id = tether::bluetooth::ancs::APP_ID_MESSAGES;
+            notifier.notify({"Messages",
+                             who.empty() ? "iPhone" : who,
+                             message.body,
+                             tether::bluetooth::ancs::icon_candidates(as_notification)});
         });
     if (bluez.start()) {
         tether::bluetooth::g_bluez = &bluez;
@@ -190,7 +195,10 @@ int main(int argc, char** argv) {
                     const std::string title = notification.title.empty() ? notification.app_name : notification.title;
                     // Some apps put the whole notification in the subtitle and leave the message empty.
                     const std::string body = notification.body.empty() ? notification.subtitle : notification.body;
-                    notifier.notify(title.empty() ? "iPhone" : title, body);
+                    notifier.notify({notification.app_name,
+                                     title.empty() ? "iPhone" : title,
+                                     body,
+                                     tether::bluetooth::ancs::icon_candidates(notification)});
                 },
                 [](uint32_t uid) {
                     nlohmann::json event;
