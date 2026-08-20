@@ -270,7 +270,7 @@ namespace tether::bluetooth {
                 return device && device->le_link_up();
             }
 
-            void set_preferred_bearer(const std::string& bearer) override {
+            void set_preferred_bearer(const std::string& bearer) {
                 auto device = lookup();
                 if (!device)
                     return;
@@ -310,6 +310,7 @@ namespace tether::bluetooth {
                         return ConnectResult::Failed;
                     }
                 }
+                set_preferred_bearer("bredr");
                 return call(device->path, IFACE_DEVICE, "Connect", err) ? ConnectResult::Requested
                                                                         : ConnectResult::Failed;
             }

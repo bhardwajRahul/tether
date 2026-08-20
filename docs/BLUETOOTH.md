@@ -588,6 +588,58 @@ phone-side Bluetooth cycle, while a refused registration still points at
 `systemctl restart bluetooth`. Sharing one message for both is what sent this
 session chasing the local stack for an hour.
 
+### 2026-08-20 - Three ways the LE cycle sabotaged itself
+
+A cold boot came up with BR/EDR, MAP and PBAP working and LE never forming, on a
+machine that had soaked cleanly the evening before. The local stack measured
+correct throughout: `bearer_api: confirmed`, `bond_has_le: true`,
+`secure_connections: true`, CoD `0x7c0408`, and the solicitation advert on air
+(`ActiveInstances` alternating 0 and 1 on the expected 45s/180s cycle). The
+phone was the immediate cause -- a dial with nothing competing, against a freshly
+restarted `bluetoothd`, returned `Connection timed out` in 25s, and 180s of
+uninterrupted solicitation went unanswered. But reading the daemon log across a
+full cycle turned up three faults of our own, each of which turns one bad minute
+into a permanent outage.
+
+**The solicitation aborted our own dial.** `connect_le()` is asynchronous, and
+`le_dialling` was derived from the clock alone. When the 45s dial window closed
+the advert went up immediately, while BlueZ was still connecting, and the connect
+died with `le-connection-abort-by-local` -- observed once per cycle, forever. The
+window now stays open while a dial is outstanding and closes on the reply, so the
+two routes really do alternate instead of overlapping. `connect_le()` abandons
+the call at its own timeout, which is what bounds the window.
+
+**Dialling stopped for good after six failures.** `LE_ATTEMPTS_BEFORE_ADVICE`
+gated the retry as well as the advice string it is named for, and `le_failures_`
+is cleared only by `reset()` or by an observed LE link -- neither of which
+happens while BR/EDR stays up. Six failures into a daemon's life, LE was never
+dialled again. Combined with the abort above, that is roughly twenty minutes from
+boot to a daemon that will not try. This is the "worked all morning, then stopped
+until I restarted it" report. The cap now selects the message only; the retry
+runs as long as LE is down, paced by the existing 300s backoff ceiling.
+
+**PreferredBearer was written under a live LE link.** The Classic path called
+`set_preferred_bearer("bredr")` on every reconnect attempt, including while LE
+was up, which drops the LE link -- the mirror image of the race removed on
+2026-08-19, where the LE path wrote `"le"` under an in-flight connect. A bug
+reporter independently described the consequence exactly: the bond stays
+`BR/EDR + LE` but only one bearer holds a live connection at a time, trading off
+every few minutes. The property steers the untyped `Device1.Connect` and nothing
+else, so it is now written only on that fallback, which is reached only with
+nothing connected. It is gone from `BearerOps` entirely -- the supervisor cannot
+touch it by construction, which is a stronger guarantee than the test it replaces.
+
+None of the three explains a phone that will not answer. All three explain why it
+never recovered once it stopped.
+
+Cycling Bluetooth on the iPhone brought LE straight back -- first dial, no
+aborts, both ANCS notify characteristics subscribed, clean over a soak. But the
+daemon that had been failing all morning did not notice for minutes: LE shared
+BR/EDR's 300s backoff ceiling, so a phone the user had just fixed still read as
+broken. LE now backs off to its own 60s ceiling. A dial costs nothing since one
+is never issued while another is outstanding, and the failure it recovers from
+is the one a human has just cleared by hand.
+
 ### PBAP
 
 `Select("int", "pb")` followed by `PullAll` with `Format: vcard30` and `MaxCount` returned 456 contacts on the first attempt.

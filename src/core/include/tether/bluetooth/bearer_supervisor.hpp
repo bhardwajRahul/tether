@@ -9,6 +9,7 @@ namespace tether::bluetooth {
     inline constexpr int BEARER_SETTLE_SECONDS = 3;
     inline constexpr int BEARER_BACKOFF_MIN_SECONDS = 5;
     inline constexpr int BEARER_BACKOFF_MAX_SECONDS = 300;
+    inline constexpr int LE_BACKOFF_MAX_SECONDS = 60;
     // How many refused attempts before the status stops saying "connecting"
     inline constexpr int CLASSIC_FAILURES_BEFORE_ADVICE = 6;
     inline constexpr int LE_ATTEMPTS_BEFORE_ADVICE = 6;
@@ -39,8 +40,6 @@ namespace tether::bluetooth {
         virtual bool classic_connected() const = 0;
         virtual bool le_bearer_available() const = 0;
         virtual bool le_connected() const = 0;
-
-        virtual void set_preferred_bearer(const std::string& bearer) = 0;
 
         virtual ConnectResult connect_classic(std::string& err) = 0;
         // Must not block: BlueZ keeps working on a connect after a synchronous

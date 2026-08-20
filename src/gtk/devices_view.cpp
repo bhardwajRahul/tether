@@ -255,8 +255,9 @@ namespace tether::ui {
                 bool online = std::find(g_devices.connected_fps.begin(),
                                         g_devices.connected_fps.end(),
                                         g_devices.selected_device_fp) != g_devices.connected_fps.end();
-                set_status_action(online ? "Connected and ready."
-                                         : "Device is offline. Pair again or wait for network.");
+                set_status_action(online
+                                      ? "Connected and ready."
+                                      : "Device is offline. Open the Tether app on iPhone while on the same network.");
                 if (g_devices.btn_grid) {
                     gtk_widget_set_visible(g_devices.btn_grid, online);
                 }

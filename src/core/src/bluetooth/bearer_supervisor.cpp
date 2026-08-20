@@ -7,10 +7,10 @@ namespace tether::bluetooth {
 
     namespace {
 
-        int grow_backoff(int current) {
+        int grow_backoff(int current, int ceiling = BEARER_BACKOFF_MAX_SECONDS) {
             if (current <= 0)
                 return BEARER_BACKOFF_MIN_SECONDS;
-            return std::min(current * 2, BEARER_BACKOFF_MAX_SECONDS);
+            return std::min(current * 2, ceiling);
         }
 
         // Failures that clear on their own, unlike a refusal from the phone.
@@ -52,9 +52,14 @@ namespace tether::bluetooth {
             return reported == ConnectResult::Failed && is_already_running(err) ? ConnectResult::Busy : reported;
         }
 
-        int next_backoff(int current, const std::string& err) {
-            return is_transient(err) ? BEARER_BACKOFF_MIN_SECONDS : grow_backoff(current);
+        int next_backoff(int current, const std::string& err, int ceiling = BEARER_BACKOFF_MAX_SECONDS) {
+            return is_transient(err) ? BEARER_BACKOFF_MIN_SECONDS : grow_backoff(current, ceiling);
         }
+
+        constexpr const char* LE_PHONE_SILENT_ADVICE =
+            "The iPhone is not answering on LE. Its Bluetooth is wedged on its own side: turn Bluetooth off "
+            "and back on on the iPhone, which clears this even when Share System Notifications is already on. "
+            "Messages and contacts are unaffected.";
 
     } // namespace
 
@@ -121,7 +126,6 @@ namespace tether::bluetooth {
             classic_connected_since_ = -1;
 
             if (now >= next_classic_attempt_) {
-                ops_.set_preferred_bearer("bredr");
                 std::string err;
                 switch (classify(ops_.connect_classic(err), err)) {
                 case ConnectResult::Requested:
@@ -170,13 +174,13 @@ namespace tether::bluetooth {
         if (!status_.le_connected) {
             // alternate the two routes rather than running both
             const int64_t phase = (now - le_down_since_) % (LE_DIAL_WINDOW_SECONDS + LE_SOLICIT_WINDOW_SECONDS);
-            status_.le_dialling = phase < LE_DIAL_WINDOW_SECONDS;
+
+            status_.le_dialling = phase < LE_DIAL_WINDOW_SECONDS || ops_.le_connect_outstanding();
 
             const bool settled =
                 classic_connected_since_ >= 0 && now - classic_connected_since_ >= BEARER_SETTLE_SECONDS;
 
-            if (settled && status_.le_dialling && !ops_.le_connect_outstanding() &&
-                le_failures_ < LE_ATTEMPTS_BEFORE_ADVICE && now >= next_le_attempt_) {
+            if (settled && status_.le_dialling && !ops_.le_connect_outstanding() && now >= next_le_attempt_) {
                 std::string err;
                 const ConnectResult result = classify(ops_.connect_le(err), err);
 
@@ -193,22 +197,21 @@ namespace tether::bluetooth {
                     le_listening_ = false;
                     le_stuck_locally_ = false;
                     le_phone_silent_ = is_transient(err);
-                    status_.le_backoff = next_backoff(status_.le_backoff, err);
+                    status_.le_backoff = next_backoff(status_.le_backoff, err, LE_BACKOFF_MAX_SECONDS);
                     next_le_attempt_ = now + status_.le_backoff;
                     debug::log(WARN, "bluetooth: LE connect failed ({}), retrying in {}s", err, status_.le_backoff);
                     break;
                 }
             }
             if (!status_.le_connected) {
-                if (ops_.le_connect_outstanding() || le_listening_)
+                if (le_phone_silent_ && le_failures_ >= LE_ATTEMPTS_BEFORE_ADVICE)
+                    status_.reason = LE_PHONE_SILENT_ADVICE;
+                else if (ops_.le_connect_outstanding() || le_listening_)
                     status_.reason = "Connected. Waiting for the iPhone to open the LE link that carries "
                                      "notifications. If it does not, open Settings > Bluetooth > (i) on the "
                                      "iPhone and check Share System Notifications.";
                 else if (le_phone_silent_)
-                    status_.reason = "The iPhone is not answering on LE. Its Bluetooth is wedged on its own "
-                                     "side: turn Bluetooth off and back on on the iPhone, which clears this even "
-                                     "when Share System Notifications is already on. Messages and contacts are "
-                                     "unaffected.";
+                    status_.reason = LE_PHONE_SILENT_ADVICE;
                 else
                     status_.reason = "Nothing is listening for the iPhone's LE link. BlueZ refused to register "
                                      "for it, which only \"sudo systemctl restart bluetooth\" clears. Messages "

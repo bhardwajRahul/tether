@@ -21,15 +21,12 @@ namespace {
 
         int classic_attempts = 0;
         int le_attempts = 0;
-        std::vector<std::string> preferred;
 
         bool device_present() const override { return present; }
         bool device_paired() const override { return paired; }
         bool classic_connected() const override { return classic; }
         bool le_bearer_available() const override { return le_available; }
         bool le_connected() const override { return le; }
-
-        void set_preferred_bearer(const std::string& bearer) override { preferred.push_back(bearer); }
 
         std::string classic_error = "br/edr refused";
         std::string le_error = "le refused";
@@ -109,27 +106,6 @@ TEST(BearerSupervisor, ConnectsClassicThenLeAfterSettling) {
     // Only an observed Connected is one.
     sup.tick(2 + BEARER_SETTLE_SECONDS);
     EXPECT_TRUE(sup.status().le_connected);
-}
-
-// PreferredBearer steers Device1.Connect, but the LE path calls the per-bearer
-// Connect, which already names the transport. Writing "le" and then "bredr" back
-// milliseconds later raced the asynchronous connect that was still in flight and
-// produced le-connection-abort-by-local, so the LE path must not touch it at all.
-TEST(BearerSupervisor, DoesNotSteerPreferredBearerWhenDiallingLe) {
-    FakeBearer ops;
-    BearerSupervisor sup(ops, true);
-
-    sup.tick(0);
-    sup.tick(1);
-    sup.tick(1 + BEARER_SETTLE_SECONDS);
-    ASSERT_EQ(ops.le_attempts, 1) << "the LE attempt this is about never happened";
-
-    for (const auto& choice : ops.preferred)
-        EXPECT_NE(choice, "le") << "raced the async LE connect by rewriting PreferredBearer under it";
-
-    // Classic still selects it, and must leave it there rather than clearing it.
-    ASSERT_FALSE(ops.preferred.empty());
-    EXPECT_EQ(ops.preferred.back(), "bredr");
 }
 
 TEST(BearerSupervisor, ClassicBackoffGrowsAndCaps) {
@@ -301,7 +277,6 @@ TEST(BearerSupervisor, StandsDownWhenDeviceIsUnpaired) {
     EXPECT_FALSE(sup.status().device_paired);
     EXPECT_EQ(ops.classic_attempts, 0) << "must not dial an unpaired device";
     EXPECT_EQ(ops.le_attempts, 0);
-    EXPECT_TRUE(ops.preferred.empty()) << "must not touch PreferredBearer before a bond exists";
 }
 
 // Forbidden and Busy look similar but call for opposite advice. Reporting a
@@ -611,9 +586,15 @@ TEST(BearerSupervisor, AlternatesBetweenDiallingAndSoliciting) {
     EXPECT_TRUE(sup.status().le_dialling) << "the dial window should come first";
     EXPECT_EQ(ops.le_attempts, 1);
 
-    // The registration never completes. The phase must still end.
+    // The clock runs out while BlueZ is still connecting. Soliciting now would
+    // abort that connect, so the window stays open until the reply lands.
     now += LE_DIAL_WINDOW_SECONDS;
     sup.tick(now);
+    EXPECT_TRUE(sup.status().le_dialling) << "solicited on top of a dial that was still in flight";
+
+    // connect_le() abandons the call at its own timeout, which is what ends it.
+    ops.outstanding = false;
+    sup.tick(++now);
     EXPECT_FALSE(sup.status().le_dialling) << "deadlocked: an open registration froze the dial phase";
 
     // No connect may be issued anywhere in the solicitation window.
@@ -857,4 +838,83 @@ TEST(BearerSupervisor, ASuccessfulLeLinkClearsTheBackoffItGrew) {
     sup.tick(now);
     EXPECT_EQ(ops.le_attempts, attempts + 1) << "sat out a backoff inherited from a previous outage";
     EXPECT_EQ(sup.status().le_backoff, BEARER_BACKOFF_MIN_SECONDS);
+}
+
+// The advice threshold names the message, not the end of the retry. Letting it
+// gate the loop meant one daemon lifetime got six LE attempts and then never
+// dialled again -- the "worked all morning, then stopped for good" report.
+TEST(BearerSupervisor, KeepsDiallingPastTheAdviceThreshold) {
+    FakeBearer ops;
+    ops.le_succeeds = false;
+    ops.le_error = "GDBus.Error:org.bluez.Error.Failed: Connection timed out";
+    BearerSupervisor sup(ops, true);
+
+    int64_t now = 0;
+    sup.tick(now);
+    sup.tick(++now);
+    now += BEARER_SETTLE_SECONDS;
+
+    // Well past the threshold, over many dial/solicit cycles.
+    const int64_t cycle = LE_DIAL_WINDOW_SECONDS + LE_SOLICIT_WINDOW_SECONDS;
+    for (int i = 0; i < 20; ++i) {
+        sup.tick(now);
+        now += cycle;
+    }
+    EXPECT_GT(ops.le_attempts, LE_ATTEMPTS_BEFORE_ADVICE) << "stopped dialling for good";
+    EXPECT_NE(sup.status().reason.find("not answering on LE"), std::string::npos);
+}
+
+// A dial that BlueZ has not answered yet must keep the solicitation off the air:
+// raising an advert mid-connect is what produced le-connection-abort-by-local on
+// every cycle, so the phone was never dialled and never solicited cleanly.
+TEST(BearerSupervisor, HoldsTheSolicitationOffWhileADialIsInFlight) {
+    class ListeningBearer : public FakeBearer {
+    public:
+        ConnectResult connect_le(std::string&) override {
+            ++le_attempts;
+            outstanding = true;
+            return ConnectResult::Requested;
+        }
+    } ops;
+
+    BearerSupervisor sup(ops, true);
+    int64_t now = 0;
+    sup.tick(now);
+    sup.tick(++now);
+    now += BEARER_SETTLE_SECONDS;
+    sup.tick(now);
+    ASSERT_TRUE(ops.outstanding);
+
+    const int64_t cycle = LE_DIAL_WINDOW_SECONDS + LE_SOLICIT_WINDOW_SECONDS;
+    for (int64_t t = now; t < now + 3 * cycle; t += BEARER_POLL_SECONDS) {
+        sup.tick(t);
+        ASSERT_TRUE(sup.status().le_dialling) << "solicited over an outstanding dial at t=" << t;
+    }
+}
+
+// LE and BR/EDR back off to different ceilings on purpose. The LE failure this
+// recovers from is usually cleared by the user cycling Bluetooth on the phone,
+// and BR/EDR's five-minute ceiling meant a phone that had just been fixed still
+// looked broken for minutes. A dial is cheap now that one is never issued while
+// another is outstanding.
+TEST(BearerSupervisor, LeBacksOffLessFarThanClassic) {
+    static_assert(LE_BACKOFF_MAX_SECONDS < BEARER_BACKOFF_MAX_SECONDS);
+
+    FakeBearer ops;
+    ops.le_succeeds = false;
+    ops.le_error = "org.bluez.Error.AuthenticationFailed"; // not transient, so it grows
+    BearerSupervisor sup(ops, true);
+
+    int64_t now = 0;
+    sup.tick(now);
+    sup.tick(++now);
+    now += BEARER_SETTLE_SECONDS;
+
+    // Only the dial window issues attempts, so grow it one whole cycle at a time.
+    const int64_t cycle = LE_DIAL_WINDOW_SECONDS + LE_SOLICIT_WINDOW_SECONDS;
+    for (int i = 0; i < 20; ++i) {
+        sup.tick(now);
+        now += cycle;
+    }
+    EXPECT_EQ(sup.status().le_backoff, LE_BACKOFF_MAX_SECONDS) << "LE inherited the BR/EDR ceiling";
 }
