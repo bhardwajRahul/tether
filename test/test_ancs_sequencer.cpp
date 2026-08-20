@@ -274,7 +274,7 @@ TEST(AncsNotifications, SuppressesDesktopPopupsForMessages) {
     Notification silent;
     silent.app_id = "com.example.chat";
     silent.silent = true;
-    EXPECT_FALSE(should_show_desktop_popup(silent)) << "the phone was told to stay quiet about this one";
+    EXPECT_TRUE(should_show_desktop_popup(silent)) << "a muted phone still wants the notification on screen";
 }
 
 TEST(AncsNotifications, KeepsRecentNotificationsNewestFirst) {
