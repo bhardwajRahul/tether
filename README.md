@@ -1,4 +1,5 @@
 ![tether](docs/img/tether_header.png)
+![tether](docs/img/screenshot_messages.png)
 
 # Tether
 
