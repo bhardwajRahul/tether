@@ -2,9 +2,11 @@
 #include "tether/bluetooth/obex_transfer.hpp"
 #include "tether/log.hpp"
 
+#include <chrono>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <thread>
 #include <unistd.h>
 
 namespace tether::bluetooth {
@@ -20,6 +22,11 @@ namespace tether::bluetooth {
         constexpr int MAP_CALL_TIMEOUT_MS = 60000;
         constexpr int MAP_PUSH_CALL_TIMEOUT_MS = 15000;
         constexpr int MAP_PUSH_TIMEOUT_SECONDS = 30;
+        constexpr int MAP_GET_TIMEOUT_SECONDS = 15;
+        // obexd names the file before the transfer has written it, so it can
+        // still be a moment behind when the transfer settles.
+        constexpr int MAP_FILE_GRACE_SECONDS = 2;
+        constexpr int MAP_FILE_POLL_MS = 50;
 
         std::string variant_string(GVariant* value) {
             if (!value)
@@ -172,18 +179,43 @@ namespace tether::bluetooth {
         if (!reply)
             return take_error(error, err);
 
-        GVariant* props = g_variant_get_child_value(reply, 1);
-        GVariant* filename = g_variant_lookup_value(props, "Filename", G_VARIANT_TYPE_STRING);
+        const gchar* transfer_path = nullptr;
+        GVariant* props = nullptr;
+        g_variant_get(reply, "(&o@a{sv})", &transfer_path, &props);
+        const std::string transfer = transfer_path ? transfer_path : "";
+        GVariant* filename = props ? g_variant_lookup_value(props, "Filename", G_VARIANT_TYPE_STRING) : nullptr;
         const std::string path = filename ? g_variant_get_string(filename, nullptr) : "";
         if (filename)
             g_variant_unref(filename);
-        g_variant_unref(props);
+        if (props)
+            g_variant_unref(props);
         g_variant_unref(reply);
 
         if (path.empty()) {
             err = "transfer returned no filename";
             return false;
         }
+        if (transfer.empty()) {
+            err = "obexd returned no transfer object";
+            return false;
+        }
+
+        std::error_code ec;
+        const TransferState state = wait_for_transfer(state_->bus, transfer, MAP_GET_TIMEOUT_SECONDS);
+        if (state == TransferState::Error) {
+            err = "message transfer failed";
+            std::filesystem::remove(path, ec);
+            return false;
+        }
+        if (state == TransferState::Active) {
+            err = "message transfer timed out";
+            std::filesystem::remove(path, ec);
+            return false;
+        }
+
+        const auto grace = std::chrono::steady_clock::now() + std::chrono::seconds(MAP_FILE_GRACE_SECONDS);
+        while (!std::filesystem::exists(path, ec) && std::chrono::steady_clock::now() < grace)
+            std::this_thread::sleep_for(std::chrono::milliseconds(MAP_FILE_POLL_MS));
 
         std::ifstream in(path, std::ios::binary);
         if (!in.is_open()) {
@@ -191,6 +223,9 @@ namespace tether::bluetooth {
             return false;
         }
         std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        in.close();
+        std::filesystem::remove(path, ec);
+
         out = parse_bmessage(text);
         if (!out.valid) {
             err = "unparseable bMessage";

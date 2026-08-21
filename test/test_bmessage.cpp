@@ -486,6 +486,20 @@ TEST(MessageStore, PhoneCopySupersedesTheLocalEcho) {
     EXPECT_EQ(messages[0].handle, "m9") << "the phone's copy is the one with a usable handle";
 }
 
+// A MAP listing reports the body with its line breaks flattened to spaces, so
+// the phone's copy of a multi-line reply never matches the local echo byte for
+// byte. Comparing the text alone is what keeps it from showing up twice.
+TEST(MessageStore, MultiLineEchoSurvivesAFlattenedPhoneCopy) {
+    MessageStore store;
+    ASSERT_TRUE(store.add(local_send("tel:+1111", "on my way\nsee you soon", 1000)));
+    ASSERT_TRUE(store.add(phone_copy("m9", "tel:+1111", "on my way see you soon", 1005)));
+
+    EXPECT_EQ(store.size(), 1u);
+    auto messages = store.messages("tel:+1111");
+    ASSERT_EQ(messages.size(), 1u);
+    EXPECT_EQ(messages[0].handle, "m9");
+}
+
 TEST(MessageStore, UnrelatedOutgoingMessagesAreNotCollapsed) {
     MessageStore store;
     store.add(local_send("tel:+1111", "on my way", 1000));
@@ -542,4 +556,46 @@ TEST(BMessageParse, LeavesAnUntaggedAddressAlone) {
                                       "END:BMSG\r\n");
     ASSERT_TRUE(m.valid);
     EXPECT_EQ(m.originator.email, "ab@icloud.com");
+}
+
+namespace {
+
+    // Same message in each of the three line endings a phone might use, with a
+    // two-line body.
+    std::string two_line_bmessage(const std::string& eol) {
+        const std::string lines[] = {"BEGIN:BMSG",
+                                     "VERSION:1.0",
+                                     "STATUS:UNREAD",
+                                     "TYPE:SMS_GSM",
+                                     "FOLDER:telecom/msg/inbox",
+                                     "BEGIN:VCARD",
+                                     "VERSION:2.1",
+                                     "TEL:+15551234567",
+                                     "END:VCARD",
+                                     "BEGIN:BENV",
+                                     "BEGIN:BBODY",
+                                     "CHARSET:UTF-8",
+                                     "BEGIN:MSG",
+                                     "first line",
+                                     "second line",
+                                     "END:MSG",
+                                     "END:BBODY",
+                                     "END:BENV",
+                                     "END:BMSG"};
+        std::string out;
+        for (const auto& line : lines)
+            out += line + eol;
+        return out;
+    }
+
+} // namespace
+
+// The body is what the conversation shows, so its line breaks have to survive
+// the parser whichever ending the phone wrote them with.
+TEST(BMessage, MultiLineBodyKeepsItsLineBreaks) {
+    for (const std::string& eol : {std::string("\r\n"), std::string("\n"), std::string("\r")}) {
+        const BMessage parsed = parse_bmessage(two_line_bmessage(eol));
+        ASSERT_TRUE(parsed.valid);
+        EXPECT_EQ(parsed.body, "first line\nsecond line");
+    }
 }

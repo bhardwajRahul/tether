@@ -10,6 +10,7 @@
 #include "tether/bluetooth/pbap_session.hpp"
 #include "tether/log.hpp"
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -228,6 +229,10 @@ namespace tether::bluetooth {
         // notices. Consecutive listing failures are the cheapest liveness signal.
         constexpr int MAP_FAILURES_BEFORE_REOPEN = 3;
         constexpr int MESSAGE_LIST_MAX = 200;
+        // Bodies are fetched one OBEX Get at a time on the connection thread,
+        // which also has ANCS and the bearer supervisor. Needs cap to keep the
+        // first listing of a full mailbox from stalling all of it
+        constexpr size_t MESSAGE_BODY_FETCH_MAX = 20;
         constexpr int SUPERVISOR_TICK_SECONDS = 1;
 
         // Whether the controller can carry ANCS right now. Re-read rather than
@@ -736,22 +741,66 @@ namespace tether::bluetooth {
             }
         }
 
-        std::vector<Message> fresh;
+        // A listing reports the message text in Subject, which is a preview.
+        // Line breaks arrive flattened to spaces and a long one is cut. The
+        // bMessage is the only source of the real body, so every message not
+        // seen before costs one OBEX Get.
+        struct Pending {
+            Message message;
+            const MapListing* listing;
+        };
+
+        std::vector<Pending> unseen;
         {
             std::lock_guard<std::mutex> lock(g_messages_mutex);
             for (const auto& listing : listings) {
+                Message message = message_from_listing(listing);
+                if (message.thread_key.empty())
+                    continue;
+                if (!g_messages.find(message.handle)) {
+                    unseen.push_back({std::move(message), &listing});
+                    continue;
+                }
+                g_messages.add(message);
+                g_messages.set_read(message.handle, message.read);
+            }
+        }
+
+        // Newest first, so when the cap defers part of a backfill the messages
+        // the user is looking at are the ones that get their real body now.
+        std::sort(unseen.begin(), unseen.end(), [](const Pending& a, const Pending& b) {
+            return a.message.timestamp > b.message.timestamp;
+        });
+        if (unseen.size() > MESSAGE_BODY_FETCH_MAX)
+            unseen.resize(MESSAGE_BODY_FETCH_MAX);
+
+        for (auto& pending : unseen) {
+            BMessage parsed;
+            std::string body_err;
+            if (session->fetch_bmessage(pending.listing->handle, parsed, body_err))
+                pending.message.body = parsed.body;
+            else
+                debug::log(DEBUG,
+                           "bluetooth: no bMessage for {} ({}); keeping the listing preview",
+                           pending.message.handle,
+                           body_err);
+        }
+
+        std::vector<Message> fresh;
+        {
+            std::lock_guard<std::mutex> lock(g_messages_mutex);
+            for (auto& pending : unseen) {
+                const MapListing& listing = *pending.listing;
+                Message& message = pending.message;
+
                 // raw, before anything here can correct or discard it
-                if ((listing.sent || is_outgoing_folder(listing.folder)) && !g_messages.find(listing.handle))
+                if (listing.sent || is_outgoing_folder(listing.folder))
                     debug::log(DEBUG,
                                "bluetooth: phone lists sent msg folder='{}' recipient=[{}] sender=[{}] handle={}",
                                listing.folder,
                                listing.recipient_address,
                                listing.sender_address,
                                listing.handle);
-
-                Message message = message_from_listing(listing);
-                if (message.thread_key.empty())
-                    continue;
 
                 // MAP gives a group message one sender and no conversation
                 // identifier. The correlated Messages notification is the only
