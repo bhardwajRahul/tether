@@ -1,5 +1,7 @@
 #include "ui_util.hpp"
 
+#include "tray.hpp"
+
 namespace tether::ui {
 
     namespace {
@@ -183,6 +185,8 @@ namespace tether::ui {
         // off the strip, so it lives in the tooltip. The Devices page shows it
         // in full.
         gtk_widget_set_tooltip_text(r.box, detail.empty() ? state.c_str() : (state + "\n" + detail).c_str());
+
+        tray_set_route(route, ok, detail);
     }
 
 } // namespace tether::ui

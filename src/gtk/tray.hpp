@@ -1,0 +1,25 @@
+#pragma once
+
+#include "ui_util.hpp"
+
+#include <string>
+
+namespace tether::ui {
+
+    // Publishes a StatusNotifierItem. A desktop with no tray never claims it.
+    void tray_init();
+
+    // Mirrors set_route_status; the tooltip is rebuilt from both routes at once.
+    void tray_set_route(Route route, bool ok, const std::string& detail);
+
+    // Total unread across threads. Drives the badged icon and a tooltip line.
+    void tray_set_unread(int count);
+
+    // Repaints from cached state, for when the daemon returns before any route event.
+    void tray_refresh();
+
+    // False means the close button quits, as it always has.
+    bool tray_close_to_tray();
+    void tray_set_close_to_tray(bool enabled);
+
+} // namespace tether::ui

@@ -1,4 +1,5 @@
 #include "daemon_client.hpp"
+#include "tray.hpp"
 #include "ui_util.hpp"
 
 #include <cerrno>
@@ -183,7 +184,10 @@ namespace tether::ui {
             daemon_send({{"command", "bt_connection"}});
             daemon_send({{"command", "bt_status"}});
             daemon_send({{"command", "bt_list_devices"}});
+            // primes the tray unread count
+            daemon_send({{"command", "bt_list_threads"}});
             set_status_main("Daemon Online");
+            tray_refresh();
             return G_SOURCE_REMOVE;
         }
 

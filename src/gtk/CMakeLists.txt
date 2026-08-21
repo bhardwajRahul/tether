@@ -8,6 +8,7 @@ add_executable(tether-gtk
     devices_view.cpp
     messages_view.cpp
     notifications_view.cpp
+    tray.cpp
 )
 
 target_include_directories(tether-gtk PRIVATE ${GTK3_INCLUDE_DIRS})
@@ -29,5 +30,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tether-gtk.desktop
 
 foreach(SIZE 16 32 48 64 128 256 512 1024)
     install(FILES icons/${SIZE}x${SIZE}/tether.png
+                  icons/${SIZE}x${SIZE}/tether-offline.png
+                  icons/${SIZE}x${SIZE}/tether-unread.png
             DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/${SIZE}x${SIZE}/apps)
 endforeach()
