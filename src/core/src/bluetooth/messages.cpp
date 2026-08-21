@@ -1,6 +1,7 @@
 #include "tether/bluetooth/messages.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdlib>
 
 namespace tether::bluetooth {
@@ -15,6 +16,24 @@ namespace tether::bluetooth {
             if (!party.tel.empty())
                 return normalize_phone(party.tel);
             return normalize_email(party.email);
+        }
+
+        // Every run of whitespace becomes one space, and the ends are dropped.
+        std::string collapse_whitespace(const std::string& text) {
+            std::string out;
+            bool pending = false;
+            for (unsigned char c : text) {
+                if (std::isspace(c)) {
+                    pending = !out.empty();
+                    continue;
+                }
+                if (pending) {
+                    out += ' ';
+                    pending = false;
+                }
+                out += static_cast<char>(c);
+            }
+            return out;
         }
 
     } // namespace
@@ -48,7 +67,11 @@ namespace tether::bluetooth {
             const Message& existing = it->second;
             if (!existing.outgoing || !is_local_handle(existing.handle))
                 continue;
-            if (existing.thread_key != arrived.thread_key || existing.body != arrived.body)
+            // The phone's copy is not byte-identical to what was typed. MAP
+            // listing reports the body with its line breaks flattened to
+            // spaces, so only the text itself can be compared.
+            if (existing.thread_key != arrived.thread_key ||
+                collapse_whitespace(existing.body) != collapse_whitespace(arrived.body))
                 continue;
             if (std::llabs(existing.timestamp - arrived.timestamp) > LOCAL_ECHO_WINDOW_SECONDS)
                 continue;
@@ -174,7 +197,7 @@ namespace tether::bluetooth {
             {"thread", thread.key},
             {"name", thread.display_name},
             {"address", thread.peer_address},
-            {"preview", thread.last_body},
+            {"preview", collapse_whitespace(thread.last_body)},
             {"timestamp", thread.last_timestamp},
             {"unread", thread.unread},
             {"count", thread.count},

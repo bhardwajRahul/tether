@@ -26,22 +26,19 @@ namespace tether::bluetooth {
             return text;
         }
 
-        // Splits on LF and drops a trailing CR, so CRLF and LF payloads parse the
-        // same way.
+        // Splits on CRLF, LF, or a bare CR, so a payload with any of the three
+        // parses the same way.
         std::vector<std::string> split_lines(const std::string& text) {
             std::vector<std::string> lines;
             size_t start = 0;
             while (start <= text.size()) {
-                size_t nl = text.find('\n', start);
+                size_t nl = text.find_first_of("\r\n", start);
                 if (nl == std::string::npos) {
                     lines.push_back(text.substr(start));
                     break;
                 }
-                std::string line = text.substr(start, nl - start);
-                if (!line.empty() && line.back() == '\r')
-                    line.pop_back();
-                lines.push_back(std::move(line));
-                start = nl + 1;
+                lines.push_back(text.substr(start, nl - start));
+                start = nl + (text[nl] == '\r' && nl + 1 < text.size() && text[nl + 1] == '\n' ? 2 : 1);
             }
             return lines;
         }
@@ -380,8 +377,8 @@ namespace tether::bluetooth {
             out += "\r\n";
         }
         // split_lines yields a trailing empty element for a body ending in a
-        // newline; drop the extra break it would introduce.
-        if (!body.empty() && body.back() != '\n' && out.size() >= 2)
+        // line break; drop the extra break it would introduce.
+        if (!body.empty() && body.back() != '\n' && body.back() != '\r' && out.size() >= 2)
             out.erase(out.size() - 2);
         return out;
     }
