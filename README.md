@@ -14,6 +14,11 @@
 
 [![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/tether-linux-companion/id6762097135)
 
+[![Arch Linux](https://github.com/zackb/tether/actions/workflows/arch.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/arch.yml)
+[![Fedora](https://github.com/zackb/tether/actions/workflows/fedora.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/fedora.yml)
+[![Debian](https://github.com/zackb/tether/actions/workflows/debian.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/debian.yml)
+[![Ubuntu](https://github.com/zackb/tether/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/ubuntu.yml)
+
 ![tether](docs/img/screenshot_messages.png)
 
 ## Features
@@ -84,17 +89,19 @@ yay -S tether
 On Debian/Ubuntu:
 
 ```bash
-sudo apt install build-essential cmake pkg-config \
+sudo apt install build-essential cmake ninja-build pkg-config git \
     libwayland-dev libavahi-client-dev libssl-dev \
-    libglib2.0-dev libgtk-3-dev libgtk-layer-shell-dev libnotify-dev
+    libglib2.0-dev libgtk-3-dev libgtk-layer-shell-dev libnotify-dev \
+    npm zip
 ```
 
 On Fedora:
 
 ```bash
-sudo dnf install gcc-c++ cmake pkgconf-pkg-config \
+sudo dnf install gcc-c++ cmake ninja-build pkgconf-pkg-config git \
     wayland-devel avahi-devel openssl-devel \
-    glib2-devel gtk3-devel gtk-layer-shell-devel libnotify-devel
+    glib2-devel gtk3-devel gtk-layer-shell-devel libnotify-devel \
+    npm zip
 ```
 
 ```bash
