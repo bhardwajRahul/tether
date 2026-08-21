@@ -81,6 +81,22 @@ yay -S tether
 
 ### Build from Source
 
+On Debian/Ubuntu:
+
+```bash
+sudo apt install build-essential cmake pkg-config \
+    libwayland-dev libavahi-client-dev libssl-dev \
+    libglib2.0-dev libgtk-3-dev libgtk-layer-shell-dev libnotify-dev
+```
+
+On Fedora:
+
+```bash
+sudo dnf install gcc-c++ cmake pkgconf-pkg-config \
+    wayland-devel avahi-devel openssl-devel \
+    glib2-devel gtk3-devel gtk-layer-shell-devel libnotify-devel
+```
+
 ```bash
 # Clone the repository
 git clone https://github.com/zackb/tether.git
