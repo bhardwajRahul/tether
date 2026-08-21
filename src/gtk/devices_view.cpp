@@ -597,8 +597,8 @@ namespace tether::ui {
             gtk_container_set_border_width(GTK_CONTAINER(box), 12);
 
             const char* icon_name =
-                paired ? (online ? "network-cellular-connected-symbolic" : "network-cellular-offline-symbolic")
-                       : "dialog-information-symbolic";
+                paired ? (online ? "network-wireless-signal-excellent-symbolic" : "network-wireless-offline-symbolic")
+                       : "network-wireless-acquiring-symbolic";
             GtkWidget* icon = gtk_image_new_from_icon_name(icon_name, GTK_ICON_SIZE_LARGE_TOOLBAR);
             gtk_box_pack_start(GTK_BOX(box), icon, FALSE, FALSE, 0);
 
@@ -729,22 +729,11 @@ namespace tether::ui {
             discovered_rows.push_back(r);
         }
 
-        if (!connected_rows.empty()) {
-            gtk_list_box_insert(GTK_LIST_BOX(g_devices.list_devices), create_header_row("CONNECTED"), -1);
-            for (auto* r : connected_rows)
-                gtk_list_box_insert(GTK_LIST_BOX(g_devices.list_devices), r, -1);
-        }
-
-        if (!remembered_rows.empty()) {
-            gtk_list_box_insert(GTK_LIST_BOX(g_devices.list_devices), create_header_row("REMEMBERED"), -1);
-            for (auto* r : remembered_rows)
-                gtk_list_box_insert(GTK_LIST_BOX(g_devices.list_devices), r, -1);
-        }
-
-        if (!discovered_rows.empty()) {
-            gtk_list_box_insert(GTK_LIST_BOX(g_devices.list_devices), create_header_row("DISCOVERED"), -1);
-            for (auto* r : discovered_rows)
-                gtk_list_box_insert(GTK_LIST_BOX(g_devices.list_devices), r, -1);
+        if (!connected_rows.empty() || !remembered_rows.empty() || !discovered_rows.empty()) {
+            gtk_list_box_insert(GTK_LIST_BOX(g_devices.list_devices), create_header_row("WI-FI"), -1);
+            for (const auto* rows : {&connected_rows, &remembered_rows, &discovered_rows})
+                for (auto* r : *rows)
+                    gtk_list_box_insert(GTK_LIST_BOX(g_devices.list_devices), r, -1);
         }
 
         std::vector<GtkWidget*> bt_rows;
