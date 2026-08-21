@@ -22,7 +22,7 @@ case ${ID_LIKE:-$ID} in
             gcc-c++ cmake ninja-build git pkgconf-pkg-config \
             wayland-devel avahi-devel openssl-devel glib2-devel \
             gtk3-devel gtk-layer-shell-devel libnotify-devel \
-            npm zip
+            npm zip rpm-build
         ;;
     *debian*|*ubuntu*)
         export DEBIAN_FRONTEND=noninteractive
