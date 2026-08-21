@@ -216,7 +216,7 @@ int main(int argc, char** argv) {
                 });
         }
 
-        connections.start(bt_config.device_address, bt_config.ancs_enabled);
+        connections.start(tether::bluetooth::supervised_address(bt_config), bt_config.ancs_enabled);
     } else {
         debug::log(INFO, "Bluetooth unavailable; messages and notifications are disabled");
     }

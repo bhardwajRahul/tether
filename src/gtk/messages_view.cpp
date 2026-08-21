@@ -1,5 +1,7 @@
 #include "messages_view.hpp"
+
 #include "daemon_client.hpp"
+#include "tray.hpp"
 #include "ui_util.hpp"
 
 #include <cstring>
@@ -736,6 +738,11 @@ namespace tether::ui {
     bool messages_view_handle_event(const nlohmann::json& event) {
         const std::string command = event.value("command", "");
         if (command == "bt_threads") {
+            int unread = 0;
+            if (event.contains("threads") && event["threads"].is_array())
+                for (const auto& thread : event["threads"])
+                    unread += thread.value("unread", 0);
+            tray_set_unread(unread);
             show_threads(event);
             return true;
         }
@@ -748,13 +755,10 @@ namespace tether::ui {
             return false;
         }
         if (command == "bt_message") {
-            // A new message changes both the thread list and, when it lands in
-            // the open conversation, the conversation itself. Refreshing while
-            // the view is hidden would just be traffic nobody sees; switching
-            // back re-reads everything anyway.
+            // thread list is re-read even while hidden for tray unread count
+            request_threads();
             if (!g_messages.visible)
                 return true;
-            request_threads();
             if (event.value("thread", "") == g_messages.selected_thread)
                 request_messages(g_messages.selected_thread);
             return true;

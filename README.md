@@ -67,6 +67,8 @@ A unified WebExtension that works in Thunderbird/Betterbird and Firefox/Chromium
 
 The extension communicates with `tetherd` via native messaging. This allows users to autofill OTP codes into websites when the email arrives. 
 
+## Installation
+
 ### iOS App
 - Get the app: [Tether - Linux Companion](https://apps.apple.com/us/app/tether-linux-companion/id6762097135)
 
@@ -75,8 +77,6 @@ The extension communicates with `tetherd` via native messaging. This allows user
 
 ### Mail Extension
 - Thunderbird: [Tether Mail Extension](https://addons.thunderbird.net/en-US/thunderbird/addon/tether-mail-extension/)
-
-## Installation
 
 ### Arch Linux
 

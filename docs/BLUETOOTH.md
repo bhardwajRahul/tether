@@ -129,6 +129,52 @@ checks the daemon does not make.
 | The status says the iPhone is not answering on LE, and its permission is on | The phone's Bluetooth stack is wedged, which the granted permission does not prevent | Turn Bluetooth off and back on **on the iPhone**. Re-pairing and re-toggling the permission do not clear this |
 | Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
 | A group conversation cannot be replied to | Working as designed until the route is unambiguous | The thread's `reply_reason` says which condition failed |
+| The iPhone's audio moves to the computer when Tether connects | The machine advertises itself as a Bluetooth speaker/headset, and iOS routes to it. Not caused by Tether beyond bringing the link up | See "Keeping the phone's audio on the phone" below |
+
+### Keeping the phone's audio on the phone
+
+Once the Classic link is up, the iPhone's calls, music, and system sounds play on the
+computer instead of the phone. PipeWire registers A2DP sink and HFP audio-gateway
+endpoints for every adapter, so the machine advertises itself as a speaker and headset,
+and iOS routes to a bonded device that offers one. Tether only brings the link up; the
+routing decision is the phone's. Every desktop with Bluetooth audio behaves this way.
+
+To confirm it, with the phone connected:
+
+```bash
+pactl list cards
+```
+
+The phone appears as `bluez_card.<ADDR>` with `Active Profile: audio-gateway`.
+
+The fix is to stop advertising the roles a phone connects to, while keeping the ones
+headphones use. On WirePlumber 0.5 and later, write
+`~/.config/wireplumber/wireplumber.conf.d/51-no-phone-audio.conf`:
+
+```
+monitor.bluez.properties = {
+  bluez5.roles = [ a2dp_source hfp_ag bap_source ]
+}
+```
+
+Then `systemctl --user restart wireplumber` and reconnect the phone. Role names are
+from this machine's perspective, not the remote device's: `a2dp_source` and `hfp_ag`
+are the roles that drive headphones, `a2dp_sink` and `hfp_hf` are the roles that make
+the machine a destination for a phone. Dropping the second pair leaves the iPhone
+nothing to route to, so its audio stays local, while headphones keep both A2DP
+playback and the HFP microphone. `bap_source` keeps LE Audio playback; drop it too if
+nothing here uses LE Audio. On WirePlumber 0.4 the same setting goes in
+`~/.config/wireplumber/bluetooth.lua.d/51-no-phone-audio.lua` as
+`bluez_monitor.properties["bluez5.roles"]`.
+
+Two things that look like fixes and are not:
+
+- `pactl set-card-profile bluez_card.<ADDR> off` stops the computer playing the audio,
+  and WirePlumber remembers it in `~/.local/state/wireplumber/default-profile`, but the
+  iPhone still believes it is routed to the computer. The audio goes nowhere and the
+  phone is silent.
+- `device.disabled = true` in a `monitor.bluez.rules` entry does nothing. Only the
+  alsa, v4l2, and libcamera monitors honour that property.
 
 ### Reporting a problem
 

@@ -3,6 +3,7 @@
 tether-gtk \- Graphical interface for Tether
 .SH SYNOPSIS
 .B tether-gtk
+[\fB\-\-tray\fR]
 .SH DESCRIPTION
 .B tether-gtk
 is a GTK-based graphical application for managing Tether connections and devices.
@@ -18,6 +19,11 @@ View clipboard sync history and status.
 .PP
 If the \fBtetherd\fR(8) daemon is not running, \fBtether-gtk\fR will attempt to
 start it automatically.
+.SH OPTIONS
+.TP
+.B \-\-tray
+Start without showing the window. The application is reachable only from its
+tray icon until \fBOpen Tether\fR is chosen.
 .SH SEE ALSO
 .BR tether (1),
 .BR tetherd (8)

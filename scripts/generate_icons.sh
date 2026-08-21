@@ -132,6 +132,18 @@ mkdir -p "$GTK_ICON_DIR"
 for size in 16 32 48 64 128 256 512 1024; do
     mkdir -p "$GTK_ICON_DIR/${size}x${size}"
     convert "$SOURCE" -resize "${size}x${size}" "$GTK_ICON_DIR/${size}x${size}/tether.png"
+    # Tray icon for "nothing is connected". Colour is the only thing readable at
+    # panel size, so the offline state is the same mark drained of it.
+    convert "$SOURCE" -resize "${size}x${size}" -colorspace Gray -brightness-contrast -10x-25 \
+        "$GTK_ICON_DIR/${size}x${size}/tether-offline.png"
+    # Tray icon for unread messages. A dot, not a count: digits are illegible at
+    # the 22px most panels render.
+    dot_x=$(awk "BEGIN{printf \"%.0f\", $size*0.74}")
+    dot_y=$(awk "BEGIN{printf \"%.0f\", $size*0.26}")
+    dot_edge=$(awk "BEGIN{printf \"%.0f\", $size*0.74+$size*0.16}")
+    convert "$GTK_ICON_DIR/${size}x${size}/tether.png" \
+        -fill "#e01b24" -stroke none -draw "circle $dot_x,$dot_y $dot_edge,$dot_y" \
+        "$GTK_ICON_DIR/${size}x${size}/tether-unread.png"
 done
 
 echo "All icons generated successfully."

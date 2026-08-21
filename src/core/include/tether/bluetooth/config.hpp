@@ -29,6 +29,8 @@ namespace tether::bluetooth {
         bool ancs_content_enabled = true;
         // Group replies are off until deliberately enabled
         bool group_messages_enabled = false;
+        // When off, supervision runs against no device, so the daemon stops re-dialling
+        bool enabled = true;
 
         bool operator==(const Config&) const = default;
     };
@@ -40,6 +42,9 @@ namespace tether::bluetooth {
 
     Config load_config();
     bool save_config(const Config& config);
+
+    // The address supervision should run against: none while Bluetooth is off.
+    std::string supervised_address(const Config& config);
 
     // exposed for tests without touching fs
     std::string serialize_config(const Config& config);
