@@ -8,16 +8,16 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[![Arch Linux](https://github.com/zackb/tether/actions/workflows/arch.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/arch.yml)
-[![Fedora](https://github.com/zackb/tether/actions/workflows/fedora.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/fedora.yml)
-[![Debian](https://github.com/zackb/tether/actions/workflows/debian.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/debian.yml)
-[![Ubuntu](https://github.com/zackb/tether/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/ubuntu.yml)
-
 [![Get the Firefox Add-on](https://img.shields.io/badge/Firefox-Add--on-orange.svg)](https://addons.mozilla.org/en-US/firefox/addon/tether-browser-extension/)
 
 [![Get the Thunderbird / Betterbird Add-on](https://img.shields.io/badge/Thunderbird-Add--on-orange.svg)](https://addons.thunderbird.net/en-US/thunderbird/addon/tether-mail-extension/)
 
 [![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/tether-linux-companion/id6762097135)
+
+[![Arch Linux](https://github.com/zackb/tether/actions/workflows/arch.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/arch.yml)
+[![Fedora](https://github.com/zackb/tether/actions/workflows/fedora.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/fedora.yml)
+[![Debian](https://github.com/zackb/tether/actions/workflows/debian.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/debian.yml)
+[![Ubuntu](https://github.com/zackb/tether/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/ubuntu.yml)
 
 ![tether](docs/img/screenshot_messages.png)
 
