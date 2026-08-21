@@ -280,6 +280,7 @@ namespace tether {
         status["device_address"] = config.device_address;
         status["ancs_enabled"] = config.ancs_enabled;
         status["ancs_content_enabled"] = config.ancs_content_enabled;
+        status["enabled"] = config.enabled;
         if (!bluetooth::g_bluez) {
             status["capability"] = nullptr;
             status["adapters"] = nlohmann::json::array();
@@ -375,10 +376,11 @@ namespace tether {
                 config.ancs_enabled = true;
             else if (result.status == "paired")
                 config.ancs_enabled = false;
+            config.enabled = true;
             bluetooth::save_config(config);
             // Point supervision at the device we just bonded with.
             if (bluetooth::g_bt_connections)
-                bluetooth::g_bt_connections->set_device(config.device_address, config.ancs_enabled);
+                bluetooth::g_bt_connections->set_device(bluetooth::supervised_address(config), config.ancs_enabled);
         }
 
         g_bt_pair_busy = false;
@@ -743,7 +745,8 @@ namespace tether {
                         config.device_address = j["address"];
                         bluetooth::save_config(config);
                         if (bluetooth::g_bt_connections)
-                            bluetooth::g_bt_connections->set_device(config.device_address, config.ancs_enabled);
+                            bluetooth::g_bt_connections->set_device(bluetooth::supervised_address(config),
+                                                                    config.ancs_enabled);
                         broadcast_local_event(build_bt_status().dump());
                     } else if (j.contains("command") && j["command"] == "bt_list_threads") {
                         std::string payload = build_bt_threads().dump() + "\n";
@@ -854,7 +857,16 @@ namespace tether {
                         config.ancs_enabled = j.value("enabled", true);
                         bluetooth::save_config(config);
                         if (bluetooth::g_bt_connections)
-                            bluetooth::g_bt_connections->set_device(config.device_address, config.ancs_enabled);
+                            bluetooth::g_bt_connections->set_device(bluetooth::supervised_address(config),
+                                                                    config.ancs_enabled);
+                        broadcast_local_event(build_bt_status().dump());
+                    } else if (j.contains("command") && j["command"] == "bt_set_enabled") {
+                        auto config = bluetooth::load_config();
+                        config.enabled = j.value("enabled", true);
+                        bluetooth::save_config(config);
+                        if (bluetooth::g_bt_connections)
+                            bluetooth::g_bt_connections->set_device(bluetooth::supervised_address(config),
+                                                                    config.ancs_enabled);
                         broadcast_local_event(build_bt_status().dump());
                     } else if (j.contains("command") && j["command"] == "bt_set_ancs_content") {
                         auto config = bluetooth::load_config();

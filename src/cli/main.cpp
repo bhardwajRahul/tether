@@ -118,6 +118,7 @@ void print_help() {
               << "  --bt-unpair <addr>       Remove a Bluetooth bond.\n"
               << "  --bt-solicit             Re-advertise for ANCS so the iPhone shows its permission\n"
               << "                           toggles again, without removing the bond.\n"
+              << "  --bt-enable <on|off>     Connect to the iPhone over Bluetooth, or stop.\n"
               << "  --bt-ancs <on|off>       Turn notification mirroring on or off.\n"
               << "  --bt-ancs-content <on|off>  Mirror notification titles and bodies, not just the app.\n"
               << "  --bt-notifications       List mirrored iPhone notifications.\n"
@@ -206,6 +207,7 @@ static int print_bt_status(tether::Client& client) {
                 : "unknown");
     if (cap.value("bonded_device_present", false))
         fprintf(stdout, "Bond:       %s\n", cap.value("bond_has_le", false) ? "BR/EDR + LE" : "BR/EDR only");
+    fprintf(stdout, "Tether:     %s\n", resp.value("enabled", true) ? "connecting" : "off (--bt-enable on)");
 
     for (const auto& adapter : resp["adapters"]) {
         fprintf(stdout, "  %s  %s\n", adapter.value("address", "").c_str(), adapter.value("name", "").c_str());
@@ -574,6 +576,10 @@ int main(int argc, char* argv[]) {
                 arg_val2 = argv[++i];
         } else if (arg == "--bt-solicit") {
             action = "bt_solicit";
+        } else if (arg == "--bt-enable") {
+            action = "bt_enable";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
         } else if (arg == "--bt-ancs") {
             action = "bt_ancs";
             if (i + 1 < argc && argv[i + 1][0] != '-')
@@ -744,6 +750,25 @@ int main(int argc, char* argv[]) {
         return run_bt_transaction(client, action == "bt_pair" ? "bt_pair" : "bt_unpair", arg_val);
     } else if (action == "bt_solicit") {
         return run_bt_transaction(client, "bt_solicit");
+    } else if (action == "bt_enable") {
+        if (arg_val != "on" && arg_val != "off") {
+            debug::log(ERR, "Expected on or off, e.g. --bt-enable off\n");
+            return 1;
+        }
+        nlohmann::json request;
+        request["command"] = "bt_set_enabled";
+        request["enabled"] = arg_val == "on";
+        if (!client.send(request.dump() + "\n")) {
+            debug::log(ERR, "Could not reach the daemon.\n");
+            return 1;
+        }
+        if (arg_val == "on") {
+            fprintf(stdout, "Bluetooth enabled.\n");
+        } else {
+            fprintf(stdout,
+                    "Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
+                    "already up stays up until you disconnect it or the phone goes out of range.\n");
+        }
     } else if (action == "bt_ancs" || action == "bt_ancs_content") {
         const bool content = action == "bt_ancs_content";
         if (arg_val != "on" && arg_val != "off") {

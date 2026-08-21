@@ -46,6 +46,7 @@ TEST(BluetoothConfig, RoundTrips) {
     config.device_address = "60:57:C8:30:6A:F7";
     config.auth_strategy = AuthStrategy::ExplicitPair;
     config.ancs_enabled = false;
+    config.enabled = false;
 
     EXPECT_EQ(deserialize_config(serialize_config(config)), config);
 }
@@ -55,6 +56,19 @@ TEST(BluetoothConfig, DefaultsToConnectFirstAndAncsEnabled) {
     EXPECT_EQ(config.auth_strategy, AuthStrategy::ConnectFirst);
     EXPECT_TRUE(config.ancs_enabled);
     EXPECT_TRUE(config.device_address.empty());
+    // A config written before the toggle existed keeps connecting.
+    EXPECT_TRUE(config.enabled);
+}
+
+// Switching Bluetooth off supervises no device, which is what stops the daemon
+// re-dialling a link the user disconnected.
+TEST(BluetoothConfig, SupervisedAddressIsEmptyWhenDisabled) {
+    Config config;
+    config.device_address = "60:57:C8:30:6A:F7";
+    EXPECT_EQ(supervised_address(config), config.device_address);
+
+    config.enabled = false;
+    EXPECT_TRUE(supervised_address(config).empty());
 }
 
 // Connect-first is the default for a reason: a Linux-initiated Pair() can yield

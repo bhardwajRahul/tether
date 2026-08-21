@@ -57,6 +57,7 @@ namespace tether::ui {
             GtkWidget* lbl_bt_progress = nullptr;
             GtkWidget* btn_bt_pair = nullptr;
             GtkWidget* btn_bt_solicit = nullptr;
+            GtkWidget* chk_bt_enabled = nullptr;
             GtkWidget* chk_bt_ancs = nullptr;
             GtkWidget* chk_bt_content = nullptr;
             GtkWidget* btn_bt_unpair = nullptr;
@@ -116,6 +117,7 @@ namespace tether::ui {
             set_text(g_devices.lbl_welcome_bt, bt_note);
         }
 
+        void on_bt_enabled_toggled(GtkWidget* widget, gpointer);
         void on_bt_ancs_toggled(GtkWidget* widget, gpointer);
         void on_bt_content_toggled(GtkWidget* widget, gpointer);
 
@@ -125,6 +127,7 @@ namespace tether::ui {
             const bool paired = device && device->value("paired", false);
             const bool supervised = is_supervised_bt_device(address);
             const bool available = g_devices.bt_status.value("available", false);
+            const bool bt_on = g_devices.bt_status.value("enabled", true);
 
             set_markup(g_devices.lbl_bt_name, "<b>" + escape_markup(g_devices.selected_bt_name) + "</b>");
 
@@ -204,6 +207,10 @@ namespace tether::ui {
                 reason = "Not paired over Bluetooth yet.";
             } else if (!supervised) {
                 reason = "Tether is not using this device. Pair it to select it.";
+            } else if (!bt_on) {
+                // Supervision is idle while switched off, so its status would
+                // otherwise report no device selected.
+                reason = "Bluetooth is switched off for this iPhone.";
             } else {
                 reason = connection.value("profile_reason", "");
                 if (reason.empty())
@@ -221,9 +228,17 @@ namespace tether::ui {
 
             const bool ancs_on = g_devices.bt_status.value("ancs_enabled", true);
 
+            gtk_widget_set_visible(g_devices.chk_bt_enabled, available && supervised);
             gtk_widget_set_visible(g_devices.chk_bt_ancs, available && supervised);
             gtk_widget_set_visible(g_devices.chk_bt_content, available && supervised);
-            gtk_widget_set_sensitive(g_devices.chk_bt_content, ancs_on);
+            gtk_widget_set_sensitive(g_devices.chk_bt_ancs, bt_on);
+            gtk_widget_set_sensitive(g_devices.chk_bt_content, bt_on && ancs_on);
+
+            g_signal_handlers_block_by_func(
+                g_devices.chk_bt_enabled, reinterpret_cast<gpointer>(on_bt_enabled_toggled), nullptr);
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(g_devices.chk_bt_enabled), bt_on);
+            g_signal_handlers_unblock_by_func(
+                g_devices.chk_bt_enabled, reinterpret_cast<gpointer>(on_bt_enabled_toggled), nullptr);
 
             g_signal_handlers_block_by_func(
                 g_devices.chk_bt_ancs, reinterpret_cast<gpointer>(on_bt_ancs_toggled), nullptr);
@@ -357,6 +372,11 @@ namespace tether::ui {
 
             daemon_send({{"command", "bt_unpair"}, {"address", g_devices.selected_bt_address}});
             set_text(g_devices.lbl_bt_progress, "Removing the pairing\u2026");
+        }
+
+        void on_bt_enabled_toggled(GtkWidget* widget, gpointer) {
+            daemon_send({{"command", "bt_set_enabled"},
+                         {"enabled", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) == TRUE}});
         }
 
         // The advertisement that makes iOS reveal its Messages and Contacts
@@ -1106,6 +1126,14 @@ namespace tether::ui {
             gtk_box_pack_start(GTK_BOX(capabilities), *label, FALSE, FALSE, 0);
         }
         gtk_box_pack_start(GTK_BOX(bt_box), capabilities, FALSE, FALSE, 0);
+
+        g_devices.chk_bt_enabled = gtk_check_button_new_with_label("Connect to this iPhone over Bluetooth");
+        gtk_widget_set_tooltip_text(g_devices.chk_bt_enabled,
+                                    "Keep the Bluetooth link to the iPhone up, reconnecting whenever it drops. "
+                                    "Turning this off stops Tether reconnecting; a link that is already up stays "
+                                    "up until you disconnect it.");
+        g_signal_connect(g_devices.chk_bt_enabled, "toggled", G_CALLBACK(on_bt_enabled_toggled), nullptr);
+        gtk_box_pack_start(GTK_BOX(bt_box), g_devices.chk_bt_enabled, FALSE, FALSE, 0);
 
         // pairing that produced no LE half latches mirroring off, and this is the only way back to it without the CLI.
         g_devices.chk_bt_ancs = gtk_check_button_new_with_label("Mirror iPhone notifications");
