@@ -8,6 +8,11 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+[![Arch Linux](https://github.com/zackb/tether/actions/workflows/arch.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/arch.yml)
+[![Fedora](https://github.com/zackb/tether/actions/workflows/fedora.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/fedora.yml)
+[![Debian](https://github.com/zackb/tether/actions/workflows/debian.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/debian.yml)
+[![Ubuntu](https://github.com/zackb/tether/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/ubuntu.yml)
+
 [![Get the Firefox Add-on](https://img.shields.io/badge/Firefox-Add--on-orange.svg)](https://addons.mozilla.org/en-US/firefox/addon/tether-browser-extension/)
 
 [![Get the Thunderbird / Betterbird Add-on](https://img.shields.io/badge/Thunderbird-Add--on-orange.svg)](https://addons.thunderbird.net/en-US/thunderbird/addon/tether-mail-extension/)
@@ -84,17 +89,19 @@ yay -S tether
 On Debian/Ubuntu:
 
 ```bash
-sudo apt install build-essential cmake pkg-config \
+sudo apt install build-essential cmake ninja-build pkg-config git \
     libwayland-dev libavahi-client-dev libssl-dev \
-    libglib2.0-dev libgtk-3-dev libgtk-layer-shell-dev libnotify-dev
+    libglib2.0-dev libgtk-3-dev libgtk-layer-shell-dev libnotify-dev \
+    npm zip
 ```
 
 On Fedora:
 
 ```bash
-sudo dnf install gcc-c++ cmake pkgconf-pkg-config \
+sudo dnf install gcc-c++ cmake ninja-build pkgconf-pkg-config git \
     wayland-devel avahi-devel openssl-devel \
-    glib2-devel gtk3-devel gtk-layer-shell-devel libnotify-devel
+    glib2-devel gtk3-devel gtk-layer-shell-devel libnotify-devel \
+    npm zip
 ```
 
 ```bash
