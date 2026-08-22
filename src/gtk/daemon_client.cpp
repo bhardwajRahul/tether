@@ -1,6 +1,7 @@
 #include "daemon_client.hpp"
 #include "tray.hpp"
 #include "ui_util.hpp"
+#include <tether/i18n.hpp>
 
 #include <cerrno>
 #include <cstdio>
@@ -52,9 +53,9 @@ namespace tether::ui {
         void handle_disconnect() {
             stop_event_subscription();
             schedule_event_retry();
-            set_status_main("Daemon Offline");
-            set_route_status(Route::WiFi, false, "The Tether daemon is not running.");
-            set_route_status(Route::Bluetooth, false, "The Tether daemon is not running.");
+            set_status_main(_("Daemon Offline"));
+            set_route_status(Route::WiFi, false, _("The Tether daemon is not running."));
+            set_route_status(Route::Bluetooth, false, _("The Tether daemon is not running."));
             if (g_on_disconnect)
                 g_on_disconnect();
         }
@@ -159,9 +160,9 @@ namespace tether::ui {
                     }
                 }
                 schedule_event_retry();
-                set_status_main("Daemon Offline");
-                set_route_status(Route::WiFi, false, "The Tether daemon is not running.");
-                set_route_status(Route::Bluetooth, false, "The Tether daemon is not running.");
+                set_status_main(_("Daemon Offline"));
+                set_route_status(Route::WiFi, false, _("The Tether daemon is not running."));
+                set_route_status(Route::Bluetooth, false, _("The Tether daemon is not running."));
                 return G_SOURCE_REMOVE;
             }
 
@@ -186,7 +187,7 @@ namespace tether::ui {
             daemon_send({{"command", "bt_list_devices"}});
             // primes the tray unread count
             daemon_send({{"command", "bt_list_threads"}});
-            set_status_main("Daemon Online");
+            set_status_main(_("Daemon Online"));
             tray_refresh();
             return G_SOURCE_REMOVE;
         }

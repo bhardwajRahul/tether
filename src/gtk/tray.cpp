@@ -1,5 +1,7 @@
 #include "tray.hpp"
+
 #include "daemon_client.hpp"
+#include <tether/i18n.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -272,13 +274,14 @@ namespace tether::ui {
         std::string tooltip;
         for (Route route : {Route::WiFi, Route::Bluetooth}) {
             const RouteState& r = state(route);
-            tooltip += std::string(route_name(route)) + ": " +
-                       (r.ok ? "connected" : (r.detail.empty() ? "not connected" : r.detail)) + "\n";
+            const std::string status = r.ok ? _("connected") : r.detail.empty() ? _("not connected") : r.detail;
+            // TRANSLATORS: {} is a transport name, "Wi-Fi" or "Bluetooth".
+            tooltip += tether::tr_format(_("{}: {}"), route_name(route), status) + "\n";
         }
         if (!daemon_connected())
-            tooltip += "Daemon: not running\n";
+            tooltip += std::string(_("Daemon: not running")) + "\n";
         if (g_unread > 0)
-            tooltip += std::to_string(g_unread) + (g_unread == 1 ? " unread message\n" : " unread messages\n");
+            tooltip += tether::tr_format(P_("{} unread message", "{} unread messages", g_unread), g_unread) + "\n";
         if (!tooltip.empty())
             tooltip.pop_back();
 

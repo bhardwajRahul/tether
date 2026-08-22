@@ -1,5 +1,6 @@
 #include "tether/bluetooth/bearer_supervisor.hpp"
 #include "tether/log.hpp"
+#include <tether/i18n.hpp>
 
 #include <algorithm>
 
@@ -56,10 +57,11 @@ namespace tether::bluetooth {
             return is_transient(err) ? BEARER_BACKOFF_MIN_SECONDS : grow_backoff(current, ceiling);
         }
 
+        // Marked here, translated where it is read: gettext cannot run at namespace scope.
         constexpr const char* LE_PHONE_SILENT_ADVICE =
-            "The iPhone is not answering on LE. Its Bluetooth is wedged on its own side: turn Bluetooth off "
-            "and back on on the iPhone, which clears this even when Share System Notifications is already on. "
-            "Messages and contacts are unaffected.";
+            N_("The iPhone is not answering on LE. Its Bluetooth is wedged on its own side: turn Bluetooth off "
+               "and back on on the iPhone, which clears this even when Share System Notifications is already on. "
+               "Messages and contacts are unaffected.");
 
     } // namespace
 
@@ -150,23 +152,24 @@ namespace tether::bluetooth {
             // permissions already on, is wedged on its own side: nothing here
             // clears it, and saying "connecting" forever hides that.
             status_.reason = classic_failures_ >= CLASSIC_FAILURES_BEFORE_ADVICE && !status_.le_connected
-                                 ? "The iPhone keeps refusing the Bluetooth connection. Turn Bluetooth off and "
-                                   "back on on the iPhone — that clears it even when the permissions are already "
-                                   "on. Re-pairing is not the fix."
+                                 ? _("The iPhone keeps refusing the Bluetooth connection. Turn Bluetooth off and "
+                                     "back on on the iPhone — that clears it even when the permissions are already "
+                                     "on. Re-pairing is not the fix.")
                              : status_.le_connected
-                                 ? "Notifications are connected. Still reaching the iPhone for messages and contacts..."
-                                 : "Connecting to the iPhone over Bluetooth...";
+                                 ? _("Notifications are connected. Still reaching the iPhone for messages and "
+                                     "contacts...")
+                                 : _("Connecting to the iPhone over Bluetooth...");
             return !(status_ == previous);
         }
 
         // Classic is up. LE is only worth attempting once the ACL has settled.
         if (!ancs_enabled_) {
-            status_.reason = "Connected. Notification mirroring is disabled.";
+            status_.reason = _("Connected. Notification mirroring is disabled.");
             return !(status_ == previous);
         }
 
         if (!status_.le_available) {
-            status_.reason = "Connected. BlueZ is not exposing an LE bearer, so notifications are unavailable.";
+            status_.reason = _("Connected. BlueZ is not exposing an LE bearer, so notifications are unavailable.");
             return !(status_ == previous);
         }
 
@@ -187,14 +190,14 @@ namespace tether::bluetooth {
             status_.le_dialling = ops_.le_connect_outstanding();
 
             status_.reason = le_down_since_ >= 0 && now - le_down_since_ >= LE_SILENT_SECONDS
-                                 ? LE_PHONE_SILENT_ADVICE
-                                 : "Connected. Waiting for the iPhone to open the LE link that carries "
-                                   "notifications. If it does not, open Settings > Bluetooth > (i) on the "
-                                   "iPhone and check Share System Notifications.";
+                                 ? _(LE_PHONE_SILENT_ADVICE)
+                                 : _("Connected. Waiting for the iPhone to open the LE link that carries "
+                                     "notifications. If it does not, open Settings > Bluetooth > (i) on the "
+                                     "iPhone and check Share System Notifications.");
             return !(status_ == previous);
         }
 
-        status_.reason = "Connected over BR/EDR and LE.";
+        status_.reason = _("Connected over BR/EDR and LE.");
         return !(status_ == previous);
     }
 

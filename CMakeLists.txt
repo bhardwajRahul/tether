@@ -30,6 +30,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(WAYLAND REQUIRED IMPORTED_TARGET wayland-client)
 pkg_check_modules(AVAHI REQUIRED IMPORTED_TARGET avahi-client)
 find_package(OpenSSL REQUIRED)
+find_package(Intl REQUIRED)
 
 include(FetchContent)
 
@@ -58,6 +59,7 @@ enable_testing()
 
 # subdirectories for the targets
 add_subdirectory(src)
+add_subdirectory(po)
 add_subdirectory(test)
 
 # Add uninstall target

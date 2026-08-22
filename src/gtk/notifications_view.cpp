@@ -1,6 +1,7 @@
 #include "notifications_view.hpp"
 #include "daemon_client.hpp"
 #include "ui_util.hpp"
+#include <tether/i18n.hpp>
 
 #include <ctime>
 #include <string>
@@ -82,7 +83,7 @@ namespace tether::ui {
 
             // With content mirroring off only the app is known, so the row says
             // so rather than looking broken.
-            const std::string detail = !title.empty() ? title : (!body.empty() ? body : "New notification");
+            const std::string detail = !title.empty() ? title : (!body.empty() ? body : _("New notification"));
             GtkWidget* detail_label = gtk_label_new(detail.c_str());
             gtk_label_set_xalign(GTK_LABEL(detail_label), 0.0);
             gtk_label_set_line_wrap(GTK_LABEL(detail_label), TRUE);
@@ -144,8 +145,8 @@ namespace tether::ui {
             // toggle to enable on the phone, so it is shown verbatim.
             const std::string reason = event.value("ancs_reason", "");
             set_text(g_notifications.status_label,
-                     g_notifications.ready ? "No notifications yet."
-                                           : (reason.empty() ? "Notification mirroring is unavailable." : reason));
+                     g_notifications.ready ? _("No notifications yet.")
+                                           : (reason.empty() ? _("Notification mirroring is unavailable.") : reason));
             return false;
         }
         return false;
@@ -160,7 +161,7 @@ namespace tether::ui {
         GtkWidget* icon =
             gtk_image_new_from_icon_name("preferences-system-notifications-symbolic", GTK_ICON_SIZE_DIALOG);
         gtk_box_pack_start(GTK_BOX(status_box), icon, FALSE, FALSE, 0);
-        g_notifications.status_label = gtk_label_new("Waiting for the iPhone.");
+        g_notifications.status_label = gtk_label_new(_("Waiting for the iPhone."));
         gtk_label_set_line_wrap(GTK_LABEL(g_notifications.status_label), TRUE);
         gtk_label_set_justify(GTK_LABEL(g_notifications.status_label), GTK_JUSTIFY_CENTER);
         gtk_style_context_add_class(gtk_widget_get_style_context(g_notifications.status_label), "muted");

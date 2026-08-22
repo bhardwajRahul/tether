@@ -35,6 +35,10 @@ run-cli: debug
 run-gtk: debug
 	./build/debug/tether-gtk
 
+.PHONY: pot
+pot:
+	@./po/update-pot.sh
+
 .PHONY: fmt
 fmt:
 	@echo "Formatting code with clang-format..."

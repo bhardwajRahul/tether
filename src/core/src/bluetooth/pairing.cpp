@@ -3,6 +3,7 @@
 #include "tether/bluetooth/agent.hpp"
 #include "tether/bluetooth/monitor.hpp"
 #include "tether/log.hpp"
+#include <tether/i18n.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -400,8 +401,14 @@ namespace tether::bluetooth {
     }
 
     bool confirm_with_dialog(const std::string& device_name, const std::string& code) {
-        std::string body =
-            device_name + " wants to pair.\n\nConfirm this code matches the one on your iPhone:\n\n" + code;
+        // Translated before the fork: gettext takes a lock, and calling it in the
+        // child of a threaded process can deadlock if another thread held it.
+        // TRANSLATORS: {0} is the device name, {1} is the numeric pairing code.
+        const std::string body = tr_format(
+            _("{0} wants to pair.\n\nConfirm this code matches the one on your iPhone:\n\n{1}"), device_name, code);
+        const std::string title = _("Bluetooth Pairing");
+        const std::string accept = _("Confirm");
+        const std::string reject = _("Cancel");
 
         pid_t pid = fork();
         if (pid < 0) {
@@ -421,26 +428,26 @@ namespace tether::bluetooth {
             execl(sibling.c_str(),
                   "tether-dialog",
                   "--title",
-                  "Bluetooth Pairing",
+                  title.c_str(),
                   "--body",
                   body.c_str(),
                   "--accept",
-                  "Confirm",
+                  accept.c_str(),
                   "--reject",
-                  "Cancel",
+                  reject.c_str(),
                   "--timeout",
                   timeout.c_str(),
                   nullptr);
             execlp("tether-dialog",
                    "tether-dialog",
                    "--title",
-                   "Bluetooth Pairing",
+                   title.c_str(),
                    "--body",
                    body.c_str(),
                    "--accept",
-                   "Confirm",
+                   accept.c_str(),
                    "--reject",
-                   "Cancel",
+                   reject.c_str(),
                    "--timeout",
                    timeout.c_str(),
                    nullptr);

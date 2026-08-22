@@ -8,6 +8,7 @@
 #include <tether/client.hpp>
 #include <tether/crypto.hpp>
 #include <tether/discovery.hpp>
+#include <tether/i18n.hpp>
 #include <tether/log.hpp>
 #include <thread>
 #include <unistd.h>
@@ -95,44 +96,45 @@ void run_native_messaging_host(tether::Client& client) {
 }
 
 void print_help() {
-    std::cout << "tether - Wayland companion CLI\n\n"
-              << "Options:\n"
-              << "  -h, --help               Show this help message.\n"
-              << "  -g, --get-clipboard      Retrieve the current Wayland clipboard text.\n"
-              << "  -s, --set-clipboard      Take string input and copy it to the local Wayland clipboard.\n"
-              << "  -f, --send-file          Send a file through tether.\n"
-              << "  -n, --native-host        Start the browser Native Messaging Host proxy loop.\n"
-              << "  -d, --discover           Scan the local network for tetherd instances via mDNS.\n"
-              << "  --host <ip>              Connect over TCP to daemon ip instead of UNIX Socket.\n"
-              << "  --port <num>             Connect over TCP port (default 5134).\n"
-              << "  --timeout <ms>           Discovery scan duration in milliseconds (default 3000).\n"
-              << "  --list-devices           List all paired connection devices.\n"
-              << "  --bt-setup               Show the one-time system setup Bluetooth still needs.\n"
-              << "  --bt-status              Show Bluetooth adapter capability and delivery mode.\n"
-              << "  --bt-devices             List Bluetooth devices known to BlueZ.\n"
-              << "  --bt-connection          Show Bluetooth link and profile connection state.\n"
-              << "  --bt-threads             List iPhone message conversations.\n"
-              << "  --bt-messages <thread>   Show messages in one conversation.\n"
-              << "  --bt-send <thread> <text>  Reply in one conversation.\n"
-              << "  --bt-pair <addr>         Pair with an iPhone over Bluetooth.\n"
-              << "  --bt-unpair <addr>       Remove a Bluetooth bond.\n"
-              << "  --bt-solicit             Re-advertise for ANCS so the iPhone shows its permission\n"
-              << "                           toggles again, without removing the bond.\n"
-              << "  --bt-enable <on|off>     Connect to the iPhone over Bluetooth, or stop.\n"
-              << "  --bt-ancs <on|off>       Turn notification mirroring on or off.\n"
-              << "  --bt-ancs-content <on|off>  Mirror notification titles and bodies, not just the app.\n"
-              << "  --bt-notifications       List mirrored iPhone notifications.\n"
-              << "  --bt-diagnostics         Print a redacted Bluetooth report for a bug report.\n"
-              << "  --accept <fingerprint>   Accept a pending pairing request locally.\n"
-              << "  --pair                   Send a pair_request over TCP to the daemon.\n\n"
-              << "Examples:\n"
-              << "  tether -g\n"
-              << "  tether -g --host 127.0.0.1\n"
-              << "  echo \"pipe\" | tether -s\n"
-              << "  tether --discover\n"
-              << "  tether --discover --timeout 5000\n"
-              << "  tether -f ./report.pdf\n"
-              << "  tether --accept 9a4f21...\n";
+    // TRANSLATORS: keep the flag names and the column alignment; only the descriptions after them are prose.
+    std::cout << _("tether - Wayland companion CLI\n\n"
+                   "Options:\n"
+                   "  -h, --help               Show this help message.\n"
+                   "  -g, --get-clipboard      Retrieve the current Wayland clipboard text.\n"
+                   "  -s, --set-clipboard      Take string input and copy it to the local Wayland clipboard.\n"
+                   "  -f, --send-file          Send a file through tether.\n"
+                   "  -n, --native-host        Start the browser Native Messaging Host proxy loop.\n"
+                   "  -d, --discover           Scan the local network for tetherd instances via mDNS.\n"
+                   "  --host <ip>              Connect over TCP to daemon ip instead of UNIX Socket.\n"
+                   "  --port <num>             Connect over TCP port (default 5134).\n"
+                   "  --timeout <ms>           Discovery scan duration in milliseconds (default 3000).\n"
+                   "  --list-devices           List all paired connection devices.\n"
+                   "  --bt-setup               Show the one-time system setup Bluetooth still needs.\n"
+                   "  --bt-status              Show Bluetooth adapter capability and delivery mode.\n"
+                   "  --bt-devices             List Bluetooth devices known to BlueZ.\n"
+                   "  --bt-connection          Show Bluetooth link and profile connection state.\n"
+                   "  --bt-threads             List iPhone message conversations.\n"
+                   "  --bt-messages <thread>   Show messages in one conversation.\n"
+                   "  --bt-send <thread> <text>  Reply in one conversation.\n"
+                   "  --bt-pair <addr>         Pair with an iPhone over Bluetooth.\n"
+                   "  --bt-unpair <addr>       Remove a Bluetooth bond.\n"
+                   "  --bt-solicit             Re-advertise for ANCS so the iPhone shows its permission\n"
+                   "                           toggles again, without removing the bond.\n"
+                   "  --bt-enable <on|off>     Connect to the iPhone over Bluetooth, or stop.\n"
+                   "  --bt-ancs <on|off>       Turn notification mirroring on or off.\n"
+                   "  --bt-ancs-content <on|off>  Mirror notification titles and bodies, not just the app.\n"
+                   "  --bt-notifications       List mirrored iPhone notifications.\n"
+                   "  --bt-diagnostics         Print a redacted Bluetooth report for a bug report.\n"
+                   "  --accept <fingerprint>   Accept a pending pairing request locally.\n"
+                   "  --pair                   Send a pair_request over TCP to the daemon.\n\n"
+                   "Examples:\n"
+                   "  tether -g\n"
+                   "  tether -g --host 127.0.0.1\n"
+                   "  echo \"pipe\" | tether -s\n"
+                   "  tether --discover\n"
+                   "  tether --discover --timeout 5000\n"
+                   "  tether -f ./report.pdf\n"
+                   "  tether --accept 9a4f21...\n");
 }
 
 // The two known gaps (adapter class, experimental API) change the machine
@@ -142,26 +144,27 @@ static int print_bt_setup(tether::Client& client) {
     try {
         resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_status\"}\n"));
     } catch (const std::exception&) {
-        debug::log(ERR, "Could not read Bluetooth status from the daemon.\n");
+        debug::log(ERR, _("Could not read Bluetooth status from the daemon.\n"));
         return 1;
     }
 
     if (!resp.value("available", false)) {
-        fprintf(stdout, "Bluetooth: unavailable (is bluetoothd running?)\n");
+        fprintf(stdout, _("Bluetooth: unavailable (is bluetoothd running?)\n"));
         return 1;
     }
 
     const auto& cap = resp["capability"];
     const auto& setup = cap["setup"];
     if (setup.empty()) {
-        fprintf(stdout, "Bluetooth setup is complete. Nothing to do.\n");
+        fprintf(stdout, _("Bluetooth setup is complete. Nothing to do.\n"));
         return 0;
     }
 
     fprintf(stdout,
-            "\n%zu step%s left before the iPhone Bluetooth features work:\n",
-            setup.size(),
-            setup.size() == 1 ? "" : "s");
+            P_("\n%zu step left before the iPhone Bluetooth features work:\n",
+               "\n%zu steps left before the iPhone Bluetooth features work:\n",
+               setup.size()),
+            setup.size());
 
     size_t n = 0;
     for (const auto& step : setup) {
@@ -172,7 +175,7 @@ static int print_bt_setup(tether::Client& client) {
             fprintf(stdout, "     %s\n", line.c_str());
     }
 
-    fprintf(stdout, "\nRe-run 'tether --bt-setup' afterwards to confirm.\n");
+    fprintf(stdout, _("\nRe-run 'tether --bt-setup' afterwards to confirm.\n"));
     return 0;
 }
 
@@ -181,33 +184,33 @@ static int print_bt_status(tether::Client& client) {
     try {
         resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_status\"}\n"));
     } catch (const std::exception&) {
-        debug::log(ERR, "Could not read Bluetooth status from the daemon.\n");
+        debug::log(ERR, _("Could not read Bluetooth status from the daemon.\n"));
         return 1;
     }
 
     if (!resp.value("available", false)) {
-        fprintf(stdout, "Bluetooth: unavailable (is bluetoothd running?)\n");
+        fprintf(stdout, _("Bluetooth: unavailable (is bluetoothd running?)\n"));
         return 1;
     }
 
     const auto& cap = resp["capability"];
-    fprintf(stdout, "Mode:       %s\n", cap.value("mode", "unknown").c_str());
-    fprintf(stdout, "Bearer API: %s\n", cap.value("bearer_api", "unknown").c_str());
+    fprintf(stdout, _("Mode:       %s\n"), cap.value("mode", "unknown").c_str());
+    fprintf(stdout, _("Bearer API: %s\n"), cap.value("bearer_api", "unknown").c_str());
     fprintf(stdout,
-            "Adapter:    powered=%s central=%s peripheral=%s advertising=%s class=%s\n",
+            _("Adapter:    powered=%s central=%s peripheral=%s advertising=%s class=%s\n"),
             cap.value("powered", false) ? "yes" : "no",
             cap.value("le_central", false) ? "yes" : "no",
             cap.value("le_peripheral", false) ? "yes" : "no",
             cap.value("advertising", false) ? "yes" : "no",
             cap.value("class_ok", false) ? "ok" : "wrong");
     fprintf(stdout,
-            "            secure-connections=%s\n",
+            _("            secure-connections=%s\n"),
             cap.contains("secure_connections") && cap["secure_connections"].is_boolean()
                 ? (cap["secure_connections"].get<bool>() ? "on" : "OFF")
                 : "unknown");
     if (cap.value("bonded_device_present", false))
-        fprintf(stdout, "Bond:       %s\n", cap.value("bond_has_le", false) ? "BR/EDR + LE" : "BR/EDR only");
-    fprintf(stdout, "Tether:     %s\n", resp.value("enabled", true) ? "connecting" : "off (--bt-enable on)");
+        fprintf(stdout, _("Bond:       %s\n"), cap.value("bond_has_le", false) ? "BR/EDR + LE" : "BR/EDR only");
+    fprintf(stdout, _("Tether:     %s\n"), resp.value("enabled", true) ? "connecting" : "off (--bt-enable on)");
 
     for (const auto& adapter : resp["adapters"]) {
         fprintf(stdout, "  %s  %s\n", adapter.value("address", "").c_str(), adapter.value("name", "").c_str());
@@ -221,7 +224,11 @@ static int print_bt_status(tether::Client& client) {
 
     const size_t pending = cap.contains("setup") ? cap["setup"].size() : 0;
     if (pending > 0)
-        fprintf(stdout, "\n%zu setup step%s remaining. Run: tether --bt-setup\n", pending, pending == 1 ? "" : "s");
+        fprintf(stdout,
+                P_("\n%zu setup step remaining. Run: tether --bt-setup\n",
+                   "\n%zu setup steps remaining. Run: tether --bt-setup\n",
+                   pending),
+                pending);
     return 0;
 }
 
@@ -230,13 +237,13 @@ static int print_bt_devices(tether::Client& client) {
     try {
         resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_list_devices\"}\n"));
     } catch (const std::exception&) {
-        debug::log(ERR, "Could not read Bluetooth devices from the daemon.\n");
+        debug::log(ERR, _("Could not read Bluetooth devices from the daemon.\n"));
         return 1;
     }
 
     const auto& devices = resp["devices"];
     if (devices.empty()) {
-        fprintf(stdout, "No Bluetooth devices known to BlueZ.\n");
+        fprintf(stdout, _("No Bluetooth devices known to BlueZ.\n"));
         return 0;
     }
 
@@ -281,7 +288,7 @@ static int run_bt_transaction(tether::Client& client, const std::string& command
     if (!address.empty())
         request["address"] = address;
     if (!client.send(request.dump() + "\n")) {
-        debug::log(ERR, "Could not reach the daemon.\n");
+        debug::log(ERR, _("Could not reach the daemon.\n"));
         return 1;
     }
 
@@ -290,7 +297,7 @@ static int run_bt_transaction(tether::Client& client, const std::string& command
     while (true) {
         ssize_t n = client.read(buf, sizeof(buf));
         if (n <= 0) {
-            debug::log(ERR, "Daemon closed the connection before the operation finished.\n");
+            debug::log(ERR, _("Daemon closed the connection before the operation finished.\n"));
             return 1;
         }
         buffer.append(buf, n);
@@ -326,21 +333,21 @@ static int print_bt_connection(tether::Client& client) {
     try {
         resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_connection\"}\n"));
     } catch (const std::exception&) {
-        debug::log(ERR, "Could not read Bluetooth connection state from the daemon.\n");
+        debug::log(ERR, _("Could not read Bluetooth connection state from the daemon.\n"));
         return 1;
     }
 
     auto yn = [](bool v) { return v ? "yes" : "no"; };
-    fprintf(stdout, "Device present:  %s\n", yn(resp.value("device_present", false)));
-    fprintf(stdout, "BR/EDR:          %s\n", yn(resp.value("classic_connected", false)));
+    fprintf(stdout, _("Device present:  %s\n"), yn(resp.value("device_present", false)));
+    fprintf(stdout, _("BR/EDR:          %s\n"), yn(resp.value("classic_connected", false)));
     fprintf(stdout,
-            "LE:              %s%s\n",
+            _("LE:              %s%s\n"),
             yn(resp.value("le_connected", false)),
             resp.value("le_available", false) ? "" : " (bearer unavailable)");
-    fprintf(stdout, "Messages (MAP):  %s", yn(resp.value("map_open", false)));
+    fprintf(stdout, _("Messages (MAP):  %s"), yn(resp.value("map_open", false)));
     if (resp.value("map_error", std::string("none")) != "none")
         fprintf(stdout, "  [%s]", resp.value("map_error", "").c_str());
-    fprintf(stdout, "\nContacts (PBAP): %s", yn(resp.value("pbap_open", false)));
+    fprintf(stdout, _("\nContacts (PBAP): %s"), yn(resp.value("pbap_open", false)));
     if (resp.value("pbap_error", std::string("none")) != "none")
         fprintf(stdout, "  [%s]", resp.value("pbap_error", "").c_str());
     fprintf(stdout, "\n");
@@ -361,7 +368,7 @@ static int print_bt_diagnostics(tether::Client& client) {
     try {
         resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_diagnostics\"}\n"));
     } catch (const std::exception&) {
-        debug::log(ERR, "Could not read Bluetooth diagnostics from the daemon.\n");
+        debug::log(ERR, _("Could not read Bluetooth diagnostics from the daemon.\n"));
         return 1;
     }
 
@@ -385,13 +392,13 @@ static int print_bt_notifications(tether::Client& client) {
     try {
         resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_list_notifications\"}\n"));
     } catch (const std::exception&) {
-        debug::log(ERR, "Could not read notifications from the daemon.\n");
+        debug::log(ERR, _("Could not read notifications from the daemon.\n"));
         return 1;
     }
 
     const auto& notifications = resp["notifications"];
     if (notifications.empty()) {
-        fprintf(stdout, "No notifications yet. Check 'tether --bt-connection'.\n");
+        fprintf(stdout, _("No notifications yet. Check 'tether --bt-connection'.\n"));
         return 0;
     }
 
@@ -419,13 +426,13 @@ static int print_bt_threads(tether::Client& client) {
     try {
         resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_list_threads\"}\n"));
     } catch (const std::exception&) {
-        debug::log(ERR, "Could not read conversations from the daemon.\n");
+        debug::log(ERR, _("Could not read conversations from the daemon.\n"));
         return 1;
     }
 
     const auto& threads = resp["threads"];
     if (threads.empty()) {
-        fprintf(stdout, "No conversations yet. Check 'tether --bt-connection'.\n");
+        fprintf(stdout, _("No conversations yet. Check 'tether --bt-connection'.\n"));
         return 0;
     }
 
@@ -438,7 +445,8 @@ static int print_bt_threads(tether::Client& client) {
             if (c == '\n' || c == '\r')
                 c = ' ';
 
-        const std::string unread_note = unread > 0 ? "  (" + std::to_string(unread) + " unread)" : "";
+        const std::string unread_note =
+            unread > 0 ? "  " + tether::tr_format(P_("({} unread)", "({} unread)", unread), unread) : "";
         fprintf(stdout,
                 "  %-24s %-18s %s%s\n",
                 t.value("name", "").c_str(),
@@ -459,13 +467,13 @@ static int print_bt_messages(tether::Client& client, const std::string& thread) 
     try {
         resp = nlohmann::json::parse(client.send_and_wait(request.dump() + "\n"));
     } catch (const std::exception&) {
-        debug::log(ERR, "Could not read messages from the daemon.\n");
+        debug::log(ERR, _("Could not read messages from the daemon.\n"));
         return 1;
     }
 
     const auto& messages = resp["messages"];
     if (messages.empty()) {
-        fprintf(stdout, "No messages in %s\n", thread.c_str());
+        fprintf(stdout, _("No messages in %s\n"), thread.c_str());
         return 0;
     }
 
@@ -473,7 +481,7 @@ static int print_bt_messages(tether::Client& client, const std::string& thread) 
         fprintf(stdout,
                 "%s  %-8s %s%s\n",
                 format_time(m.value("timestamp", (int64_t)0)).c_str(),
-                m.value("outgoing", false) ? "me" : "them",
+                m.value("outgoing", false) ? _("me") : _("them"),
                 m.value("body", "").c_str(),
                 m.value("read", true) ? "" : "  *");
     }
@@ -491,7 +499,7 @@ static int send_bt_message(tether::Client& client, const std::string& thread, co
     // reply to the request.
     client.send("{\"command\":\"subscribe\"}\n");
     if (!client.send(request.dump() + "\n")) {
-        debug::log(ERR, "Could not reach the daemon.\n");
+        debug::log(ERR, _("Could not reach the daemon.\n"));
         return 1;
     }
 
@@ -500,7 +508,7 @@ static int send_bt_message(tether::Client& client, const std::string& thread, co
     while (true) {
         ssize_t n = client.read(buf, sizeof(buf));
         if (n <= 0) {
-            debug::log(ERR, "Daemon closed the connection before the message was sent.\n");
+            debug::log(ERR, _("Daemon closed the connection before the message was sent.\n"));
             return 1;
         }
         buffer.append(buf, n);
@@ -522,16 +530,18 @@ static int send_bt_message(tether::Client& client, const std::string& thread, co
             if (event.value("command", "") != "bt_send_result")
                 continue;
             if (event.value("success", false)) {
-                fprintf(stdout, "Sent to %s\n", thread.c_str());
+                fprintf(stdout, _("Sent to %s\n"), thread.c_str());
                 return 0;
             }
-            debug::log(ERR, "{}\n", event.value("message", "The message was not sent."));
+            debug::log(ERR, "{}\n", event.value("message", _("The message was not sent.")));
             return 1;
         }
     }
 }
 
 int main(int argc, char* argv[]) {
+    tether::init_locale();
+
     if (argc < 2) {
         print_help();
         return 0;
@@ -627,7 +637,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (action.empty()) {
-        debug::log(ERR, "Unknown action. Run tether --help for options\n");
+        debug::log(ERR, _("Unknown action. Run tether --help for options\n"));
         return 1;
     }
 
@@ -649,13 +659,13 @@ int main(int argc, char* argv[]) {
         auto devices = tether::group_discovered_hosts(hosts);
 
         if (devices.empty()) {
-            debug::log(INFO, "  No tetherd instances found.\n");
+            debug::log(INFO, _("  No tetherd instances found.\n"));
         } else {
             tether::Crypto::instance().init();
             for (const auto& dev : devices) {
-                std::string status = "[new]";
+                std::string status = _("[new]");
                 if (!dev.fingerprint.empty() && tether::Crypto::instance().is_host_known(dev.fingerprint)) {
-                    status = "[known]";
+                    status = _("[known]");
                 }
                 fprintf(stdout, "  %-20s  %s\n", dev.name.c_str(), status.c_str());
                 for (const auto& addr : dev.addresses) {
@@ -665,7 +675,10 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        fprintf(stdout, "Found %zu device(s) in %.1fs\n", devices.size(), timeout_ms / 1000.0);
+        fprintf(stdout,
+                P_("Found %zu device in %.1fs\n", "Found %zu devices in %.1fs\n", devices.size()),
+                devices.size(),
+                timeout_ms / 1000.0);
         return 0;
     }
 
@@ -679,9 +692,10 @@ int main(int argc, char* argv[]) {
 
     // Bind network abstraction natively
     if (!client.connect(host, port)) {
-        debug::log(ERR,
-                   "Explicit framework connection locally rejected! Did you target explicitly invalid TLS or is daemon "
-                   "broken?\n");
+        debug::log(
+            ERR,
+            _("Explicit framework connection locally rejected! Did you target explicitly invalid TLS or is daemon "
+              "broken?\n"));
         return 1;
     }
 
@@ -710,7 +724,7 @@ int main(int argc, char* argv[]) {
     } else if (action == "file") {
         debug::log(INFO, "Sending {}...", arg_val);
         if (!client.send_file(arg_val, err)) {
-            debug::log(ERR, "Transfer Failed: {}", err);
+            debug::log(ERR, _("Transfer Failed: {}"), err);
             return 1;
         }
         debug::log(INFO, "File transfer delivered.\n");
@@ -732,19 +746,19 @@ int main(int argc, char* argv[]) {
         return print_bt_notifications(client);
     } else if (action == "bt_messages") {
         if (arg_val.empty()) {
-            debug::log(ERR, "A thread key is required, e.g. --bt-messages tel:+15551234567\n");
+            debug::log(ERR, _("A thread key is required, e.g. --bt-messages tel:+15551234567\n"));
             return 1;
         }
         return print_bt_messages(client, arg_val);
     } else if (action == "bt_send") {
         if (arg_val.empty() || arg_val2.empty()) {
-            debug::log(ERR, "A conversation and a message are required, e.g. --bt-send tel:+15551234567 \"hi\"\n");
+            debug::log(ERR, _("A conversation and a message are required, e.g. --bt-send tel:+15551234567 \"hi\"\n"));
             return 1;
         }
         return send_bt_message(client, arg_val, arg_val2);
     } else if (action == "bt_pair" || action == "bt_unpair") {
         if (arg_val.empty()) {
-            debug::log(ERR, "A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n");
+            debug::log(ERR, _("A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n"));
             return 1;
         }
         return run_bt_transaction(client, action == "bt_pair" ? "bt_pair" : "bt_unpair", arg_val);
@@ -752,40 +766,41 @@ int main(int argc, char* argv[]) {
         return run_bt_transaction(client, "bt_solicit");
     } else if (action == "bt_enable") {
         if (arg_val != "on" && arg_val != "off") {
-            debug::log(ERR, "Expected on or off, e.g. --bt-enable off\n");
+            debug::log(ERR, _("Expected on or off, e.g. --bt-enable off\n"));
             return 1;
         }
         nlohmann::json request;
         request["command"] = "bt_set_enabled";
         request["enabled"] = arg_val == "on";
         if (!client.send(request.dump() + "\n")) {
-            debug::log(ERR, "Could not reach the daemon.\n");
+            debug::log(ERR, _("Could not reach the daemon.\n"));
             return 1;
         }
         if (arg_val == "on") {
-            fprintf(stdout, "Bluetooth enabled.\n");
+            fprintf(stdout, _("Bluetooth enabled.\n"));
         } else {
             fprintf(stdout,
-                    "Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
-                    "already up stays up until you disconnect it or the phone goes out of range.\n");
+                    _("Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
+                      "already up stays up until you disconnect it or the phone goes out of range.\n"));
         }
     } else if (action == "bt_ancs" || action == "bt_ancs_content") {
         const bool content = action == "bt_ancs_content";
         if (arg_val != "on" && arg_val != "off") {
-            debug::log(ERR, "Expected on or off, e.g. {} on\n", content ? "--bt-ancs-content" : "--bt-ancs");
+            debug::log(ERR, _("Expected on or off, e.g. {} on\n"), content ? "--bt-ancs-content" : "--bt-ancs");
             return 1;
         }
         nlohmann::json request;
         request["command"] = content ? "bt_set_ancs_content" : "bt_set_ancs";
         request["enabled"] = arg_val == "on";
         if (!client.send(request.dump() + "\n")) {
-            debug::log(ERR, "Could not reach the daemon.\n");
+            debug::log(ERR, _("Could not reach the daemon.\n"));
             return 1;
         }
+        const bool on = arg_val == "on";
         fprintf(stdout,
-                "%s %s.\n",
-                content ? "Notification contents" : "Notification mirroring",
-                arg_val == "on" ? "enabled" : "disabled");
+                "%s\n",
+                content ? (on ? _("Notification contents enabled.") : _("Notification contents disabled."))
+                        : (on ? _("Notification mirroring enabled.") : _("Notification mirroring disabled.")));
     }
 
     return 0;

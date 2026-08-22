@@ -1,6 +1,7 @@
 #include "devices_view.hpp"
 #include "daemon_client.hpp"
 #include "ui_util.hpp"
+#include <tether/i18n.hpp>
 
 #include <algorithm>
 #include <deque>
@@ -105,15 +106,15 @@ namespace tether::ui {
 
         void update_welcome_pane() {
             const bool wifi_ok = !g_devices.connected_fps.empty();
-            set_text(g_devices.lbl_welcome_wifi, wifi_ok ? "Connected." : "Not connected yet.");
+            set_text(g_devices.lbl_welcome_wifi, wifi_ok ? _("Connected.") : _("Not connected yet."));
 
             const bool bt_ok =
                 g_devices.bt_connection.value("map_open", false) || g_devices.bt_connection.value("ancs_ready", false);
-            std::string bt_note = "Not connected yet.";
+            std::string bt_note = _("Not connected yet.");
             if (bt_ok)
-                bt_note = "Connected.";
+                bt_note = _("Connected.");
             else if (!g_devices.bt_status.empty() && !g_devices.bt_status.value("available", false))
-                bt_note = "Bluetooth is unavailable on this machine.";
+                bt_note = _("Bluetooth is unavailable on this machine.");
             set_text(g_devices.lbl_welcome_bt, bt_note);
         }
 
@@ -154,13 +155,13 @@ namespace tether::ui {
             std::string mode;
             if (!g_devices.bt_status.empty()) {
                 if (!available || capability.is_null()) {
-                    mode = "Bluetooth is unavailable on this machine.";
+                    mode = _("Bluetooth is unavailable on this machine.");
                 } else if (capability.value("mode", "") == "full") {
-                    mode = "Full mode \u2014 messages, contacts, and notifications.";
+                    mode = _("Full mode \u2014 messages, contacts, and notifications.");
                 } else if (capability.value("mode", "") == "compatibility") {
-                    mode = "Compatibility mode \u2014 messages and contacts, no notification mirroring.";
+                    mode = _("Compatibility mode \u2014 messages and contacts, no notification mirroring.");
                 } else {
-                    mode = "This machine cannot carry the Bluetooth features.";
+                    mode = _("This machine cannot carry the Bluetooth features.");
                 }
                 // The reasons name what is missing (adapter class, LE roles, BlueZ
                 // version) and are the only place that detail surfaces outside the CLI.
@@ -185,18 +186,20 @@ namespace tether::ui {
             const bool ancs_ready = supervised && connection.value("ancs_ready", false);
 
             set_capability_row(g_devices.lbl_bt_link,
-                               "Link",
+                               _("Link"),
                                classic || le,
                                std::string("BR/EDR ") + (classic ? "on" : "off") + ", LE " + (le ? "on" : "off"));
 
             const std::string map_error = connection.value("map_error", "none");
             const std::string pbap_error = connection.value("pbap_error", "none");
             set_capability_row(
-                g_devices.lbl_bt_messages, "Messages", map_open, map_open || map_error == "none" ? "" : map_error);
-            set_capability_row(
-                g_devices.lbl_bt_contacts, "Contacts", pbap_open, pbap_open || pbap_error == "none" ? "" : pbap_error);
+                g_devices.lbl_bt_messages, _("Messages"), map_open, map_open || map_error == "none" ? "" : map_error);
+            set_capability_row(g_devices.lbl_bt_contacts,
+                               _("Contacts"),
+                               pbap_open,
+                               pbap_open || pbap_error == "none" ? "" : pbap_error);
             set_capability_row(g_devices.lbl_bt_notifications,
-                               "Notifications",
+                               _("Notifications"),
                                ancs_ready,
                                ancs_ready ? "" : connection.value("ancs_reason", ""));
 
@@ -204,13 +207,13 @@ namespace tether::ui {
             // verbatim rather than replaced with something vaguer.
             std::string reason;
             if (!paired) {
-                reason = "Not paired over Bluetooth yet.";
+                reason = _("Not paired over Bluetooth yet.");
             } else if (!supervised) {
-                reason = "Tether is not using this device. Pair it to select it.";
+                reason = _("Tether is not using this device. Pair it to select it.");
             } else if (!bt_on) {
                 // Supervision is idle while switched off, so its status would
                 // otherwise report no device selected.
-                reason = "Bluetooth is switched off for this iPhone.";
+                reason = _("Bluetooth is switched off for this iPhone.");
             } else {
                 reason = connection.value("profile_reason", "");
                 if (reason.empty())
@@ -279,9 +282,9 @@ namespace tether::ui {
                 bool online = std::find(g_devices.connected_fps.begin(),
                                         g_devices.connected_fps.end(),
                                         g_devices.selected_device_fp) != g_devices.connected_fps.end();
-                set_status_action(online
-                                      ? "Connected and ready."
-                                      : "Device is offline. Open the Tether app on iPhone while on the same network.");
+                set_status_action(
+                    online ? _("Connected and ready.")
+                           : _("Device is offline. Open the Tether app on iPhone while on the same network."));
                 if (g_devices.btn_grid) {
                     gtk_widget_set_visible(g_devices.btn_grid, online);
                 }
@@ -289,9 +292,10 @@ namespace tether::ui {
                 gtk_stack_set_visible_child_name(GTK_STACK(g_devices.right_pane_stack), "pair");
                 set_markup(g_devices.lbl_unpaired_name,
                            ("<b>" + escape_markup(g_devices.selected_device_name) + "</b>"));
+                // TRANSLATORS: {0} is an IP address, {1} a port number.
                 set_text(g_devices.lbl_unpaired_ip,
-                         ("Found at " + g_devices.selected_device_ip + ":" +
-                          std::to_string(g_devices.selected_device_port)));
+                         tether::tr_format(
+                             _("Found at {0}:{1}"), g_devices.selected_device_ip, g_devices.selected_device_port));
             }
         }
 
@@ -322,13 +326,13 @@ namespace tether::ui {
         void on_pair_click(GtkWidget*, gpointer) {
             if (g_devices.selected_device_ip.empty())
                 return;
-            set_text(g_devices.lbl_unpaired_ip, "Sending pair request...");
+            set_text(g_devices.lbl_unpaired_ip, _("Sending pair request..."));
             nlohmann::json j;
             j["command"] = "pair_request";
             j["host"] = g_devices.selected_device_ip;
             j["port"] = g_devices.selected_device_port;
             daemon_send(j);
-            set_status_main("Pair request sent. Approve on remote device!");
+            set_status_main(_("Pair request sent. Approve on remote device!"));
         }
 
         void on_accept_click(GtkWidget*, gpointer) {
@@ -344,11 +348,11 @@ namespace tether::ui {
             if (g_devices.selected_bt_address.empty())
                 return;
             if (!daemon_send({{"command", "bt_pair"}, {"address", g_devices.selected_bt_address}})) {
-                set_text(g_devices.lbl_bt_progress, "Could not reach the Tether daemon.");
+                set_text(g_devices.lbl_bt_progress, _("Could not reach the Tether daemon."));
                 return;
             }
             gtk_widget_set_sensitive(g_devices.btn_bt_pair, FALSE);
-            set_text(g_devices.lbl_bt_progress, "Pairing\u2026 confirm the prompt on the iPhone.");
+            set_text(g_devices.lbl_bt_progress, _("Pairing\u2026 confirm the prompt on the iPhone."));
         }
 
         void on_bt_unpair_click(GtkWidget*, gpointer) {
@@ -359,19 +363,19 @@ namespace tether::ui {
                                                        GTK_DIALOG_MODAL,
                                                        GTK_MESSAGE_QUESTION,
                                                        GTK_BUTTONS_OK_CANCEL,
-                                                       "Remove the Bluetooth pairing with %s?",
+                                                       _("Remove the Bluetooth pairing with %s?"),
                                                        g_devices.selected_bt_name.c_str());
             gtk_message_dialog_format_secondary_text(
                 GTK_MESSAGE_DIALOG(dialog),
-                "Also delete this computer from the iPhone's Bluetooth settings before pairing again, "
-                "or the phone will keep the stale bond.");
+                _("Also delete this computer from the iPhone's Bluetooth settings before pairing again, "
+                  "or the phone will keep the stale bond."));
             const bool confirmed = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK;
             gtk_widget_destroy(dialog);
             if (!confirmed)
                 return;
 
             daemon_send({{"command", "bt_unpair"}, {"address", g_devices.selected_bt_address}});
-            set_text(g_devices.lbl_bt_progress, "Removing the pairing\u2026");
+            set_text(g_devices.lbl_bt_progress, _("Removing the pairing\u2026"));
         }
 
         void on_bt_enabled_toggled(GtkWidget* widget, gpointer) {
@@ -394,15 +398,15 @@ namespace tether::ui {
 
         void on_bt_setup_copy_click(GtkWidget*, gpointer) {
             gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), g_devices.bt_setup_commands.c_str(), -1);
-            set_status_main("Setup commands copied to the clipboard.");
+            set_status_main(_("Setup commands copied to the clipboard."));
         }
 
         void on_bt_solicit_click(GtkWidget*, gpointer) {
             if (!daemon_send({{"command", "bt_solicit"}})) {
-                set_text(g_devices.lbl_bt_progress, "Could not reach the Tether daemon.");
+                set_text(g_devices.lbl_bt_progress, _("Could not reach the Tether daemon."));
                 return;
             }
-            set_text(g_devices.lbl_bt_progress, "Asking the iPhone to show its Bluetooth permissions\u2026");
+            set_text(g_devices.lbl_bt_progress, _("Asking the iPhone to show its Bluetooth permissions\u2026"));
         }
 
         // The daemon opens a fresh connection per send_file, batch one file at a time
@@ -410,10 +414,12 @@ namespace tether::ui {
             if (g_devices.send_queue.empty())
                 return;
             const std::filesystem::path& path = g_devices.send_queue.front();
-            std::string status = "Sending " + path.filename().string() + "…";
+            // TRANSLATORS: {} is a file name.
+            std::string status = tether::tr_format(_("Sending {}…"), path.filename().string());
             if (g_devices.send_batch_total > 1) {
                 const size_t index = g_devices.send_batch_total - g_devices.send_queue.size() + 1;
-                status += " (" + std::to_string(index) + " of " + std::to_string(g_devices.send_batch_total) + ")";
+                // TRANSLATORS: {0} is the current file's position, {1} the batch size.
+                status += " " + tether::tr_format(_("({0} of {1})"), index, g_devices.send_batch_total);
             }
             set_status_action(status);
             nlohmann::json j;
@@ -428,7 +434,7 @@ namespace tether::ui {
             if (paths.empty())
                 return;
             if (!daemon_connected()) {
-                set_status_action("Daemon unavailable.");
+                set_status_action(_("Daemon unavailable."));
                 return;
             }
             const bool idle = g_devices.send_queue.empty();
@@ -448,7 +454,7 @@ namespace tether::ui {
         }
 
         void on_choose_file(GtkWidget*, gpointer) {
-            GtkWidget* dialog = gtk_file_chooser_dialog_new("Send File",
+            GtkWidget* dialog = gtk_file_chooser_dialog_new(_("Send File"),
                                                             GTK_WINDOW(main_window()),
                                                             GTK_FILE_CHOOSER_ACTION_OPEN,
                                                             "_Cancel",
@@ -519,7 +525,7 @@ namespace tether::ui {
 
             gtk_drag_finish(context, !files.empty(), FALSE, time);
             if (files.empty()) {
-                set_status_action("Folders can't be sent — drop files instead.");
+                set_status_action(_("Folders can't be sent — drop files instead."));
                 return;
             }
             queue_files(std::move(files), skipped);
@@ -529,8 +535,8 @@ namespace tether::ui {
             const bool connected = !g_devices.connected_fps.empty();
             set_route_status(Route::WiFi,
                              connected,
-                             connected ? "Clipboard, files, and OTP are connected."
-                                       : "No paired iPhone is connected. Open the Tether app on the phone.");
+                             connected ? _("Clipboard, files, and OTP are connected.")
+                                       : _("No paired iPhone is connected. Open the Tether app on the phone."));
         }
 
         void apply_state_snapshot(const nlohmann::json& j) {
@@ -542,7 +548,7 @@ namespace tether::ui {
                     } else {
                         tether::DiscoveredDevice dev;
                         dev.fingerprint = c.value("fingerprint", "");
-                        dev.name = c.value("device_name", "Unknown Device");
+                        dev.name = c.value("device_name", _("Unknown Device"));
                         dev.addresses.push_back({c.value("address", ""), 5134});
                         g_devices.discovered_devices.push_back(dev);
                     }
@@ -553,7 +559,7 @@ namespace tether::ui {
                 for (auto& p : j["pending_pairs"]) {
                     tether::DiscoveredDevice req;
                     req.fingerprint = p.value("fingerprint", "");
-                    req.name = p.value("device_name", "Unknown Device");
+                    req.name = p.value("device_name", _("Unknown Device"));
                     g_devices.pending_pairing_requests.push_back(req);
                 }
             }
@@ -572,7 +578,7 @@ namespace tether::ui {
     }
 
     void devices_view_trigger_discovery() {
-        set_status_main("Scanning for nearby devices...");
+        set_status_main(_("Scanning for nearby devices..."));
         // Refresh means both routes: mDNS for Wi-Fi peers, and a real BlueZ discovery for Bluetooth.
         daemon_send({{"command", "discover"}});
         daemon_send({{"command", "bt_status"}});
@@ -590,7 +596,7 @@ namespace tether::ui {
             if (!known.empty()) {
                 for (auto& [fingerprint, name_value] : known.items()) {
                     g_devices.paired_devices.push_back(
-                        {fingerprint, name_value.is_string() ? name_value.get<std::string>() : "Unknown Device"});
+                        {fingerprint, name_value.is_string() ? name_value.get<std::string>() : _("Unknown Device")});
                 }
             }
         } catch (...) {
@@ -628,7 +634,8 @@ namespace tether::ui {
             gtk_label_set_xalign(GTK_LABEL(title), 0.0);
             gtk_box_pack_start(GTK_BOX(labels), title, FALSE, FALSE, 0);
 
-            GtkWidget* subtitle = gtk_label_new(paired ? (online ? "Connected" : "Offline") : "Nearby (Tap to Pair)");
+            GtkWidget* subtitle =
+                gtk_label_new(paired ? (online ? _("Connected") : _("Offline")) : _("Nearby (Tap to Pair)"));
             gtk_label_set_xalign(GTK_LABEL(subtitle), 0.0);
             gtk_style_context_add_class(gtk_widget_get_style_context(subtitle), "muted");
             gtk_box_pack_start(GTK_BOX(labels), subtitle, FALSE, FALSE, 0);
@@ -661,7 +668,8 @@ namespace tether::ui {
             gtk_label_set_xalign(GTK_LABEL(title), 0.0);
             gtk_box_pack_start(GTK_BOX(labels), title, FALSE, FALSE, 0);
 
-            GtkWidget* subtitle = gtk_label_new(connected ? "Connected" : (paired ? "Paired" : "Nearby (Tap to Pair)"));
+            GtkWidget* subtitle =
+                gtk_label_new(connected ? _("Connected") : (paired ? _("Paired") : _("Nearby (Tap to Pair)")));
             gtk_label_set_xalign(GTK_LABEL(subtitle), 0.0);
             gtk_style_context_add_class(gtk_widget_get_style_context(subtitle), "muted");
             gtk_box_pack_start(GTK_BOX(labels), subtitle, FALSE, FALSE, 0);
@@ -803,8 +811,8 @@ namespace tether::ui {
             tether::DiscoveredDevice req;
             req.fingerprint = event.value("fingerprint", "");
 
-            std::string resolved_name = event.value("device_name", "Unknown Device");
-            if (resolved_name == "Unknown Device") {
+            std::string resolved_name = event.value("device_name", _("Unknown Device"));
+            if (resolved_name == _("Unknown Device")) {
                 for (const auto& d : g_devices.discovered_devices) {
                     if (d.fingerprint == req.fingerprint && !d.name.empty()) {
                         resolved_name = d.name;
@@ -870,7 +878,7 @@ namespace tether::ui {
                 }
             }
             devices_view_refresh();
-            set_status_main("Ready");
+            set_status_main(_("Ready"));
             return true;
         }
         if (command == "file_send_complete") {
@@ -890,13 +898,19 @@ namespace tether::ui {
             std::string message = event.value("message", "");
             if (g_devices.send_batch_total > 1) {
                 const size_t sent = g_devices.send_batch_total - g_devices.send_failed;
+                // TRANSLATORS: {0} is how many were sent, {1} the batch size.
                 message =
-                    "Sent " + std::to_string(sent) + " of " + std::to_string(g_devices.send_batch_total) + " files.";
+                    tether::tr_format(P_("Sent {0} of {1} file.", "Sent {0} of {1} files.", g_devices.send_batch_total),
+                                      sent,
+                                      g_devices.send_batch_total);
                 if (g_devices.send_failed > 0 && !g_devices.send_last_error.empty())
                     message += " " + g_devices.send_last_error;
             }
             if (g_devices.send_skipped > 0)
-                message += " Skipped " + std::to_string(g_devices.send_skipped) + " non-file item(s).";
+                message +=
+                    " " + tether::tr_format(
+                              P_("Skipped {} non-file item.", "Skipped {} non-file items.", g_devices.send_skipped),
+                              g_devices.send_skipped);
             set_status_action(message);
 
             g_devices.send_batch_total = 0;
@@ -906,7 +920,7 @@ namespace tether::ui {
             return true;
         }
         if (command == "clipboard_content") {
-            set_status_action("Desktop Clipboard Sync triggered.");
+            set_status_action(_("Desktop Clipboard Sync triggered."));
             return true;
         }
         if (command == "bt_status") {
@@ -932,7 +946,7 @@ namespace tether::ui {
             if (detail.empty())
                 detail = event.value("link_reason", "");
             if (detail.empty() && connected)
-                detail = "Messages and notifications are connected.";
+                detail = _("Messages and notifications are connected.");
             set_route_status(Route::Bluetooth, connected, detail);
             update_right_pane();
             // A status broadcast, not a command this view owns: the Messages and
@@ -947,8 +961,8 @@ namespace tether::ui {
             // ran and found nothing wants the "check the phone" advice.
             if (event.value("success", false) && g_devices.bt_devices.empty())
                 set_text(g_devices.lbl_welcome_bt,
-                         "No iPhone found. Unlock the phone and open Settings > Bluetooth so it advertises, "
-                         "then scan again.");
+                         _("No iPhone found. Unlock the phone and open Settings > Bluetooth so it advertises, "
+                           "then scan again."));
             else if (!event.value("success", false))
                 set_text(g_devices.lbl_welcome_bt, message);
             return true;
@@ -996,7 +1010,7 @@ namespace tether::ui {
         gtk_widget_set_valign(placeholder, GTK_ALIGN_CENTER);
 
         GtkWidget* welcome_title = gtk_label_new(nullptr);
-        gtk_label_set_markup(GTK_LABEL(welcome_title), "<big><b>Connect your iPhone</b></big>");
+        set_markup(welcome_title, "<big><b>" + escape_markup(_("Connect your iPhone")) + "</b></big>");
         gtk_box_pack_start(GTK_BOX(placeholder), welcome_title, FALSE, FALSE, 0);
 
         // A plain box cannot reflow, and the two blocks do not both fit in a narrow
@@ -1041,24 +1055,25 @@ namespace tether::ui {
 
         gtk_container_add(GTK_CONTAINER(routes),
                           build_route_block("network-wireless-signal-excellent-symbolic",
-                                            "<b>Wi-Fi</b>\nclipboard, files, OTP",
-                                            "1.  Open the Tether app on the iPhone\n"
-                                            "2.  It finds this computer by itself\n"
-                                            "3.  Approve on both ends",
+                                            ("<b>Wi-Fi</b>\n" + escape_markup(_("clipboard, files, OTP"))).c_str(),
+                                            _("1.  Open the Tether app on the iPhone\n"
+                                              "2.  It finds this computer by itself\n"
+                                              "3.  Approve on both ends"),
                                             &g_devices.lbl_welcome_wifi));
 
-        gtk_container_add(GTK_CONTAINER(routes),
-                          build_route_block("bluetooth-active-symbolic",
-                                            "<b>Bluetooth</b>\nmessages, notifications",
-                                            "1.  Pick the iPhone under BLUETOOTH\n"
-                                            "2.  Press Pair over Bluetooth\n"
-                                            "3.  Grant the two toggles on the phone",
-                                            &g_devices.lbl_welcome_bt));
+        gtk_container_add(
+            GTK_CONTAINER(routes),
+            build_route_block("bluetooth-active-symbolic",
+                              ("<b>Bluetooth</b>\n" + escape_markup(_("messages, notifications"))).c_str(),
+                              _("1.  Pick the iPhone under BLUETOOTH\n"
+                                "2.  Press Pair over Bluetooth\n"
+                                "3.  Grant the two toggles on the phone"),
+                              &g_devices.lbl_welcome_bt));
 
         gtk_box_pack_start(GTK_BOX(placeholder), routes, FALSE, FALSE, 0);
 
         // One button for both routes: scanning is what refreshes either list.
-        GtkWidget* welcome_scan = gtk_button_new_with_label("Scan for devices");
+        GtkWidget* welcome_scan = gtk_button_new_with_label(_("Scan for devices"));
         gtk_widget_set_halign(welcome_scan, GTK_ALIGN_CENTER);
         g_signal_connect(welcome_scan,
                          "clicked",
@@ -1083,7 +1098,7 @@ namespace tether::ui {
 
         GtkWidget* lbl_setup_title = gtk_label_new(nullptr);
         gtk_label_set_xalign(GTK_LABEL(lbl_setup_title), 0.0);
-        gtk_label_set_markup(GTK_LABEL(lbl_setup_title), "<b>Bluetooth needs one-time system setup</b>");
+        set_markup(lbl_setup_title, "<b>" + escape_markup(_("Bluetooth needs one-time system setup")) + "</b>");
         gtk_box_pack_start(GTK_BOX(g_devices.bt_setup_box), lbl_setup_title, FALSE, FALSE, 0);
 
         g_devices.lbl_bt_setup_what = gtk_label_new(nullptr);
@@ -1101,10 +1116,10 @@ namespace tether::ui {
         gtk_box_pack_start(GTK_BOX(g_devices.bt_setup_box), g_devices.lbl_bt_setup_command, FALSE, FALSE, 0);
 
         GtkWidget* setup_actions = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-        GtkWidget* btn_setup_copy = gtk_button_new_with_label("Copy commands");
+        GtkWidget* btn_setup_copy = gtk_button_new_with_label(_("Copy commands"));
         gtk_widget_set_tooltip_text(btn_setup_copy,
-                                    "Run these in a terminal. Tether does not change your Bluetooth "
-                                    "adapter or bluetoothd on its own.");
+                                    _("Run these in a terminal. Tether does not change your Bluetooth "
+                                      "adapter or bluetoothd on its own."));
         g_signal_connect(btn_setup_copy, "clicked", G_CALLBACK(on_bt_setup_copy_click), nullptr);
         gtk_box_pack_start(GTK_BOX(setup_actions), btn_setup_copy, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(g_devices.bt_setup_box), setup_actions, FALSE, FALSE, 0);
@@ -1127,28 +1142,28 @@ namespace tether::ui {
         }
         gtk_box_pack_start(GTK_BOX(bt_box), capabilities, FALSE, FALSE, 0);
 
-        g_devices.chk_bt_enabled = gtk_check_button_new_with_label("Connect to this iPhone over Bluetooth");
+        g_devices.chk_bt_enabled = gtk_check_button_new_with_label(_("Connect to this iPhone over Bluetooth"));
         gtk_widget_set_tooltip_text(g_devices.chk_bt_enabled,
-                                    "Keep the Bluetooth link to the iPhone up, reconnecting whenever it drops. "
-                                    "Turning this off stops Tether reconnecting; a link that is already up stays "
-                                    "up until you disconnect it.");
+                                    _("Keep the Bluetooth link to the iPhone up, reconnecting whenever it drops. "
+                                      "Turning this off stops Tether reconnecting; a link that is already up stays "
+                                      "up until you disconnect it."));
         g_signal_connect(g_devices.chk_bt_enabled, "toggled", G_CALLBACK(on_bt_enabled_toggled), nullptr);
         gtk_box_pack_start(GTK_BOX(bt_box), g_devices.chk_bt_enabled, FALSE, FALSE, 0);
 
         // pairing that produced no LE half latches mirroring off, and this is the only way back to it without the CLI.
-        g_devices.chk_bt_ancs = gtk_check_button_new_with_label("Mirror iPhone notifications");
+        g_devices.chk_bt_ancs = gtk_check_button_new_with_label(_("Mirror iPhone notifications"));
         gtk_widget_set_tooltip_text(g_devices.chk_bt_ancs,
-                                    "Show notifications from the iPhone on this desktop. Turned off "
-                                    "automatically when pairing produces no LE bond; turn it back on after "
-                                    "re-pairing.");
+                                    _("Show notifications from the iPhone on this desktop. Turned off "
+                                      "automatically when pairing produces no LE bond; turn it back on after "
+                                      "re-pairing."));
         g_signal_connect(g_devices.chk_bt_ancs, "toggled", G_CALLBACK(on_bt_ancs_toggled), nullptr);
         gtk_box_pack_start(GTK_BOX(bt_box), g_devices.chk_bt_ancs, FALSE, FALSE, 0);
 
-        g_devices.chk_bt_content = gtk_check_button_new_with_label("Show notification contents");
+        g_devices.chk_bt_content = gtk_check_button_new_with_label(_("Show notification contents"));
         gtk_widget_set_tooltip_text(g_devices.chk_bt_content,
-                                    "Ask the iPhone for each notification's title and message text, not just "
-                                    "which app sent it. The phone's own Show Message Notifications toggle still "
-                                    "has to be on.");
+                                    _("Ask the iPhone for each notification's title and message text, not just "
+                                      "which app sent it. The phone's own Show Message Notifications toggle still "
+                                      "has to be on."));
         g_signal_connect(g_devices.chk_bt_content, "toggled", G_CALLBACK(on_bt_content_toggled), nullptr);
         gtk_box_pack_start(GTK_BOX(bt_box), g_devices.chk_bt_content, FALSE, FALSE, 0);
 
@@ -1159,19 +1174,19 @@ namespace tether::ui {
         gtk_box_pack_start(GTK_BOX(bt_box), g_devices.lbl_bt_reason, FALSE, FALSE, 0);
 
         GtkWidget* bt_buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-        g_devices.btn_bt_pair = gtk_button_new_with_label("Pair over Bluetooth");
+        g_devices.btn_bt_pair = gtk_button_new_with_label(_("Pair over Bluetooth"));
         gtk_style_context_add_class(gtk_widget_get_style_context(g_devices.btn_bt_pair), "suggested-action");
         g_signal_connect(g_devices.btn_bt_pair, "clicked", G_CALLBACK(on_bt_pair_click), nullptr);
         gtk_box_pack_start(GTK_BOX(bt_buttons), g_devices.btn_bt_pair, FALSE, FALSE, 0);
 
-        g_devices.btn_bt_solicit = gtk_button_new_with_label("Show iPhone Permissions");
+        g_devices.btn_bt_solicit = gtk_button_new_with_label(_("Show iPhone Permissions"));
         gtk_widget_set_tooltip_text(g_devices.btn_bt_solicit,
-                                    "Re-advertise so the iPhone shows its Show Message Notifications and "
-                                    "Sync Contacts toggles under Settings > Bluetooth > (i).");
+                                    _("Re-advertise so the iPhone shows its Show Message Notifications and "
+                                      "Sync Contacts toggles under Settings > Bluetooth > (i)."));
         g_signal_connect(g_devices.btn_bt_solicit, "clicked", G_CALLBACK(on_bt_solicit_click), nullptr);
         gtk_box_pack_start(GTK_BOX(bt_buttons), g_devices.btn_bt_solicit, FALSE, FALSE, 0);
 
-        g_devices.btn_bt_unpair = gtk_button_new_with_label("Unpair");
+        g_devices.btn_bt_unpair = gtk_button_new_with_label(_("Unpair"));
         g_signal_connect(g_devices.btn_bt_unpair, "clicked", G_CALLBACK(on_bt_unpair_click), nullptr);
         gtk_box_pack_start(GTK_BOX(bt_buttons), g_devices.btn_bt_unpair, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(bt_box), bt_buttons, FALSE, FALSE, 0);
@@ -1194,13 +1209,13 @@ namespace tether::ui {
         gtk_style_context_add_class(gtk_widget_get_style_context(g_devices.lbl_unpaired_ip), "muted");
         gtk_box_pack_start(GTK_BOX(pair_box), g_devices.lbl_unpaired_ip, FALSE, FALSE, 0);
 
-        GtkWidget* pair_btn = gtk_button_new_with_label("Pair Device");
+        GtkWidget* pair_btn = gtk_button_new_with_label(_("Pair Device"));
         gtk_style_context_add_class(gtk_widget_get_style_context(pair_btn), "suggested-action");
         g_signal_connect(pair_btn, "clicked", G_CALLBACK(on_pair_click), nullptr);
         gtk_box_pack_start(GTK_BOX(pair_box), pair_btn, FALSE, FALSE, 0);
 
         // optional accept override button
-        GtkWidget* accept_btn = gtk_button_new_with_label("Force Trust (Accept Pending)");
+        GtkWidget* accept_btn = gtk_button_new_with_label(_("Force Trust (Accept Pending)"));
         g_signal_connect(accept_btn, "clicked", G_CALLBACK(on_accept_click), nullptr);
         gtk_box_pack_start(GTK_BOX(pair_box), accept_btn, FALSE, FALSE, 0);
 
@@ -1225,30 +1240,30 @@ namespace tether::ui {
         g_devices.dropzone = dropzone;
         gtk_box_pack_start(GTK_BOX(btn_grid), dropzone, FALSE, FALSE, 0);
 
-        GtkWidget* lbl_drop = gtk_label_new("Drop files here to send");
+        GtkWidget* lbl_drop = gtk_label_new(_("Drop files here to send"));
         gtk_style_context_add_class(gtk_widget_get_style_context(lbl_drop), "muted");
         gtk_box_pack_start(GTK_BOX(dropzone), lbl_drop, FALSE, FALSE, 0);
 
-        GtkWidget* btn_send_file = gtk_button_new_with_label("Send File");
+        GtkWidget* btn_send_file = gtk_button_new_with_label(_("Send File"));
         gtk_style_context_add_class(gtk_widget_get_style_context(btn_send_file), "suggested-action");
         g_signal_connect(btn_send_file, "clicked", G_CALLBACK(on_choose_file), nullptr);
         gtk_box_pack_start(GTK_BOX(dropzone), btn_send_file, FALSE, FALSE, 0);
 
-        GtkWidget* btn_send_clip = gtk_button_new_with_label("Send Clipboard");
+        GtkWidget* btn_send_clip = gtk_button_new_with_label(_("Send Clipboard"));
         g_signal_connect(btn_send_clip,
                          "clicked",
                          G_CALLBACK(+[](GtkWidget*, gpointer) {
                              nlohmann::json j;
                              j["command"] = "clipboard_set"; // triggers clipboard send
                              daemon_send(j);
-                             set_status_action("Clipboard sync requested...");
+                             set_status_action(_("Clipboard sync requested..."));
                          }),
                          nullptr);
         gtk_box_pack_start(GTK_BOX(btn_grid), btn_send_clip, FALSE, FALSE, 0);
 
         gtk_box_pack_start(GTK_BOX(action_box), btn_grid, FALSE, FALSE, 0);
 
-        g_devices.lbl_action_status = gtk_label_new("Ready");
+        g_devices.lbl_action_status = gtk_label_new(_("Ready"));
         gtk_widget_set_halign(g_devices.lbl_action_status, GTK_ALIGN_CENTER);
         gtk_style_context_add_class(gtk_widget_get_style_context(g_devices.lbl_action_status), "muted");
         gtk_box_pack_start(GTK_BOX(action_box), g_devices.lbl_action_status, FALSE, FALSE, 0);

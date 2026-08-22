@@ -1,4 +1,5 @@
 #include "messages_view.hpp"
+#include <tether/i18n.hpp>
 
 #include "daemon_client.hpp"
 #include "tray.hpp"
@@ -335,10 +336,10 @@ namespace tether::ui {
         // only way back to those toggles is to remove the bond and pair again.
         void on_solicit_clicked(GtkWidget*, gpointer) {
             if (!daemon_send({{"command", "bt_solicit"}})) {
-                set_status_main("Could not reach the Tether daemon.");
+                set_status_main(_("Could not reach the Tether daemon."));
                 return;
             }
-            set_status_main("Asking the iPhone to show its Bluetooth permissions…");
+            set_status_main(_("Asking the iPhone to show its Bluetooth permissions…"));
         }
 
         void update_connection(const nlohmann::json& event) {
@@ -358,7 +359,7 @@ namespace tether::ui {
             if (reason.empty())
                 reason = event.value("link_reason", "");
             if (reason.empty())
-                reason = "Messages are not connected.";
+                reason = _("Messages are not connected.");
 
             // Re-soliciting only helps when the phone is withholding the profile,
             // not when the link itself is down.
@@ -383,18 +384,18 @@ namespace tether::ui {
 
             const char* reason = nullptr;
             if (g_messages.sending)
-                reason = "Sending…";
+                reason = _("Sending…");
             else if (!g_messages.map_open)
-                reason = "Messages are not connected.";
+                reason = _("Messages are not connected.");
             else if (g_messages.selected_thread.empty())
                 reason = g_messages.composing
-                             ? (g_messages.selected_block_reason.empty() ? "Enter a recipient."
+                             ? (g_messages.selected_block_reason.empty() ? _("Enter a recipient.")
                                                                          : g_messages.selected_block_reason.c_str())
-                             : "Select a conversation first.";
+                             : _("Select a conversation first.");
             else if (!g_messages.selected_block_reason.empty())
                 reason = g_messages.selected_block_reason.c_str();
             else if (!can_send)
-                reason = "Replying to this conversation is not available.";
+                reason = _("Replying to this conversation is not available.");
             gtk_widget_set_tooltip_text(g_messages.send_button, reason);
 
             if (g_messages.composer_notice) {
@@ -431,7 +432,7 @@ namespace tether::ui {
             if (g_messages.sending) {
                 g_messages.sending = false;
                 update_composer_sensitivity();
-                set_status_main("No answer about that message; it may still have been sent.");
+                set_status_main(_("No answer about that message; it may still have been sent."));
             }
             return G_SOURCE_REMOVE;
         }
@@ -446,7 +447,7 @@ namespace tether::ui {
             j["thread"] = g_messages.selected_thread;
             j["body"] = body;
             if (!daemon_send(j)) {
-                set_status_main("Could not reach the Tether daemon; the message was not sent.");
+                set_status_main(_("Could not reach the Tether daemon; the message was not sent."));
                 return;
             }
 
@@ -457,7 +458,7 @@ namespace tether::ui {
             g_messages.sending = true;
             g_messages.send_watchdog_id = g_timeout_add_seconds(SEND_TIMEOUT_SECONDS, on_send_timeout, nullptr);
             update_composer_sensitivity();
-            set_status_main("Sending…");
+            set_status_main(_("Sending…"));
         }
 
         // Every messaging app has trained people that Enter sends and Shift+Enter
@@ -490,10 +491,10 @@ namespace tether::ui {
                 // The conversation now exists under this key, so the thread list
                 // refresh that follows will select it like any other.
                 leave_compose();
-                set_status_main("Sent");
+                set_status_main(_("Sent"));
                 return;
             }
-            set_status_main(event.value("message", "The message was not sent."));
+            set_status_main(event.value("message", _("The message was not sent.")));
         }
 
         void clear_selection() {
@@ -642,7 +643,7 @@ namespace tether::ui {
                                             GTK_ENTRY_ICON_SECONDARY,
                                             bad ? g_messages.selected_block_reason.c_str() : nullptr);
 
-            std::string header = "New Message";
+            std::string header = _("New Message");
             if (!g_messages.selected_name.empty())
                 header = g_messages.selected_name;
             else if (!g_messages.selected_thread.empty())
@@ -732,7 +733,7 @@ namespace tether::ui {
         // is owed from the one that just ended.
         g_messages.marked_read.clear();
         update_composer_sensitivity();
-        set_banner("The Tether daemon is not running.");
+        set_banner(_("The Tether daemon is not running."));
     }
 
     void messages_view_open_thread(const std::string& thread_key) {
@@ -814,11 +815,11 @@ namespace tether::ui {
         gtk_label_set_line_wrap(GTK_LABEL(g_messages.banner_label), TRUE);
         gtk_box_pack_start(GTK_BOX(g_messages.banner), g_messages.banner_label, TRUE, TRUE, 0);
 
-        g_messages.banner_action = gtk_button_new_with_label("Show iPhone Permissions");
+        g_messages.banner_action = gtk_button_new_with_label(_("Show iPhone Permissions"));
         gtk_widget_set_valign(g_messages.banner_action, GTK_ALIGN_CENTER);
         gtk_widget_set_tooltip_text(g_messages.banner_action,
-                                    "Re-advertise so the iPhone shows its Show Message Notifications and "
-                                    "Sync Contacts toggles under Settings > Bluetooth > (i).");
+                                    _("Re-advertise so the iPhone shows its Show Message Notifications and "
+                                      "Sync Contacts toggles under Settings > Bluetooth > (i)."));
         g_signal_connect(g_messages.banner_action, "clicked", G_CALLBACK(on_solicit_clicked), nullptr);
         gtk_box_pack_start(GTK_BOX(g_messages.banner), g_messages.banner_action, FALSE, FALSE, 0);
 
@@ -836,7 +837,7 @@ namespace tether::ui {
         gtk_container_add(GTK_CONTAINER(thread_scroll), g_messages.thread_list);
 
         GtkWidget* thread_side = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-        GtkWidget* new_message = gtk_button_new_with_label("New Message");
+        GtkWidget* new_message = gtk_button_new_with_label(_("New Message"));
         gtk_button_set_image(GTK_BUTTON(new_message),
                              gtk_image_new_from_icon_name("list-add-symbolic", GTK_ICON_SIZE_BUTTON));
         gtk_button_set_always_show_image(GTK_BUTTON(new_message), TRUE);
@@ -856,7 +857,7 @@ namespace tether::ui {
         gtk_widget_set_halign(placeholder, GTK_ALIGN_CENTER);
         GtkWidget* placeholder_icon = gtk_image_new_from_icon_name("mail-unread-symbolic", GTK_ICON_SIZE_DIALOG);
         gtk_box_pack_start(GTK_BOX(placeholder), placeholder_icon, FALSE, FALSE, 0);
-        GtkWidget* placeholder_label = gtk_label_new("Select a conversation");
+        GtkWidget* placeholder_label = gtk_label_new(_("Select a conversation"));
         gtk_style_context_add_class(gtk_widget_get_style_context(placeholder_label), "muted");
         gtk_box_pack_start(GTK_BOX(placeholder), placeholder_label, FALSE, FALSE, 0);
         gtk_stack_add_named(GTK_STACK(g_messages.placeholder_stack), placeholder, "placeholder");
@@ -868,7 +869,7 @@ namespace tether::ui {
         gtk_box_pack_start(GTK_BOX(g_messages.compose_bar), gtk_label_new("To:"), FALSE, FALSE, 0);
 
         g_messages.compose_entry = gtk_entry_new();
-        gtk_entry_set_placeholder_text(GTK_ENTRY(g_messages.compose_entry), "Phone number or email");
+        gtk_entry_set_placeholder_text(GTK_ENTRY(g_messages.compose_entry), _("Phone number or email"));
         // Lets the entry shrink with the pane. At its natural minimum the Cancel
         // button beside it is pushed off the edge of a narrow window.
         gtk_entry_set_width_chars(GTK_ENTRY(g_messages.compose_entry), 12);
@@ -887,7 +888,7 @@ namespace tether::ui {
         gtk_entry_set_completion(GTK_ENTRY(g_messages.compose_entry), completion);
         g_object_unref(completion);
 
-        GtkWidget* compose_cancel = gtk_button_new_with_label("Cancel");
+        GtkWidget* compose_cancel = gtk_button_new_with_label(_("Cancel"));
         g_signal_connect(compose_cancel, "clicked", G_CALLBACK(on_compose_cancel), nullptr);
         gtk_box_pack_start(GTK_BOX(g_messages.compose_bar), compose_cancel, FALSE, FALSE, 0);
 
@@ -947,7 +948,7 @@ namespace tether::ui {
         gtk_container_add(GTK_CONTAINER(composer_frame), g_messages.composer);
         gtk_box_pack_start(GTK_BOX(composer_box), composer_frame, TRUE, TRUE, 0);
 
-        g_messages.send_button = gtk_button_new_with_label("Send");
+        g_messages.send_button = gtk_button_new_with_label(_("Send"));
         gtk_widget_set_valign(g_messages.send_button, GTK_ALIGN_END);
         gtk_style_context_add_class(gtk_widget_get_style_context(g_messages.send_button), "suggested-action");
         gtk_box_pack_start(GTK_BOX(composer_box), g_messages.send_button, FALSE, FALSE, 0);

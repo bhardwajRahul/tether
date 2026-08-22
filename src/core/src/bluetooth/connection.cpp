@@ -9,6 +9,7 @@
 #include "tether/bluetooth/pairing.hpp"
 #include "tether/bluetooth/pbap_session.hpp"
 #include "tether/log.hpp"
+#include <tether/i18n.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -86,13 +87,13 @@ namespace tether::bluetooth {
             session = g_map_session;
         }
         if (!session) {
-            err_out = "Messages are not connected.";
+            err_out = _("Messages are not connected.");
             return false;
         }
 
         const std::string bmessage = build_bmessage(recipients, body);
         if (bmessage.empty()) {
-            err_out = "Could not build a message for this conversation.";
+            err_out = _("Could not build a message for this conversation.");
             return false;
         }
 
@@ -172,7 +173,7 @@ namespace tether::bluetooth {
             }
         }
         if (!known) {
-            err_out = "That message is no longer in the conversation history.";
+            err_out = _("That message is no longer in the conversation history.");
             return false;
         }
 
@@ -191,7 +192,7 @@ namespace tether::bluetooth {
                 err_out = sync_err;
             }
         } else {
-            err_out = "The iPhone is not serving this message right now; marked read on this computer only.";
+            err_out = _("The iPhone is not serving this message right now; marked read on this computer only.");
         }
 
         std::lock_guard<std::mutex> lock(g_messages_mutex);
@@ -1155,7 +1156,7 @@ namespace tether::bluetooth {
             idle["command"] = "bt_connection_changed";
             idle["device_present"] = false;
             idle["device_paired"] = false;
-            idle["link_reason"] = "No paired iPhone selected.";
+            idle["link_reason"] = _("No paired iPhone selected.");
             idle["profile_reason"] = "";
             return idle;
         }
