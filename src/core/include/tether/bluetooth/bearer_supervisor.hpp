@@ -9,6 +9,10 @@ namespace tether::bluetooth {
     inline constexpr int BEARER_SETTLE_SECONDS = 3;
     inline constexpr int BEARER_BACKOFF_MIN_SECONDS = 5;
     inline constexpr int BEARER_BACKOFF_MAX_SECONDS = 300;
+
+    // Ceiling for the BR/EDR backoff while LE is connected.
+    inline constexpr int LE_UP_CLASSIC_BACKOFF_MAX_SECONDS = 30;
+
     // How many refused attempts before the status stops saying "connecting"
     inline constexpr int CLASSIC_FAILURES_BEFORE_ADVICE = 6;
 
