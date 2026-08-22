@@ -69,16 +69,10 @@ namespace tether::bluetooth {
 
     void BearerSupervisor::reset() {
         classic_failures_ = 0;
-        le_failures_ = 0;
-        le_listening_ = false;
-        le_phone_silent_ = false;
         le_down_since_ = -1;
-        le_stuck_locally_ = false;
         classic_connected_since_ = -1;
         next_classic_attempt_ = 0;
-        next_le_attempt_ = 0;
         status_.classic_backoff = 0;
-        status_.le_backoff = 0;
     }
 
     bool BearerSupervisor::tick(int64_t now) {
@@ -103,14 +97,8 @@ namespace tether::bluetooth {
         else if (le_down_since_ < 0)
             le_down_since_ = now;
 
-        if (status_.le_connected) {
-            // Neither route is in use once the link is up.
+        if (status_.le_connected)
             status_.le_dialling = false;
-            le_failures_ = 0;
-            le_stuck_locally_ = false;
-            status_.le_backoff = 0;
-            next_le_attempt_ = 0;
-        }
 
         if (status_.classic_connected) {
             if (classic_connected_since_ < 0)
@@ -172,52 +160,27 @@ namespace tether::bluetooth {
         }
 
         if (!status_.le_connected) {
-            // alternate the two routes rather than running both
-            const int64_t phase = (now - le_down_since_) % (LE_DIAL_WINDOW_SECONDS + LE_SOLICIT_WINDOW_SECONDS);
-
-            status_.le_dialling = phase < LE_DIAL_WINDOW_SECONDS || ops_.le_connect_outstanding();
-
+            // solicitation owns the radio; the dial gets one shot per daemon and then stands aside.
             const bool settled =
                 classic_connected_since_ >= 0 && now - classic_connected_since_ >= BEARER_SETTLE_SECONDS;
 
-            if (settled && status_.le_dialling && !ops_.le_connect_outstanding() && now >= next_le_attempt_) {
+            if (!le_dial_spent_ && settled && !ops_.le_connect_outstanding()) {
                 std::string err;
                 const ConnectResult result = classify(ops_.connect_le(err), err);
+                le_dial_spent_ = true;
+                if (result == ConnectResult::Failed)
+                    debug::log(WARN, "bluetooth: LE connect failed ({}), leaving it to the solicitation", err);
+            }
 
-                switch (result) {
-                case ConnectResult::Requested:
-                case ConnectResult::Busy:
-                    le_listening_ = true;
-                    le_stuck_locally_ = false;
-                    status_.le_backoff = 0;
-                    next_le_attempt_ = now + BEARER_POLL_SECONDS;
-                    break;
-                case ConnectResult::Failed:
-                    ++le_failures_;
-                    le_listening_ = false;
-                    le_stuck_locally_ = false;
-                    le_phone_silent_ = is_transient(err);
-                    status_.le_backoff = next_backoff(status_.le_backoff, err, LE_BACKOFF_MAX_SECONDS);
-                    next_le_attempt_ = now + status_.le_backoff;
-                    debug::log(WARN, "bluetooth: LE connect failed ({}), retrying in {}s", err, status_.le_backoff);
-                    break;
-                }
-            }
-            if (!status_.le_connected) {
-                if (le_phone_silent_ && le_failures_ >= LE_ATTEMPTS_BEFORE_ADVICE)
-                    status_.reason = LE_PHONE_SILENT_ADVICE;
-                else if (ops_.le_connect_outstanding() || le_listening_)
-                    status_.reason = "Connected. Waiting for the iPhone to open the LE link that carries "
-                                     "notifications. If it does not, open Settings > Bluetooth > (i) on the "
-                                     "iPhone and check Share System Notifications.";
-                else if (le_phone_silent_)
-                    status_.reason = LE_PHONE_SILENT_ADVICE;
-                else
-                    status_.reason = "Nothing is listening for the iPhone's LE link. BlueZ refused to register "
-                                     "for it, which only \"sudo systemctl restart bluetooth\" clears. Messages "
-                                     "and contacts are unaffected.";
-                return !(status_ == previous);
-            }
+            // read after the attempt, never before
+            status_.le_dialling = ops_.le_connect_outstanding();
+
+            status_.reason = le_down_since_ >= 0 && now - le_down_since_ >= LE_SILENT_SECONDS
+                                 ? LE_PHONE_SILENT_ADVICE
+                                 : "Connected. Waiting for the iPhone to open the LE link that carries "
+                                   "notifications. If it does not, open Settings > Bluetooth > (i) on the "
+                                   "iPhone and check Share System Notifications.";
+            return !(status_ == previous);
         }
 
         status_.reason = "Connected over BR/EDR and LE.";
