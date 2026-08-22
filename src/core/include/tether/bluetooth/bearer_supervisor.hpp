@@ -9,13 +9,14 @@ namespace tether::bluetooth {
     inline constexpr int BEARER_SETTLE_SECONDS = 3;
     inline constexpr int BEARER_BACKOFF_MIN_SECONDS = 5;
     inline constexpr int BEARER_BACKOFF_MAX_SECONDS = 300;
-    inline constexpr int LE_BACKOFF_MAX_SECONDS = 60;
     // How many refused attempts before the status stops saying "connecting"
     inline constexpr int CLASSIC_FAILURES_BEFORE_ADVICE = 6;
-    inline constexpr int LE_ATTEMPTS_BEFORE_ADVICE = 6;
 
-    inline constexpr int LE_DIAL_WINDOW_SECONDS = 45;
-    inline constexpr int LE_SOLICIT_WINDOW_SECONDS = 180;
+    // How long LE may stay down, with the solicitation broadcasting, before the
+    // status stops saying "waiting" and names the phone-side Bluetooth cycle.
+    // A phone that is answering does so in about a second, so silence this far
+    // past that is the iPhone having gone quiet, not a slow connect.
+    inline constexpr int LE_SILENT_SECONDS = 180;
 
     // How long an ANCS session is held across an LE outage before the path is
     // dropped. The bearer flaps faster than a GATT subscription can be rebuilt,
@@ -57,7 +58,6 @@ namespace tether::bluetooth {
         bool le_available = false;
         bool le_dialling = false;
         int classic_backoff = 0;
-        int le_backoff = 0;
         std::string reason;
 
         bool operator==(const BearerStatus&) const = default;
@@ -87,14 +87,10 @@ namespace tether::bluetooth {
 
         BearerStatus status_;
         int classic_failures_ = 0;
-        int le_failures_ = 0;
-        bool le_listening_ = false;
-        bool le_phone_silent_ = false;
-        bool le_stuck_locally_ = false;
+        bool le_dial_spent_ = false;
         int64_t classic_connected_since_ = -1;
         int64_t le_down_since_ = -1;
         int64_t next_classic_attempt_ = 0;
-        int64_t next_le_attempt_ = 0;
     };
 
 } // namespace tether::bluetooth

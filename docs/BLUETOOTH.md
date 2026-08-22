@@ -122,9 +122,9 @@ checks the daemon does not make.
 | Pairing fails with `br-connection-key-missing` | A stale bond on one side, or the adapter is not `Pairable` | Delete the computer's entry on the phone (Forget This Device) and `tether --bt-unpair <addr>` locally, then pair again |
 | The phone shows two entries for this computer | A failed pairing left both a Classic and an LE record | Delete both on the phone before retrying |
 | LE never connects and the log repeats `org.bluez.Error.InProgress` | BlueZ is holding an auto-connect registration that never completed | `sudo systemctl restart bluetooth` -- nothing short of that clears it, see 2026-08-19 below. With `tether-btclass@hci0` enabled the class survives the restart |
-| The status says "Nothing is listening for the iPhone's LE link" | BlueZ refused to register for the phone's LE connection, so nothing is waiting for it | `sudo systemctl restart bluetooth`. This is different from waiting on the phone, which the status says instead when a registration is open |
+| The log says `could not re-arm the ANCS solicitation` | BlueZ refused to register the advertisement, so nothing is on air for the iPhone to answer | `sudo systemctl restart bluetooth`. Nothing else brings it back, and the LE link cannot form without it |
 | LE never connects and the log repeats `le-connection-abort-by-local` | Something on this side is cancelling the connection. Tether's own cause was a `PreferredBearer` write racing the async connect, fixed; anything else writing that property during a connect will do the same | Check no other Bluetooth tool is driving the same device. The phone is not the cause: `abort-by-local` means the local host cancelled |
-| Notifications stopped and never came back, while messages and contacts kept working | Fixed. The bearer supervisor used to stop retrying LE after six attempts, and only a Classic drop or a daemon restart re-armed it | Nothing. LE is now retried indefinitely at the five-minute ceiling, and the ANCS solicitation is kept on air whenever LE is down |
+| Notifications stopped and never came back, while messages and contacts kept working | Fixed. The bearer supervisor used to stop retrying LE after six attempts, and only a Classic drop or a daemon restart re-armed it | Nothing. The solicitation is kept on air whenever LE is down, which is what the iPhone answers -- see 2026-08-22 |
 | `tether --bt-status` reports `Bond: BR/EDR only` | The bond was made without cross-transport key derivation, so it has no LE half and can never carry ANCS | Forget this computer on the iPhone and pair again. Check `secure-connections` in the same output first: re-pairing cannot help while it is off |
 | The status says the iPhone is not answering on LE, and its permission is on | The phone's Bluetooth stack is wedged, which the granted permission does not prevent | Turn Bluetooth off and back on **on the iPhone**. Re-pairing and re-toggling the permission do not clear this |
 | Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
@@ -685,6 +685,60 @@ BR/EDR's 300s backoff ceiling, so a phone the user had just fixed still read as
 broken. LE now backs off to its own 60s ceiling. A dial costs nothing since one
 is never issued while another is outstanding, and the failure it recovers from
 is the one a human has just cleared by hand.
+
+### 2026-08-22 - The advert opens the link in 1.3s; the dial never opened one
+
+Same hardware. Captured across a `bluetoothd` restart, a daemon start, and a
+Bluetooth cycle on the iPhone, with the phone in the silent state described on
+2026-08-19 and then brought back by hand.
+
+The moment the link forms is unambiguous:
+
+```
+t=81.858   LE Set Extended Advertising Enable: Disabled          <- dial window opens
+t=127.668  LE Set Extended Advertising Enable: Enabled, Handle 0x01, Success
+t=128.962  LE Enhanced Connection Complete, Role: Peripheral, Success
+```
+
+**1.29 seconds.** `Role: Peripheral` means the iPhone was the central: it dialled
+us, inbound, in answer to the solicitation. Peer address `59:71:0E:41:74:AA
+(Resolvable)`, resolved to the identity address.
+
+The dial had every chance and took none of it. Across three captures totalling
+roughly 700 seconds, no `Bearer.LE1.Connect` produced an HCI connect attempt, let
+alone a link -- BlueZ implements it as an accept-list-filtered passive scan, as
+recorded on 2026-08-19. In this capture the phone was reported advertising at
+t=75.0, 90.8, 91.1 and 92.6 while that scan had already been torn down by the
+45s dial timeout at t=53.8, so nothing was armed when it was there.
+
+So the two routes are not equals taking turns. One of them works in about a
+second and the other has never worked here, while the dial window costs the
+working route 45 seconds of airtime out of every 225 -- worse in practice,
+because `reset()` on a Classic flap restarts the window. Measured over the first
+127 seconds of this capture the advert was on air for 27.6 of them.
+
+The supervisor now dials once per daemon and then leaves the radio to the
+solicitation. `reset()` deliberately does not refund the dial: a Classic flap is
+not a reason to take the advert down for another attempt. The dial is kept at all
+only because a cold start is the one case with no evidence either way.
+
+`BearerStatus::le_dialling` still gates the solicitation, so the advert cannot go
+up while that single dial is in flight -- the abort recorded on 2026-08-20. It is
+assigned *after* the attempt in the same tick, not before; reading it first let
+the advert go up alongside the dial it was meant to protect.
+
+Two leads closed. The advert's `Flags` byte reads `0x06` (`BR/EDR Not Supported`)
+where the iPhone's own adverts read `0x1a`, on the same public address the phone
+holds a BR/EDR link to. It is synthesised by the kernel, identical for every
+BlueZ client, and `LEAdvertisement1` rejects a client-supplied AD type `0x01`
+("Failed to parse advertisement"). It is not the differentiator. Separately, the
+controller's resolving list is never programmed and the accept list gets a single
+entry, yet the inbound RPA above still resolved -- not a fault either.
+
+None of this explains a phone that will not answer. `[IdentityResolvingKey]` and
+an LE-SC `[PeripheralLongTermKey]` with `Authenticated=3` were present throughout,
+so re-pairing is not the remedy and was not needed; cycling Bluetooth on the
+iPhone was, exactly as on 2026-08-19.
 
 ### PBAP
 
