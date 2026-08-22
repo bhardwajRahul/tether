@@ -1,0 +1,16 @@
+src/cli/main.cpp
+src/core/src/bluetooth/bearer_supervisor.cpp
+src/core/src/bluetooth/connection.cpp
+src/core/src/bluetooth/groups.cpp
+src/core/src/bluetooth/objects.cpp
+src/core/src/bluetooth/pairing.cpp
+src/core/src/bluetooth/profile_supervisor.cpp
+src/core/src/net.cpp
+src/daemon/main.cpp
+src/daemon/notification.cpp
+src/gtk/daemon_client.cpp
+src/gtk/devices_view.cpp
+src/gtk/main.cpp
+src/gtk/messages_view.cpp
+src/gtk/notifications_view.cpp
+src/gtk/tray.cpp

@@ -1,5 +1,7 @@
 #include "notification.hpp"
 
+#include <tether/i18n.hpp>
+
 #include <gio/gio.h>
 #include <glib.h>
 #include <libnotify/notify.h>
@@ -172,7 +174,7 @@ namespace tether {
             }
 
             NotifyNotification* notification =
-                notify_notification_new("File arrived", file.filename().c_str(), "document-save");
+                notify_notification_new(_("File arrived"), file.filename().c_str(), "document-save");
 
             set_identity(notification, "");
             notify_notification_set_hint(notification, "resident", g_variant_new_boolean(TRUE));
@@ -183,9 +185,9 @@ namespace tether {
 
             g_signal_connect(notification, "closed", G_CALLBACK(on_notification_closed), nullptr);
             notify_notification_add_action(
-                notification, "open-file", "Open File", on_notification_action, open_file, free_action_data);
+                notification, "open-file", _("Open File"), on_notification_action, open_file, free_action_data);
             notify_notification_add_action(
-                notification, "open-folder", "Open Folder", on_notification_action, open_folder, free_action_data);
+                notification, "open-folder", _("Open Folder"), on_notification_action, open_folder, free_action_data);
 
             GError* error = nullptr;
             gboolean shown = notify_notification_show(notification, &error);
@@ -228,7 +230,7 @@ namespace tether {
                                                free_action_data);
                 notify_notification_add_action(notification,
                                                "reply",
-                                               "Reply",
+                                               _("Reply"),
                                                on_reply_action,
                                                new NotificationActionData{spec->reply_thread},
                                                free_action_data);

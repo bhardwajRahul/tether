@@ -1,4 +1,5 @@
 #include "tether/bluetooth/groups.hpp"
+#include <tether/i18n.hpp>
 
 #include <algorithm>
 #include <cctype>
@@ -274,7 +275,7 @@ namespace tether::bluetooth {
                                               std::string& reason) {
         out.clear();
         if (!group_replies_enabled) {
-            reason = "Group replies are turned off.";
+            reason = _("Group replies are turned off.");
             return ReplyEligibility::Disabled;
         }
 
@@ -284,14 +285,14 @@ namespace tether::bluetooth {
                 Recipient recipient;
                 std::string err;
                 if (!recipient_from_thread_key(address, recipient, err)) {
-                    reason = "The roster for this group contains an unusable address: " + err;
+                    reason = tr_format(_("The roster for this group contains an unusable address: {}"), err);
                     out.clear();
                     return ReplyEligibility::Unresolved;
                 }
                 out.push_back(recipient);
             }
             if (out.empty()) {
-                reason = "The roster for this group is empty.";
+                reason = _("The roster for this group is empty.");
                 return ReplyEligibility::NeedsRoster;
             }
             return ReplyEligibility::Allowed;
@@ -299,24 +300,24 @@ namespace tether::bluetooth {
 
         // thread with no correlated notification behind it
         if (!info.is_group) {
-            reason = "This conversation has not been identified as a group yet, so there is nobody to reply to.";
+            reason = _("This conversation has not been identified as a group yet, so there is nobody to reply to.");
             return ReplyEligibility::NeedsRoster;
         }
 
         if (info.named) {
-            reason = "This group has a name but no member list. Add its members before replying.";
+            reason = _("This group has a name but no member list. Add its members before replying.");
             return ReplyEligibility::NeedsRoster;
         }
 
         for (const auto& participant : info.participants) {
             std::vector<std::string> addresses = contacts.addresses_for_name(participant);
             if (addresses.empty()) {
-                reason = "\"" + participant + "\" is not in your contacts.";
+                reason = tr_format(_("\"{}\" is not in your contacts."), participant);
                 out.clear();
                 return ReplyEligibility::Unresolved;
             }
             if (addresses.size() > 1) {
-                reason = "\"" + participant + "\" matches more than one contact address.";
+                reason = tr_format(_("\"{}\" matches more than one contact address."), participant);
                 out.clear();
                 return ReplyEligibility::Unresolved;
             }
@@ -324,7 +325,7 @@ namespace tether::bluetooth {
             Recipient recipient;
             std::string err;
             if (!recipient_from_thread_key(addresses.front(), recipient, err)) {
-                reason = "\"" + participant + "\" resolved to an unusable address: " + err;
+                reason = tr_format(_("\"{0}\" resolved to an unusable address: {1}"), participant, err);
                 out.clear();
                 return ReplyEligibility::Unresolved;
             }
@@ -332,7 +333,7 @@ namespace tether::bluetooth {
         }
 
         if (out.empty()) {
-            reason = "No recipients could be resolved for this group.";
+            reason = _("No recipients could be resolved for this group.");
             return ReplyEligibility::Unresolved;
         }
         return ReplyEligibility::Allowed;

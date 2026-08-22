@@ -8,6 +8,7 @@
 #include <gtk/gtk.h>
 #include <string>
 #include <tether/crypto.hpp>
+#include <tether/i18n.hpp>
 
 namespace {
 
@@ -51,7 +52,7 @@ namespace {
     GtkWidget* create_app_menu_button() {
         GtkWidget* menu = gtk_menu_new();
 
-        GtkWidget* close_to_tray = gtk_check_menu_item_new_with_label("Keep running in tray when closed");
+        GtkWidget* close_to_tray = gtk_check_menu_item_new_with_label(_("Keep running in tray when closed"));
         gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(close_to_tray), tray_close_to_tray());
         g_signal_connect(close_to_tray,
                          "toggled",
@@ -61,7 +62,7 @@ namespace {
                          nullptr);
         gtk_menu_shell_append(GTK_MENU_SHELL(menu), close_to_tray);
 
-        GtkWidget* quit = gtk_menu_item_new_with_label("Quit");
+        GtkWidget* quit = gtk_menu_item_new_with_label(_("Quit"));
         g_signal_connect(quit,
                          "activate",
                          G_CALLBACK(+[](GtkMenuItem*, gpointer) {
@@ -97,7 +98,7 @@ namespace {
         install_style();
 
         GtkWidget* window = gtk_application_window_new(app);
-        gtk_window_set_title(GTK_WINDOW(window), "Tether");
+        gtk_window_set_title(GTK_WINDOW(window), _("Tether"));
         gtk_window_set_default_size(GTK_WINDOW(window), 820, 560);
         set_main_window(window);
         g_signal_connect(window, "delete-event", G_CALLBACK(on_window_delete), nullptr);
@@ -105,7 +106,7 @@ namespace {
 
         GtkWidget* header_bar = gtk_header_bar_new();
         gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(header_bar), TRUE);
-        gtk_header_bar_set_title(GTK_HEADER_BAR(header_bar), "Tether");
+        gtk_header_bar_set_title(GTK_HEADER_BAR(header_bar), _("Tether"));
         gtk_window_set_titlebar(GTK_WINDOW(window), header_bar);
         set_header_bar(header_bar);
 
@@ -121,9 +122,9 @@ namespace {
         GtkWidget* stack = gtk_stack_new();
         g_stack = stack;
         gtk_stack_set_transition_type(GTK_STACK(stack), GTK_STACK_TRANSITION_TYPE_CROSSFADE);
-        gtk_stack_add_titled(GTK_STACK(stack), devices_view_new(), "devices", "Devices");
-        gtk_stack_add_titled(GTK_STACK(stack), messages_view_new(), "messages", "Messages");
-        gtk_stack_add_titled(GTK_STACK(stack), notifications_view_new(), "notifications", "Notifications");
+        gtk_stack_add_titled(GTK_STACK(stack), devices_view_new(), "devices", _("Devices"));
+        gtk_stack_add_titled(GTK_STACK(stack), messages_view_new(), "messages", _("Messages"));
+        gtk_stack_add_titled(GTK_STACK(stack), notifications_view_new(), "notifications", _("Notifications"));
 
         GtkWidget* switcher = gtk_stack_switcher_new();
         gtk_stack_switcher_set_stack(GTK_STACK_SWITCHER(switcher), GTK_STACK(stack));
@@ -162,24 +163,26 @@ namespace {
 } // namespace
 
 int main(int argc, char** argv) {
+    tether::init_locale();
+
     GtkApplication* app = gtk_application_new("com.tether.desktop", G_APPLICATION_HANDLES_COMMAND_LINE);
     g_application_add_main_option(G_APPLICATION(app),
                                   "tray",
                                   0,
                                   G_OPTION_FLAG_NONE,
                                   G_OPTION_ARG_NONE,
-                                  "Start hidden in the system tray",
+                                  _("Start hidden in the system tray"),
                                   nullptr);
     for (const char* view : {"devices", "messages", "notifications"}) {
         g_application_add_main_option(
-            G_APPLICATION(app), view, 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, "Open on this tab", nullptr);
+            G_APPLICATION(app), view, 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, _("Open on this tab"), nullptr);
     }
     g_application_add_main_option(G_APPLICATION(app),
                                   "thread",
                                   0,
                                   G_OPTION_FLAG_NONE,
                                   G_OPTION_ARG_STRING,
-                                  "Open the messages tab on this conversation",
+                                  _("Open the messages tab on this conversation"),
                                   "KEY");
 
     g_signal_connect(app,

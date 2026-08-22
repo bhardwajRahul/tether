@@ -29,3 +29,15 @@ target_link_libraries(tether_test PRIVATE
 
 include(GoogleTest)
 gtest_discover_tests(tether_test)
+
+find_program(MSGFMT_EXECUTABLE msgfmt)
+if(MSGFMT_EXECUTABLE)
+    file(STRINGS "${CMAKE_SOURCE_DIR}/po/LINGUAS" TETHER_LINGUAS)
+    foreach(LANG ${TETHER_LINGUAS})
+        if(EXISTS "${CMAKE_SOURCE_DIR}/po/${LANG}.po")
+            add_test(NAME po_${LANG}
+                     COMMAND ${MSGFMT_EXECUTABLE} --check --check-format
+                             -o /dev/null "${CMAKE_SOURCE_DIR}/po/${LANG}.po")
+        endif()
+    endforeach()
+endif()

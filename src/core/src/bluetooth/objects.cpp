@@ -1,4 +1,5 @@
 #include "tether/bluetooth/objects.hpp"
+#include <tether/i18n.hpp>
 
 #include <algorithm>
 #include <cstdio>
@@ -348,8 +349,11 @@ namespace tether::bluetooth {
         if (!adapter && !objects.adapters.empty())
             adapter = &objects.adapters.front();
 
+        // ponytail: tetherd is per-user, so its locale is the user's and these
+        // strings can be translated here. A system-wide daemon serving several
+        // users would have to send codes and let each client translate them.
         if (!adapter) {
-            cap.reasons.emplace_back("No Bluetooth adapter found.");
+            cap.reasons.emplace_back(_("No Bluetooth adapter found."));
             return cap;
         }
 
@@ -379,12 +383,12 @@ namespace tether::bluetooth {
         cap.secure_connections_known = read_secure_connections(cap.adapter_id, cap.secure_connections);
 
         if (!cap.powered) {
-            cap.reasons.emplace_back("Bluetooth adapter is powered off.");
+            cap.reasons.emplace_back(_("Bluetooth adapter is powered off."));
             cap.mode = DeliveryMode::Blocked;
             return cap;
         }
         if (!cap.le_central) {
-            cap.reasons.emplace_back("Adapter has no LE central role; ANCS is impossible.");
+            cap.reasons.emplace_back(_("Adapter has no LE central role; ANCS is impossible."));
             cap.mode = DeliveryMode::Blocked;
             return cap;
         }
@@ -393,37 +397,38 @@ namespace tether::bluetooth {
         cap.mode = DeliveryMode::Full;
 
         if (!cap.le_peripheral) {
-            cap.reasons.emplace_back("Adapter cannot advertise as a peripheral, so ANCS cannot be solicited.");
+            cap.reasons.emplace_back(_("Adapter cannot advertise as a peripheral, so ANCS cannot be solicited."));
             cap.mode = DeliveryMode::Compatibility;
         }
         if (!cap.advertising) {
-            cap.reasons.emplace_back("No LE advertising instances available; the iPhone may never show its "
-                                     "Bluetooth permission toggles.");
+            cap.reasons.emplace_back(_("No LE advertising instances available; the iPhone may never show its "
+                                       "Bluetooth permission toggles."));
             cap.mode = DeliveryMode::Compatibility;
         }
         if (cap.bearer_api == BearerApi::Absent) {
-            cap.setup.push_back({"Notification mirroring needs BlueZ's experimental bearer API "
-                                 "(org.bluez.Bearer.LE1), which bluetoothd is not exposing. Set this up before "
-                                 "pairing: a bond made without it has no LE half.",
+            cap.setup.push_back({_("Notification mirroring needs BlueZ's experimental bearer API "
+                                   "(org.bluez.Bearer.LE1), which bluetoothd is not exposing. Set this up before "
+                                   "pairing: a bond made without it has no LE half."),
                                  enable_experimental_command()});
             cap.mode = DeliveryMode::Compatibility;
         } else if (cap.bearer_api == BearerApi::Unknown && !cap.bonded_device_present) {
             // only an iphone bond can confirm the api
-            cap.reasons.emplace_back("Bearer API support is unconfirmed until a device is bonded.");
+            cap.reasons.emplace_back(_("Bearer API support is unconfirmed until a device is bonded."));
         }
 
         if (cap.bonded_device_present && !cap.bond_has_le) {
-            std::string reason = "A device is bonded, but the bond covers BR/EDR only -- no LE keys were derived, "
-                                 "so notification mirroring cannot work on it. Delete this computer on the iPhone "
-                                 "(Forget This Device) and pair again.";
+            std::string reason = _("A device is bonded, but the bond covers BR/EDR only -- no LE keys were derived, "
+                                   "so notification mirroring cannot work on it. Delete this computer on the iPhone "
+                                   "(Forget This Device) and pair again.");
             if (cap.secure_connections_known && !cap.secure_connections)
-                reason += " Secure Connections is off on this controller, which is what blocks the derivation; "
-                          "re-pairing will not help until it is on.";
+                reason += std::string(" ") +
+                          _("Secure Connections is off on this controller, which is what blocks the derivation; "
+                            "re-pairing will not help until it is on.");
             cap.reasons.emplace_back(std::move(reason));
         }
         if (!cap.class_ok) {
-            cap.setup.push_back({"The iPhone will not offer its Messages and Contacts permissions until this "
-                                 "adapter presents itself as A/V Hands-Free (major 4, minor 8).",
+            cap.setup.push_back({_("The iPhone will not offer its Messages and Contacts permissions until this "
+                                   "adapter presents itself as A/V Hands-Free (major 4, minor 8)."),
                                  "sudo systemctl enable --now tether-btclass@" + cap.adapter_id});
         }
 

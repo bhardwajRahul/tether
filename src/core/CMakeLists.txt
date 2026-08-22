@@ -1,5 +1,6 @@
 add_library(tether STATIC
     src/core.cpp
+    src/i18n.cpp
     src/event_loop.cpp
     src/net.cpp
     src/clipboard.cpp
@@ -47,6 +48,8 @@ target_include_directories(tether PUBLIC
 # Where the bluetooth.service drop-in is shipped, so --bt-setup can name it.
 target_compile_definitions(tether PRIVATE
     TETHER_DATADIR="${CMAKE_INSTALL_FULL_DATADIR}/tether"
+    TETHER_LOCALEDIR="${CMAKE_INSTALL_FULL_LOCALEDIR}"
+    TETHER_GETTEXT_DOMAIN="tether"
 )
 
 
@@ -57,4 +60,5 @@ target_link_libraries(tether PUBLIC
     OpenSSL::Crypto
     PkgConfig::AVAHI
     PkgConfig::GLIB
+    Intl::Intl
 )

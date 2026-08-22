@@ -12,6 +12,7 @@
 #include <tether/discovery.hpp>
 #include <tether/event_loop.hpp>
 #include <tether/file_transfer.hpp>
+#include <tether/i18n.hpp>
 #include <tether/log.hpp>
 #include <tether/net.hpp>
 #include <tether/otp.hpp>
@@ -29,6 +30,7 @@ void signal_handler(int) {
 }
 
 int main(int argc, char** argv) {
+    tether::init_locale();
     debug::log(INFO, "tetherd version {}", tether::get_version());
 
     try {
@@ -147,7 +149,7 @@ int main(int argc, char** argv) {
                 who = message.peer_name.empty() ? message.peer_address : message.peer_name;
             tether::bluetooth::ancs::Notification as_notification;
             as_notification.app_id = tether::bluetooth::ancs::APP_ID_MESSAGES;
-            notifier.notify({"Messages",
+            notifier.notify({_("Messages"),
                              who.empty() ? "iPhone" : who,
                              message.body,
                              tether::bluetooth::ancs::icon_candidates(as_notification),

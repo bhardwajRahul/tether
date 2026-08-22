@@ -1,4 +1,5 @@
 #include "tether/net.hpp"
+#include <tether/i18n.hpp>
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -1410,6 +1411,18 @@ namespace tether {
                                       SSL* ssl,
                                       const std::string& fingerprint,
                                       const std::string& device_name) {
+        // Translated before the fork: gettext takes a lock, and calling it in the
+        // child of a threaded process can deadlock if another thread held it.
+        std::string short_fp = fingerprint;
+        if (short_fp.size() > 16) {
+            short_fp = short_fp.substr(0, 16) + "...";
+        }
+        // TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
+        const std::string body = tr_format(_("{0} ({1}) wants to pair with this device."), device_name, short_fp);
+        const std::string title = _("Pairing Request");
+        const std::string accept = _("Accept");
+        const std::string reject = _("Reject");
+
         // Create a pipe so the parent can detect when the child exits via epoll
         int pipefd[2];
         if (pipe(pipefd) < 0) {
@@ -1431,13 +1444,6 @@ namespace tether {
             // The write end stays open; it will close when this process exits,
             // signaling EOF to the parent's read end.
 
-            // Build body text with truncated fingerprint for readability
-            std::string short_fp = fingerprint;
-            if (short_fp.size() > 16) {
-                short_fp = short_fp.substr(0, 16) + "...";
-            }
-            std::string body = device_name + " (" + short_fp + ") wants to pair with this device.";
-
             // Try alongside the daemon binary first, then fall back to PATH
             std::filesystem::path self_path;
             try {
@@ -1449,13 +1455,13 @@ namespace tether {
             execl(sibling.c_str(),
                   "tether-dialog",
                   "--title",
-                  "Pairing Request",
+                  title.c_str(),
                   "--body",
                   body.c_str(),
                   "--accept",
-                  "Accept",
+                  accept.c_str(),
                   "--reject",
-                  "Reject",
+                  reject.c_str(),
                   "--timeout",
                   "60",
                   nullptr);
@@ -1463,13 +1469,13 @@ namespace tether {
             execlp("tether-dialog",
                    "tether-dialog",
                    "--title",
-                   "Pairing Request",
+                   title.c_str(),
                    "--body",
                    body.c_str(),
                    "--accept",
-                   "Accept",
+                   accept.c_str(),
                    "--reject",
-                   "Reject",
+                   reject.c_str(),
                    "--timeout",
                    "60",
                    nullptr);

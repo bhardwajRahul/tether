@@ -23,7 +23,25 @@ include(GNUInstallDirs)
 install(TARGETS tether-gtk
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-configure_file(tether-gtk.desktop.in tether-gtk.desktop @ONLY)
+# msgfmt --desktop injects Name[xx]/GenericName[xx]/Comment[xx] from the catalogs.
+# Without gettext tools the entry is still installed, English only.
+find_program(MSGFMT_EXECUTABLE msgfmt)
+file(GLOB TETHER_PO_FILES "${CMAKE_SOURCE_DIR}/po/*.po")
+if(MSGFMT_EXECUTABLE AND TETHER_PO_FILES)
+    add_custom_command(
+        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/tether-gtk.desktop"
+        COMMAND ${MSGFMT_EXECUTABLE} --desktop
+                --template "${CMAKE_CURRENT_SOURCE_DIR}/tether-gtk.desktop.in"
+                -d "${CMAKE_SOURCE_DIR}/po"
+                -o "${CMAKE_CURRENT_BINARY_DIR}/tether-gtk.desktop"
+        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tether-gtk.desktop.in" ${TETHER_PO_FILES}
+        COMMENT "Localizing tether-gtk.desktop"
+        VERBATIM)
+    add_custom_target(desktop-file ALL
+                      DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/tether-gtk.desktop")
+else()
+    configure_file(tether-gtk.desktop.in tether-gtk.desktop @ONLY)
+endif()
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tether-gtk.desktop
         DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)

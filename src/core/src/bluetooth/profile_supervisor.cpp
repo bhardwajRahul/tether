@@ -1,5 +1,6 @@
 #include "tether/bluetooth/profile_supervisor.hpp"
 #include "tether/log.hpp"
+#include <tether/i18n.hpp>
 
 #include <algorithm>
 #include <cctype>
@@ -70,32 +71,43 @@ namespace tether::bluetooth {
     }
 
     std::string obex_error_advice(ObexError error, const std::string& profile) {
-        const std::string label = profile == "map" ? "Messages" : "Contacts";
+        const bool map = profile == "map";
+        // TRANSLATORS: the feature name Tether shows for this profile.
+        const std::string label = map ? _("Messages") : _("Contacts");
+        // TRANSLATORS: these two are toggle names in the iPhone's own Settings app.
+        // Use Apple's wording for the target language, not a literal translation.
+        const std::string toggle = map ? _("Show Message Notifications") : _("Sync Contacts");
+
         switch (error) {
         case ObexError::Forbidden:
-            return "Enable \"" +
-                   (profile == "map" ? std::string("Show Message Notifications") : std::string("Sync Contacts")) +
-                   "\" for this computer in the iPhone's Settings > Bluetooth > (i). "
-                   "This is a permission, not a pairing problem.";
+            // TRANSLATORS: {} is an iPhone Settings toggle name.
+            return tr_format(_("Enable \"{}\" for this computer in the iPhone's Settings > Bluetooth > (i). "
+                               "This is a permission, not a pairing problem."),
+                             toggle);
         case ObexError::Busy:
-            return label + " is unavailable because another computer is using the iPhone's " + profile +
-                   " session. Disconnect it there, then this will connect on its own.";
+            // TRANSLATORS: {0} is Messages or Contacts, {1} is the profile name (map or pbap).
+            return tr_format(_("{0} is unavailable because another computer is using the iPhone's {1} session. "
+                               "Disconnect it there, then this will connect on its own."),
+                             label,
+                             profile);
         case ObexError::NoRecord:
             // obexd reports a missing record whenever its SDP fetch is refused, so the real cause is usually one layer
             // down.
-            return label +
-                   " could not be fetched from the iPhone. Usually another computer holds the phone's "
-                   "Bluetooth session, or \"" +
-                   (profile == "map" ? std::string("Show Message Notifications") : std::string("Sync Contacts")) +
-                   "\" is off in Settings > Bluetooth > (i). Check both; re-pairing is not the fix.";
+            // TRANSLATORS: {0} is Messages or Contacts, {1} is an iPhone Settings toggle name.
+            return tr_format(_("{0} could not be fetched from the iPhone. Usually another computer holds the "
+                               "phone's Bluetooth session, or \"{1}\" is off in Settings > Bluetooth > (i). "
+                               "Check both; re-pairing is not the fix."),
+                             label,
+                             toggle);
         case ObexError::Unavailable:
-            return label + " is unreachable; waiting for the iPhone to come back.";
+            return tr_format(_("{} is unreachable; waiting for the iPhone to come back."), label);
         case ObexError::NoDaemon:
-            return label +
-                   " needs BlueZ's OBEX daemon, which is not installed on this computer. Install it "
-                   "(bluez-obex on Arch, bluez-obexd on Debian and Ubuntu). Nothing needs changing on the iPhone.";
+            return tr_format(_("{} needs BlueZ's OBEX daemon, which is not installed on this computer. Install it "
+                               "(bluez-obex on Arch, bluez-obexd on Debian and Ubuntu). Nothing needs changing on "
+                               "the iPhone."),
+                             label);
         case ObexError::Other:
-            return label + " could not be opened.";
+            return tr_format(_("{} could not be opened."), label);
         default:
             return {};
         }
@@ -164,12 +176,12 @@ namespace tether::bluetooth {
         if (!link_ready) {
             // Nothing to do until the Classic bearer is up; hold what we have and
             // let reset() handle an actual disconnect.
-            status_.reason = "Waiting for the Bluetooth link.";
+            status_.reason = _("Waiting for the Bluetooth link.");
             return !(status_ == previous);
         }
 
         if (status_.map_open && status_.pbap_open) {
-            status_.reason = "Messages and contacts are connected.";
+            status_.reason = _("Messages and contacts are connected.");
             return !(status_ == previous);
         }
 
@@ -186,14 +198,14 @@ namespace tether::bluetooth {
         next_attempt_ = now + (opened_once_ ? PROFILE_STEADY_POLL_SECONDS : PROFILE_INITIAL_POLL_SECONDS);
 
         if (status_.map_open && status_.pbap_open) {
-            status_.reason = "Messages and contacts are connected.";
+            status_.reason = _("Messages and contacts are connected.");
         } else if (!status_.map_open && status_.map_error != ObexError::None) {
             // MAP is the feature people notice, so its problem leads.
             status_.reason = obex_error_advice(status_.map_error, "map");
         } else if (!status_.pbap_open && status_.pbap_error != ObexError::None) {
             status_.reason = obex_error_advice(status_.pbap_error, "pbap");
         } else {
-            status_.reason = "Opening messages and contacts...";
+            status_.reason = _("Opening messages and contacts...");
         }
 
         return !(status_ == previous);
