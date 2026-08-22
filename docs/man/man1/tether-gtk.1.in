@@ -4,6 +4,8 @@ tether-gtk \- Graphical interface for Tether
 .SH SYNOPSIS
 .B tether-gtk
 [\fB\-\-tray\fR]
+[\fB\-\-devices\fR | \fB\-\-messages\fR | \fB\-\-notifications\fR]
+[\fB\-\-thread\fR=\fIKEY\fR]
 .SH DESCRIPTION
 .B tether-gtk
 is a GTK-based graphical application for managing Tether connections and devices.
@@ -24,6 +26,15 @@ start it automatically.
 .B \-\-tray
 Start without showing the window. The application is reachable only from its
 tray icon until \fBOpen Tether\fR is chosen.
+.TP
+.B \-\-devices\fR, \fB\-\-messages\fR, \fB\-\-notifications
+Open on that tab. When \fBtether-gtk\fR is already running the existing window
+is raised and switched instead of a second one being started.
+.TP
+.B \-\-thread=\fIKEY\fR
+Open the messages tab on the conversation with this thread key, for example
+\fBtel:+15551234567\fR. This is what the \fBReply\fR button on a message
+notification uses.
 .SH SEE ALSO
 .BR tether (1),
 .BR tetherd (8)

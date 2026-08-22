@@ -16,6 +16,7 @@ namespace tether {
         // Freedesktop icon names, best first.
         std::vector<std::string> icons;
         bool quiet = false;
+        std::string reply_thread;
     };
 
     class DesktopNotifier {
@@ -29,7 +30,6 @@ namespace tether {
         bool init();
         void notify_file_arrived(const std::filesystem::path& path);
 
-        // A plain notification with no actions.
         void notify(const NotificationSpec& spec);
 
     private:

@@ -94,7 +94,7 @@ namespace tether {
         }
 
         struct NotificationActionData {
-            std::string uri;
+            std::string payload;
         };
 
         void free_request(gpointer data) { delete static_cast<NotificationRequest*>(data); }
@@ -117,13 +117,38 @@ namespace tether {
             return true;
         }
 
+        // Hitting an already-running GUI is GApplication's job. A second launch is routed to the primary instance
+        // rather than starting a new window.
+        void open_gui_thread(const std::string& thread_key) {
+            std::string argument = "--thread=" + thread_key;
+            char* argv[] = {const_cast<char*>("tether-gtk"), argument.data(), nullptr};
+            GError* error = nullptr;
+            if (!g_spawn_async(nullptr,
+                               argv,
+                               nullptr,
+                               static_cast<GSpawnFlags>(G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL |
+                                                        G_SPAWN_STDERR_TO_DEV_NULL),
+                               nullptr,
+                               nullptr,
+                               nullptr,
+                               &error)) {
+                debug::log(ERR, "Failed to open tether-gtk: {}", error ? error->message : "unknown");
+                g_clear_error(&error);
+            }
+        }
+
+        void on_reply_action(NotifyNotification*, char*, gpointer user_data) {
+            if (auto* action = static_cast<NotificationActionData*>(user_data))
+                open_gui_thread(action->payload);
+        }
+
         void on_notification_action(NotifyNotification*, char*, gpointer user_data) {
             auto* action = static_cast<NotificationActionData*>(user_data);
             if (!action) {
                 return;
             }
 
-            launch_uri(action->uri);
+            launch_uri(action->payload);
         }
 
         void on_notification_closed(NotifyNotification* notification, gpointer) { g_object_unref(notification); }
@@ -192,12 +217,32 @@ namespace tether {
             set_identity(notification, spec->app_name);
             notify_notification_set_urgency(notification, spec->quiet ? NOTIFY_URGENCY_LOW : NOTIFY_URGENCY_NORMAL);
 
+            const bool has_actions = !spec->reply_thread.empty();
+            if (has_actions) {
+                g_signal_connect(notification, "closed", G_CALLBACK(on_notification_closed), nullptr);
+                notify_notification_add_action(notification,
+                                               "default",
+                                               "default",
+                                               on_reply_action,
+                                               new NotificationActionData{spec->reply_thread},
+                                               free_action_data);
+                notify_notification_add_action(notification,
+                                               "reply",
+                                               "Reply",
+                                               on_reply_action,
+                                               new NotificationActionData{spec->reply_thread},
+                                               free_action_data);
+            }
+
             GError* error = nullptr;
             if (!notify_notification_show(notification, &error)) {
                 debug::log(ERR, "Failed to show notification: {}", error ? error->message : "unknown");
                 g_clear_error(&error);
+                g_object_unref(notification);
+                return G_SOURCE_REMOVE;
             }
-            g_object_unref(notification);
+            if (!has_actions)
+                g_object_unref(notification);
             return G_SOURCE_REMOVE;
         }
 
