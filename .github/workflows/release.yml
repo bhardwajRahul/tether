@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # debian bookworm is out of reach (gcc 12).
+          - image: ubuntu:24.04
+            generator: DEB
+            name: deb
+          - image: fedora:latest
+            generator: RPM
+            name: rpm
+          - image: archlinux:base-devel
+            generator: TGZ
+            name: tgz
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    steps:
+      - name: bootstrap git
+        run: |
+          . /etc/os-release
+          case ${ID_LIKE:-$ID} in
+            *arch*)        pacman -Sy --noconfirm --needed git ;;
+            *fedora*)      dnf install -y git ;;
+            *debian*|*ubuntu*) apt-get update && apt-get install -y --no-install-recommends git ca-certificates ;;
+          esac
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: dependencies
+        run: ./scripts/ci-deps.sh
+
+      - name: build
+        run: |
+          cmake --preset release
+          cmake --build --preset release
+
+      - name: unit tests
+        run: ctest --test-dir build/release --output-on-failure
+
+      - name: package
+        run: cd build/release && cpack -G ${{ matrix.generator }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: |
+            build/release/*.deb
+            build/release/*.rpm
+            build/release/*.tar.gz
+          if-no-files-found: error
+
+  release:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ls -l dist
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
+              --title "Release $TAG" --generate-notes
+          fi

@@ -52,20 +52,28 @@ fi
 git push origin main
 git push origin "$TAG"
 
-# 4. Build Packages
-echo "📦 Building packages..."
-rm -rf "$REPO_ROOT/build/release"
-make package
+# 4. Wait for CI to build and publish the packages
+# Packages are built by .github/workflows/release.yml, each in the distro it targets:
+# a .deb linked against Arch's glibc and libstdc++ will not start on Debian or Ubuntu.
+echo "📦 Waiting for the release workflow..."
+RUN_ID=""
+for _ in $(seq 30); do
+    RUN_ID=$(gh run list --workflow=release.yml --branch "$TAG" --limit 1 --json databaseId --jq '.[0].databaseId')
+    [ -n "$RUN_ID" ] && break
+    sleep 5
+done
+if [ -z "$RUN_ID" ]; then
+    echo "Error: no release workflow run found for $TAG."
+    exit 1
+fi
+gh run watch "$RUN_ID" --exit-status
 
-# 5. Create GitHub Release
-echo "🌐 Creating GitHub Release..."
+# 5. Fetch the published tarball, which tether-bin needs the checksum of
 ASSET_DIR="$REPO_ROOT/build/release"
-# Find the specific tarball, deb, and rpm
+mkdir -p "$ASSET_DIR"
 TARBALL="$ASSET_DIR/tether-$VERSION.tar.gz"
-DEB=$(ls "$ASSET_DIR"/tether-*.deb | head -n 1)
-RPM=$(ls "$ASSET_DIR"/tether-*.rpm | head -n 1)
-
-gh release create "$TAG" "$TARBALL" "$DEB" "$RPM" --title "Release $TAG" --generate-notes
+rm -f "$TARBALL"
+gh release download "$TAG" --pattern "tether-$VERSION.tar.gz" --dir "$ASSET_DIR"
 
 # 6. Update AUR (tether-git)
 if [ -d "$AUR_GIT_DIR" ]; then
