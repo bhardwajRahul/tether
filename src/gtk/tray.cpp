@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <gio/gio.h>
+#include <gtk/gtk.h>
 #include <nlohmann/json.hpp>
 #include <tether/log.hpp>
 #include <unistd.h>
@@ -68,6 +69,8 @@ namespace tether::ui {
         int g_unread = 0;
         std::string g_tooltip;
         bool g_close_to_tray = false;
+        std::string g_icon_style = "symbolic";
+        std::string g_icon_suffix;
 
         RouteState& state(Route route) { return g_state[route == Route::WiFi ? 0 : 1]; }
         const char* route_name(Route route) { return route == Route::WiFi ? "Wi-Fi" : "Bluetooth"; }
@@ -87,7 +90,9 @@ namespace tether::ui {
                 std::ifstream in(path);
                 if (!in)
                     return;
-                g_close_to_tray = nlohmann::json::parse(in).value("close_to_tray", false);
+                const nlohmann::json prefs = nlohmann::json::parse(in);
+                g_close_to_tray = prefs.value("close_to_tray", false);
+                g_icon_style = prefs.value("tray_icon", std::string("symbolic"));
             } catch (const std::exception& e) {
                 // unreadable file means defaults, not a dead tray.
                 debug::log(WARN, "tray: ignoring {} ({})", path, e.what());
@@ -102,10 +107,19 @@ namespace tether::ui {
                 std::error_code ec;
                 std::filesystem::create_directories(std::filesystem::path(path).parent_path(), ec);
                 std::ofstream out(path);
-                out << nlohmann::json{{"close_to_tray", g_close_to_tray}}.dump(2) << "\n";
+                out << nlohmann::json{{"close_to_tray", g_close_to_tray}, {"tray_icon", g_icon_style}}.dump(2) << "\n";
             } catch (const std::exception& e) {
                 debug::log(ERR, "tray: could not write {} ({})", path, e.what());
             }
+        }
+
+        // Symbolic icons are drawn in the panel's foreground color, so the item matches the rest of
+        // the tray. Falls back to the color set when the symbolic one is not installed.
+        void resolve_icon_style() {
+            if (g_icon_style == "color")
+                return;
+            if (gtk_icon_theme_has_icon(gtk_icon_theme_get_default(), "tether-symbolic"))
+                g_icon_suffix = "-symbolic";
         }
 
         void present_window() {
@@ -213,6 +227,8 @@ namespace tether::ui {
             return;
 
         load_prefs();
+        resolve_icon_style();
+        g_icon += g_icon_suffix;
 
         GError* error = nullptr;
         g_bus = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, &error);
@@ -267,7 +283,8 @@ namespace tether::ui {
             tooltip.pop_back();
 
         const bool any_up = g_state[0].ok || g_state[1].ok;
-        const std::string icon = !any_up ? "tether-offline" : (g_unread > 0 ? "tether-unread" : "tether");
+        const std::string icon =
+            std::string(!any_up ? "tether-offline" : (g_unread > 0 ? "tether-unread" : "tether")) + g_icon_suffix;
 
         if (icon != g_icon) {
             g_icon = icon;

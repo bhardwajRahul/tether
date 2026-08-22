@@ -129,12 +129,26 @@ EOF
 echo "Generating GTK icons..."
 GTK_ICON_DIR="src/gtk/icons"
 mkdir -p "$GTK_ICON_DIR"
+
+# Clips to a rounded square so the icon sits with themed icons in docks and
+# launchers instead of reading as a hard tile. Radius follows the GNOME HIG grid.
+round_corners() {
+    local file=$1 size=$2
+    local radius
+    radius=$(awk "BEGIN{printf \"%.0f\", $size*0.22}")
+    convert "$file" \
+        \( -size "${size}x${size}" xc:none \
+           -draw "roundrectangle 0,0,$((size - 1)),$((size - 1)),$radius,$radius" \) \
+        -alpha set -compose DstIn -composite "$file"
+}
+
 for size in 16 32 48 64 128 256 512 1024; do
     mkdir -p "$GTK_ICON_DIR/${size}x${size}"
     convert "$SOURCE" -resize "${size}x${size}" "$GTK_ICON_DIR/${size}x${size}/tether.png"
+    round_corners "$GTK_ICON_DIR/${size}x${size}/tether.png" "$size"
     # Tray icon for "nothing is connected". Colour is the only thing readable at
     # panel size, so the offline state is the same mark drained of it.
-    convert "$SOURCE" -resize "${size}x${size}" -colorspace Gray -brightness-contrast -10x-25 \
+    convert "$GTK_ICON_DIR/${size}x${size}/tether.png" -modulate 100,0 -brightness-contrast -10x-25 \
         "$GTK_ICON_DIR/${size}x${size}/tether-offline.png"
     # Tray icon for unread messages. A dot, not a count: digits are illegible at
     # the 22px most panels render.
@@ -144,6 +158,8 @@ for size in 16 32 48 64 128 256 512 1024; do
     convert "$GTK_ICON_DIR/${size}x${size}/tether.png" \
         -fill "#e01b24" -stroke none -draw "circle $dot_x,$dot_y $dot_edge,$dot_y" \
         "$GTK_ICON_DIR/${size}x${size}/tether-unread.png"
+    # The dot paints over the clipped corner, so clip again.
+    round_corners "$GTK_ICON_DIR/${size}x${size}/tether-unread.png" "$size"
 done
 
 echo "All icons generated successfully."

@@ -35,6 +35,18 @@ is raised and switched instead of a second one being started.
 Open the messages tab on the conversation with this thread key, for example
 \fBtel:+15551234567\fR. This is what the \fBReply\fR button on a message
 notification uses.
+.SH FILES
+.TP
+.I ~/.config/tether/gtk.json
+Interface preferences.
+.B close_to_tray
+(boolean) keeps the application running in the tray when the window is closed.
+.B tray_icon
+selects the tray icon set:
+.B symbolic
+(default) is monochrome and recolored by the panel,
+.B color
+is the full-color application icon.
 .SH SEE ALSO
 .BR tether (1),
 .BR tetherd (8)

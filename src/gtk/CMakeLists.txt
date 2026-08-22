@@ -34,3 +34,8 @@ foreach(SIZE 16 32 48 64 128 256 512 1024)
                   icons/${SIZE}x${SIZE}/tether-unread.png
             DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/${SIZE}x${SIZE}/apps)
 endforeach()
+
+install(FILES icons/symbolic/tether-symbolic.svg
+              icons/symbolic/tether-offline-symbolic.svg
+              icons/symbolic/tether-unread-symbolic.svg
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/symbolic/apps)
