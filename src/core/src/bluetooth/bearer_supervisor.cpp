@@ -100,6 +100,13 @@ namespace tether::bluetooth {
         if (status_.le_connected)
             status_.le_dialling = false;
 
+        // The phone opening the LE link proves it is in range and answering
+        if (status_.le_connected && !previous.le_connected) {
+            status_.classic_backoff = 0;
+            next_classic_attempt_ = 0;
+            classic_failures_ = 0;
+        }
+
         if (status_.classic_connected) {
             if (classic_connected_since_ < 0)
                 classic_connected_since_ = now;
@@ -113,6 +120,8 @@ namespace tether::bluetooth {
             // mirroring off for a phone that is still delivering notifications.
             classic_connected_since_ = -1;
 
+            const int ceiling = status_.le_connected ? LE_UP_CLASSIC_BACKOFF_MAX_SECONDS : BEARER_BACKOFF_MAX_SECONDS;
+
             if (now >= next_classic_attempt_) {
                 std::string err;
                 switch (classify(ops_.connect_classic(err), err)) {
@@ -124,12 +133,12 @@ namespace tether::bluetooth {
                 case ConnectResult::Busy:
                     // Not a refusal and not an attempt. Standing back is the
                     // whole remedy.
-                    status_.classic_backoff = grow_backoff(status_.classic_backoff);
+                    status_.classic_backoff = grow_backoff(status_.classic_backoff, ceiling);
                     next_classic_attempt_ = now + status_.classic_backoff;
                     break;
                 case ConnectResult::Failed:
                     ++classic_failures_;
-                    status_.classic_backoff = next_backoff(status_.classic_backoff, err);
+                    status_.classic_backoff = next_backoff(status_.classic_backoff, err, ceiling);
                     next_classic_attempt_ = now + status_.classic_backoff;
                     debug::log(
                         WARN, "bluetooth: BR/EDR connect failed ({}), retrying in {}s", err, status_.classic_backoff);
@@ -140,10 +149,12 @@ namespace tether::bluetooth {
             // An iPhone that keeps refusing while unlocked, with its Bluetooth
             // permissions already on, is wedged on its own side: nothing here
             // clears it, and saying "connecting" forever hides that.
-            status_.reason = classic_failures_ >= CLASSIC_FAILURES_BEFORE_ADVICE
+            status_.reason = classic_failures_ >= CLASSIC_FAILURES_BEFORE_ADVICE && !status_.le_connected
                                  ? "The iPhone keeps refusing the Bluetooth connection. Turn Bluetooth off and "
                                    "back on on the iPhone — that clears it even when the permissions are already "
                                    "on. Re-pairing is not the fix."
+                             : status_.le_connected
+                                 ? "Notifications are connected. Still reaching the iPhone for messages and contacts..."
                                  : "Connecting to the iPhone over Bluetooth...";
             return !(status_ == previous);
         }

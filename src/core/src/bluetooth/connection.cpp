@@ -228,6 +228,13 @@ namespace tether::bluetooth {
         // profile supervisor short-circuits once map_open is set, so nothing else
         // notices. Consecutive listing failures are the cheapest liveness signal.
         constexpr int MAP_FAILURES_BEFORE_REOPEN = 3;
+
+        // The OBEX session object is gone, or its transport died under it.
+        auto map_session_dead = [](const std::string& err) {
+            return err.find("UnknownObject") != std::string::npos ||
+                   err.find("Transport got disconnected") != std::string::npos ||
+                   err.find("Transport is not connected") != std::string::npos;
+        };
         constexpr int MESSAGE_LIST_MAX = 200;
         // Bodies are fetched one OBEX Get at a time on the connection thread,
         // which also has ANCS and the bearer supervisor. Needs cap to keep the
@@ -305,19 +312,25 @@ namespace tether::bluetooth {
                     return ConnectResult::Failed;
                 }
                 // bluez only exposes the per-bearer Connect while the device is connected on some bearer
+                std::string bearer_err;
                 if (device->has_classic_bearer && device->connected) {
-                    std::string bearer_err;
                     if (call(device->path, IFACE_BEARER_BREDR, "Connect", bearer_err))
                         return ConnectResult::Requested;
-                    // some versions publish the interface without the method
-                    if (bearer_err.find("UnknownMethod") == std::string::npos) {
+                    if (bearer_err.find("InProgress") != std::string::npos ||
+                        bearer_err.find("AlreadyConnected") != std::string::npos) {
                         err = bearer_err;
                         return ConnectResult::Failed;
                     }
                 }
-                set_preferred_bearer("bredr");
-                return call(device->path, IFACE_DEVICE, "Connect", err) ? ConnectResult::Requested
-                                                                        : ConnectResult::Failed;
+
+                if (!device->le_link_up())
+                    set_preferred_bearer("bredr");
+                if (call(device->path, IFACE_DEVICE, "Connect", err))
+                    return ConnectResult::Requested;
+                // per-bearer refusal is the more specific one
+                if (!bearer_err.empty())
+                    err = bearer_err;
+                return ConnectResult::Failed;
             }
 
             bool le_connect_outstanding() const override {
@@ -694,7 +707,7 @@ namespace tether::bluetooth {
         // Some stacks only answer for the folder they are standing in. Walking
         // into the inbox costs the sent folder but keeps messages working, so it
         // is worth one attempt before declaring the session dead.
-        if (!err.empty() && map_lists_subfolders) {
+        if (!err.empty() && map_lists_subfolders && !map_session_dead(err)) {
             debug::log(
                 WARN, "bluetooth: listing '{}' failed ({}); falling back to the inbox alone", MAP_FOLDER_INBOX, err);
             map_lists_subfolders = false;
@@ -712,7 +725,7 @@ namespace tether::bluetooth {
             // ponytail: a fail count, not an obexd ObjectManager watcher. Costs up
             // to MAP_FAILURES_BEFORE_REOPEN polls of latency; subscribe to
             // org.bluez.obex InterfacesRemoved if that ever proves too slow.
-            if (++map_failures >= MAP_FAILURES_BEFORE_REOPEN) {
+            if (map_session_dead(err) || ++map_failures >= MAP_FAILURES_BEFORE_REOPEN) {
                 debug::log(WARN, "bluetooth: MAP session is not answering; reopening it");
                 map_failures = 0;
                 profiles->drop_map();
@@ -731,9 +744,12 @@ namespace tether::bluetooth {
             std::string sent_err;
             auto sent = session->list_messages(MAP_FOLDER_SENT, MESSAGE_LIST_MAX, sent_err);
             if (!sent_err.empty()) {
-                debug::log(
-                    WARN, "bluetooth: the sent folder is unavailable ({}); showing received messages only", sent_err);
-                map_lists_sent = false;
+                if (!map_session_dead(sent_err)) {
+                    debug::log(WARN,
+                               "bluetooth: the sent folder is unavailable ({}); showing received messages only",
+                               sent_err);
+                    map_lists_sent = false;
+                }
             } else {
                 // An empty sent folder is just a folder with nothing new in it.
                 // Only an error means the phone will not serve it.
@@ -945,9 +961,9 @@ namespace tether::bluetooth {
             profiles->tick(now, link_ready);
 
             const auto& bearer = bearers->status();
-            supervise_ancs_solicitation(*monitor,
-                                        ancs_enabled && bearer.classic_connected && bearer.le_available &&
-                                            !bearer.le_connected && !bearer.le_dialling);
+
+            supervise_ancs_solicitation(
+                *monitor, ancs_enabled && bearer.le_available && !bearer.le_connected && !bearer.le_dialling);
 
             // publish() drops a payload identical to the last one, so refreshing
             // every tick costs nothing and cannot miss a transition.

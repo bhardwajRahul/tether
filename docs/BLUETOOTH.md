@@ -126,6 +126,8 @@ checks the daemon does not make.
 | LE never connects and the log repeats `le-connection-abort-by-local` | Something on this side is cancelling the connection. Tether's own cause was a `PreferredBearer` write racing the async connect, fixed; anything else writing that property during a connect will do the same | Check no other Bluetooth tool is driving the same device. The phone is not the cause: `abort-by-local` means the local host cancelled |
 | Notifications stopped and never came back, while messages and contacts kept working | Fixed. The bearer supervisor used to stop retrying LE after six attempts, and only a Classic drop or a daemon restart re-armed it | Nothing. The solicitation is kept on air whenever LE is down, which is what the iPhone answers -- see 2026-08-22 |
 | `tether --bt-status` reports `Bond: BR/EDR only` | The bond was made without cross-transport key derivation, so it has no LE half and can never carry ANCS | Forget this computer on the iPhone and pair again. Check `secure-connections` in the same output first: re-pairing cannot help while it is off |
+| Walked back into range and nothing reconnected for minutes | Fixed. The ANCS advert was gated on the Classic link, and the Classic backoff had no event that ended the absence | Nothing. The advert stays on air whenever LE is down, and an LE link coming up clears the Classic backoff -- see 2026-08-22 |
+| Startup logs `StartNotify not ready yet (InProgress)` for up to a minute | GATT discovery is still running on the new LE link | Nothing. It subscribes on its own. Only treat it as the 2026-08-19 hang if the LE link never comes up |
 | The status says the iPhone is not answering on LE, and its permission is on | The phone's Bluetooth stack is wedged, which the granted permission does not prevent | Turn Bluetooth off and back on **on the iPhone**. Re-pairing and re-toggling the permission do not clear this |
 | Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
 | A group conversation cannot be replied to | Working as designed until the route is unambiguous | The thread's `reply_reason` says which condition failed |
@@ -757,3 +759,145 @@ phonebook is personal data, and the cache and journal are both written mode 0600
 Tether's Bluetooth support is an independent implementation written against those published
 findings, Apple's ANCS specification, the Bluetooth SIG MAP and PBAP specifications, and
 the BlueZ D-Bus API.
+
+### 2026-08-22 - Coming back in range waited on a backoff nothing could clear
+
+Left the laptop, came back, and the log had been idle for minutes:
+
+```
+[WARN] bluetooth: BR/EDR connect failed (br-connection-unknown), retrying in 5s
+[WARN] bluetooth: BR/EDR connect failed (br-connection-unknown), retrying in 10s
+... 20s, 40s, 80s, 160s ...
+[WARN] bluetooth: BR/EDR connect failed (br-connection-unknown), retrying in 300s
+```
+
+Two halves each waiting on the other:
+
+**The advert was gated on the Classic link.** `supervise_ancs_solicitation` required
+`bearer.classic_connected`, so with BR/EDR down nothing was on air. The advert is the
+only part of this daemon that reacts to the phone returning -- the iPhone opens the LE
+link 1.3s after seeing it (2026-08-22 above) -- and it was switched off in exactly the
+state where it is the sole means of recovery. The gate no longer mentions BR/EDR.
+
+**The Classic backoff had no way to learn the phone was back.** `br-connection-unknown`
+is BlueZ's catch-all for a failed Classic connect: it covers a phone that walked out of
+range and a phone that refused, so it cannot be added to `is_transient` -- doing that
+would page a wedged phone every 5s forever. The backoff to 300s is right while the phone
+is genuinely gone. What was missing was the event that ends the absence. An LE link
+opening is that event: it is proof the phone is in range and answering. `tick()` now
+clears `classic_backoff`, `next_classic_attempt_` and `classic_failures_` on the
+false-to-true edge of `le_connected`, so BR/EDR is dialled on the same tick.
+
+Clearing `classic_failures_` matters on its own: six failures out of range had the status
+telling the user the iPhone "keeps refusing the Bluetooth connection", advice for a wedged
+phone, about a phone that had only been in another room.
+
+Together: return to range, LE comes up within seconds off the advert, Classic follows
+immediately. Neither half waits on the other any more.
+
+### 2026-08-22 - A live LE link is proof, not an event
+
+The first cut of the fix above cleared the BR/EDR backoff on the false-to-true edge of
+`le_connected`. Walking back in showed why that is not enough:
+
+```
+BR/EDR connect failed (br-connection-unknown), retrying in 5s
+... 10s, 20s, 40s, 80s ...
+```
+
+all of it with LE connected and notifications mirroring. The edge fired once, and the
+backoff then climbed unopposed against a phone that was demonstrably in range and
+answering. iOS declines the BR/EDR page for its own reasons while holding the LE link up;
+that is a "not now", not an absence, and it clears on its own within seconds.
+
+The backoff ceiling is now conditional: `LE_UP_CLASSIC_BACKOFF_MAX_SECONDS` (30s) while LE
+is connected, the full 300s only when it is not. The edge clear stays -- it still collapses
+a ceiling grown during a real absence the moment the phone answers.
+
+The same state produced worse advice. With six failures logged, `--bt-status` said the
+iPhone "keeps refusing the Bluetooth connection. Turn Bluetooth off and back on" -- about a
+phone that was delivering notifications over LE at that moment, and where following the
+advice would have broken the one bearer that was working. That string is now suppressed
+while `le_connected`, replaced with one that says what is actually true: notifications are
+connected, messages and contacts are still being reached for.
+
+**A dead OBEX session was read as a phone capability.** The same outage produced:
+
+```
+the sent folder is unavailable (Transport got disconnected); showing received messages only
+listing 'inbox' failed (UnknownObject: Method "ListMessages" ... doesn't exist); falling back to the inbox alone
+```
+
+Both are capability fallbacks -- `map_lists_sent` and `map_lists_subfolders` are latched
+off for the life of the session -- and both fired on an OBEX session that had simply gone
+away with the link. A dropped link left the daemon convinced the iPhone serves no sent
+folder and no subfolders. `map_session_dead()` now separates the two: `UnknownObject` and a
+disconnected transport skip the fallbacks entirely and reopen the session on the spot,
+rather than counting to `MAP_FAILURES_BEFORE_REOPEN` first.
+
+### 2026-08-22 - The advert was not the problem; the per-bearer Connect was
+
+A daemon start with the phone on the desk logged `br-connection-unknown` on repeat while
+ANCS was already talking GATT over LE. The obvious suspect was the advert change above --
+connectable LE advertising now runs during the window BR/EDR is being paged, which it never
+did before. Measured instead of assumed, with `tetherd` stopped so nothing else drove the
+radio:
+
+| Condition | Cold `Device1.Connect` |
+|---|---|
+| No advertising | 1s, 2s, 1s -- 3/3 |
+| ANCS solicitation on air | 1s, 1s, 1s -- 3/3 |
+
+The advert costs nothing. Paging works fine underneath it, and the gate change stands.
+
+What differs is which method is called. `connect_classic()` picks the per-bearer
+`Bearer.BREDR1.Connect` whenever `Device1.Connected` is already true, and treats a refusal
+from it as final. Before the advert change that branch was nearly unreachable at startup:
+with no advert, LE never came up first, so `Device1.Connected` stayed false and the untyped
+`Device1.Connect` -- the one that connects in a second -- did the work. Now LE comes up
+within seconds of the advert going on air, `Device1.Connected` flips to true, and every
+subsequent Classic attempt takes the per-bearer path, which answers `br-connection-unknown`
+under a live LE link.
+
+So the advert did not break paging; it changed which door the daemon knocks on. A refusal
+from the per-bearer Connect now falls through to `Device1.Connect` instead of ending the
+attempt. Only `InProgress` and `AlreadyConnected` still return early -- both mean a connect
+is already running, and racing a second one against it is the failure mode that produced
+the `InProgress` storms.
+
+`set_preferred_bearer("bredr")` sits on that fallback path, and reaching it under a live LE
+link would reintroduce the 2026-08-20 bug exactly. It is now skipped whenever LE is up. The
+property only steers the untyped Connect, and with LE up the phone is reachable without it.
+
+### 2026-08-22 - Confirmed: a clean start, and where the remaining minute goes
+
+First daemon start after the fallback above, phone on the desk:
+
+```
+[INFO] bluetooth: soliciting ANCS for 180s
+[INFO] bluetooth: pulled 7 contacts
+[INFO] ancs: the notification subscription is no longer live (BlueZ cleared Notifying), rebuilding it
+[INFO] ancs: StartNotify not ready yet (org.bluez.Error.InProgress: In Progress)
+[INFO] ancs: Subscribing to the iPhone's notifications...
+```
+
+Not one `br-connection-unknown` in the whole run, and PBAP pulled before any warning was
+logged at all -- BR/EDR was up almost immediately. The backoff climb that opened this
+investigation is gone.
+
+What is left takes about a minute, and it is entirely the LE half: `StartNotify` answering
+`InProgress` while BlueZ finishes GATT discovery on the freshly opened link. The daemon
+retries and it clears on its own.
+
+**This is not the hang recorded on 2026-08-19.** That one also answers `InProgress` on
+`StartNotify`, and the difference matters because the remedy there is a `bluetoothd`
+restart, which is worth nothing here:
+
+| | Transient (normal startup) | Hung (2026-08-19) |
+|---|---|---|
+| Duration | Seconds to about a minute, then subscribes | Indefinite |
+| LE link | Up -- the characteristics are there to discover | Never appears; every `Bearer.LE1.Connect` is accepted and nothing connects |
+| Remedy | None. Wait | `sudo systemctl restart bluetooth` |
+
+The link being up is the discriminator: `InProgress` under a live LE link is discovery
+still running, not a poisoned path.

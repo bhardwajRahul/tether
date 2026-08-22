@@ -665,3 +665,87 @@ TEST(BearerSupervisor, RepeatedRefusalNamesTheRemedy) {
     sup.tick(++now);
     EXPECT_TRUE(sup.status().classic_connected);
 }
+
+// Walking back into range must not be held behind the backoff the absence grew.
+TEST(BearerSupervisor, LeComingUpClearsTheClassicBackoff) {
+    FakeBearer ops;
+    BearerSupervisor sup(ops, true);
+
+    ops.classic_succeeds = false;
+    ops.classic_error = "br-connection-unknown";
+
+    // Out of range: BR/EDR fails until the backoff reaches its ceiling.
+    int64_t now = 0;
+    while (now < 1200) {
+        sup.tick(now);
+        now += BEARER_POLL_SECONDS;
+    }
+    ASSERT_EQ(sup.status().classic_backoff, BEARER_BACKOFF_MAX_SECONDS)
+        << "expected the absence to grow the backoff to its ceiling";
+    const int attempts_while_away = ops.classic_attempts;
+
+    // Back in range: the phone sees the solicitation and opens LE inbound.
+    ops.le = true;
+    ops.classic_succeeds = true;
+    sup.tick(now);
+
+    EXPECT_EQ(ops.classic_attempts, attempts_while_away + 1)
+        << "LE came up and BR/EDR still sat out the backoff grown while the phone was away";
+    EXPECT_EQ(sup.status().classic_backoff, 0);
+}
+
+// The "phone keeps refusing" advice must not survive a phone that was merely away.
+TEST(BearerSupervisor, LeComingUpClearsTheRefusalAdvice) {
+    FakeBearer ops;
+    BearerSupervisor sup(ops, true);
+
+    ops.classic_succeeds = false;
+    ops.classic_error = "br-connection-unknown";
+
+    int64_t now = 0;
+    for (int i = 0; i < 40; ++i) {
+        sup.tick(now);
+        now += BEARER_POLL_SECONDS;
+    }
+    ASSERT_NE(sup.status().reason.find("keeps refusing"), std::string::npos);
+
+    ops.le = true;
+    sup.tick(now);
+    EXPECT_EQ(sup.status().reason.find("keeps refusing"), std::string::npos)
+        << "blamed the phone for refusing after it had only been out of range";
+}
+
+// A live LE link is standing proof the phone is present, not a one-off event.
+TEST(BearerSupervisor, ClassicBackoffStaysShortWhileLeIsUp) {
+    FakeBearer ops;
+    BearerSupervisor sup(ops, true);
+
+    ops.classic_succeeds = false;
+    ops.classic_error = "br-connection-unknown";
+    ops.le = true; // phone answered the solicitation; BR/EDR still will not page
+
+    int64_t now = 0;
+    while (now < 1200) {
+        sup.tick(now);
+        now += BEARER_POLL_SECONDS;
+        EXPECT_LE(sup.status().classic_backoff, LE_UP_CLASSIC_BACKOFF_MAX_SECONDS)
+            << "backed off for minutes against a phone that was answering on LE";
+    }
+}
+
+// Telling the user to cycle Bluetooth would drop the LE link carrying notifications.
+TEST(BearerSupervisor, DoesNotBlameThePhoneWhileItAnswersOnLe) {
+    FakeBearer ops;
+    BearerSupervisor sup(ops, true);
+
+    ops.classic_succeeds = false;
+    ops.le = true;
+
+    int64_t now = 0;
+    while (now < 1200) {
+        sup.tick(now);
+        now += BEARER_POLL_SECONDS;
+    }
+    EXPECT_EQ(sup.status().reason.find("keeps refusing"), std::string::npos)
+        << "told the user to cycle Bluetooth while notifications were mirroring over LE";
+}
