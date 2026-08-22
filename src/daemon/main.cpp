@@ -150,7 +150,9 @@ int main(int argc, char** argv) {
             notifier.notify({"Messages",
                              who.empty() ? "iPhone" : who,
                              message.body,
-                             tether::bluetooth::ancs::icon_candidates(as_notification)});
+                             tether::bluetooth::ancs::icon_candidates(as_notification),
+                             false,
+                             message.thread_key});
         });
     if (bluez.start()) {
         tether::bluetooth::g_bluez = &bluez;

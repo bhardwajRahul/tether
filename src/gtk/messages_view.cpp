@@ -53,6 +53,8 @@ namespace tether::ui {
             // why not when it cannot.
             bool selected_repliable = false;
             std::string selected_block_reason;
+            // A conversation opened from outside the list is a reply that is already under way
+            bool focus_composer = false;
 
             // Addressing a message to someone with no conversation yet.
             bool composing = false;
@@ -266,6 +268,12 @@ namespace tether::ui {
 
             if (g_messages.thread_selected_handler)
                 g_signal_handler_unblock(g_messages.thread_list, g_messages.thread_selected_handler);
+
+            if (g_messages.focus_composer) {
+                g_messages.focus_composer = false;
+                if (gtk_widget_is_sensitive(g_messages.composer))
+                    gtk_widget_grab_focus(g_messages.composer);
+            }
         }
 
         void show_messages(const nlohmann::json& event) {
@@ -725,6 +733,21 @@ namespace tether::ui {
         g_messages.marked_read.clear();
         update_composer_sensitivity();
         set_banner("The Tether daemon is not running.");
+    }
+
+    void messages_view_open_thread(const std::string& thread_key) {
+        if (thread_key.empty())
+            return;
+        leave_compose();
+        g_messages.selected_thread = thread_key;
+        g_messages.selected_name.clear();
+        g_messages.selected_repliable = false;
+        g_messages.selected_block_reason.clear();
+        g_messages.focus_composer = true;
+        gtk_stack_set_visible_child_name(GTK_STACK(g_messages.placeholder_stack), "conversation");
+        update_composer_sensitivity();
+        request_threads();
+        request_messages(thread_key);
     }
 
     void messages_view_set_visible(bool visible) {

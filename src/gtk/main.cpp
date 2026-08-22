@@ -6,6 +6,7 @@
 #include "ui_util.hpp"
 
 #include <gtk/gtk.h>
+#include <string>
 #include <tether/crypto.hpp>
 
 namespace {
@@ -13,7 +14,25 @@ namespace {
     using namespace tether::ui;
 
     GtkWidget* g_refresh_button = nullptr;
+    GtkWidget* g_stack = nullptr;
     gboolean g_start_hidden = FALSE;
+
+    // what the current invocation asked to see
+    std::string g_requested_view;
+    std::string g_requested_thread;
+
+    void apply_requested_view() {
+        if (!g_stack)
+            return;
+        if (!g_requested_thread.empty())
+            g_requested_view = "messages";
+        if (!g_requested_view.empty())
+            gtk_stack_set_visible_child_name(GTK_STACK(g_stack), g_requested_view.c_str());
+        if (!g_requested_thread.empty())
+            messages_view_open_thread(g_requested_thread);
+        g_requested_view.clear();
+        g_requested_thread.clear();
+    }
 
     void on_visible_view_changed(GObject* stack, GParamSpec*, gpointer) {
         const gchar* name = gtk_stack_get_visible_child_name(GTK_STACK(stack));
@@ -100,6 +119,7 @@ namespace {
         gtk_header_bar_pack_start(GTK_HEADER_BAR(header_bar), g_refresh_button);
 
         GtkWidget* stack = gtk_stack_new();
+        g_stack = stack;
         gtk_stack_set_transition_type(GTK_STACK(stack), GTK_STACK_TRANSITION_TYPE_CROSSFADE);
         gtk_stack_add_titled(GTK_STACK(stack), devices_view_new(), "devices", "Devices");
         gtk_stack_add_titled(GTK_STACK(stack), messages_view_new(), "messages", "Messages");
@@ -142,7 +162,7 @@ namespace {
 } // namespace
 
 int main(int argc, char** argv) {
-    GtkApplication* app = gtk_application_new("com.tether.desktop", G_APPLICATION_DEFAULT_FLAGS);
+    GtkApplication* app = gtk_application_new("com.tether.desktop", G_APPLICATION_HANDLES_COMMAND_LINE);
     g_application_add_main_option(G_APPLICATION(app),
                                   "tray",
                                   0,
@@ -150,12 +170,35 @@ int main(int argc, char** argv) {
                                   G_OPTION_ARG_NONE,
                                   "Start hidden in the system tray",
                                   nullptr);
+    for (const char* view : {"devices", "messages", "notifications"}) {
+        g_application_add_main_option(
+            G_APPLICATION(app), view, 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, "Open on this tab", nullptr);
+    }
+    g_application_add_main_option(G_APPLICATION(app),
+                                  "thread",
+                                  0,
+                                  G_OPTION_FLAG_NONE,
+                                  G_OPTION_ARG_STRING,
+                                  "Open the messages tab on this conversation",
+                                  "KEY");
+
     g_signal_connect(app,
-                     "handle-local-options",
-                     G_CALLBACK(+[](GApplication*, GVariantDict* options, gpointer) -> gint {
+                     "command-line",
+                     G_CALLBACK(+[](GApplication* app, GApplicationCommandLine* cmdline, gpointer) -> gint {
+                         GVariantDict* options = g_application_command_line_get_options_dict(cmdline);
                          if (g_variant_dict_contains(options, "tray"))
                              g_start_hidden = TRUE;
-                         return -1;
+                         for (const char* view : {"devices", "messages", "notifications"}) {
+                             if (g_variant_dict_contains(options, view))
+                                 g_requested_view = view;
+                         }
+                         const gchar* thread = nullptr;
+                         if (g_variant_dict_lookup(options, "thread", "&s", &thread) && thread)
+                             g_requested_thread = thread;
+
+                         g_application_activate(app);
+                         apply_requested_view();
+                         return 0;
                      }),
                      nullptr);
     g_signal_connect(app, "activate", G_CALLBACK(activate), nullptr);
