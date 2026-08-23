@@ -1,0 +1,41 @@
+name: i18n
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  catalogs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # update-pot.sh reads the version from git describe
+
+      - name: dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gettext
+
+      - name: pot is up to date
+        run: |
+          make pot
+          git diff --exit-code -- po/ || {
+              echo "::error::po/ is stale. Run 'make pot' and commit the result."
+              exit 1
+          }
+
+      - name: catalogs are complete
+        run: |
+          fail=0
+          while read -r lang; do
+              [ -n "$lang" ] || continue
+              out=$(msgfmt --check --check-format --statistics -o /dev/null "po/$lang.po" 2>&1) || fail=1
+              case "$out" in
+                  *untranslated*|*fuzzy*)
+                      echo "::error file=po/$lang.po::$out"
+                      fail=1
+                      ;;
+                  *) echo "$lang: $out" ;;
+              esac
+          done < po/LINGUAS
+          exit $fail

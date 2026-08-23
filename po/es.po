@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-23 14:43-0700\n"
+"POT-Creation-Date: 2026-08-23 15:27-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Spanish\n"
@@ -18,134 +18,155 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#. TRANSLATORS: keep the flag names and the column alignment; only the descriptions after them are prose.
-#: src/cli/main.cpp:100
-msgid ""
-"tether - Wayland companion CLI\n"
-"\n"
-"Options:\n"
-"  -h, --help               Show this help message.\n"
-"  -g, --get-clipboard      Retrieve the current Wayland clipboard text.\n"
-"  -s, --set-clipboard      Take string input and copy it to the local "
-"Wayland clipboard.\n"
-"  -f, --send-file          Send a file through tether.\n"
-"  -n, --native-host        Start the browser Native Messaging Host proxy "
-"loop.\n"
-"  -d, --discover           Scan the local network for tetherd instances via "
-"mDNS.\n"
-"  --host <ip>              Connect over TCP to daemon ip instead of UNIX "
-"Socket.\n"
-"  --port <num>             Connect over TCP port (default 5134).\n"
-"  --timeout <ms>           Discovery scan duration in milliseconds (default "
-"3000).\n"
-"  --list-devices           List all paired connection devices.\n"
-"  --bt-setup               Show the one-time system setup Bluetooth still "
-"needs.\n"
-"  --bt-status              Show Bluetooth adapter capability and delivery "
-"mode.\n"
-"  --bt-devices             List Bluetooth devices known to BlueZ.\n"
-"  --bt-connection          Show Bluetooth link and profile connection "
-"state.\n"
-"  --bt-threads             List iPhone message conversations.\n"
-"  --bt-messages <thread>   Show messages in one conversation.\n"
-"  --bt-send <thread> <text>  Reply in one conversation.\n"
-"  --bt-pair <addr>         Pair with an iPhone over Bluetooth.\n"
-"  --bt-unpair <addr>       Remove a Bluetooth bond.\n"
-"  --bt-solicit             Re-advertise for ANCS so the iPhone shows its "
-"permission\n"
-"                           toggles again, without removing the bond.\n"
-"  --bt-enable <on|off>     Connect to the iPhone over Bluetooth, or stop.\n"
-"  --bt-ancs <on|off>       Turn notification mirroring on or off.\n"
-"  --bt-ancs-content <on|off>  Mirror notification titles and bodies, not "
-"just the app.\n"
-"  --bt-notifications       List mirrored iPhone notifications.\n"
-"  --bt-diagnostics         Print a redacted Bluetooth report for a bug "
-"report.\n"
-"  --accept <fingerprint>   Accept a pending pairing request locally.\n"
-"  --pair                   Send a pair_request over TCP to the daemon.\n"
-"\n"
-"Examples:\n"
-"  tether -g\n"
-"  tether -g --host 127.0.0.1\n"
-"  echo \"pipe\" | tether -s\n"
-"  tether --discover\n"
-"  tether --discover --timeout 5000\n"
-"  tether -f ./report.pdf\n"
-"  tether --accept 9a4f21...\n"
-msgstr ""
-"tether - CLI complementaria para Wayland\n"
-"\n"
-"Opciones:\n"
-"  -h, --help               Mostrar esta ayuda.\n"
-"  -g, --get-clipboard      Obtener el texto actual del portapapeles de "
-"Wayland.\n"
-"  -s, --set-clipboard      Leer texto de la entrada y copiarlo al "
-"portapapeles local de Wayland.\n"
-"  -f, --send-file          Enviar un archivo a través de tether.\n"
-"  -n, --native-host        Iniciar el bucle proxy del Native Messaging Host "
-"del navegador.\n"
-"  -d, --discover           Buscar instancias de tetherd en la red local "
-"mediante mDNS.\n"
-"  --host <ip>              Conectar por TCP a la ip del daemon en vez de al "
-"socket UNIX.\n"
-"  --port <num>             Puerto TCP de conexión (por omisión 5134).\n"
-"  --timeout <ms>           Duración del escaneo de descubrimiento en "
-"milisegundos (por omisión 3000).\n"
-"  --list-devices           Listar todos los dispositivos emparejados.\n"
-"  --bt-setup               Mostrar la configuración inicial del sistema que "
-"aún necesita Bluetooth.\n"
-"  --bt-status              Mostrar la capacidad del adaptador Bluetooth y el "
-"modo de entrega.\n"
-"  --bt-devices             Listar los dispositivos Bluetooth conocidos por "
-"BlueZ.\n"
-"  --bt-connection          Mostrar el estado del enlace y de los perfiles "
-"Bluetooth.\n"
-"  --bt-threads             Listar las conversaciones de mensajes del "
-"iPhone.\n"
-"  --bt-messages <thread>   Mostrar los mensajes de una conversación.\n"
-"  --bt-send <thread> <text>  Responder en una conversación.\n"
-"  --bt-pair <addr>         Emparejar con un iPhone por Bluetooth.\n"
-"  --bt-unpair <addr>       Eliminar un vínculo Bluetooth.\n"
-"  --bt-solicit             Volver a anunciarse para ANCS para que el iPhone "
-"muestre de nuevo sus\n"
-"                           permisos, sin eliminar el vínculo.\n"
-"  --bt-enable <on|off>     Conectar con el iPhone por Bluetooth, o "
-"detenerlo.\n"
-"  --bt-ancs <on|off>       Activar o desactivar la duplicación de "
-"notificaciones.\n"
-"  --bt-ancs-content <on|off>  Duplicar títulos y contenido de las "
-"notificaciones, no solo la app.\n"
-"  --bt-notifications       Listar las notificaciones duplicadas del iPhone.\n"
-"  --bt-diagnostics         Imprimir un informe Bluetooth redactado para un "
-"informe de error.\n"
-"  --accept <fingerprint>   Aceptar localmente una solicitud de "
-"emparejamiento pendiente.\n"
-"  --pair                   Enviar un pair_request al daemon por TCP.\n"
-"\n"
-"Ejemplos:\n"
-"  tether -g\n"
-"  tether -g --host 127.0.0.1\n"
-"  echo \"pipe\" | tether -s\n"
-"  tether --discover\n"
-"  tether --discover --timeout 5000\n"
-"  tether -f ./report.pdf\n"
-"  tether --accept 9a4f21...\n"
+#: src/cli/main.cpp:125
+msgid "yes"
+msgstr "sí"
 
-#: src/cli/main.cpp:147 src/cli/main.cpp:187
+#: src/cli/main.cpp:125
+msgid "no"
+msgstr "no"
+
+#: src/cli/main.cpp:166
+msgid "Show this help message."
+msgstr "Mostrar esta ayuda."
+
+#: src/cli/main.cpp:167
+msgid "Retrieve the current Wayland clipboard text."
+msgstr "Obtener el texto actual del portapapeles de Wayland."
+
+#: src/cli/main.cpp:168
+msgid "Take string input and copy it to the local Wayland clipboard."
+msgstr "Leer texto de la entrada y copiarlo al portapapeles local de Wayland."
+
+#: src/cli/main.cpp:169
+msgid "Send a file through tether."
+msgstr "Enviar un archivo a través de tether."
+
+#: src/cli/main.cpp:170
+msgid "Start the browser Native Messaging Host proxy loop."
+msgstr "Iniciar el bucle proxy del Native Messaging Host del navegador."
+
+#: src/cli/main.cpp:171
+msgid "Scan the local network for tetherd instances via mDNS."
+msgstr "Buscar instancias de tetherd en la red local mediante mDNS."
+
+#: src/cli/main.cpp:172
+msgid "Connect over TCP to daemon ip instead of UNIX Socket."
+msgstr "Conectar por TCP a la ip del daemon en vez de al socket UNIX."
+
+#: src/cli/main.cpp:173
+msgid "Connect over TCP port (default 5134)."
+msgstr "Puerto TCP de conexión (por omisión 5134)."
+
+#: src/cli/main.cpp:174
+msgid "Discovery scan duration in milliseconds (default 3000)."
+msgstr ""
+"Duración del escaneo de descubrimiento en milisegundos (por omisión 3000)."
+
+#: src/cli/main.cpp:175
+msgid "List all paired connection devices."
+msgstr "Listar todos los dispositivos emparejados."
+
+#: src/cli/main.cpp:176
+msgid "Show the one-time system setup Bluetooth still needs."
+msgstr ""
+"Mostrar la configuración inicial del sistema que aún necesita Bluetooth."
+
+#: src/cli/main.cpp:177
+msgid "Show Bluetooth adapter capability and delivery mode."
+msgstr "Mostrar la capacidad del adaptador Bluetooth y el modo de entrega."
+
+#: src/cli/main.cpp:178
+msgid "List Bluetooth devices known to BlueZ."
+msgstr "Listar los dispositivos Bluetooth conocidos por BlueZ."
+
+#: src/cli/main.cpp:179
+msgid "Show Bluetooth link and profile connection state."
+msgstr "Mostrar el estado del enlace y de los perfiles Bluetooth."
+
+#: src/cli/main.cpp:180
+msgid "List iPhone message conversations."
+msgstr "Listar las conversaciones de mensajes del iPhone."
+
+#: src/cli/main.cpp:181
+msgid "Show messages in one conversation."
+msgstr "Mostrar los mensajes de una conversación."
+
+#: src/cli/main.cpp:182
+msgid "Reply in one conversation."
+msgstr "Responder en una conversación."
+
+#: src/cli/main.cpp:183
+msgid "Pair with an iPhone over Bluetooth."
+msgstr "Emparejar con un iPhone por Bluetooth."
+
+#: src/cli/main.cpp:184
+msgid "Remove a Bluetooth bond."
+msgstr "Eliminar un vínculo Bluetooth."
+
+#: src/cli/main.cpp:186
+msgid ""
+"Re-advertise for ANCS so the iPhone shows its permission toggles again, "
+"without removing the bond."
+msgstr ""
+"Volver a anunciarse para ANCS para que el iPhone muestre de nuevo sus "
+"permisos, sin eliminar el vínculo."
+
+#: src/cli/main.cpp:188
+msgid "Connect to the iPhone over Bluetooth, or stop."
+msgstr "Conectar con el iPhone por Bluetooth, o detenerlo."
+
+#: src/cli/main.cpp:189
+msgid "Turn notification mirroring on or off."
+msgstr "Activar o desactivar la duplicación de notificaciones."
+
+#: src/cli/main.cpp:190
+msgid "Mirror notification titles and bodies, not just the app."
+msgstr "Duplicar títulos y contenido de las notificaciones, no solo la app."
+
+#: src/cli/main.cpp:191
+msgid "List mirrored iPhone notifications."
+msgstr "Listar las notificaciones duplicadas del iPhone."
+
+#: src/cli/main.cpp:192
+msgid "Print a redacted Bluetooth report for a bug report."
+msgstr "Imprimir un informe Bluetooth redactado para un informe de error."
+
+#: src/cli/main.cpp:193
+msgid "Accept a pending pairing request locally."
+msgstr "Aceptar localmente una solicitud de emparejamiento pendiente."
+
+#: src/cli/main.cpp:194
+msgid "Send a pair_request over TCP to the daemon."
+msgstr "Enviar un pair_request al daemon por TCP."
+
+#: src/cli/main.cpp:198
+msgid "tether - Wayland companion CLI"
+msgstr "tether - CLI complementaria para Wayland"
+
+#: src/cli/main.cpp:198
+msgid "Options:"
+msgstr "Opciones:"
+
+#: src/cli/main.cpp:225
+msgid "Examples:"
+msgstr "Ejemplos:"
+
+#: src/cli/main.cpp:235 src/cli/main.cpp:275
 msgid "Could not read Bluetooth status from the daemon.\n"
 msgstr "No se pudo leer el estado de Bluetooth del daemon.\n"
 
-#: src/cli/main.cpp:152 src/cli/main.cpp:192
+#: src/cli/main.cpp:240 src/cli/main.cpp:280
 #, c-format
 msgid "Bluetooth: unavailable (is bluetoothd running?)\n"
 msgstr "Bluetooth: no disponible (¿se está ejecutando bluetoothd?)\n"
 
-#: src/cli/main.cpp:159
+#: src/cli/main.cpp:247
 #, c-format
 msgid "Bluetooth setup is complete. Nothing to do.\n"
 msgstr "La configuración de Bluetooth está completa. No hay nada que hacer.\n"
 
-#: src/cli/main.cpp:164
+#: src/cli/main.cpp:252
 #, c-format
 msgid ""
 "\n"
@@ -162,7 +183,7 @@ msgstr[1] ""
 "%zu pasos pendientes antes de que funcionen las funciones Bluetooth del "
 "iPhone:\n"
 
-#: src/cli/main.cpp:178
+#: src/cli/main.cpp:266
 #, c-format
 msgid ""
 "\n"
@@ -171,39 +192,58 @@ msgstr ""
 "\n"
 "Vuelva a ejecutar 'tether --bt-setup' después para confirmarlo.\n"
 
-#: src/cli/main.cpp:197
-#, c-format
-msgid "Mode:       %s\n"
-msgstr "Modo:       %s\n"
+#: src/cli/main.cpp:286
+msgid "Mode"
+msgstr "Modo"
 
-#: src/cli/main.cpp:198
-#, c-format
-msgid "Bearer API: %s\n"
-msgstr "API bearer: %s\n"
+#: src/cli/main.cpp:287
+msgid "Bearer API"
+msgstr "API de bearer"
 
-#: src/cli/main.cpp:200
-#, c-format
-msgid ""
-"Adapter:    powered=%s central=%s peripheral=%s advertising=%s class=%s\n"
-msgstr ""
-"Adaptador:  powered=%s central=%s peripheral=%s advertising=%s class=%s\n"
+#: src/cli/main.cpp:291
+msgid "unknown"
+msgstr "desconocido"
 
-#: src/cli/main.cpp:207
-#, c-format
-msgid "            secure-connections=%s\n"
-msgstr "            secure-connections=%s\n"
+#: src/cli/main.cpp:292
+msgid "Adapter"
+msgstr "Adaptador"
 
-#: src/cli/main.cpp:212
-#, c-format
-msgid "Bond:       %s\n"
-msgstr "Vínculo:    %s\n"
+#: src/cli/main.cpp:293
+#, c++-format
+msgid "powered={0} central={1} peripheral={2} advertising={3} class={4}"
+msgstr "encendido={0} central={1} periférico={2} anunciando={3} clase={4}"
 
-#: src/cli/main.cpp:213
-#, c-format
-msgid "Tether:     %s\n"
-msgstr "Tether:     %s\n"
+#: src/cli/main.cpp:298
+msgid "ok"
+msgstr "correcta"
 
-#: src/cli/main.cpp:228
+#: src/cli/main.cpp:298
+msgid "wrong"
+msgstr "incorrecta"
+
+#: src/cli/main.cpp:299
+#, c++-format
+msgid "secure-connections={}"
+msgstr "Secure Connections={}"
+
+#: src/cli/main.cpp:302
+msgid "Bond"
+msgstr "Vínculo"
+
+#: src/cli/main.cpp:303 src/gtk/main.cpp:101 src/gtk/main.cpp:109
+#: src/gtk/tether-gtk.desktop.in:2
+msgid "Tether"
+msgstr "Tether"
+
+#: src/cli/main.cpp:303
+msgid "connecting"
+msgstr "conectando"
+
+#: src/cli/main.cpp:303
+msgid "off (--bt-enable on)"
+msgstr "desactivado (--bt-enable on)"
+
+#: src/cli/main.cpp:319
 #, c-format
 msgid ""
 "\n"
@@ -218,149 +258,139 @@ msgstr[1] ""
 "\n"
 "%zu pasos de configuración pendientes. Ejecute: tether --bt-setup\n"
 
-#: src/cli/main.cpp:240
+#: src/cli/main.cpp:331
 msgid "Could not read Bluetooth devices from the daemon.\n"
 msgstr "No se pudieron leer los dispositivos Bluetooth del daemon.\n"
 
-#: src/cli/main.cpp:246
+#: src/cli/main.cpp:337
 #, c-format
 msgid "No Bluetooth devices known to BlueZ.\n"
 msgstr "BlueZ no conoce ningún dispositivo Bluetooth.\n"
 
-#: src/cli/main.cpp:291 src/cli/main.cpp:505 src/cli/main.cpp:779
-#: src/cli/main.cpp:799
+#: src/cli/main.cpp:382 src/cli/main.cpp:601 src/cli/main.cpp:875
+#: src/cli/main.cpp:895
 msgid "Could not reach the daemon.\n"
 msgstr "No se pudo contactar con el daemon.\n"
 
-#: src/cli/main.cpp:300
+#: src/cli/main.cpp:391
 msgid "Daemon closed the connection before the operation finished.\n"
 msgstr "El daemon cerró la conexión antes de terminar la operación.\n"
 
-#: src/cli/main.cpp:336
+#: src/cli/main.cpp:427
 msgid "Could not read Bluetooth connection state from the daemon.\n"
 msgstr "No se pudo leer el estado de la conexión Bluetooth del daemon.\n"
 
-#: src/cli/main.cpp:341
-#, c-format
-msgid "Device present:  %s\n"
-msgstr "Dispositivo:     %s\n"
+#: src/cli/main.cpp:432
+msgid "Device present"
+msgstr "Dispositivo presente"
 
-#: src/cli/main.cpp:342
-#, c-format
-msgid "BR/EDR:          %s\n"
-msgstr "BR/EDR:          %s\n"
+#: src/cli/main.cpp:433
+msgid "BR/EDR"
+msgstr "BR/EDR"
 
-#: src/cli/main.cpp:344
-#, c-format
-msgid "LE:              %s%s\n"
-msgstr "LE:              %s%s\n"
+#: src/cli/main.cpp:434
+msgid "LE"
+msgstr "LE"
 
-#: src/cli/main.cpp:347
-#, c-format
-msgid "Messages (MAP):  %s"
-msgstr "Mensajes (MAP):  %s"
+#: src/cli/main.cpp:436
+msgid "(bearer unavailable)"
+msgstr "(bearer no disponible)"
 
-#: src/cli/main.cpp:350
-#, c-format
-msgid ""
-"\n"
-"Contacts (PBAP): %s"
-msgstr ""
-"\n"
-"Contactos (PBAP): %s"
+#: src/cli/main.cpp:441
+msgid "Messages (MAP)"
+msgstr "Mensajes (MAP)"
 
-#: src/cli/main.cpp:353
-#, c-format
-msgid ""
-"\n"
-"Notifications:   %s\n"
-msgstr ""
-"\n"
-"Notificaciones:  %s\n"
+#: src/cli/main.cpp:446
+msgid "Contacts (PBAP)"
+msgstr "Contactos (PBAP)"
 
-#: src/cli/main.cpp:374
+#: src/cli/main.cpp:448 src/gtk/devices_view.cpp:202 src/gtk/main.cpp:127
+msgid "Notifications"
+msgstr "Notificaciones"
+
+#: src/cli/main.cpp:470
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
 msgstr "No se pudieron leer los diagnósticos de Bluetooth del daemon.\n"
 
-#: src/cli/main.cpp:398
+#: src/cli/main.cpp:494
 msgid "Could not read notifications from the daemon.\n"
 msgstr "No se pudieron leer las notificaciones del daemon.\n"
 
-#: src/cli/main.cpp:404
+#: src/cli/main.cpp:500
 #, c-format
 msgid "No notifications yet. Check 'tether --bt-connection'.\n"
 msgstr "Aún no hay notificaciones. Compruebe 'tether --bt-connection'.\n"
 
-#: src/cli/main.cpp:432
+#: src/cli/main.cpp:528
 msgid "Could not read conversations from the daemon.\n"
 msgstr "No se pudieron leer las conversaciones del daemon.\n"
 
-#: src/cli/main.cpp:438
+#: src/cli/main.cpp:534
 #, c-format
 msgid "No conversations yet. Check 'tether --bt-connection'.\n"
 msgstr "Aún no hay conversaciones. Compruebe 'tether --bt-connection'.\n"
 
-#: src/cli/main.cpp:452
+#: src/cli/main.cpp:548
 #, c++-format
 msgid "({} unread)"
 msgid_plural "({} unread)"
 msgstr[0] "({} sin leer)"
 msgstr[1] "({} sin leer)"
 
-#: src/cli/main.cpp:473
+#: src/cli/main.cpp:569
 msgid "Could not read messages from the daemon.\n"
 msgstr "No se pudieron leer los mensajes del daemon.\n"
 
-#: src/cli/main.cpp:479
+#: src/cli/main.cpp:575
 #, c-format
 msgid "No messages in %s\n"
 msgstr "No hay mensajes en %s\n"
 
-#: src/cli/main.cpp:487
+#: src/cli/main.cpp:583
 msgid "me"
 msgstr "yo"
 
-#: src/cli/main.cpp:487
+#: src/cli/main.cpp:583
 msgid "them"
 msgstr "ellos"
 
-#: src/cli/main.cpp:514
+#: src/cli/main.cpp:610
 msgid "Daemon closed the connection before the message was sent.\n"
 msgstr "El daemon cerró la conexión antes de enviar el mensaje.\n"
 
-#: src/cli/main.cpp:536
+#: src/cli/main.cpp:632
 #, c-format
 msgid "Sent to %s\n"
 msgstr "Enviado a %s\n"
 
-#: src/cli/main.cpp:539 src/gtk/messages_view.cpp:497
+#: src/cli/main.cpp:635 src/gtk/messages_view.cpp:497
 msgid "The message was not sent."
 msgstr "El mensaje no se envió."
 
-#: src/cli/main.cpp:643
+#: src/cli/main.cpp:739
 msgid "Unknown action. Run tether --help for options\n"
 msgstr "Acción desconocida. Ejecute tether --help para ver las opciones\n"
 
-#: src/cli/main.cpp:665
+#: src/cli/main.cpp:761
 msgid "  No tetherd instances found.\n"
 msgstr "  No se encontró ninguna instancia de tetherd.\n"
 
-#: src/cli/main.cpp:669
+#: src/cli/main.cpp:765
 msgid "[new]"
 msgstr "[nuevo]"
 
-#: src/cli/main.cpp:671
+#: src/cli/main.cpp:767
 msgid "[known]"
 msgstr "[conocido]"
 
-#: src/cli/main.cpp:682
+#: src/cli/main.cpp:778
 #, c-format
 msgid "Found %zu device in %.1fs\n"
 msgid_plural "Found %zu devices in %.1fs\n"
 msgstr[0] "Se encontró %zu dispositivo en %.1fs\n"
 msgstr[1] "Se encontraron %zu dispositivos en %.1fs\n"
 
-#: src/cli/main.cpp:700
+#: src/cli/main.cpp:796
 msgid ""
 "Explicit framework connection locally rejected! Did you target explicitly "
 "invalid TLS or is daemon broken?\n"
@@ -368,18 +398,18 @@ msgstr ""
 "¡Conexión rechazada localmente! ¿Ha indicado un TLS no válido o el daemon "
 "está averiado?\n"
 
-#: src/cli/main.cpp:730
+#: src/cli/main.cpp:826
 #, c++-format
 msgid "Transfer Failed: {}"
 msgstr "Fallo en la transferencia: {}"
 
-#: src/cli/main.cpp:752
+#: src/cli/main.cpp:848
 msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
 msgstr ""
 "Se requiere una clave de conversación, p. ej. --bt-messages tel:"
 "+15551234567\n"
 
-#: src/cli/main.cpp:758
+#: src/cli/main.cpp:854
 msgid ""
 "A conversation and a message are required, e.g. --bt-send tel:+15551234567 "
 "\"hi\"\n"
@@ -387,21 +417,21 @@ msgstr ""
 "Se requieren una conversación y un mensaje, p. ej. --bt-send tel:"
 "+15551234567 \"hola\"\n"
 
-#: src/cli/main.cpp:764
+#: src/cli/main.cpp:860
 msgid "A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n"
 msgstr ""
 "Se requiere una dirección Bluetooth, p. ej. --bt-pair AA:BB:CC:DD:EE:FF\n"
 
-#: src/cli/main.cpp:772
+#: src/cli/main.cpp:868
 msgid "Expected on or off, e.g. --bt-enable off\n"
 msgstr "Se esperaba on u off, p. ej. --bt-enable off\n"
 
-#: src/cli/main.cpp:783
+#: src/cli/main.cpp:879
 #, c-format
 msgid "Bluetooth enabled.\n"
 msgstr "Bluetooth activado.\n"
 
-#: src/cli/main.cpp:786
+#: src/cli/main.cpp:882
 #, c-format
 msgid ""
 "Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
@@ -412,24 +442,24 @@ msgstr ""
 "esté activo seguirá activo hasta que lo desconecte o el teléfono quede fuera "
 "de alcance.\n"
 
-#: src/cli/main.cpp:792
+#: src/cli/main.cpp:888
 #, c++-format
 msgid "Expected on or off, e.g. {} on\n"
 msgstr "Se esperaba on u off, p. ej. {} on\n"
 
-#: src/cli/main.cpp:805
+#: src/cli/main.cpp:901
 msgid "Notification contents enabled."
 msgstr "Contenido de las notificaciones activado."
 
-#: src/cli/main.cpp:805
+#: src/cli/main.cpp:901
 msgid "Notification contents disabled."
 msgstr "Contenido de las notificaciones desactivado."
 
-#: src/cli/main.cpp:806
+#: src/cli/main.cpp:902
 msgid "Notification mirroring enabled."
 msgstr "Duplicación de notificaciones activada."
 
-#: src/cli/main.cpp:806
+#: src/cli/main.cpp:902
 msgid "Notification mirroring disabled."
 msgstr "Duplicación de notificaciones desactivada."
 
@@ -441,10 +471,10 @@ msgid ""
 "are turned off. Nothing is missing and nothing needs changing on the iPhone."
 msgstr ""
 "Los mensajes y los contactos están conectados. BlueZ informa de que el "
-"enlace Bluetooth está caído porque este ordenador no ofrece al iPhone "
-"ningún perfil al que conectarse: es lo habitual en un equipo sin pila de "
-"audio, o en uno donde los roles a2dp_sink y hfp_hf están desactivados. No "
-"falta nada y no hay que cambiar nada en el iPhone."
+"enlace Bluetooth está caído porque este ordenador no ofrece al iPhone ningún "
+"perfil al que conectarse: es lo habitual en un equipo sin pila de audio, o "
+"en uno donde los roles a2dp_sink y hfp_hf están desactivados. No falta nada "
+"y no hay que cambiar nada en el iPhone."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp:68
 msgid ""
@@ -534,7 +564,7 @@ msgstr ""
 "El iPhone no ofrece notificaciones en este enlace. Se le vuelve a "
 "preguntar..."
 
-#: src/core/src/bluetooth/connection.cpp:1185
+#: src/core/src/bluetooth/connection.cpp:1179
 msgid "No paired iPhone selected."
 msgstr "No hay ningún iPhone emparejado seleccionado."
 
@@ -756,17 +786,17 @@ msgstr ""
 msgid "{} could not be opened."
 msgstr "No se pudo abrir {}."
 
-#: src/core/src/bluetooth/profile_supervisor.cpp:181
+#: src/core/src/bluetooth/profile_supervisor.cpp:177
 #: src/gtk/notifications_view.cpp:164
 msgid "Waiting for the iPhone."
 msgstr "Esperando al iPhone."
 
-#: src/core/src/bluetooth/profile_supervisor.cpp:186
-#: src/core/src/bluetooth/profile_supervisor.cpp:203
+#: src/core/src/bluetooth/profile_supervisor.cpp:182
+#: src/core/src/bluetooth/profile_supervisor.cpp:199
 msgid "Messages and contacts are connected."
 msgstr "Los mensajes y los contactos están conectados."
 
-#: src/core/src/bluetooth/profile_supervisor.cpp:210
+#: src/core/src/bluetooth/profile_supervisor.cpp:206
 msgid "Opening messages and contacts..."
 msgstr "Abriendo mensajes y contactos..."
 
@@ -847,10 +877,6 @@ msgstr "Este equipo no puede ofrecer las funciones Bluetooth."
 #: src/gtk/devices_view.cpp:189
 msgid "Link"
 msgstr "Enlace"
-
-#: src/gtk/devices_view.cpp:202 src/gtk/main.cpp:127
-msgid "Notifications"
-msgstr "Notificaciones"
 
 #: src/gtk/devices_view.cpp:210
 msgid "Not paired over Bluetooth yet."
@@ -1158,10 +1184,6 @@ msgstr "Seguir ejecutándose en la bandeja al cerrar"
 msgid "Quit"
 msgstr "Salir"
 
-#: src/gtk/main.cpp:101 src/gtk/main.cpp:109 src/gtk/tether-gtk.desktop.in:2
-msgid "Tether"
-msgstr "Tether"
-
 #: src/gtk/main.cpp:125
 msgid "Devices"
 msgstr "Dispositivos"
@@ -1275,6 +1297,147 @@ msgstr "Sincronización de dispositivos"
 #: src/gtk/tether-gtk.desktop.in:4
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Empareje dispositivos y sincronice el portapapeles a través de la red"
+
+#~ msgid ""
+#~ "tether - Wayland companion CLI\n"
+#~ "\n"
+#~ "Options:\n"
+#~ "  -h, --help               Show this help message.\n"
+#~ "  -g, --get-clipboard      Retrieve the current Wayland clipboard text.\n"
+#~ "  -s, --set-clipboard      Take string input and copy it to the local "
+#~ "Wayland clipboard.\n"
+#~ "  -f, --send-file          Send a file through tether.\n"
+#~ "  -n, --native-host        Start the browser Native Messaging Host proxy "
+#~ "loop.\n"
+#~ "  -d, --discover           Scan the local network for tetherd instances "
+#~ "via mDNS.\n"
+#~ "  --host <ip>              Connect over TCP to daemon ip instead of UNIX "
+#~ "Socket.\n"
+#~ "  --port <num>             Connect over TCP port (default 5134).\n"
+#~ "  --timeout <ms>           Discovery scan duration in milliseconds "
+#~ "(default 3000).\n"
+#~ "  --list-devices           List all paired connection devices.\n"
+#~ "  --bt-setup               Show the one-time system setup Bluetooth still "
+#~ "needs.\n"
+#~ "  --bt-status              Show Bluetooth adapter capability and delivery "
+#~ "mode.\n"
+#~ "  --bt-devices             List Bluetooth devices known to BlueZ.\n"
+#~ "  --bt-connection          Show Bluetooth link and profile connection "
+#~ "state.\n"
+#~ "  --bt-threads             List iPhone message conversations.\n"
+#~ "  --bt-messages <thread>   Show messages in one conversation.\n"
+#~ "  --bt-send <thread> <text>  Reply in one conversation.\n"
+#~ "  --bt-pair <addr>         Pair with an iPhone over Bluetooth.\n"
+#~ "  --bt-unpair <addr>       Remove a Bluetooth bond.\n"
+#~ "  --bt-solicit             Re-advertise for ANCS so the iPhone shows its "
+#~ "permission\n"
+#~ "                           toggles again, without removing the bond.\n"
+#~ "  --bt-enable <on|off>     Connect to the iPhone over Bluetooth, or "
+#~ "stop.\n"
+#~ "  --bt-ancs <on|off>       Turn notification mirroring on or off.\n"
+#~ "  --bt-ancs-content <on|off>  Mirror notification titles and bodies, not "
+#~ "just the app.\n"
+#~ "  --bt-notifications       List mirrored iPhone notifications.\n"
+#~ "  --bt-diagnostics         Print a redacted Bluetooth report for a bug "
+#~ "report.\n"
+#~ "  --accept <fingerprint>   Accept a pending pairing request locally.\n"
+#~ "  --pair                   Send a pair_request over TCP to the daemon.\n"
+#~ "\n"
+#~ "Examples:\n"
+#~ "  tether -g\n"
+#~ "  tether -g --host 127.0.0.1\n"
+#~ "  echo \"pipe\" | tether -s\n"
+#~ "  tether --discover\n"
+#~ "  tether --discover --timeout 5000\n"
+#~ "  tether -f ./report.pdf\n"
+#~ "  tether --accept 9a4f21...\n"
+#~ msgstr ""
+#~ "tether - CLI complementaria para Wayland\n"
+#~ "\n"
+#~ "Opciones:\n"
+#~ "  -h, --help               Mostrar esta ayuda.\n"
+#~ "  -g, --get-clipboard      Obtener el texto actual del portapapeles de "
+#~ "Wayland.\n"
+#~ "  -s, --set-clipboard      Leer texto de la entrada y copiarlo al "
+#~ "portapapeles local de Wayland.\n"
+#~ "  -f, --send-file          Enviar un archivo a través de tether.\n"
+#~ "  -n, --native-host        Iniciar el bucle proxy del Native Messaging "
+#~ "Host del navegador.\n"
+#~ "  -d, --discover           Buscar instancias de tetherd en la red local "
+#~ "mediante mDNS.\n"
+#~ "  --host <ip>              Conectar por TCP a la ip del daemon en vez de "
+#~ "al socket UNIX.\n"
+#~ "  --port <num>             Puerto TCP de conexión (por omisión 5134).\n"
+#~ "  --timeout <ms>           Duración del escaneo de descubrimiento en "
+#~ "milisegundos (por omisión 3000).\n"
+#~ "  --list-devices           Listar todos los dispositivos emparejados.\n"
+#~ "  --bt-setup               Mostrar la configuración inicial del sistema "
+#~ "que aún necesita Bluetooth.\n"
+#~ "  --bt-status              Mostrar la capacidad del adaptador Bluetooth y "
+#~ "el modo de entrega.\n"
+#~ "  --bt-devices             Listar los dispositivos Bluetooth conocidos "
+#~ "por BlueZ.\n"
+#~ "  --bt-connection          Mostrar el estado del enlace y de los perfiles "
+#~ "Bluetooth.\n"
+#~ "  --bt-threads             Listar las conversaciones de mensajes del "
+#~ "iPhone.\n"
+#~ "  --bt-messages <thread>   Mostrar los mensajes de una conversación.\n"
+#~ "  --bt-send <thread> <text>  Responder en una conversación.\n"
+#~ "  --bt-pair <addr>         Emparejar con un iPhone por Bluetooth.\n"
+#~ "  --bt-unpair <addr>       Eliminar un vínculo Bluetooth.\n"
+#~ "  --bt-solicit             Volver a anunciarse para ANCS para que el "
+#~ "iPhone muestre de nuevo sus\n"
+#~ "                           permisos, sin eliminar el vínculo.\n"
+#~ "  --bt-enable <on|off>     Conectar con el iPhone por Bluetooth, o "
+#~ "detenerlo.\n"
+#~ "  --bt-ancs <on|off>       Activar o desactivar la duplicación de "
+#~ "notificaciones.\n"
+#~ "  --bt-ancs-content <on|off>  Duplicar títulos y contenido de las "
+#~ "notificaciones, no solo la app.\n"
+#~ "  --bt-notifications       Listar las notificaciones duplicadas del "
+#~ "iPhone.\n"
+#~ "  --bt-diagnostics         Imprimir un informe Bluetooth redactado para "
+#~ "un informe de error.\n"
+#~ "  --accept <fingerprint>   Aceptar localmente una solicitud de "
+#~ "emparejamiento pendiente.\n"
+#~ "  --pair                   Enviar un pair_request al daemon por TCP.\n"
+#~ "\n"
+#~ "Ejemplos:\n"
+#~ "  tether -g\n"
+#~ "  tether -g --host 127.0.0.1\n"
+#~ "  echo \"pipe\" | tether -s\n"
+#~ "  tether --discover\n"
+#~ "  tether --discover --timeout 5000\n"
+#~ "  tether -f ./report.pdf\n"
+#~ "  tether --accept 9a4f21...\n"
+
+#, c-format
+#~ msgid "Mode:       %s\n"
+#~ msgstr "Modo:       %s\n"
+
+#, c-format
+#~ msgid "Bond:       %s\n"
+#~ msgstr "Vínculo:    %s\n"
+
+#, c-format
+#~ msgid "Tether:     %s\n"
+#~ msgstr "Tether:     %s\n"
+
+#, c-format
+#~ msgid "BR/EDR:          %s\n"
+#~ msgstr "BR/EDR:          %s\n"
+
+#, c-format
+#~ msgid "LE:              %s%s\n"
+#~ msgstr "LE:              %s%s\n"
+
+#, c-format
+#~ msgid ""
+#~ "\n"
+#~ "Notifications:   %s\n"
+#~ msgstr ""
+#~ "\n"
+#~ "Notificaciones:  %s\n"
 
 #~ msgid "Waiting for the Bluetooth link."
 #~ msgstr "Esperando el enlace Bluetooth."

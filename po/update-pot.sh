@@ -29,17 +29,19 @@ xgettext -j -L Desktop --output="$NEW" \
          --keyword=Name --keyword=GenericName --keyword=Comment $META \
          src/gtk/tether-gtk.desktop.in
 
-# POT-Creation-Date alone changes on every run and would dirty the pot and all
-# four catalogs for nothing, so a run that changed only the timestamp is dropped.
+# POT-Creation-Date alone changes on every run and would dirty the pot and every
+# catalog for nothing, so a run that changed only the timestamp is dropped. The
+# catalog loop below still runs: adding a language to LINGUAS must create its
+# catalog even when no source string changed.
+pot_changed=1
 if [ -f po/tether.pot ]; then
     grep -v '^"POT-Creation-Date:' po/tether.pot > "$OLD_STRIPPED"
     grep -v '^"POT-Creation-Date:' "$NEW" > "$NEW_STRIPPED"
     if cmp -s "$OLD_STRIPPED" "$NEW_STRIPPED"; then
-        echo "po/tether.pot is up to date"
-        exit 0
+        pot_changed=0
     fi
 fi
-cp "$NEW" po/tether.pot
+[ "$pot_changed" -eq 0 ] || cp "$NEW" po/tether.pot
 
 while read -r lang; do
     [ -n "$lang" ] || continue
@@ -50,4 +52,8 @@ while read -r lang; do
     fi
 done < po/LINGUAS
 
-echo "po/tether.pot updated; $(grep -c '^msgid' po/tether.pot) entries"
+if [ "$pot_changed" -eq 0 ]; then
+    echo "po/tether.pot is up to date; $(wc -l < po/LINGUAS) catalogs checked"
+else
+    echo "po/tether.pot updated; $(grep -c '^msgid' po/tether.pot) entries"
+fi
