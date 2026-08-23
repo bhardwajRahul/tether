@@ -1,166 +1,166 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# Simplified Chinese translation of Tether.
+# DRAFT — machine-assisted, not reviewed by a native speaker. Corrections welcome:
+# https://github.com/zackb/tether
+# Copyright (C) 2026 the Tether authors
 # This file is distributed under the same license as the tether package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: tether 0.2.10\n"
+"Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
 "POT-Creation-Date: 2026-08-23 16:13-0700\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2026-08-23\n"
+"Last-Translator: Tether project\n"
+"Language-Team: Simplified Chinese\n"
+"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
 #: src/cli/main.cpp
 msgid "yes"
-msgstr ""
+msgstr "是"
 
 #: src/cli/main.cpp
 msgid "no"
-msgstr ""
+msgstr "否"
 
 #: src/cli/main.cpp
 msgid "Show this help message."
-msgstr ""
+msgstr "显示此帮助信息。"
 
 #: src/cli/main.cpp
 msgid "Retrieve the current Wayland clipboard text."
-msgstr ""
+msgstr "获取 Wayland 剪贴板中的当前文本。"
 
 #: src/cli/main.cpp
 msgid "Take string input and copy it to the local Wayland clipboard."
-msgstr ""
+msgstr "从输入读取文本并复制到本地 Wayland 剪贴板。"
 
 #: src/cli/main.cpp
 msgid "Send a file through tether."
-msgstr ""
+msgstr "通过 tether 发送文件。"
 
 #: src/cli/main.cpp
 msgid "Start the browser Native Messaging Host proxy loop."
-msgstr ""
+msgstr "启动浏览器的 Native Messaging Host 代理循环。"
 
 #: src/cli/main.cpp
 msgid "Scan the local network for tetherd instances via mDNS."
-msgstr ""
+msgstr "通过 mDNS 在本地网络中搜索 tetherd 实例。"
 
 #: src/cli/main.cpp
 msgid "Connect over TCP to daemon ip instead of UNIX Socket."
-msgstr ""
+msgstr "通过 TCP 连接守护进程 ip，而不是 UNIX 套接字。"
 
 #: src/cli/main.cpp
 msgid "Connect over TCP port (default 5134)."
-msgstr ""
+msgstr "连接使用的 TCP 端口（默认 5134）。"
 
 #: src/cli/main.cpp
 msgid "Discovery scan duration in milliseconds (default 3000)."
-msgstr ""
+msgstr "搜索时长，单位毫秒（默认 3000）。"
 
 #: src/cli/main.cpp
 msgid "List all paired connection devices."
-msgstr ""
+msgstr "列出所有已配对的设备。"
 
 #: src/cli/main.cpp
 msgid "Show the one-time system setup Bluetooth still needs."
-msgstr ""
+msgstr "显示蓝牙仍需完成的一次性系统设置。"
 
 #: src/cli/main.cpp
 msgid "Show Bluetooth adapter capability and delivery mode."
-msgstr ""
+msgstr "显示蓝牙适配器的能力和投递模式。"
 
 #: src/cli/main.cpp
 msgid "List Bluetooth devices known to BlueZ."
-msgstr ""
+msgstr "列出 BlueZ 已知的蓝牙设备。"
 
 #: src/cli/main.cpp
 msgid "Show Bluetooth link and profile connection state."
-msgstr ""
+msgstr "显示蓝牙链路和配置文件的连接状态。"
 
 #: src/cli/main.cpp
 msgid "List iPhone message conversations."
-msgstr ""
+msgstr "列出 iPhone 的信息会话。"
 
 #: src/cli/main.cpp
 msgid "Show messages in one conversation."
-msgstr ""
+msgstr "显示某个会话中的信息。"
 
 #: src/cli/main.cpp
 msgid "Reply in one conversation."
-msgstr ""
+msgstr "在某个会话中回复。"
 
 #: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
-msgstr ""
+msgstr "通过蓝牙与 iPhone 配对。"
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
-msgstr ""
+msgstr "移除蓝牙绑定。"
 
 #: src/cli/main.cpp
 msgid ""
 "Re-advertise for ANCS so the iPhone shows its permission toggles again, "
 "without removing the bond."
-msgstr ""
+msgstr "为 ANCS 重新广播，让 iPhone 再次显示其权限开关，而不移除绑定。"
 
 #: src/cli/main.cpp
 msgid "Connect to the iPhone over Bluetooth, or stop."
-msgstr ""
+msgstr "通过蓝牙连接 iPhone，或停止连接。"
 
 #: src/cli/main.cpp
 msgid "Turn notification mirroring on or off."
-msgstr ""
+msgstr "开启或关闭通知镜像。"
 
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
-msgstr ""
+msgstr "镜像通知的标题和正文，而不只是所属 App。"
 
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
-msgstr ""
+msgstr "列出已镜像的 iPhone 通知。"
 
 #: src/cli/main.cpp
 msgid "Print a redacted Bluetooth report for a bug report."
-msgstr ""
+msgstr "输出用于错误报告的脱敏蓝牙报告。"
 
 #: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
-msgstr ""
+msgstr "在本地接受待处理的配对请求。"
 
 #: src/cli/main.cpp
 msgid "Send a pair_request over TCP to the daemon."
-msgstr ""
+msgstr "通过 TCP 向守护进程发送 pair_request。"
 
 #: src/cli/main.cpp
 msgid "tether - Wayland companion CLI"
-msgstr ""
+msgstr "tether - Wayland 配套命令行工具"
 
 #: src/cli/main.cpp
 msgid "Options:"
-msgstr ""
+msgstr "选项："
 
 #: src/cli/main.cpp
 msgid "Examples:"
-msgstr ""
+msgstr "示例："
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth status from the daemon.\n"
-msgstr ""
+msgstr "无法从守护进程读取蓝牙状态。\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Bluetooth: unavailable (is bluetoothd running?)\n"
-msgstr ""
+msgstr "蓝牙：不可用（bluetoothd 正在运行吗？）\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Bluetooth setup is complete. Nothing to do.\n"
-msgstr ""
+msgstr "蓝牙设置已完成。无需操作。\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -171,7 +171,8 @@ msgid_plural ""
 "\n"
 "%zu steps left before the iPhone Bluetooth features work:\n"
 msgstr[0] ""
-msgstr[1] ""
+"\n"
+"还差 %zu 步，iPhone 的蓝牙功能才能使用：\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -179,56 +180,58 @@ msgid ""
 "\n"
 "Re-run 'tether --bt-setup' afterwards to confirm.\n"
 msgstr ""
+"\n"
+"之后请重新运行 'tether --bt-setup' 以确认。\n"
 
 #: src/cli/main.cpp
 msgid "Mode"
-msgstr ""
+msgstr "模式"
 
 #: src/cli/main.cpp
 msgid "Bearer API"
-msgstr ""
+msgstr "Bearer API"
 
 #: src/cli/main.cpp
 msgid "unknown"
-msgstr ""
+msgstr "未知"
 
 #: src/cli/main.cpp
 msgid "Adapter"
-msgstr ""
+msgstr "适配器"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "powered={0} central={1} peripheral={2} advertising={3} class={4}"
-msgstr ""
+msgstr "已开启={0} 中心={1} 外围={2} 广播={3} 类别={4}"
 
 #: src/cli/main.cpp
 msgid "ok"
-msgstr ""
+msgstr "正确"
 
 #: src/cli/main.cpp
 msgid "wrong"
-msgstr ""
+msgstr "错误"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "secure-connections={}"
-msgstr ""
+msgstr "Secure Connections={}"
 
 #: src/cli/main.cpp
 msgid "Bond"
-msgstr ""
+msgstr "绑定"
 
 #: src/cli/main.cpp src/gtk/main.cpp src/gtk/tether-gtk.desktop.in
 msgid "Tether"
-msgstr ""
+msgstr "Tether"
 
 #: src/cli/main.cpp
 msgid "connecting"
-msgstr ""
+msgstr "正在连接"
 
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
-msgstr ""
+msgstr "已关闭（--bt-enable on）"
 
 #: src/cli/main.cpp
 #, c-format
@@ -239,172 +242,172 @@ msgid_plural ""
 "\n"
 "%zu setup steps remaining. Run: tether --bt-setup\n"
 msgstr[0] ""
-msgstr[1] ""
+"\n"
+"还剩 %zu 个设置步骤。请运行：tether --bt-setup\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth devices from the daemon.\n"
-msgstr ""
+msgstr "无法从守护进程读取蓝牙设备。\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "No Bluetooth devices known to BlueZ.\n"
-msgstr ""
+msgstr "BlueZ 没有已知的蓝牙设备。\n"
 
 #: src/cli/main.cpp
 msgid "Could not reach the daemon.\n"
-msgstr ""
+msgstr "无法连接到守护进程。\n"
 
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the operation finished.\n"
-msgstr ""
+msgstr "操作完成前守护进程已关闭连接。\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth connection state from the daemon.\n"
-msgstr ""
+msgstr "无法从守护进程读取蓝牙连接状态。\n"
 
 #: src/cli/main.cpp
 msgid "Device present"
-msgstr ""
+msgstr "设备存在"
 
 #: src/cli/main.cpp
 msgid "BR/EDR"
-msgstr ""
+msgstr "BR/EDR"
 
 #: src/cli/main.cpp
 msgid "LE"
-msgstr ""
+msgstr "LE"
 
 #: src/cli/main.cpp
 msgid "(bearer unavailable)"
-msgstr ""
+msgstr "（bearer 不可用）"
 
 #: src/cli/main.cpp
 msgid "Messages (MAP)"
-msgstr ""
+msgstr "信息（MAP）"
 
 #: src/cli/main.cpp
 msgid "Contacts (PBAP)"
-msgstr ""
+msgstr "通讯录（PBAP）"
 
 #: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
 msgid "Notifications"
-msgstr ""
+msgstr "通知"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
-msgstr ""
+msgstr "无法从守护进程读取蓝牙诊断信息。\n"
 
 #: src/cli/main.cpp
 msgid "Could not read notifications from the daemon.\n"
-msgstr ""
+msgstr "无法从守护进程读取通知。\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "No notifications yet. Check 'tether --bt-connection'.\n"
-msgstr ""
+msgstr "暂无通知。请检查 'tether --bt-connection'。\n"
 
 #: src/cli/main.cpp
 msgid "Could not read conversations from the daemon.\n"
-msgstr ""
+msgstr "无法从守护进程读取会话。\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "No conversations yet. Check 'tether --bt-connection'.\n"
-msgstr ""
+msgstr "暂无会话。请检查 'tether --bt-connection'。\n"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "({} unread)"
 msgid_plural "({} unread)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "（{} 条未读）"
 
 #: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
-msgstr ""
+msgstr "无法从守护进程读取信息。\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "No messages in %s\n"
-msgstr ""
+msgstr "%s 中没有信息\n"
 
 #: src/cli/main.cpp
 msgid "me"
-msgstr ""
+msgstr "我"
 
 #: src/cli/main.cpp
 msgid "them"
-msgstr ""
+msgstr "对方"
 
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the message was sent.\n"
-msgstr ""
+msgstr "信息发送前守护进程已关闭连接。\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Sent to %s\n"
-msgstr ""
+msgstr "已发送至 %s\n"
 
 #: src/cli/main.cpp src/gtk/messages_view.cpp
 msgid "The message was not sent."
-msgstr ""
+msgstr "信息未发送。"
 
 #: src/cli/main.cpp
 msgid "Unknown action. Run tether --help for options\n"
-msgstr ""
+msgstr "未知操作。运行 tether --help 查看选项\n"
 
 #: src/cli/main.cpp
 msgid "  No tetherd instances found.\n"
-msgstr ""
+msgstr "  未找到 tetherd 实例。\n"
 
 #: src/cli/main.cpp
 msgid "[new]"
-msgstr ""
+msgstr "[新]"
 
 #: src/cli/main.cpp
 msgid "[known]"
-msgstr ""
+msgstr "[已知]"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Found %zu device in %.1fs\n"
 msgid_plural "Found %zu devices in %.1fs\n"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "在 %2$.1f 秒内找到 %1$zu 台设备\n"
 
 #: src/cli/main.cpp
 msgid ""
 "Explicit framework connection locally rejected! Did you target explicitly "
 "invalid TLS or is daemon broken?\n"
 msgstr ""
+"显式框架连接在本地被拒绝！是指定了明显无效的 TLS，还是守护进程已损坏？\n"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "Transfer Failed: {}"
-msgstr ""
+msgstr "传输失败：{}"
 
 #: src/cli/main.cpp
 msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
-msgstr ""
+msgstr "需要提供会话键，例如 --bt-messages tel:+15551234567\n"
 
 #: src/cli/main.cpp
 msgid ""
 "A conversation and a message are required, e.g. --bt-send tel:+15551234567 "
 "\"hi\"\n"
-msgstr ""
+msgstr "需要提供会话和信息，例如 --bt-send tel:+15551234567 \"你好\"\n"
 
 #: src/cli/main.cpp
 msgid "A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n"
-msgstr ""
+msgstr "需要提供蓝牙地址，例如 --bt-pair AA:BB:CC:DD:EE:FF\n"
 
 #: src/cli/main.cpp
 msgid "Expected on or off, e.g. --bt-enable off\n"
-msgstr ""
+msgstr "应为 on 或 off，例如 --bt-enable off\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Bluetooth enabled.\n"
-msgstr ""
+msgstr "蓝牙已启用。\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -412,27 +415,29 @@ msgid ""
 "Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
 "already up stays up until you disconnect it or the phone goes out of range.\n"
 msgstr ""
+"蓝牙已停用。Tether 不会重新连接 iPhone。已经建立的链路会一直保持，\n"
+"直到你断开它或 iPhone 超出范围。\n"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "Expected on or off, e.g. {} on\n"
-msgstr ""
+msgstr "应为 on 或 off，例如 {} on\n"
 
 #: src/cli/main.cpp
 msgid "Notification contents enabled."
-msgstr ""
+msgstr "通知内容已启用。"
 
 #: src/cli/main.cpp
 msgid "Notification contents disabled."
-msgstr ""
+msgstr "通知内容已停用。"
 
 #: src/cli/main.cpp
 msgid "Notification mirroring enabled."
-msgstr ""
+msgstr "通知镜像已启用。"
 
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
-msgstr ""
+msgstr "通知镜像已停用。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -441,6 +446,9 @@ msgid ""
 "a machine with no audio stack, or one where the a2dp_sink and hfp_hf roles "
 "are turned off. Nothing is missing and nothing needs changing on the iPhone."
 msgstr ""
+"信息和通讯录已连接。BlueZ 报告蓝牙链路断开，是因为这台电脑没有向 iPhone 提供"
+"可连接的配置文件——在没有音频栈的机器上，或者关闭了 a2dp_sink 和 hfp_hf 角色的"
+"机器上，这很常见。没有缺少任何东西，iPhone 上也无需更改。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -449,6 +457,8 @@ msgid ""
 "Share System Notifications is already on. Messages and contacts are "
 "unaffected."
 msgstr ""
+"iPhone 在 LE 上没有响应。它的蓝牙在自己一侧卡住了：在 iPhone 上关闭蓝牙再重新"
+"打开，即使“共享系统通知”已经开启，这样做也能解决。信息和通讯录不受影响。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -456,26 +466,28 @@ msgid ""
 "back on on the iPhone — that clears it even when the permissions are already "
 "on. Re-pairing is not the fix."
 msgstr ""
+"iPhone 一直拒绝蓝牙连接。在 iPhone 上关闭蓝牙再重新打开——即使权限已经开启，这"
+"样做也能解决。重新配对并不能解决问题。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
 "Notifications are connected. Still reaching the iPhone for messages and "
 "contacts..."
-msgstr ""
+msgstr "通知已连接。仍在为信息和通讯录连接 iPhone……"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid "Connecting to the iPhone over Bluetooth..."
-msgstr ""
+msgstr "正在通过蓝牙连接 iPhone……"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid "Connected. Notification mirroring is disabled."
-msgstr ""
+msgstr "已连接。通知镜像已停用。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
 "Connected. BlueZ is not exposing an LE bearer, so notifications are "
 "unavailable."
-msgstr ""
+msgstr "已连接。BlueZ 未提供 LE bearer，因此通知不可用。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -483,102 +495,104 @@ msgid ""
 "notifications. If it does not, open Settings > Bluetooth > (i) on the iPhone "
 "and check Share System Notifications."
 msgstr ""
+"已连接。正在等待 iPhone 打开承载通知的 LE 链路。如果没有打开，请在 iPhone 上"
+"打开 设置 > 蓝牙 > (i)，并检查“共享系统通知”。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid "Connected over BR/EDR and LE."
-msgstr ""
+msgstr "已通过 BR/EDR 和 LE 连接。"
 
 #: src/core/src/bluetooth/connection.cpp src/gtk/messages_view.cpp
 msgid "Messages are not connected."
-msgstr ""
+msgstr "信息未连接。"
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "Could not build a message for this conversation."
-msgstr ""
+msgstr "无法为此会话构建信息。"
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "That message is no longer in the conversation history."
-msgstr ""
+msgstr "该信息已不在会话记录中。"
 
 #: src/core/src/bluetooth/connection.cpp
 msgid ""
 "The iPhone is not serving this message right now; marked read on this "
 "computer only."
-msgstr ""
+msgstr "iPhone 目前未提供此信息；仅在这台电脑上标记为已读。"
 
 #: src/core/src/bluetooth/connection.cpp
 msgid ""
 "The iPhone is not offering notifications on this link. Asking it again..."
-msgstr ""
+msgstr "iPhone 未在此链路上提供通知。正在再次请求……"
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "No paired iPhone selected."
-msgstr ""
+msgstr "未选择已配对的 iPhone。"
 
 #: src/core/src/bluetooth/groups.cpp
 msgid "Group replies are turned off."
-msgstr ""
+msgstr "群组回复已关闭。"
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
 msgid "The roster for this group contains an unusable address: {}"
-msgstr ""
+msgstr "此群组的成员名单包含无法使用的地址：{}"
 
 #: src/core/src/bluetooth/groups.cpp
 msgid "The roster for this group is empty."
-msgstr ""
+msgstr "此群组的成员名单为空。"
 
 #: src/core/src/bluetooth/groups.cpp
 msgid ""
 "This conversation has not been identified as a group yet, so there is nobody "
 "to reply to."
-msgstr ""
+msgstr "此会话尚未被识别为群组，因此没有可回复的对象。"
 
 #: src/core/src/bluetooth/groups.cpp
 msgid ""
 "This group has a name but no member list. Add its members before replying."
-msgstr ""
+msgstr "此群组有名称但没有成员名单。回复前请先添加成员。"
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
 msgid "\"{}\" is not in your contacts."
-msgstr ""
+msgstr "“{}”不在你的通讯录中。"
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
 msgid "\"{}\" matches more than one contact address."
-msgstr ""
+msgstr "“{}”匹配到多个通讯录地址。"
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
 msgid "\"{0}\" resolved to an unusable address: {1}"
-msgstr ""
+msgstr "“{0}”解析为无法使用的地址：{1}"
 
 #: src/core/src/bluetooth/groups.cpp
 msgid "No recipients could be resolved for this group."
-msgstr ""
+msgstr "无法为此群组解析出任何收件人。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "No Bluetooth adapter found."
-msgstr ""
+msgstr "未找到蓝牙适配器。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Bluetooth adapter is powered off."
-msgstr ""
+msgstr "蓝牙适配器已关闭。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Adapter has no LE central role; ANCS is impossible."
-msgstr ""
+msgstr "适配器没有 LE 中心角色，无法使用 ANCS。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Adapter cannot advertise as a peripheral, so ANCS cannot be solicited."
-msgstr ""
+msgstr "适配器无法作为外围设备广播，因此无法请求 ANCS。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "No LE advertising instances available; the iPhone may never show its "
 "Bluetooth permission toggles."
-msgstr ""
+msgstr "没有可用的 LE 广播实例；iPhone 可能永远不会显示其蓝牙权限开关。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -586,10 +600,12 @@ msgid ""
 "(org.bluez.Bearer.LE1), which bluetoothd is not exposing. Set this up before "
 "pairing: a bond made without it has no LE half."
 msgstr ""
+"通知镜像需要 BlueZ 的实验性 bearer API（org.bluez.Bearer.LE1），而 "
+"bluetoothd 并未提供。请在配对前完成设置：缺少它时建立的绑定没有 LE 部分。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Bearer API support is unconfirmed until a device is bonded."
-msgstr ""
+msgstr "在与设备建立绑定之前，bearer API 的支持情况无法确认。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -597,18 +613,24 @@ msgid ""
 "derived, so notification mirroring cannot work on it. Delete this computer "
 "on the iPhone (Forget This Device) and pair again."
 msgstr ""
+"已与设备建立绑定，但绑定仅覆盖 BR/EDR —— 没有派生出 LE 密钥，因此通知镜像无法"
+"工作。请在 iPhone 上删除这台电脑（忽略此设备），然后重新配对。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "Secure Connections is off on this controller, which is what blocks the "
 "derivation; re-pairing will not help until it is on."
 msgstr ""
+"此控制器上的 Secure Connections 已关闭，正是它阻止了密钥派生；在开启之前，重"
+"新配对无济于事。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "The iPhone will not offer its Messages and Contacts permissions until this "
 "adapter presents itself as A/V Hands-Free (major 4, minor 8)."
 msgstr ""
+"在此适配器将自己标识为 A/V Hands-Free（major 4, minor 8）之前，iPhone 不会提"
+"供信息和通讯录权限。"
 
 #: src/core/src/bluetooth/pairing.cpp
 #, c++-format
@@ -619,38 +641,43 @@ msgid ""
 "\n"
 "{1}"
 msgstr ""
+"{0} 请求配对。\n"
+"\n"
+"请确认此代码与 iPhone 上显示的一致：\n"
+"\n"
+"{1}"
 
 #: src/core/src/bluetooth/pairing.cpp
 msgid "Bluetooth Pairing"
-msgstr ""
+msgstr "蓝牙配对"
 
 #: src/core/src/bluetooth/pairing.cpp
 msgid "Confirm"
-msgstr ""
+msgstr "确认"
 
 #: src/core/src/bluetooth/pairing.cpp src/gtk/messages_view.cpp
 msgid "Cancel"
-msgstr ""
+msgstr "取消"
 
 #. TRANSLATORS: the feature name Tether shows for this profile.
 #: src/core/src/bluetooth/profile_supervisor.cpp src/daemon/main.cpp
 #: src/gtk/devices_view.cpp src/gtk/main.cpp
 msgid "Messages"
-msgstr ""
+msgstr "信息"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/devices_view.cpp
 msgid "Contacts"
-msgstr ""
+msgstr "通讯录"
 
 #. TRANSLATORS: these two are toggle names in the iPhone's own Settings app.
 #. Use Apple's wording for the target language, not a literal translation.
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Show Message Notifications"
-msgstr ""
+msgstr "显示信息通知"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Sync Contacts"
-msgstr ""
+msgstr "同步通讯录"
 
 #. TRANSLATORS: {} is an iPhone Settings toggle name.
 #: src/core/src/bluetooth/profile_supervisor.cpp
@@ -659,6 +686,8 @@ msgid ""
 "Enable \"{}\" for this computer in the iPhone's Settings > Bluetooth > (i). "
 "This is a permission, not a pairing problem."
 msgstr ""
+"请在 iPhone 的 设置 > 蓝牙 > (i) 中为这台电脑开启“{}”。这是权限问题，不是配对"
+"问题。"
 
 #. TRANSLATORS: {0} is Messages or Contacts, {1} is the profile name (map or pbap).
 #: src/core/src/bluetooth/profile_supervisor.cpp
@@ -667,6 +696,8 @@ msgid ""
 "{0} is unavailable because another computer is using the iPhone's {1} "
 "session. Disconnect it there, then this will connect on its own."
 msgstr ""
+"{0} 不可用，因为另一台电脑正在使用 iPhone 的 {1} 会话。在那边断开连接后，这里"
+"会自动连接。"
 
 #. TRANSLATORS: {0} is Messages or Contacts, {1} is an iPhone Settings toggle name.
 #: src/core/src/bluetooth/profile_supervisor.cpp
@@ -676,11 +707,13 @@ msgid ""
 "phone's Bluetooth session, or \"{1}\" is off in Settings > Bluetooth > (i). "
 "Check both; re-pairing is not the fix."
 msgstr ""
+"无法从 iPhone 获取 {0}。通常是另一台电脑占用了 iPhone 的蓝牙会话，或者 设置 "
+"> 蓝牙 > (i) 中的“{1}”已关闭。请检查这两项；重新配对并不能解决问题。"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 #, c++-format
 msgid "{} is unreachable; waiting for the iPhone to come back."
-msgstr ""
+msgstr "无法访问 {}；正在等待 iPhone 恢复。"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 #, c++-format
@@ -689,258 +722,261 @@ msgid ""
 "Install it (bluez-obex on Arch, bluez-obexd on Debian and Ubuntu). Nothing "
 "needs changing on the iPhone."
 msgstr ""
+"{} 需要 BlueZ 的 OBEX 守护进程，但这台电脑上未安装。请安装它（Arch 上是 "
+"bluez-obex，Debian 和 Ubuntu 上是 bluez-obexd）。iPhone 上无需更改。"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 #, c++-format
 msgid "{} could not be opened."
-msgstr ""
+msgstr "无法打开 {}。"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/notifications_view.cpp
 msgid "Waiting for the iPhone."
-msgstr ""
+msgstr "正在等待 iPhone。"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Messages and contacts are connected."
-msgstr ""
+msgstr "信息和通讯录已连接。"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
-msgstr ""
+msgstr "正在打开信息和通讯录……"
 
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
 #, c++-format
 msgid "{0} ({1}) wants to pair with this device."
-msgstr ""
+msgstr "{0}（{1}）请求与此设备配对。"
 
 #: src/core/src/net.cpp
 msgid "Pairing Request"
-msgstr ""
+msgstr "配对请求"
 
 #: src/core/src/net.cpp
 msgid "Accept"
-msgstr ""
+msgstr "接受"
 
 #: src/core/src/net.cpp
 msgid "Reject"
-msgstr ""
+msgstr "拒绝"
 
 #: src/daemon/notification.cpp
 msgid "File arrived"
-msgstr ""
+msgstr "文件已送达"
 
 #: src/daemon/notification.cpp
 msgid "Open File"
-msgstr ""
+msgstr "打开文件"
 
 #: src/daemon/notification.cpp
 msgid "Open Folder"
-msgstr ""
+msgstr "打开文件夹"
 
 #: src/daemon/notification.cpp
 msgid "Reply"
-msgstr ""
+msgstr "回复"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"
-msgstr ""
+msgstr "守护进程离线"
 
 #: src/gtk/daemon_client.cpp src/gtk/messages_view.cpp
 msgid "The Tether daemon is not running."
-msgstr ""
+msgstr "Tether 守护进程未在运行。"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Online"
-msgstr ""
+msgstr "守护进程在线"
 
 #: src/gtk/devices_view.cpp
 msgid "Connected."
-msgstr ""
+msgstr "已连接。"
 
 #: src/gtk/devices_view.cpp
 msgid "Not connected yet."
-msgstr ""
+msgstr "尚未连接。"
 
 #: src/gtk/devices_view.cpp
 msgid "Bluetooth is unavailable on this machine."
-msgstr ""
+msgstr "这台机器上蓝牙不可用。"
 
 #: src/gtk/devices_view.cpp
 msgid "Full mode — messages, contacts, and notifications."
-msgstr ""
+msgstr "完整模式 —— 信息、通讯录和通知。"
 
 #: src/gtk/devices_view.cpp
 msgid "Compatibility mode — messages and contacts, no notification mirroring."
-msgstr ""
+msgstr "兼容模式 —— 信息和通讯录，无通知镜像。"
 
 #: src/gtk/devices_view.cpp
 msgid "This machine cannot carry the Bluetooth features."
-msgstr ""
+msgstr "这台机器无法支持蓝牙功能。"
 
 #: src/gtk/devices_view.cpp
 msgid "Link"
-msgstr ""
+msgstr "链路"
 
 #: src/gtk/devices_view.cpp
 msgid "Not paired over Bluetooth yet."
-msgstr ""
+msgstr "尚未通过蓝牙配对。"
 
 #: src/gtk/devices_view.cpp
 msgid "Tether is not using this device. Pair it to select it."
-msgstr ""
+msgstr "Tether 未使用此设备。配对后即可选择它。"
 
 #: src/gtk/devices_view.cpp
 msgid "Bluetooth is switched off for this iPhone."
-msgstr ""
+msgstr "此 iPhone 的蓝牙已关闭。"
 
 #: src/gtk/devices_view.cpp
 msgid "Connected and ready."
-msgstr ""
+msgstr "已连接并就绪。"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "Device is offline. Open the Tether app on iPhone while on the same network."
-msgstr ""
+msgstr "设备离线。请在同一网络下打开 iPhone 上的 Tether App。"
 
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "Found at {0}:{1}"
-msgstr ""
+msgstr "在 {0}:{1} 找到"
 
 #: src/gtk/devices_view.cpp
 msgid "Sending pair request..."
-msgstr ""
+msgstr "正在发送配对请求……"
 
 #: src/gtk/devices_view.cpp
 msgid "Pair request sent. Approve on remote device!"
-msgstr ""
+msgstr "配对请求已发送。请在远程设备上批准！"
 
 #: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon."
-msgstr ""
+msgstr "无法连接到 Tether 守护进程。"
 
 #: src/gtk/devices_view.cpp
 msgid "Pairing… confirm the prompt on the iPhone."
-msgstr ""
+msgstr "正在配对……请在 iPhone 上确认提示。"
 
 #: src/gtk/devices_view.cpp
 #, c-format
 msgid "Remove the Bluetooth pairing with %s?"
-msgstr ""
+msgstr "移除与 %s 的蓝牙配对？"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "Also delete this computer from the iPhone's Bluetooth settings before "
 "pairing again, or the phone will keep the stale bond."
 msgstr ""
+"重新配对前，请同时在 iPhone 的蓝牙设置中删除这台电脑，否则 iPhone 会保留过期"
+"的绑定。"
 
 #: src/gtk/devices_view.cpp
 msgid "Removing the pairing…"
-msgstr ""
+msgstr "正在移除配对……"
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
-msgstr ""
+msgstr "设置命令已复制到剪贴板。"
 
 #: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
 msgid "Asking the iPhone to show its Bluetooth permissions…"
-msgstr ""
+msgstr "正在请求 iPhone 显示其蓝牙权限……"
 
 #. TRANSLATORS: {} is a file name.
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "Sending {}…"
-msgstr ""
+msgstr "正在发送 {}……"
 
 #. TRANSLATORS: {0} is the current file's position, {1} the batch size.
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "({0} of {1})"
-msgstr ""
+msgstr "（第 {0} 个，共 {1} 个）"
 
 #: src/gtk/devices_view.cpp
 msgid "Daemon unavailable."
-msgstr ""
+msgstr "守护进程不可用。"
 
 #: src/gtk/devices_view.cpp
 msgid "Send File"
-msgstr ""
+msgstr "发送文件"
 
 #: src/gtk/devices_view.cpp
 msgid "Folders can't be sent — drop files instead."
-msgstr ""
+msgstr "无法发送文件夹 —— 请改为拖放文件。"
 
 #: src/gtk/devices_view.cpp
 msgid "Clipboard, files, and OTP are connected."
-msgstr ""
+msgstr "剪贴板、文件和 OTP 已连接。"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired iPhone is connected. Open the Tether app on the phone."
-msgstr ""
+msgstr "没有已配对的 iPhone 处于连接状态。请在 iPhone 上打开 Tether App。"
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
-msgstr ""
+msgstr "未知设备"
 
 #: src/gtk/devices_view.cpp
 msgid "Scanning for nearby devices..."
-msgstr ""
+msgstr "正在搜索附近的设备……"
 
 #: src/gtk/devices_view.cpp
 msgid "Connected"
-msgstr ""
+msgstr "已连接"
 
 #: src/gtk/devices_view.cpp
 msgid "Offline"
-msgstr ""
+msgstr "离线"
 
 #: src/gtk/devices_view.cpp
 msgid "Nearby (Tap to Pair)"
-msgstr ""
+msgstr "附近（轻点以配对）"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
-msgstr ""
+msgstr "已配对"
 
 #: src/gtk/devices_view.cpp
 msgid "Ready"
-msgstr ""
+msgstr "就绪"
 
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "Sent {0} of {1} file."
 msgid_plural "Sent {0} of {1} files."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "已发送 {1} 个文件中的 {0} 个。"
 
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "Skipped {} non-file item."
 msgid_plural "Skipped {} non-file items."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "已跳过 {} 个非文件项目。"
 
 #: src/gtk/devices_view.cpp
 msgid "Desktop Clipboard Sync triggered."
-msgstr ""
+msgstr "已触发桌面剪贴板同步。"
 
 #: src/gtk/devices_view.cpp
 msgid "Messages and notifications are connected."
-msgstr ""
+msgstr "信息和通知已连接。"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "No iPhone found. Unlock the phone and open Settings > Bluetooth so it "
 "advertises, then scan again."
 msgstr ""
+"未找到 iPhone。请解锁 iPhone 并打开 设置 > 蓝牙 使其开始广播，然后重新搜索。"
 
 #: src/gtk/devices_view.cpp
 msgid "Connect your iPhone"
-msgstr ""
+msgstr "连接你的 iPhone"
 
 #: src/gtk/devices_view.cpp
 msgid "clipboard, files, OTP"
-msgstr ""
+msgstr "剪贴板、文件、OTP"
 
 #: src/gtk/devices_view.cpp
 msgid ""
@@ -948,10 +984,13 @@ msgid ""
 "2.  It finds this computer by itself\n"
 "3.  Approve on both ends"
 msgstr ""
+"1.  在 iPhone 上打开 Tether App\n"
+"2.  它会自动找到这台电脑\n"
+"3.  在两端都确认"
 
 #: src/gtk/devices_view.cpp
 msgid "messages, notifications"
-msgstr ""
+msgstr "信息、通知"
 
 #: src/gtk/devices_view.cpp
 msgid ""
@@ -959,28 +998,32 @@ msgid ""
 "2.  Press Pair over Bluetooth\n"
 "3.  Grant the two toggles on the phone"
 msgstr ""
+"1.  在 BLUETOOTH 下选择 iPhone\n"
+"2.  按下“通过蓝牙配对”\n"
+"3.  在 iPhone 上授予两项权限"
 
 #: src/gtk/devices_view.cpp
 msgid "Scan for devices"
-msgstr ""
+msgstr "搜索设备"
 
 #: src/gtk/devices_view.cpp
 msgid "Bluetooth needs one-time system setup"
-msgstr ""
+msgstr "蓝牙需要一次性的系统设置"
 
 #: src/gtk/devices_view.cpp
 msgid "Copy commands"
-msgstr ""
+msgstr "复制命令"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "Run these in a terminal. Tether does not change your Bluetooth adapter or "
 "bluetoothd on its own."
 msgstr ""
+"请在终端中运行这些命令。Tether 不会自行更改你的蓝牙适配器或 bluetoothd。"
 
 #: src/gtk/devices_view.cpp
 msgid "Connect to this iPhone over Bluetooth"
-msgstr ""
+msgstr "通过蓝牙连接此 iPhone"
 
 #: src/gtk/devices_view.cpp
 msgid ""
@@ -988,20 +1031,24 @@ msgid ""
 "Turning this off stops Tether reconnecting; a link that is already up stays "
 "up until you disconnect it."
 msgstr ""
+"保持与 iPhone 的蓝牙链路，并在每次断开时重新连接。关闭后 Tether 将不再重连；"
+"已经建立的链路会一直保持，直到你断开它。"
 
 #: src/gtk/devices_view.cpp
 msgid "Mirror iPhone notifications"
-msgstr ""
+msgstr "镜像 iPhone 通知"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "Show notifications from the iPhone on this desktop. Turned off automatically "
 "when pairing produces no LE bond; turn it back on after re-pairing."
 msgstr ""
+"在此桌面上显示来自 iPhone 的通知。当配对未产生 LE 绑定时会自动关闭；重新配对"
+"后请再次开启。"
 
 #: src/gtk/devices_view.cpp
 msgid "Show notification contents"
-msgstr ""
+msgstr "显示通知内容"
 
 #: src/gtk/devices_view.cpp
 msgid ""
@@ -1009,162 +1056,165 @@ msgid ""
 "which app sent it. The phone's own Show Message Notifications toggle still "
 "has to be on."
 msgstr ""
+"向 iPhone 请求每条通知的标题和正文，而不只是发送它的 App。iPhone 自身的“显示"
+"信息通知”开关仍需保持开启。"
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
-msgstr ""
+msgstr "通过蓝牙配对"
 
 #: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
 msgid "Show iPhone Permissions"
-msgstr ""
+msgstr "显示 iPhone 权限"
 
 #: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
 msgid ""
 "Re-advertise so the iPhone shows its Show Message Notifications and Sync "
 "Contacts toggles under Settings > Bluetooth > (i)."
 msgstr ""
+"重新广播，让 iPhone 在 设置 > 蓝牙 > (i) 中显示“显示信息通知”和“同步通讯录”开"
+"关。"
 
 #: src/gtk/devices_view.cpp
 msgid "Unpair"
-msgstr ""
+msgstr "取消配对"
 
 #: src/gtk/devices_view.cpp
 msgid "Pair Device"
-msgstr ""
+msgstr "配对设备"
 
 #: src/gtk/devices_view.cpp
 msgid "Force Trust (Accept Pending)"
-msgstr ""
+msgstr "强制信任（接受待处理项）"
 
 #: src/gtk/devices_view.cpp
 msgid "Drop files here to send"
-msgstr ""
+msgstr "将文件拖放到此处以发送"
 
 #: src/gtk/devices_view.cpp
 msgid "Send Clipboard"
-msgstr ""
+msgstr "发送剪贴板"
 
 #: src/gtk/devices_view.cpp
 msgid "Clipboard sync requested..."
-msgstr ""
+msgstr "已请求剪贴板同步……"
 
 #: src/gtk/main.cpp
 msgid "Keep running in tray when closed"
-msgstr ""
+msgstr "关闭后在托盘中继续运行"
 
 #: src/gtk/main.cpp
 msgid "Quit"
-msgstr ""
+msgstr "退出"
 
 #: src/gtk/main.cpp
 msgid "Devices"
-msgstr ""
+msgstr "设备"
 
 #: src/gtk/main.cpp
 msgid "Start hidden in the system tray"
-msgstr ""
+msgstr "启动时隐藏到系统托盘"
 
 #: src/gtk/main.cpp
 msgid "Open on this tab"
-msgstr ""
+msgstr "在此标签页中打开"
 
 #: src/gtk/main.cpp
 msgid "Open the messages tab on this conversation"
-msgstr ""
+msgstr "在此会话中打开信息标签页"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
-msgstr ""
+msgstr "正在发送……"
 
 #: src/gtk/messages_view.cpp
 msgid "Enter a recipient."
-msgstr ""
+msgstr "请输入收件人。"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation first."
-msgstr ""
+msgstr "请先选择一个会话。"
 
 #: src/gtk/messages_view.cpp
 msgid "Replying to this conversation is not available."
-msgstr ""
+msgstr "无法在此会话中回复。"
 
 #: src/gtk/messages_view.cpp
 msgid "No answer about that message; it may still have been sent."
-msgstr ""
+msgstr "没有关于该信息的回应；它仍有可能已被发送。"
 
 #: src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon; the message was not sent."
-msgstr ""
+msgstr "无法连接到 Tether 守护进程；信息未发送。"
 
 #: src/gtk/messages_view.cpp
 msgid "Sent"
-msgstr ""
+msgstr "已发送"
 
 #: src/gtk/messages_view.cpp
 msgid "New Message"
-msgstr ""
+msgstr "新信息"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
-msgstr ""
+msgstr "选择一个会话"
 
 #: src/gtk/messages_view.cpp
 msgid "To:"
-msgstr ""
+msgstr "收件人："
 
 #: src/gtk/messages_view.cpp
 msgid "Phone number or email"
-msgstr ""
+msgstr "电话号码或电子邮件"
 
 #: src/gtk/messages_view.cpp
 msgid "Send"
-msgstr ""
+msgstr "发送"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"
-msgstr ""
+msgstr "新通知"
 
 #: src/gtk/notifications_view.cpp
 msgid "No notifications yet."
-msgstr ""
+msgstr "暂无通知。"
 
 #: src/gtk/notifications_view.cpp
 msgid "Notification mirroring is unavailable."
-msgstr ""
+msgstr "通知镜像不可用。"
 
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
-msgstr ""
+msgstr "已连接"
 
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "not connected"
-msgstr ""
+msgstr "未连接"
 
 #. TRANSLATORS: {} is a transport name, "Wi-Fi" or "Bluetooth".
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 #, c++-format
 msgid "{}: {}"
-msgstr ""
+msgstr "{}: {}"
 
 #: src/gtk/tray.cpp
 msgid "Daemon: not running"
-msgstr ""
+msgstr "守护进程：未在运行"
 
 #: src/gtk/tray.cpp
 #, c++-format
 msgid "{} unread message"
 msgid_plural "{} unread messages"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{} 条未读信息"
 
 #: src/gtk/ui_util.cpp
 msgid "Waiting for the Tether daemon."
-msgstr ""
+msgstr "正在等待 Tether 守护进程。"
 
 #: src/gtk/tether-gtk.desktop.in
 msgid "Device Synchronization"
-msgstr ""
+msgstr "设备同步"
 
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
-msgstr ""
+msgstr "配对设备并通过网络同步剪贴板"

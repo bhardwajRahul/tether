@@ -14,6 +14,7 @@ add_executable(tether_test
     test_journal.cpp
     test_crypto.cpp
     test_discovery.cpp
+    test_display_width.cpp
     test_file_transfer.cpp
     test_otp.cpp
 )

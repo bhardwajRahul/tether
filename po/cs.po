@@ -1,166 +1,169 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# Czech translation of Tether.
+# DRAFT — machine-assisted, not reviewed by a native speaker. Corrections welcome:
+# https://github.com/zackb/tether
+# Copyright (C) 2026 the Tether authors
 # This file is distributed under the same license as the tether package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: tether 0.2.10\n"
+"Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
 "POT-Creation-Date: 2026-08-23 16:13-0700\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2026-08-23\n"
+"Last-Translator: Tether project\n"
+"Language-Team: Czech\n"
+"Language: cs\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 
 #: src/cli/main.cpp
 msgid "yes"
-msgstr ""
+msgstr "ano"
 
 #: src/cli/main.cpp
 msgid "no"
-msgstr ""
+msgstr "ne"
 
 #: src/cli/main.cpp
 msgid "Show this help message."
-msgstr ""
+msgstr "Zobrazit tuto nápovědu."
 
 #: src/cli/main.cpp
 msgid "Retrieve the current Wayland clipboard text."
-msgstr ""
+msgstr "Získat aktuální text ze schránky Waylandu."
 
 #: src/cli/main.cpp
 msgid "Take string input and copy it to the local Wayland clipboard."
-msgstr ""
+msgstr "Načíst text ze vstupu a zkopírovat jej do místní schránky Waylandu."
 
 #: src/cli/main.cpp
 msgid "Send a file through tether."
-msgstr ""
+msgstr "Odeslat soubor přes tether."
 
 #: src/cli/main.cpp
 msgid "Start the browser Native Messaging Host proxy loop."
-msgstr ""
+msgstr "Spustit proxy smyčku Native Messaging Host prohlížeče."
 
 #: src/cli/main.cpp
 msgid "Scan the local network for tetherd instances via mDNS."
-msgstr ""
+msgstr "Prohledat místní síť na instance tetherd přes mDNS."
 
 #: src/cli/main.cpp
 msgid "Connect over TCP to daemon ip instead of UNIX Socket."
-msgstr ""
+msgstr "Připojit se přes TCP na ip démona místo unixového socketu."
 
 #: src/cli/main.cpp
 msgid "Connect over TCP port (default 5134)."
-msgstr ""
+msgstr "TCP port pro připojení (výchozí 5134)."
 
 #: src/cli/main.cpp
 msgid "Discovery scan duration in milliseconds (default 3000)."
-msgstr ""
+msgstr "Délka vyhledávání v milisekundách (výchozí 3000)."
 
 #: src/cli/main.cpp
 msgid "List all paired connection devices."
-msgstr ""
+msgstr "Vypsat všechna spárovaná zařízení."
 
 #: src/cli/main.cpp
 msgid "Show the one-time system setup Bluetooth still needs."
 msgstr ""
+"Zobrazit jednorázové nastavení systému, které Bluetooth ještě potřebuje."
 
 #: src/cli/main.cpp
 msgid "Show Bluetooth adapter capability and delivery mode."
-msgstr ""
+msgstr "Zobrazit schopnosti Bluetooth adaptéru a režim doručování."
 
 #: src/cli/main.cpp
 msgid "List Bluetooth devices known to BlueZ."
-msgstr ""
+msgstr "Vypsat Bluetooth zařízení známá BlueZ."
 
 #: src/cli/main.cpp
 msgid "Show Bluetooth link and profile connection state."
-msgstr ""
+msgstr "Zobrazit stav Bluetooth spojení a profilů."
 
 #: src/cli/main.cpp
 msgid "List iPhone message conversations."
-msgstr ""
+msgstr "Vypsat konverzace zpráv z iPhonu."
 
 #: src/cli/main.cpp
 msgid "Show messages in one conversation."
-msgstr ""
+msgstr "Zobrazit zprávy jedné konverzace."
 
 #: src/cli/main.cpp
 msgid "Reply in one conversation."
-msgstr ""
+msgstr "Odpovědět v jedné konverzaci."
 
 #: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
-msgstr ""
+msgstr "Spárovat iPhone přes Bluetooth."
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
-msgstr ""
+msgstr "Odstranit Bluetooth vazbu."
 
 #: src/cli/main.cpp
 msgid ""
 "Re-advertise for ANCS so the iPhone shows its permission toggles again, "
 "without removing the bond."
 msgstr ""
+"Znovu se ohlásit pro ANCS, aby iPhone opět zobrazil svá oprávnění, bez "
+"odstranění vazby."
 
 #: src/cli/main.cpp
 msgid "Connect to the iPhone over Bluetooth, or stop."
-msgstr ""
+msgstr "Připojit se k iPhonu přes Bluetooth, nebo přestat."
 
 #: src/cli/main.cpp
 msgid "Turn notification mirroring on or off."
-msgstr ""
+msgstr "Zapnout nebo vypnout zrcadlení oznámení."
 
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
-msgstr ""
+msgstr "Zrcadlit názvy a text oznámení, nejen aplikaci."
 
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
-msgstr ""
+msgstr "Vypsat zrcadlená oznámení z iPhonu."
 
 #: src/cli/main.cpp
 msgid "Print a redacted Bluetooth report for a bug report."
-msgstr ""
+msgstr "Vypsat očištěnou zprávu o Bluetooth pro hlášení chyby."
 
 #: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
-msgstr ""
+msgstr "Přijmout čekající žádost o spárování místně."
 
 #: src/cli/main.cpp
 msgid "Send a pair_request over TCP to the daemon."
-msgstr ""
+msgstr "Odeslat pair_request démonovi přes TCP."
 
 #: src/cli/main.cpp
 msgid "tether - Wayland companion CLI"
-msgstr ""
+msgstr "tether - doprovodný nástroj příkazové řádky pro Wayland"
 
 #: src/cli/main.cpp
 msgid "Options:"
-msgstr ""
+msgstr "Volby:"
 
 #: src/cli/main.cpp
 msgid "Examples:"
-msgstr ""
+msgstr "Příklady:"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth status from the daemon.\n"
-msgstr ""
+msgstr "Nepodařilo se načíst stav Bluetooth od démona.\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Bluetooth: unavailable (is bluetoothd running?)\n"
-msgstr ""
+msgstr "Bluetooth: nedostupné (běží bluetoothd?)\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Bluetooth setup is complete. Nothing to do.\n"
-msgstr ""
+msgstr "Nastavení Bluetooth je hotové. Není co dělat.\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -171,7 +174,14 @@ msgid_plural ""
 "\n"
 "%zu steps left before the iPhone Bluetooth features work:\n"
 msgstr[0] ""
+"\n"
+"Zbývá %zu krok, než budou funkce Bluetooth iPhonu fungovat:\n"
 msgstr[1] ""
+"\n"
+"Zbývají %zu kroky, než budou funkce Bluetooth iPhonu fungovat:\n"
+msgstr[2] ""
+"\n"
+"Zbývá %zu kroků, než budou funkce Bluetooth iPhonu fungovat:\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -179,56 +189,58 @@ msgid ""
 "\n"
 "Re-run 'tether --bt-setup' afterwards to confirm.\n"
 msgstr ""
+"\n"
+"Poté pro potvrzení spusťte znovu 'tether --bt-setup'.\n"
 
 #: src/cli/main.cpp
 msgid "Mode"
-msgstr ""
+msgstr "Režim"
 
 #: src/cli/main.cpp
 msgid "Bearer API"
-msgstr ""
+msgstr "Bearer API"
 
 #: src/cli/main.cpp
 msgid "unknown"
-msgstr ""
+msgstr "neznámé"
 
 #: src/cli/main.cpp
 msgid "Adapter"
-msgstr ""
+msgstr "Adaptér"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "powered={0} central={1} peripheral={2} advertising={3} class={4}"
-msgstr ""
+msgstr "zapnutý={0} centrální={1} periferní={2} ohlašuje={3} třída={4}"
 
 #: src/cli/main.cpp
 msgid "ok"
-msgstr ""
+msgstr "správná"
 
 #: src/cli/main.cpp
 msgid "wrong"
-msgstr ""
+msgstr "špatná"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "secure-connections={}"
-msgstr ""
+msgstr "Secure Connections={}"
 
 #: src/cli/main.cpp
 msgid "Bond"
-msgstr ""
+msgstr "Vazba"
 
 #: src/cli/main.cpp src/gtk/main.cpp src/gtk/tether-gtk.desktop.in
 msgid "Tether"
-msgstr ""
+msgstr "Tether"
 
 #: src/cli/main.cpp
 msgid "connecting"
-msgstr ""
+msgstr "připojuje se"
 
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
-msgstr ""
+msgstr "vypnuto (--bt-enable on)"
 
 #: src/cli/main.cpp
 #, c-format
@@ -239,172 +251,185 @@ msgid_plural ""
 "\n"
 "%zu setup steps remaining. Run: tether --bt-setup\n"
 msgstr[0] ""
+"\n"
+"Zbývá %zu krok nastavení. Spusťte: tether --bt-setup\n"
 msgstr[1] ""
+"\n"
+"Zbývají %zu kroky nastavení. Spusťte: tether --bt-setup\n"
+msgstr[2] ""
+"\n"
+"Zbývá %zu kroků nastavení. Spusťte: tether --bt-setup\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth devices from the daemon.\n"
-msgstr ""
+msgstr "Nepodařilo se načíst Bluetooth zařízení od démona.\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "No Bluetooth devices known to BlueZ.\n"
-msgstr ""
+msgstr "BlueZ nezná žádná Bluetooth zařízení.\n"
 
 #: src/cli/main.cpp
 msgid "Could not reach the daemon.\n"
-msgstr ""
+msgstr "Nepodařilo se spojit s démonem.\n"
 
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the operation finished.\n"
-msgstr ""
+msgstr "Démon uzavřel spojení dříve, než operace skončila.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth connection state from the daemon.\n"
-msgstr ""
+msgstr "Nepodařilo se načíst stav Bluetooth spojení od démona.\n"
 
 #: src/cli/main.cpp
 msgid "Device present"
-msgstr ""
+msgstr "Zařízení přítomno"
 
 #: src/cli/main.cpp
 msgid "BR/EDR"
-msgstr ""
+msgstr "BR/EDR"
 
 #: src/cli/main.cpp
 msgid "LE"
-msgstr ""
+msgstr "LE"
 
 #: src/cli/main.cpp
 msgid "(bearer unavailable)"
-msgstr ""
+msgstr "(bearer nedostupný)"
 
 #: src/cli/main.cpp
 msgid "Messages (MAP)"
-msgstr ""
+msgstr "Zprávy (MAP)"
 
 #: src/cli/main.cpp
 msgid "Contacts (PBAP)"
-msgstr ""
+msgstr "Kontakty (PBAP)"
 
 #: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
 msgid "Notifications"
-msgstr ""
+msgstr "Oznámení"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
-msgstr ""
+msgstr "Nepodařilo se načíst diagnostiku Bluetooth od démona.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read notifications from the daemon.\n"
-msgstr ""
+msgstr "Nepodařilo se načíst oznámení od démona.\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "No notifications yet. Check 'tether --bt-connection'.\n"
-msgstr ""
+msgstr "Zatím žádná oznámení. Zkontrolujte 'tether --bt-connection'.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read conversations from the daemon.\n"
-msgstr ""
+msgstr "Nepodařilo se načíst konverzace od démona.\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "No conversations yet. Check 'tether --bt-connection'.\n"
-msgstr ""
+msgstr "Zatím žádné konverzace. Zkontrolujte 'tether --bt-connection'.\n"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "({} unread)"
 msgid_plural "({} unread)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "({} nepřečtená)"
+msgstr[1] "({} nepřečtené)"
+msgstr[2] "({} nepřečtených)"
 
 #: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
-msgstr ""
+msgstr "Nepodařilo se načíst zprávy od démona.\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "No messages in %s\n"
-msgstr ""
+msgstr "Žádné zprávy v %s\n"
 
 #: src/cli/main.cpp
 msgid "me"
-msgstr ""
+msgstr "já"
 
 #: src/cli/main.cpp
 msgid "them"
-msgstr ""
+msgstr "oni"
 
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the message was sent.\n"
-msgstr ""
+msgstr "Démon uzavřel spojení dříve, než byla zpráva odeslána.\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Sent to %s\n"
-msgstr ""
+msgstr "Odesláno na %s\n"
 
 #: src/cli/main.cpp src/gtk/messages_view.cpp
 msgid "The message was not sent."
-msgstr ""
+msgstr "Zpráva nebyla odeslána."
 
 #: src/cli/main.cpp
 msgid "Unknown action. Run tether --help for options\n"
-msgstr ""
+msgstr "Neznámá akce. Spusťte tether --help pro seznam voleb\n"
 
 #: src/cli/main.cpp
 msgid "  No tetherd instances found.\n"
-msgstr ""
+msgstr "  Nenalezeny žádné instance tetherd.\n"
 
 #: src/cli/main.cpp
 msgid "[new]"
-msgstr ""
+msgstr "[nové]"
 
 #: src/cli/main.cpp
 msgid "[known]"
-msgstr ""
+msgstr "[známé]"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Found %zu device in %.1fs\n"
 msgid_plural "Found %zu devices in %.1fs\n"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Nalezeno %zu zařízení za %.1fs\n"
+msgstr[1] "Nalezena %zu zařízení za %.1fs\n"
+msgstr[2] "Nalezeno %zu zařízení za %.1fs\n"
 
 #: src/cli/main.cpp
 msgid ""
 "Explicit framework connection locally rejected! Did you target explicitly "
 "invalid TLS or is daemon broken?\n"
 msgstr ""
+"Explicitní spojení frameworku bylo místně odmítnuto! Zadali jste výslovně "
+"neplatné TLS, nebo je démon rozbitý?\n"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "Transfer Failed: {}"
-msgstr ""
+msgstr "Přenos selhal: {}"
 
 #: src/cli/main.cpp
 msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
-msgstr ""
+msgstr "Je vyžadován klíč konverzace, např. --bt-messages tel:+15551234567\n"
 
 #: src/cli/main.cpp
 msgid ""
 "A conversation and a message are required, e.g. --bt-send tel:+15551234567 "
 "\"hi\"\n"
 msgstr ""
+"Je vyžadována konverzace a zpráva, např. --bt-send tel:+15551234567 "
+"\"ahoj\"\n"
 
 #: src/cli/main.cpp
 msgid "A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n"
-msgstr ""
+msgstr "Je vyžadována Bluetooth adresa, např. --bt-pair AA:BB:CC:DD:EE:FF\n"
 
 #: src/cli/main.cpp
 msgid "Expected on or off, e.g. --bt-enable off\n"
-msgstr ""
+msgstr "Očekáváno on nebo off, např. --bt-enable off\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Bluetooth enabled.\n"
-msgstr ""
+msgstr "Bluetooth zapnuto.\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -412,27 +437,29 @@ msgid ""
 "Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
 "already up stays up until you disconnect it or the phone goes out of range.\n"
 msgstr ""
+"Bluetooth vypnuto. Tether iPhone znovu nepřipojí. Spojení, které už běží,\n"
+"zůstane až do jeho odpojení nebo dokud telefon neopustí dosah.\n"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "Expected on or off, e.g. {} on\n"
-msgstr ""
+msgstr "Očekáváno on nebo off, např. {} on\n"
 
 #: src/cli/main.cpp
 msgid "Notification contents enabled."
-msgstr ""
+msgstr "Obsah oznámení zapnut."
 
 #: src/cli/main.cpp
 msgid "Notification contents disabled."
-msgstr ""
+msgstr "Obsah oznámení vypnut."
 
 #: src/cli/main.cpp
 msgid "Notification mirroring enabled."
-msgstr ""
+msgstr "Zrcadlení oznámení zapnuto."
 
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
-msgstr ""
+msgstr "Zrcadlení oznámení vypnuto."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -441,6 +468,11 @@ msgid ""
 "a machine with no audio stack, or one where the a2dp_sink and hfp_hf roles "
 "are turned off. Nothing is missing and nothing needs changing on the iPhone."
 msgstr ""
+"Zprávy a kontakty jsou připojeny. BlueZ hlásí Bluetooth spojení jako "
+"nefunkční, protože tento počítač nenabízí iPhonu žádný profil, ke kterému by "
+"se připojil — obvyklé na stroji bez zvukového subsystému nebo tam, kde jsou "
+"role a2dp_sink a hfp_hf vypnuté. Nic nechybí a na iPhonu není třeba nic "
+"měnit."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -449,6 +481,9 @@ msgid ""
 "Share System Notifications is already on. Messages and contacts are "
 "unaffected."
 msgstr ""
+"iPhone neodpovídá na LE. Jeho Bluetooth se zaseklo na jeho straně: vypněte a "
+"znovu zapněte Bluetooth na iPhonu, což to vyřeší i tehdy, když je „Sdílet "
+"systémová oznámení“ už zapnuté. Zpráv a kontaktů se to netýká."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -456,26 +491,32 @@ msgid ""
 "back on on the iPhone — that clears it even when the permissions are already "
 "on. Re-pairing is not the fix."
 msgstr ""
+"iPhone stále odmítá Bluetooth spojení. Vypněte a znovu zapněte Bluetooth na "
+"iPhonu — to to vyřeší i tehdy, když jsou oprávnění už zapnutá. Opětovné "
+"spárování není řešení."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
 "Notifications are connected. Still reaching the iPhone for messages and "
 "contacts..."
 msgstr ""
+"Oznámení jsou připojena. Stále se pokoušíme spojit s iPhonem kvůli zprávám a "
+"kontaktům..."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid "Connecting to the iPhone over Bluetooth..."
-msgstr ""
+msgstr "Připojování k iPhonu přes Bluetooth..."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid "Connected. Notification mirroring is disabled."
-msgstr ""
+msgstr "Připojeno. Zrcadlení oznámení je vypnuté."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
 "Connected. BlueZ is not exposing an LE bearer, so notifications are "
 "unavailable."
 msgstr ""
+"Připojeno. BlueZ neposkytuje LE bearer, takže oznámení nejsou dostupná."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -483,102 +524,114 @@ msgid ""
 "notifications. If it does not, open Settings > Bluetooth > (i) on the iPhone "
 "and check Share System Notifications."
 msgstr ""
+"Připojeno. Čeká se, až iPhone otevře LE spojení, které přenáší oznámení. "
+"Pokud to neudělá, otevřete na iPhonu Nastavení > Bluetooth > (i) a "
+"zkontrolujte „Sdílet systémová oznámení“."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid "Connected over BR/EDR and LE."
-msgstr ""
+msgstr "Připojeno přes BR/EDR a LE."
 
 #: src/core/src/bluetooth/connection.cpp src/gtk/messages_view.cpp
 msgid "Messages are not connected."
-msgstr ""
+msgstr "Zprávy nejsou připojeny."
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "Could not build a message for this conversation."
-msgstr ""
+msgstr "Nepodařilo se sestavit zprávu pro tuto konverzaci."
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "That message is no longer in the conversation history."
-msgstr ""
+msgstr "Tato zpráva už není v historii konverzace."
 
 #: src/core/src/bluetooth/connection.cpp
 msgid ""
 "The iPhone is not serving this message right now; marked read on this "
 "computer only."
 msgstr ""
+"iPhone tuto zprávu právě neposkytuje; označena jako přečtená pouze na tomto "
+"počítači."
 
 #: src/core/src/bluetooth/connection.cpp
 msgid ""
 "The iPhone is not offering notifications on this link. Asking it again..."
-msgstr ""
+msgstr "iPhone na tomto spojení nenabízí oznámení. Žádáme znovu..."
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "No paired iPhone selected."
-msgstr ""
+msgstr "Není vybrán žádný spárovaný iPhone."
 
 #: src/core/src/bluetooth/groups.cpp
 msgid "Group replies are turned off."
-msgstr ""
+msgstr "Skupinové odpovědi jsou vypnuté."
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
 msgid "The roster for this group contains an unusable address: {}"
-msgstr ""
+msgstr "Seznam členů této skupiny obsahuje nepoužitelnou adresu: {}"
 
 #: src/core/src/bluetooth/groups.cpp
 msgid "The roster for this group is empty."
-msgstr ""
+msgstr "Seznam členů této skupiny je prázdný."
 
 #: src/core/src/bluetooth/groups.cpp
 msgid ""
 "This conversation has not been identified as a group yet, so there is nobody "
 "to reply to."
 msgstr ""
+"Tato konverzace zatím nebyla rozpoznána jako skupina, takže není komu "
+"odpovědět."
 
 #: src/core/src/bluetooth/groups.cpp
 msgid ""
 "This group has a name but no member list. Add its members before replying."
 msgstr ""
+"Tato skupina má název, ale nemá seznam členů. Před odpovědí přidejte její "
+"členy."
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
 msgid "\"{}\" is not in your contacts."
-msgstr ""
+msgstr "„{}“ není ve vašich kontaktech."
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
 msgid "\"{}\" matches more than one contact address."
-msgstr ""
+msgstr "„{}“ odpovídá více než jedné adrese v kontaktech."
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
 msgid "\"{0}\" resolved to an unusable address: {1}"
-msgstr ""
+msgstr "„{0}“ se přeložilo na nepoužitelnou adresu: {1}"
 
 #: src/core/src/bluetooth/groups.cpp
 msgid "No recipients could be resolved for this group."
-msgstr ""
+msgstr "Pro tuto skupinu se nepodařilo určit žádné příjemce."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "No Bluetooth adapter found."
-msgstr ""
+msgstr "Nenalezen žádný Bluetooth adaptér."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Bluetooth adapter is powered off."
-msgstr ""
+msgstr "Bluetooth adaptér je vypnutý."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Adapter has no LE central role; ANCS is impossible."
-msgstr ""
+msgstr "Adaptér nemá centrální roli LE; ANCS není možné."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Adapter cannot advertise as a peripheral, so ANCS cannot be solicited."
 msgstr ""
+"Adaptér se nemůže ohlašovat jako periferie, takže o ANCS nelze požádat."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "No LE advertising instances available; the iPhone may never show its "
 "Bluetooth permission toggles."
 msgstr ""
+"Není dostupná žádná instance LE ohlašování; iPhone nemusí nikdy zobrazit svá "
+"Bluetooth oprávnění."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -586,10 +639,13 @@ msgid ""
 "(org.bluez.Bearer.LE1), which bluetoothd is not exposing. Set this up before "
 "pairing: a bond made without it has no LE half."
 msgstr ""
+"Zrcadlení oznámení vyžaduje experimentální bearer API BlueZ "
+"(org.bluez.Bearer.LE1), které bluetoothd neposkytuje. Nastavte to před "
+"párováním: vazba vytvořená bez něj nemá LE polovinu."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Bearer API support is unconfirmed until a device is bonded."
-msgstr ""
+msgstr "Podpora bearer API zůstává nepotvrzená, dokud není zařízení svázáno."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -597,18 +653,25 @@ msgid ""
 "derived, so notification mirroring cannot work on it. Delete this computer "
 "on the iPhone (Forget This Device) and pair again."
 msgstr ""
+"Zařízení je svázáno, ale vazba pokrývá pouze BR/EDR -- nebyly odvozeny žádné "
+"LE klíče, takže zrcadlení oznámení na ní nemůže fungovat. Smažte tento "
+"počítač na iPhonu (Zapomenout toto zařízení) a spárujte znovu."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "Secure Connections is off on this controller, which is what blocks the "
 "derivation; re-pairing will not help until it is on."
 msgstr ""
+"Secure Connections je na tomto řadiči vypnuté a právě to blokuje odvození; "
+"opětovné spárování nepomůže, dokud nebude zapnuté."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "The iPhone will not offer its Messages and Contacts permissions until this "
 "adapter presents itself as A/V Hands-Free (major 4, minor 8)."
 msgstr ""
+"iPhone nenabídne svá oprávnění pro Zprávy a Kontakty, dokud se tento adaptér "
+"nebude hlásit jako A/V Hands-Free (major 4, minor 8)."
 
 #: src/core/src/bluetooth/pairing.cpp
 #, c++-format
@@ -619,38 +682,43 @@ msgid ""
 "\n"
 "{1}"
 msgstr ""
+"{0} se chce spárovat.\n"
+"\n"
+"Potvrďte, že tento kód odpovídá kódu na vašem iPhonu:\n"
+"\n"
+"{1}"
 
 #: src/core/src/bluetooth/pairing.cpp
 msgid "Bluetooth Pairing"
-msgstr ""
+msgstr "Párování Bluetooth"
 
 #: src/core/src/bluetooth/pairing.cpp
 msgid "Confirm"
-msgstr ""
+msgstr "Potvrdit"
 
 #: src/core/src/bluetooth/pairing.cpp src/gtk/messages_view.cpp
 msgid "Cancel"
-msgstr ""
+msgstr "Zrušit"
 
 #. TRANSLATORS: the feature name Tether shows for this profile.
 #: src/core/src/bluetooth/profile_supervisor.cpp src/daemon/main.cpp
 #: src/gtk/devices_view.cpp src/gtk/main.cpp
 msgid "Messages"
-msgstr ""
+msgstr "Zprávy"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/devices_view.cpp
 msgid "Contacts"
-msgstr ""
+msgstr "Kontakty"
 
 #. TRANSLATORS: these two are toggle names in the iPhone's own Settings app.
 #. Use Apple's wording for the target language, not a literal translation.
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Show Message Notifications"
-msgstr ""
+msgstr "Zobrazovat oznámení zpráv"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Sync Contacts"
-msgstr ""
+msgstr "Synchronizovat kontakty"
 
 #. TRANSLATORS: {} is an iPhone Settings toggle name.
 #: src/core/src/bluetooth/profile_supervisor.cpp
@@ -659,6 +727,8 @@ msgid ""
 "Enable \"{}\" for this computer in the iPhone's Settings > Bluetooth > (i). "
 "This is a permission, not a pairing problem."
 msgstr ""
+"Zapněte „{}“ pro tento počítač na iPhonu v Nastavení > Bluetooth > (i). Jde "
+"o oprávnění, ne o problém s párováním."
 
 #. TRANSLATORS: {0} is Messages or Contacts, {1} is the profile name (map or pbap).
 #: src/core/src/bluetooth/profile_supervisor.cpp
@@ -667,6 +737,8 @@ msgid ""
 "{0} is unavailable because another computer is using the iPhone's {1} "
 "session. Disconnect it there, then this will connect on its own."
 msgstr ""
+"{0} není dostupné, protože relaci {1} iPhonu používá jiný počítač. Odpojte "
+"ji tam a toto se připojí samo."
 
 #. TRANSLATORS: {0} is Messages or Contacts, {1} is an iPhone Settings toggle name.
 #: src/core/src/bluetooth/profile_supervisor.cpp
@@ -676,11 +748,14 @@ msgid ""
 "phone's Bluetooth session, or \"{1}\" is off in Settings > Bluetooth > (i). "
 "Check both; re-pairing is not the fix."
 msgstr ""
+"{0} se nepodařilo z iPhonu načíst. Obvykle Bluetooth relaci telefonu drží "
+"jiný počítač, nebo je „{1}“ vypnuté v Nastavení > Bluetooth > (i). "
+"Zkontrolujte obojí; opětovné spárování není řešení."
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 #, c++-format
 msgid "{} is unreachable; waiting for the iPhone to come back."
-msgstr ""
+msgstr "{} je nedostupné; čeká se, až se iPhone vrátí."
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 #, c++-format
@@ -689,258 +764,269 @@ msgid ""
 "Install it (bluez-obex on Arch, bluez-obexd on Debian and Ubuntu). Nothing "
 "needs changing on the iPhone."
 msgstr ""
+"{} vyžaduje OBEX démona BlueZ, který na tomto počítači není nainstalován. "
+"Nainstalujte jej (bluez-obex na Archu, bluez-obexd na Debianu a Ubuntu). Na "
+"iPhonu není třeba nic měnit."
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 #, c++-format
 msgid "{} could not be opened."
-msgstr ""
+msgstr "{} se nepodařilo otevřít."
 
 #: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/notifications_view.cpp
 msgid "Waiting for the iPhone."
-msgstr ""
+msgstr "Čeká se na iPhone."
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Messages and contacts are connected."
-msgstr ""
+msgstr "Zprávy a kontakty jsou připojeny."
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
-msgstr ""
+msgstr "Otevírání zpráv a kontaktů..."
 
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
 #, c++-format
 msgid "{0} ({1}) wants to pair with this device."
-msgstr ""
+msgstr "{0} ({1}) se chce spárovat s tímto zařízením."
 
 #: src/core/src/net.cpp
 msgid "Pairing Request"
-msgstr ""
+msgstr "Žádost o spárování"
 
 #: src/core/src/net.cpp
 msgid "Accept"
-msgstr ""
+msgstr "Přijmout"
 
 #: src/core/src/net.cpp
 msgid "Reject"
-msgstr ""
+msgstr "Odmítnout"
 
 #: src/daemon/notification.cpp
 msgid "File arrived"
-msgstr ""
+msgstr "Soubor dorazil"
 
 #: src/daemon/notification.cpp
 msgid "Open File"
-msgstr ""
+msgstr "Otevřít soubor"
 
 #: src/daemon/notification.cpp
 msgid "Open Folder"
-msgstr ""
+msgstr "Otevřít složku"
 
 #: src/daemon/notification.cpp
 msgid "Reply"
-msgstr ""
+msgstr "Odpovědět"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"
-msgstr ""
+msgstr "Démon je offline"
 
 #: src/gtk/daemon_client.cpp src/gtk/messages_view.cpp
 msgid "The Tether daemon is not running."
-msgstr ""
+msgstr "Démon Tether neběží."
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Online"
-msgstr ""
+msgstr "Démon je online"
 
 #: src/gtk/devices_view.cpp
 msgid "Connected."
-msgstr ""
+msgstr "Připojeno."
 
 #: src/gtk/devices_view.cpp
 msgid "Not connected yet."
-msgstr ""
+msgstr "Zatím nepřipojeno."
 
 #: src/gtk/devices_view.cpp
 msgid "Bluetooth is unavailable on this machine."
-msgstr ""
+msgstr "Bluetooth není na tomto stroji dostupné."
 
 #: src/gtk/devices_view.cpp
 msgid "Full mode — messages, contacts, and notifications."
-msgstr ""
+msgstr "Plný režim — zprávy, kontakty a oznámení."
 
 #: src/gtk/devices_view.cpp
 msgid "Compatibility mode — messages and contacts, no notification mirroring."
-msgstr ""
+msgstr "Režim kompatibility — zprávy a kontakty, bez zrcadlení oznámení."
 
 #: src/gtk/devices_view.cpp
 msgid "This machine cannot carry the Bluetooth features."
-msgstr ""
+msgstr "Tento stroj nezvládne funkce Bluetooth."
 
 #: src/gtk/devices_view.cpp
 msgid "Link"
-msgstr ""
+msgstr "Spojení"
 
 #: src/gtk/devices_view.cpp
 msgid "Not paired over Bluetooth yet."
-msgstr ""
+msgstr "Zatím nespárováno přes Bluetooth."
 
 #: src/gtk/devices_view.cpp
 msgid "Tether is not using this device. Pair it to select it."
-msgstr ""
+msgstr "Tether toto zařízení nepoužívá. Spárujte jej, abyste jej vybrali."
 
 #: src/gtk/devices_view.cpp
 msgid "Bluetooth is switched off for this iPhone."
-msgstr ""
+msgstr "Bluetooth je pro tento iPhone vypnuté."
 
 #: src/gtk/devices_view.cpp
 msgid "Connected and ready."
-msgstr ""
+msgstr "Připojeno a připraveno."
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "Device is offline. Open the Tether app on iPhone while on the same network."
 msgstr ""
+"Zařízení je offline. Otevřete aplikaci Tether na iPhonu ve stejné síti."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "Found at {0}:{1}"
-msgstr ""
+msgstr "Nalezeno na {0}:{1}"
 
 #: src/gtk/devices_view.cpp
 msgid "Sending pair request..."
-msgstr ""
+msgstr "Odesílání žádosti o spárování..."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair request sent. Approve on remote device!"
-msgstr ""
+msgstr "Žádost o spárování odeslána. Schvalte ji na vzdáleném zařízení!"
 
 #: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon."
-msgstr ""
+msgstr "Nepodařilo se spojit s démonem Tether."
 
 #: src/gtk/devices_view.cpp
 msgid "Pairing… confirm the prompt on the iPhone."
-msgstr ""
+msgstr "Párování… potvrďte výzvu na iPhonu."
 
 #: src/gtk/devices_view.cpp
 #, c-format
 msgid "Remove the Bluetooth pairing with %s?"
-msgstr ""
+msgstr "Odstranit Bluetooth párování s %s?"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "Also delete this computer from the iPhone's Bluetooth settings before "
 "pairing again, or the phone will keep the stale bond."
 msgstr ""
+"Před opětovným párováním smažte tento počítač také z nastavení Bluetooth na "
+"iPhonu, jinak si telefon ponechá zastaralou vazbu."
 
 #: src/gtk/devices_view.cpp
 msgid "Removing the pairing…"
-msgstr ""
+msgstr "Odstraňování párování…"
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
-msgstr ""
+msgstr "Příkazy pro nastavení zkopírovány do schránky."
 
 #: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
 msgid "Asking the iPhone to show its Bluetooth permissions…"
-msgstr ""
+msgstr "Žádáme iPhone, aby zobrazil svá Bluetooth oprávnění…"
 
 #. TRANSLATORS: {} is a file name.
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "Sending {}…"
-msgstr ""
+msgstr "Odesílání {}…"
 
 #. TRANSLATORS: {0} is the current file's position, {1} the batch size.
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "({0} of {1})"
-msgstr ""
+msgstr "({0} z {1})"
 
 #: src/gtk/devices_view.cpp
 msgid "Daemon unavailable."
-msgstr ""
+msgstr "Démon není dostupný."
 
 #: src/gtk/devices_view.cpp
 msgid "Send File"
-msgstr ""
+msgstr "Odeslat soubor"
 
 #: src/gtk/devices_view.cpp
 msgid "Folders can't be sent — drop files instead."
-msgstr ""
+msgstr "Složky nelze odeslat — přetáhněte místo nich soubory."
 
 #: src/gtk/devices_view.cpp
 msgid "Clipboard, files, and OTP are connected."
-msgstr ""
+msgstr "Schránka, soubory a OTP jsou připojeny."
 
 #: src/gtk/devices_view.cpp
 msgid "No paired iPhone is connected. Open the Tether app on the phone."
 msgstr ""
+"Není připojen žádný spárovaný iPhone. Otevřete aplikaci Tether v telefonu."
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
-msgstr ""
+msgstr "Neznámé zařízení"
 
 #: src/gtk/devices_view.cpp
 msgid "Scanning for nearby devices..."
-msgstr ""
+msgstr "Hledání zařízení v okolí..."
 
 #: src/gtk/devices_view.cpp
 msgid "Connected"
-msgstr ""
+msgstr "Připojeno"
 
 #: src/gtk/devices_view.cpp
 msgid "Offline"
-msgstr ""
+msgstr "Offline"
 
 #: src/gtk/devices_view.cpp
 msgid "Nearby (Tap to Pair)"
-msgstr ""
+msgstr "V okolí (klepnutím spárujete)"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
-msgstr ""
+msgstr "Spárováno"
 
 #: src/gtk/devices_view.cpp
 msgid "Ready"
-msgstr ""
+msgstr "Připraveno"
 
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "Sent {0} of {1} file."
 msgid_plural "Sent {0} of {1} files."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Odeslán {0} z {1} souboru."
+msgstr[1] "Odeslány {0} z {1} souborů."
+msgstr[2] "Odesláno {0} z {1} souborů."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "Skipped {} non-file item."
 msgid_plural "Skipped {} non-file items."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Přeskočena {} položka, která není soubor."
+msgstr[1] "Přeskočeny {} položky, které nejsou soubor."
+msgstr[2] "Přeskočeno {} položek, které nejsou soubor."
 
 #: src/gtk/devices_view.cpp
 msgid "Desktop Clipboard Sync triggered."
-msgstr ""
+msgstr "Synchronizace schránky plochy spuštěna."
 
 #: src/gtk/devices_view.cpp
 msgid "Messages and notifications are connected."
-msgstr ""
+msgstr "Zprávy a oznámení jsou připojeny."
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "No iPhone found. Unlock the phone and open Settings > Bluetooth so it "
 "advertises, then scan again."
 msgstr ""
+"Nenalezen žádný iPhone. Odemkněte telefon a otevřete Nastavení > Bluetooth, "
+"aby se ohlašoval, a hledejte znovu."
 
 #: src/gtk/devices_view.cpp
 msgid "Connect your iPhone"
-msgstr ""
+msgstr "Připojte svůj iPhone"
 
 #: src/gtk/devices_view.cpp
 msgid "clipboard, files, OTP"
-msgstr ""
+msgstr "schránka, soubory, OTP"
 
 #: src/gtk/devices_view.cpp
 msgid ""
@@ -948,10 +1034,13 @@ msgid ""
 "2.  It finds this computer by itself\n"
 "3.  Approve on both ends"
 msgstr ""
+"1.  Otevřete aplikaci Tether na iPhonu\n"
+"2.  Tento počítač najde sama\n"
+"3.  Schvalte to na obou stranách"
 
 #: src/gtk/devices_view.cpp
 msgid "messages, notifications"
-msgstr ""
+msgstr "zprávy, oznámení"
 
 #: src/gtk/devices_view.cpp
 msgid ""
@@ -959,28 +1048,33 @@ msgid ""
 "2.  Press Pair over Bluetooth\n"
 "3.  Grant the two toggles on the phone"
 msgstr ""
+"1.  Vyberte iPhone pod BLUETOOTH\n"
+"2.  Stiskněte Spárovat přes Bluetooth\n"
+"3.  Udělte v telefonu obě oprávnění"
 
 #: src/gtk/devices_view.cpp
 msgid "Scan for devices"
-msgstr ""
+msgstr "Hledat zařízení"
 
 #: src/gtk/devices_view.cpp
 msgid "Bluetooth needs one-time system setup"
-msgstr ""
+msgstr "Bluetooth vyžaduje jednorázové nastavení systému"
 
 #: src/gtk/devices_view.cpp
 msgid "Copy commands"
-msgstr ""
+msgstr "Kopírovat příkazy"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "Run these in a terminal. Tether does not change your Bluetooth adapter or "
 "bluetoothd on its own."
 msgstr ""
+"Spusťte je v terminálu. Tether sám o sobě nemění váš Bluetooth adaptér ani "
+"bluetoothd."
 
 #: src/gtk/devices_view.cpp
 msgid "Connect to this iPhone over Bluetooth"
-msgstr ""
+msgstr "Připojit se k tomuto iPhonu přes Bluetooth"
 
 #: src/gtk/devices_view.cpp
 msgid ""
@@ -988,20 +1082,25 @@ msgid ""
 "Turning this off stops Tether reconnecting; a link that is already up stays "
 "up until you disconnect it."
 msgstr ""
+"Udržuje Bluetooth spojení s iPhonem a znovu se připojí, kdykoli spadne. "
+"Vypnutím Tether přestane obnovovat spojení; spojení, které už běží, zůstane "
+"až do jeho odpojení."
 
 #: src/gtk/devices_view.cpp
 msgid "Mirror iPhone notifications"
-msgstr ""
+msgstr "Zrcadlit oznámení z iPhonu"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "Show notifications from the iPhone on this desktop. Turned off automatically "
 "when pairing produces no LE bond; turn it back on after re-pairing."
 msgstr ""
+"Zobrazuje oznámení z iPhonu na této ploše. Automaticky se vypne, když "
+"párování nevytvoří LE vazbu; po opětovném spárování jej znovu zapněte."
 
 #: src/gtk/devices_view.cpp
 msgid "Show notification contents"
-msgstr ""
+msgstr "Zobrazovat obsah oznámení"
 
 #: src/gtk/devices_view.cpp
 msgid ""
@@ -1009,162 +1108,168 @@ msgid ""
 "which app sent it. The phone's own Show Message Notifications toggle still "
 "has to be on."
 msgstr ""
+"Žádá iPhone o název a text každého oznámení, nejen o to, která aplikace jej "
+"poslala. Volba „Zobrazovat oznámení zpráv“ v telefonu musí být přesto "
+"zapnutá."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
-msgstr ""
+msgstr "Spárovat přes Bluetooth"
 
 #: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
 msgid "Show iPhone Permissions"
-msgstr ""
+msgstr "Zobrazit oprávnění iPhonu"
 
 #: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
 msgid ""
 "Re-advertise so the iPhone shows its Show Message Notifications and Sync "
 "Contacts toggles under Settings > Bluetooth > (i)."
 msgstr ""
+"Znovu se ohlásí, aby iPhone zobrazil volby „Zobrazovat oznámení zpráv“ a "
+"„Synchronizovat kontakty“ v Nastavení > Bluetooth > (i)."
 
 #: src/gtk/devices_view.cpp
 msgid "Unpair"
-msgstr ""
+msgstr "Zrušit spárování"
 
 #: src/gtk/devices_view.cpp
 msgid "Pair Device"
-msgstr ""
+msgstr "Spárovat zařízení"
 
 #: src/gtk/devices_view.cpp
 msgid "Force Trust (Accept Pending)"
-msgstr ""
+msgstr "Vynutit důvěru (přijmout čekající)"
 
 #: src/gtk/devices_view.cpp
 msgid "Drop files here to send"
-msgstr ""
+msgstr "Sem přetáhněte soubory k odeslání"
 
 #: src/gtk/devices_view.cpp
 msgid "Send Clipboard"
-msgstr ""
+msgstr "Odeslat schránku"
 
 #: src/gtk/devices_view.cpp
 msgid "Clipboard sync requested..."
-msgstr ""
+msgstr "Vyžádána synchronizace schránky..."
 
 #: src/gtk/main.cpp
 msgid "Keep running in tray when closed"
-msgstr ""
+msgstr "Po zavření nechat běžet v oznamovací oblasti"
 
 #: src/gtk/main.cpp
 msgid "Quit"
-msgstr ""
+msgstr "Ukončit"
 
 #: src/gtk/main.cpp
 msgid "Devices"
-msgstr ""
+msgstr "Zařízení"
 
 #: src/gtk/main.cpp
 msgid "Start hidden in the system tray"
-msgstr ""
+msgstr "Spouštět skrytě v oznamovací oblasti"
 
 #: src/gtk/main.cpp
 msgid "Open on this tab"
-msgstr ""
+msgstr "Otevřít na této kartě"
 
 #: src/gtk/main.cpp
 msgid "Open the messages tab on this conversation"
-msgstr ""
+msgstr "Otevřít kartu zpráv na této konverzaci"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
-msgstr ""
+msgstr "Odesílání…"
 
 #: src/gtk/messages_view.cpp
 msgid "Enter a recipient."
-msgstr ""
+msgstr "Zadejte příjemce."
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation first."
-msgstr ""
+msgstr "Nejprve vyberte konverzaci."
 
 #: src/gtk/messages_view.cpp
 msgid "Replying to this conversation is not available."
-msgstr ""
+msgstr "Odpovídat v této konverzaci není možné."
 
 #: src/gtk/messages_view.cpp
 msgid "No answer about that message; it may still have been sent."
-msgstr ""
+msgstr "Žádná odpověď ohledně té zprávy; přesto mohla být odeslána."
 
 #: src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon; the message was not sent."
-msgstr ""
+msgstr "Nepodařilo se spojit s démonem Tether; zpráva nebyla odeslána."
 
 #: src/gtk/messages_view.cpp
 msgid "Sent"
-msgstr ""
+msgstr "Odesláno"
 
 #: src/gtk/messages_view.cpp
 msgid "New Message"
-msgstr ""
+msgstr "Nová zpráva"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
-msgstr ""
+msgstr "Vyberte konverzaci"
 
 #: src/gtk/messages_view.cpp
 msgid "To:"
-msgstr ""
+msgstr "Komu:"
 
 #: src/gtk/messages_view.cpp
 msgid "Phone number or email"
-msgstr ""
+msgstr "Telefonní číslo nebo e-mail"
 
 #: src/gtk/messages_view.cpp
 msgid "Send"
-msgstr ""
+msgstr "Odeslat"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"
-msgstr ""
+msgstr "Nové oznámení"
 
 #: src/gtk/notifications_view.cpp
 msgid "No notifications yet."
-msgstr ""
+msgstr "Zatím žádná oznámení."
 
 #: src/gtk/notifications_view.cpp
 msgid "Notification mirroring is unavailable."
-msgstr ""
+msgstr "Zrcadlení oznámení není dostupné."
 
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
-msgstr ""
+msgstr "připojeno"
 
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "not connected"
-msgstr ""
+msgstr "nepřipojeno"
 
 #. TRANSLATORS: {} is a transport name, "Wi-Fi" or "Bluetooth".
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 #, c++-format
 msgid "{}: {}"
-msgstr ""
+msgstr "{}: {}"
 
 #: src/gtk/tray.cpp
 msgid "Daemon: not running"
-msgstr ""
+msgstr "Démon: neběží"
 
 #: src/gtk/tray.cpp
 #, c++-format
 msgid "{} unread message"
 msgid_plural "{} unread messages"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{} nepřečtená zpráva"
+msgstr[1] "{} nepřečtené zprávy"
+msgstr[2] "{} nepřečtených zpráv"
 
 #: src/gtk/ui_util.cpp
 msgid "Waiting for the Tether daemon."
-msgstr ""
+msgstr "Čeká se na démona Tether."
 
 #: src/gtk/tether-gtk.desktop.in
 msgid "Device Synchronization"
-msgstr ""
+msgstr "Synchronizace zařízení"
 
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
-msgstr ""
+msgstr "Spárujte zařízení a synchronizujte schránku po síti"

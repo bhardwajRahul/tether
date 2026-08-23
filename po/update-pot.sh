@@ -5,7 +5,10 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-VERSION=$(git describe --tags --always 2>/dev/null | sed 's/^v//' || true)
+# The release version, not `git describe`: a commit count and hash would make the
+# pot stale on every commit, and committing the regenerated pot would change the
+# hash again.
+VERSION=$(sed -n 's/^project(tether VERSION \([0-9][0-9.]*\).*/\1/p' CMakeLists.txt)
 [ -n "$VERSION" ] || VERSION=unknown
 
 # The metadata has to be repeated on the --join-existing call: it rewrites the
@@ -18,28 +21,33 @@ NEW_STRIPPED=$(mktemp)
 trap 'rm -f "$NEW" "$OLD_STRIPPED" "$NEW_STRIPPED"' EXIT
 
 # shellcheck disable=SC2086
+# --add-location=file: line numbers shift on every unrelated edit, and different
+# gettext versions number the Desktop backend differently, so keeping them would
+# churn all the catalogs and make the pot depend on which machine ran this.
 xgettext --files-from=po/POTFILES.in --directory=. \
          --output="$NEW" --from-code=UTF-8 --c++ \
          --keyword=_ --keyword=N_ --keyword=P_:1,2 \
-         --add-comments=TRANSLATORS $META
+         --add-comments=TRANSLATORS --add-location=file $META
 
 # Desktop entry keys join the same catalog, so msgfmt --desktop can localize them.
 # shellcheck disable=SC2086
-xgettext -j -L Desktop --output="$NEW" \
+xgettext -j -L Desktop --output="$NEW" --add-location=file \
          --keyword=Name --keyword=GenericName --keyword=Comment $META \
          src/gtk/tether-gtk.desktop.in
 
-# POT-Creation-Date alone changes on every run and would dirty the pot and all
-# four catalogs for nothing, so a run that changed only the timestamp is dropped.
+# POT-Creation-Date alone changes on every run and would dirty the pot and every
+# catalog for nothing, so a run that changed only the timestamp is dropped. The
+# catalog loop below still runs: adding a language to LINGUAS must create its
+# catalog even when no source string changed.
+pot_changed=1
 if [ -f po/tether.pot ]; then
     grep -v '^"POT-Creation-Date:' po/tether.pot > "$OLD_STRIPPED"
     grep -v '^"POT-Creation-Date:' "$NEW" > "$NEW_STRIPPED"
     if cmp -s "$OLD_STRIPPED" "$NEW_STRIPPED"; then
-        echo "po/tether.pot is up to date"
-        exit 0
+        pot_changed=0
     fi
 fi
-cp "$NEW" po/tether.pot
+[ "$pot_changed" -eq 0 ] || cp "$NEW" po/tether.pot
 
 while read -r lang; do
     [ -n "$lang" ] || continue
@@ -50,4 +58,8 @@ while read -r lang; do
     fi
 done < po/LINGUAS
 
-echo "po/tether.pot updated; $(grep -c '^msgid' po/tether.pot) entries"
+if [ "$pot_changed" -eq 0 ]; then
+    echo "po/tether.pot is up to date; $(wc -l < po/LINGUAS) catalogs checked"
+else
+    echo "po/tether.pot updated; $(grep -c '^msgid' po/tether.pot) entries"
+fi

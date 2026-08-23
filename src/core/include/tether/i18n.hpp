@@ -15,6 +15,11 @@ namespace tether {
     // Call once. setlocale + bindtextdomain.
     void init_locale();
 
+    // Terminal columns a UTF-8 string occupies. CJK glyphs count as two, so
+    // column alignment holds in any script. Falls back to the byte count when
+    // the string is not valid in the current LC_CTYPE.
+    size_t display_width(const std::string& s);
+
     // std::format against a runtime format string, so a translation can reorder
     // arguments with {0}/{1}. Returns the format string itself if a translation
     // drops or mangles a placeholder, rather than throwing at the user.

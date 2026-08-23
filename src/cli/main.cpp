@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <atomic>
 #include <csignal>
 #include <ctime>
@@ -5,6 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
+#include <sys/ioctl.h>
 #include <tether/client.hpp>
 #include <tether/crypto.hpp>
 #include <tether/discovery.hpp>
@@ -95,46 +97,126 @@ void run_native_messaging_host(tether::Client& client) {
     }
 }
 
+static size_t term_width() {
+    struct winsize ws{};
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 20)
+        return ws.ws_col;
+    return 80;
+}
+
+// greedy wrap on spaces. Scripts that do not space-separate words
+// (CJK) yield one long line and fall through to the terminal's own soft wrap.
+static std::vector<std::string> wrap(const std::string& text, size_t width) {
+    std::vector<std::string> out;
+    std::istringstream words(text);
+    std::string word, line;
+    while (words >> word) {
+        if (!line.empty() && tether::display_width(line) + 1 + tether::display_width(word) > width) {
+            out.push_back(line);
+            line.clear();
+        }
+        line += line.empty() ? word : " " + word;
+    }
+    if (!line.empty())
+        out.push_back(line);
+    return out;
+}
+
+static const char* yn(bool v) { return v ? _("yes") : _("no"); }
+
+// Label/value rows aligned on a column derived from the widest translated label
+using Field = std::pair<std::string, std::string>;
+
+static void print_fields(const std::vector<Field>& rows) {
+    size_t col = 0;
+    for (const auto& r : rows)
+        col = std::max(col, tether::display_width(r.first));
+
+    const std::string indent(col + 3, ' ');
+    for (const auto& r : rows) {
+        const std::string pad(col - tether::display_width(r.first), ' ');
+        std::istringstream lines(r.second);
+        std::string line;
+        bool first = true;
+        while (std::getline(lines, line)) {
+            if (first) {
+                fprintf(stdout, "%s:%s  %s\n", r.first.c_str(), pad.c_str(), line.c_str());
+                first = false;
+            } else {
+                fprintf(stdout, "%s%s\n", indent.c_str(), line.c_str());
+            }
+        }
+        if (first)
+            fprintf(stdout, "%s:\n", r.first.c_str());
+    }
+}
+
+struct Opt {
+    const char* flags;
+    const char* desc;
+};
+
+static const Opt kOptions[] = {
+    {"-h, --help", N_("Show this help message.")},
+    {"-g, --get-clipboard", N_("Retrieve the current Wayland clipboard text.")},
+    {"-s, --set-clipboard", N_("Take string input and copy it to the local Wayland clipboard.")},
+    {"-f, --send-file", N_("Send a file through tether.")},
+    {"-n, --native-host", N_("Start the browser Native Messaging Host proxy loop.")},
+    {"-d, --discover", N_("Scan the local network for tetherd instances via mDNS.")},
+    {"--host <ip>", N_("Connect over TCP to daemon ip instead of UNIX Socket.")},
+    {"--port <num>", N_("Connect over TCP port (default 5134).")},
+    {"--timeout <ms>", N_("Discovery scan duration in milliseconds (default 3000).")},
+    {"--list-devices", N_("List all paired connection devices.")},
+    {"--bt-setup", N_("Show the one-time system setup Bluetooth still needs.")},
+    {"--bt-status", N_("Show Bluetooth adapter capability and delivery mode.")},
+    {"--bt-devices", N_("List Bluetooth devices known to BlueZ.")},
+    {"--bt-connection", N_("Show Bluetooth link and profile connection state.")},
+    {"--bt-threads", N_("List iPhone message conversations.")},
+    {"--bt-messages <thread>", N_("Show messages in one conversation.")},
+    {"--bt-send <thread> <text>", N_("Reply in one conversation.")},
+    {"--bt-pair <addr>", N_("Pair with an iPhone over Bluetooth.")},
+    {"--bt-unpair <addr>", N_("Remove a Bluetooth bond.")},
+    {"--bt-solicit",
+     N_("Re-advertise for ANCS so the iPhone shows its permission toggles again, without removing "
+        "the bond.")},
+    {"--bt-enable <on|off>", N_("Connect to the iPhone over Bluetooth, or stop.")},
+    {"--bt-ancs <on|off>", N_("Turn notification mirroring on or off.")},
+    {"--bt-ancs-content <on|off>", N_("Mirror notification titles and bodies, not just the app.")},
+    {"--bt-notifications", N_("List mirrored iPhone notifications.")},
+    {"--bt-diagnostics", N_("Print a redacted Bluetooth report for a bug report.")},
+    {"--accept <fingerprint>", N_("Accept a pending pairing request locally.")},
+    {"--pair", N_("Send a pair_request over TCP to the daemon.")},
+};
+
 void print_help() {
-    // TRANSLATORS: keep the flag names and the column alignment; only the descriptions after them are prose.
-    std::cout << _("tether - Wayland companion CLI\n\n"
-                   "Options:\n"
-                   "  -h, --help               Show this help message.\n"
-                   "  -g, --get-clipboard      Retrieve the current Wayland clipboard text.\n"
-                   "  -s, --set-clipboard      Take string input and copy it to the local Wayland clipboard.\n"
-                   "  -f, --send-file          Send a file through tether.\n"
-                   "  -n, --native-host        Start the browser Native Messaging Host proxy loop.\n"
-                   "  -d, --discover           Scan the local network for tetherd instances via mDNS.\n"
-                   "  --host <ip>              Connect over TCP to daemon ip instead of UNIX Socket.\n"
-                   "  --port <num>             Connect over TCP port (default 5134).\n"
-                   "  --timeout <ms>           Discovery scan duration in milliseconds (default 3000).\n"
-                   "  --list-devices           List all paired connection devices.\n"
-                   "  --bt-setup               Show the one-time system setup Bluetooth still needs.\n"
-                   "  --bt-status              Show Bluetooth adapter capability and delivery mode.\n"
-                   "  --bt-devices             List Bluetooth devices known to BlueZ.\n"
-                   "  --bt-connection          Show Bluetooth link and profile connection state.\n"
-                   "  --bt-threads             List iPhone message conversations.\n"
-                   "  --bt-messages <thread>   Show messages in one conversation.\n"
-                   "  --bt-send <thread> <text>  Reply in one conversation.\n"
-                   "  --bt-pair <addr>         Pair with an iPhone over Bluetooth.\n"
-                   "  --bt-unpair <addr>       Remove a Bluetooth bond.\n"
-                   "  --bt-solicit             Re-advertise for ANCS so the iPhone shows its permission\n"
-                   "                           toggles again, without removing the bond.\n"
-                   "  --bt-enable <on|off>     Connect to the iPhone over Bluetooth, or stop.\n"
-                   "  --bt-ancs <on|off>       Turn notification mirroring on or off.\n"
-                   "  --bt-ancs-content <on|off>  Mirror notification titles and bodies, not just the app.\n"
-                   "  --bt-notifications       List mirrored iPhone notifications.\n"
-                   "  --bt-diagnostics         Print a redacted Bluetooth report for a bug report.\n"
-                   "  --accept <fingerprint>   Accept a pending pairing request locally.\n"
-                   "  --pair                   Send a pair_request over TCP to the daemon.\n\n"
-                   "Examples:\n"
-                   "  tether -g\n"
-                   "  tether -g --host 127.0.0.1\n"
-                   "  echo \"pipe\" | tether -s\n"
-                   "  tether --discover\n"
-                   "  tether --discover --timeout 5000\n"
-                   "  tether -f ./report.pdf\n"
-                   "  tether --accept 9a4f21...\n");
+    fprintf(stdout, "%s\n\n%s\n", _("tether - Wayland companion CLI"), _("Options:"));
+
+    size_t col = 0;
+    for (const auto& opt : kOptions)
+        col = std::max(col, tether::display_width(opt.flags));
+
+    const size_t total = term_width();
+    const size_t desc_width = total > col + 8 ? total - col - 4 : 40;
+    for (const auto& opt : kOptions) {
+        const std::string pad(col - tether::display_width(opt.flags), ' ');
+        const auto lines = wrap(_(opt.desc), desc_width);
+        for (size_t i = 0; i < lines.size(); ++i) {
+            const std::string prefix = i == 0 ? opt.flags + pad : std::string(col, ' ');
+            fprintf(stdout, "  %s  %s\n", prefix.c_str(), lines[i].c_str());
+        }
+    }
+
+    // Literal invocations: never translated.
+    fprintf(stdout,
+            "\n%s\n"
+            "  tether -g\n"
+            "  tether -g --host 127.0.0.1\n"
+            "  echo \"pipe\" | tether -s\n"
+            "  tether --discover\n"
+            "  tether --discover --timeout 5000\n"
+            "  tether -f ./report.pdf\n"
+            "  tether --accept 9a4f21...\n",
+            _("Examples:"));
 }
 
 // The two known gaps (adapter class, experimental API) change the machine
@@ -194,23 +276,26 @@ static int print_bt_status(tether::Client& client) {
     }
 
     const auto& cap = resp["capability"];
-    fprintf(stdout, _("Mode:       %s\n"), cap.value("mode", "unknown").c_str());
-    fprintf(stdout, _("Bearer API: %s\n"), cap.value("bearer_api", "unknown").c_str());
-    fprintf(stdout,
-            _("Adapter:    powered=%s central=%s peripheral=%s advertising=%s class=%s\n"),
-            cap.value("powered", false) ? "yes" : "no",
-            cap.value("le_central", false) ? "yes" : "no",
-            cap.value("le_peripheral", false) ? "yes" : "no",
-            cap.value("advertising", false) ? "yes" : "no",
-            cap.value("class_ok", false) ? "ok" : "wrong");
-    fprintf(stdout,
-            _("            secure-connections=%s\n"),
-            cap.contains("secure_connections") && cap["secure_connections"].is_boolean()
-                ? (cap["secure_connections"].get<bool>() ? "on" : "OFF")
-                : "unknown");
+    std::vector<Field> fields;
+    fields.emplace_back(_("Mode"), cap.value("mode", "unknown"));
+    fields.emplace_back(_("Bearer API"), cap.value("bearer_api", "unknown"));
+
+    const std::string secure = cap.contains("secure_connections") && cap["secure_connections"].is_boolean()
+                                   ? (cap["secure_connections"].get<bool>() ? "on" : "OFF")
+                                   : _("unknown");
+    fields.emplace_back(_("Adapter"),
+                        tether::tr_format(_("powered={0} central={1} peripheral={2} advertising={3} class={4}"),
+                                          yn(cap.value("powered", false)),
+                                          yn(cap.value("le_central", false)),
+                                          yn(cap.value("le_peripheral", false)),
+                                          yn(cap.value("advertising", false)),
+                                          cap.value("class_ok", false) ? _("ok") : _("wrong")) +
+                            "\n" + tether::tr_format(_("secure-connections={}"), secure));
+
     if (cap.value("bonded_device_present", false))
-        fprintf(stdout, _("Bond:       %s\n"), cap.value("bond_has_le", false) ? "BR/EDR + LE" : "BR/EDR only");
-    fprintf(stdout, _("Tether:     %s\n"), resp.value("enabled", true) ? "connecting" : "off (--bt-enable on)");
+        fields.emplace_back(_("Bond"), cap.value("bond_has_le", false) ? "BR/EDR + LE" : "BR/EDR only");
+    fields.emplace_back(_("Tether"), resp.value("enabled", true) ? _("connecting") : _("off (--bt-enable on)"));
+    print_fields(fields);
 
     for (const auto& adapter : resp["adapters"]) {
         fprintf(stdout, "  %s  %s\n", adapter.value("address", "").c_str(), adapter.value("name", "").c_str());
@@ -337,20 +422,25 @@ static int print_bt_connection(tether::Client& client) {
         return 1;
     }
 
-    auto yn = [](bool v) { return v ? "yes" : "no"; };
-    fprintf(stdout, _("Device present:  %s\n"), yn(resp.value("device_present", false)));
-    fprintf(stdout, _("BR/EDR:          %s\n"), yn(resp.value("classic_connected", false)));
-    fprintf(stdout,
-            _("LE:              %s%s\n"),
-            yn(resp.value("le_connected", false)),
-            resp.value("le_available", false) ? "" : " (bearer unavailable)");
-    fprintf(stdout, _("Messages (MAP):  %s"), yn(resp.value("map_open", false)));
+    std::vector<Field> fields;
+    fields.emplace_back(_("Device present"), yn(resp.value("device_present", false)));
+    fields.emplace_back(_("BR/EDR"), yn(resp.value("classic_connected", false)));
+    fields.emplace_back(_("LE"),
+                        std::string(yn(resp.value("le_connected", false))) +
+                            (resp.value("le_available", false) ? "" : " " + std::string(_("(bearer unavailable)"))));
+
+    std::string map = yn(resp.value("map_open", false));
     if (resp.value("map_error", std::string("none")) != "none")
-        fprintf(stdout, "  [%s]", resp.value("map_error", "").c_str());
-    fprintf(stdout, _("\nContacts (PBAP): %s"), yn(resp.value("pbap_open", false)));
+        map += "  [" + resp.value("map_error", "") + "]";
+    fields.emplace_back(_("Messages (MAP)"), map);
+
+    std::string pbap = yn(resp.value("pbap_open", false));
     if (resp.value("pbap_error", std::string("none")) != "none")
-        fprintf(stdout, "  [%s]", resp.value("pbap_error", "").c_str());
-    fprintf(stdout, _("\nNotifications:   %s\n"), yn(resp.value("ancs_ready", false)));
+        pbap += "  [" + resp.value("pbap_error", "") + "]";
+    fields.emplace_back(_("Contacts (PBAP)"), pbap);
+
+    fields.emplace_back(_("Notifications"), yn(resp.value("ancs_ready", false)));
+    print_fields(fields);
 
     const std::string link = resp.value("link_reason", "");
     const std::string profiles = resp.value("profile_reason", "");

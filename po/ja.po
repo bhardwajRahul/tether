@@ -1,166 +1,169 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# Japanese translation of Tether.
+# DRAFT — machine-assisted, not reviewed by a native speaker. Corrections welcome:
+# https://github.com/zackb/tether
+# Copyright (C) 2026 the Tether authors
 # This file is distributed under the same license as the tether package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: tether 0.2.10\n"
+"Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
 "POT-Creation-Date: 2026-08-23 16:13-0700\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2026-08-23\n"
+"Last-Translator: Tether project\n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
 #: src/cli/main.cpp
 msgid "yes"
-msgstr ""
+msgstr "はい"
 
 #: src/cli/main.cpp
 msgid "no"
-msgstr ""
+msgstr "いいえ"
 
 #: src/cli/main.cpp
 msgid "Show this help message."
-msgstr ""
+msgstr "このヘルプを表示します。"
 
 #: src/cli/main.cpp
 msgid "Retrieve the current Wayland clipboard text."
-msgstr ""
+msgstr "Wayland のクリップボードの現在のテキストを取得します。"
 
 #: src/cli/main.cpp
 msgid "Take string input and copy it to the local Wayland clipboard."
 msgstr ""
+"入力からテキストを読み取り、ローカルの Wayland クリップボードにコピーします。"
 
 #: src/cli/main.cpp
 msgid "Send a file through tether."
-msgstr ""
+msgstr "tether 経由でファイルを送信します。"
 
 #: src/cli/main.cpp
 msgid "Start the browser Native Messaging Host proxy loop."
-msgstr ""
+msgstr "ブラウザの Native Messaging Host プロキシループを開始します。"
 
 #: src/cli/main.cpp
 msgid "Scan the local network for tetherd instances via mDNS."
-msgstr ""
+msgstr "mDNS でローカルネットワーク上の tetherd を検索します。"
 
 #: src/cli/main.cpp
 msgid "Connect over TCP to daemon ip instead of UNIX Socket."
-msgstr ""
+msgstr "UNIX ソケットではなく TCP でデーモンの ip に接続します。"
 
 #: src/cli/main.cpp
 msgid "Connect over TCP port (default 5134)."
-msgstr ""
+msgstr "接続に使う TCP ポート (デフォルト 5134)。"
 
 #: src/cli/main.cpp
 msgid "Discovery scan duration in milliseconds (default 3000)."
-msgstr ""
+msgstr "検索の実行時間 (ミリ秒、デフォルト 3000)。"
 
 #: src/cli/main.cpp
 msgid "List all paired connection devices."
-msgstr ""
+msgstr "ペアリング済みのデバイスをすべて一覧表示します。"
 
 #: src/cli/main.cpp
 msgid "Show the one-time system setup Bluetooth still needs."
-msgstr ""
+msgstr "Bluetooth にまだ必要な一度きりのシステム設定を表示します。"
 
 #: src/cli/main.cpp
 msgid "Show Bluetooth adapter capability and delivery mode."
-msgstr ""
+msgstr "Bluetooth アダプタの機能と配信モードを表示します。"
 
 #: src/cli/main.cpp
 msgid "List Bluetooth devices known to BlueZ."
-msgstr ""
+msgstr "BlueZ が認識している Bluetooth デバイスを一覧表示します。"
 
 #: src/cli/main.cpp
 msgid "Show Bluetooth link and profile connection state."
-msgstr ""
+msgstr "Bluetooth リンクとプロファイルの接続状態を表示します。"
 
 #: src/cli/main.cpp
 msgid "List iPhone message conversations."
-msgstr ""
+msgstr "iPhone のメッセージの会話を一覧表示します。"
 
 #: src/cli/main.cpp
 msgid "Show messages in one conversation."
-msgstr ""
+msgstr "1 つの会話のメッセージを表示します。"
 
 #: src/cli/main.cpp
 msgid "Reply in one conversation."
-msgstr ""
+msgstr "1 つの会話で返信します。"
 
 #: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
-msgstr ""
+msgstr "Bluetooth で iPhone とペアリングします。"
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
-msgstr ""
+msgstr "Bluetooth のボンドを削除します。"
 
 #: src/cli/main.cpp
 msgid ""
 "Re-advertise for ANCS so the iPhone shows its permission toggles again, "
 "without removing the bond."
 msgstr ""
+"ANCS のためにアドバタイズし直し、ボンドを削除せずに iPhone が許可設定を再表示"
+"するようにします。"
 
 #: src/cli/main.cpp
 msgid "Connect to the iPhone over Bluetooth, or stop."
-msgstr ""
+msgstr "Bluetooth で iPhone に接続する、または停止します。"
 
 #: src/cli/main.cpp
 msgid "Turn notification mirroring on or off."
-msgstr ""
+msgstr "通知のミラーリングをオンまたはオフにします。"
 
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
-msgstr ""
+msgstr "アプリ名だけでなく、通知のタイトルと本文もミラーリングします。"
 
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
-msgstr ""
+msgstr "ミラーリングされた iPhone の通知を一覧表示します。"
 
 #: src/cli/main.cpp
 msgid "Print a redacted Bluetooth report for a bug report."
-msgstr ""
+msgstr "バグ報告用に情報を伏せた Bluetooth レポートを出力します。"
 
 #: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
-msgstr ""
+msgstr "保留中のペアリング要求をローカルで承認します。"
 
 #: src/cli/main.cpp
 msgid "Send a pair_request over TCP to the daemon."
-msgstr ""
+msgstr "TCP でデーモンに pair_request を送信します。"
 
 #: src/cli/main.cpp
 msgid "tether - Wayland companion CLI"
-msgstr ""
+msgstr "tether - Wayland 用のコンパニオン CLI"
 
 #: src/cli/main.cpp
 msgid "Options:"
-msgstr ""
+msgstr "オプション:"
 
 #: src/cli/main.cpp
 msgid "Examples:"
-msgstr ""
+msgstr "例:"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth status from the daemon.\n"
-msgstr ""
+msgstr "デーモンから Bluetooth の状態を読み取れませんでした。\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Bluetooth: unavailable (is bluetoothd running?)\n"
-msgstr ""
+msgstr "Bluetooth: 利用できません (bluetoothd は動作していますか?)\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Bluetooth setup is complete. Nothing to do.\n"
-msgstr ""
+msgstr "Bluetooth の設定は完了しています。行うことはありません。\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -171,7 +174,8 @@ msgid_plural ""
 "\n"
 "%zu steps left before the iPhone Bluetooth features work:\n"
 msgstr[0] ""
-msgstr[1] ""
+"\n"
+"iPhone の Bluetooth 機能が動作するまで、あと %zu ステップ:\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -179,56 +183,58 @@ msgid ""
 "\n"
 "Re-run 'tether --bt-setup' afterwards to confirm.\n"
 msgstr ""
+"\n"
+"その後 'tether --bt-setup' をもう一度実行して確認してください。\n"
 
 #: src/cli/main.cpp
 msgid "Mode"
-msgstr ""
+msgstr "モード"
 
 #: src/cli/main.cpp
 msgid "Bearer API"
-msgstr ""
+msgstr "Bearer API"
 
 #: src/cli/main.cpp
 msgid "unknown"
-msgstr ""
+msgstr "不明"
 
 #: src/cli/main.cpp
 msgid "Adapter"
-msgstr ""
+msgstr "アダプタ"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "powered={0} central={1} peripheral={2} advertising={3} class={4}"
-msgstr ""
+msgstr "電源={0} セントラル={1} ペリフェラル={2} アドバタイズ={3} クラス={4}"
 
 #: src/cli/main.cpp
 msgid "ok"
-msgstr ""
+msgstr "正常"
 
 #: src/cli/main.cpp
 msgid "wrong"
-msgstr ""
+msgstr "不正"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "secure-connections={}"
-msgstr ""
+msgstr "Secure Connections={}"
 
 #: src/cli/main.cpp
 msgid "Bond"
-msgstr ""
+msgstr "ボンド"
 
 #: src/cli/main.cpp src/gtk/main.cpp src/gtk/tether-gtk.desktop.in
 msgid "Tether"
-msgstr ""
+msgstr "Tether"
 
 #: src/cli/main.cpp
 msgid "connecting"
-msgstr ""
+msgstr "接続中"
 
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
-msgstr ""
+msgstr "オフ (--bt-enable on)"
 
 #: src/cli/main.cpp
 #, c-format
@@ -239,172 +245,174 @@ msgid_plural ""
 "\n"
 "%zu setup steps remaining. Run: tether --bt-setup\n"
 msgstr[0] ""
-msgstr[1] ""
+"\n"
+"設定手順があと %zu 件残っています。実行: tether --bt-setup\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth devices from the daemon.\n"
-msgstr ""
+msgstr "デーモンから Bluetooth デバイスを読み取れませんでした。\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "No Bluetooth devices known to BlueZ.\n"
-msgstr ""
+msgstr "BlueZ が認識している Bluetooth デバイスはありません。\n"
 
 #: src/cli/main.cpp
 msgid "Could not reach the daemon.\n"
-msgstr ""
+msgstr "デーモンに接続できませんでした。\n"
 
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the operation finished.\n"
-msgstr ""
+msgstr "操作が完了する前にデーモンが接続を閉じました。\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth connection state from the daemon.\n"
-msgstr ""
+msgstr "デーモンから Bluetooth の接続状態を読み取れませんでした。\n"
 
 #: src/cli/main.cpp
 msgid "Device present"
-msgstr ""
+msgstr "デバイスあり"
 
 #: src/cli/main.cpp
 msgid "BR/EDR"
-msgstr ""
+msgstr "BR/EDR"
 
 #: src/cli/main.cpp
 msgid "LE"
-msgstr ""
+msgstr "LE"
 
 #: src/cli/main.cpp
 msgid "(bearer unavailable)"
-msgstr ""
+msgstr "(bearer 利用不可)"
 
 #: src/cli/main.cpp
 msgid "Messages (MAP)"
-msgstr ""
+msgstr "メッセージ (MAP)"
 
 #: src/cli/main.cpp
 msgid "Contacts (PBAP)"
-msgstr ""
+msgstr "連絡先 (PBAP)"
 
 #: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
 msgid "Notifications"
-msgstr ""
+msgstr "通知"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
-msgstr ""
+msgstr "デーモンから Bluetooth の診断情報を読み取れませんでした。\n"
 
 #: src/cli/main.cpp
 msgid "Could not read notifications from the daemon.\n"
-msgstr ""
+msgstr "デーモンから通知を読み取れませんでした。\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "No notifications yet. Check 'tether --bt-connection'.\n"
-msgstr ""
+msgstr "まだ通知はありません。'tether --bt-connection' を確認してください。\n"
 
 #: src/cli/main.cpp
 msgid "Could not read conversations from the daemon.\n"
-msgstr ""
+msgstr "デーモンから会話を読み取れませんでした。\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "No conversations yet. Check 'tether --bt-connection'.\n"
-msgstr ""
+msgstr "まだ会話はありません。'tether --bt-connection' を確認してください。\n"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "({} unread)"
 msgid_plural "({} unread)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "({} 件未読)"
 
 #: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
-msgstr ""
+msgstr "デーモンからメッセージを読み取れませんでした。\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "No messages in %s\n"
-msgstr ""
+msgstr "%s にメッセージはありません\n"
 
 #: src/cli/main.cpp
 msgid "me"
-msgstr ""
+msgstr "自分"
 
 #: src/cli/main.cpp
 msgid "them"
-msgstr ""
+msgstr "相手"
 
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the message was sent.\n"
-msgstr ""
+msgstr "メッセージが送信される前にデーモンが接続を閉じました。\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Sent to %s\n"
-msgstr ""
+msgstr "%s に送信しました\n"
 
 #: src/cli/main.cpp src/gtk/messages_view.cpp
 msgid "The message was not sent."
-msgstr ""
+msgstr "メッセージは送信されませんでした。"
 
 #: src/cli/main.cpp
 msgid "Unknown action. Run tether --help for options\n"
 msgstr ""
+"不明な操作です。オプションを見るには tether --help を実行してください\n"
 
 #: src/cli/main.cpp
 msgid "  No tetherd instances found.\n"
-msgstr ""
+msgstr "  tetherd のインスタンスは見つかりませんでした。\n"
 
 #: src/cli/main.cpp
 msgid "[new]"
-msgstr ""
+msgstr "[新規]"
 
 #: src/cli/main.cpp
 msgid "[known]"
-msgstr ""
+msgstr "[既知]"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Found %zu device in %.1fs\n"
 msgid_plural "Found %zu devices in %.1fs\n"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%2$.1fs で %1$zu 台のデバイスが見つかりました\n"
 
 #: src/cli/main.cpp
 msgid ""
 "Explicit framework connection locally rejected! Did you target explicitly "
 "invalid TLS or is daemon broken?\n"
 msgstr ""
+"明示的なフレームワーク接続がローカルで拒否されました。明らかに無効な TLS を指"
+"定したか、デーモンが壊れていませんか?\n"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "Transfer Failed: {}"
-msgstr ""
+msgstr "転送に失敗しました: {}"
 
 #: src/cli/main.cpp
 msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
-msgstr ""
+msgstr "会話のキーが必要です。例: --bt-messages tel:+15551234567\n"
 
 #: src/cli/main.cpp
 msgid ""
 "A conversation and a message are required, e.g. --bt-send tel:+15551234567 "
 "\"hi\"\n"
-msgstr ""
+msgstr "会話とメッセージが必要です。例: --bt-send tel:+15551234567 \"やあ\"\n"
 
 #: src/cli/main.cpp
 msgid "A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n"
-msgstr ""
+msgstr "Bluetooth アドレスが必要です。例: --bt-pair AA:BB:CC:DD:EE:FF\n"
 
 #: src/cli/main.cpp
 msgid "Expected on or off, e.g. --bt-enable off\n"
-msgstr ""
+msgstr "on または off を指定してください。例: --bt-enable off\n"
 
 #: src/cli/main.cpp
 #, c-format
 msgid "Bluetooth enabled.\n"
-msgstr ""
+msgstr "Bluetooth を有効にしました。\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -412,27 +420,29 @@ msgid ""
 "Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
 "already up stays up until you disconnect it or the phone goes out of range.\n"
 msgstr ""
+"Bluetooth を無効にしました。Tether は iPhone に再接続しません。すでに確立\n"
+"しているリンクは、切断するか iPhone が範囲外になるまで維持されます。\n"
 
 #: src/cli/main.cpp
 #, c++-format
 msgid "Expected on or off, e.g. {} on\n"
-msgstr ""
+msgstr "on または off を指定してください。例: {} on\n"
 
 #: src/cli/main.cpp
 msgid "Notification contents enabled."
-msgstr ""
+msgstr "通知の内容を有効にしました。"
 
 #: src/cli/main.cpp
 msgid "Notification contents disabled."
-msgstr ""
+msgstr "通知の内容を無効にしました。"
 
 #: src/cli/main.cpp
 msgid "Notification mirroring enabled."
-msgstr ""
+msgstr "通知のミラーリングを有効にしました。"
 
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
-msgstr ""
+msgstr "通知のミラーリングを無効にしました。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -441,6 +451,11 @@ msgid ""
 "a machine with no audio stack, or one where the a2dp_sink and hfp_hf roles "
 "are turned off. Nothing is missing and nothing needs changing on the iPhone."
 msgstr ""
+"メッセージと連絡先は接続されています。このコンピュータが iPhone に接続先とな"
+"るプロファイルを提供していないため、BlueZ は Bluetooth リンクを切断中として報"
+"告します。オーディオスタックのないマシンや、a2dp_sink と hfp_hf のロールが無"
+"効なマシンでは普通のことです。不足しているものはなく、iPhone 側で変更すべき点"
+"もありません。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -449,6 +464,9 @@ msgid ""
 "Share System Notifications is already on. Messages and contacts are "
 "unaffected."
 msgstr ""
+"iPhone が LE で応答していません。iPhone 側で Bluetooth がスタックしています。"
+"iPhone の Bluetooth をオフにしてからオンに戻してください。「システム通知を共"
+"有」がすでにオンでもこれで解消します。メッセージと連絡先には影響しません。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -456,26 +474,31 @@ msgid ""
 "back on on the iPhone — that clears it even when the permissions are already "
 "on. Re-pairing is not the fix."
 msgstr ""
+"iPhone が Bluetooth 接続を拒否し続けています。iPhone の Bluetooth をオフにし"
+"てからオンに戻してください。許可がすでにオンでもこれで解消します。ペアリング"
+"のやり直しは解決策ではありません。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
 "Notifications are connected. Still reaching the iPhone for messages and "
 "contacts..."
 msgstr ""
+"通知は接続されています。メッセージと連絡先のために iPhone へ接続中です..."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid "Connecting to the iPhone over Bluetooth..."
-msgstr ""
+msgstr "Bluetooth で iPhone に接続しています..."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid "Connected. Notification mirroring is disabled."
-msgstr ""
+msgstr "接続しました。通知のミラーリングは無効です。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
 "Connected. BlueZ is not exposing an LE bearer, so notifications are "
 "unavailable."
 msgstr ""
+"接続しました。BlueZ が LE bearer を公開していないため、通知は利用できません。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -483,102 +506,112 @@ msgid ""
 "notifications. If it does not, open Settings > Bluetooth > (i) on the iPhone "
 "and check Share System Notifications."
 msgstr ""
+"接続しました。通知を運ぶ LE リンクを iPhone が開くのを待っています。開かない"
+"場合は、iPhone で 設定 > Bluetooth > (i) を開き、「システム通知を共有」を確認"
+"してください。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid "Connected over BR/EDR and LE."
-msgstr ""
+msgstr "BR/EDR と LE で接続しました。"
 
 #: src/core/src/bluetooth/connection.cpp src/gtk/messages_view.cpp
 msgid "Messages are not connected."
-msgstr ""
+msgstr "メッセージは接続されていません。"
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "Could not build a message for this conversation."
-msgstr ""
+msgstr "この会話用のメッセージを作成できませんでした。"
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "That message is no longer in the conversation history."
-msgstr ""
+msgstr "そのメッセージは会話履歴にもうありません。"
 
 #: src/core/src/bluetooth/connection.cpp
 msgid ""
 "The iPhone is not serving this message right now; marked read on this "
 "computer only."
 msgstr ""
+"iPhone は現在このメッセージを提供していません。このコンピュータ上でのみ既読に"
+"しました。"
 
 #: src/core/src/bluetooth/connection.cpp
 msgid ""
 "The iPhone is not offering notifications on this link. Asking it again..."
-msgstr ""
+msgstr "iPhone はこのリンクで通知を提供していません。再度要求しています..."
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "No paired iPhone selected."
-msgstr ""
+msgstr "ペアリング済みの iPhone が選択されていません。"
 
 #: src/core/src/bluetooth/groups.cpp
 msgid "Group replies are turned off."
-msgstr ""
+msgstr "グループへの返信はオフになっています。"
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
 msgid "The roster for this group contains an unusable address: {}"
-msgstr ""
+msgstr "このグループのメンバー一覧に使用できないアドレスが含まれています: {}"
 
 #: src/core/src/bluetooth/groups.cpp
 msgid "The roster for this group is empty."
-msgstr ""
+msgstr "このグループのメンバー一覧が空です。"
 
 #: src/core/src/bluetooth/groups.cpp
 msgid ""
 "This conversation has not been identified as a group yet, so there is nobody "
 "to reply to."
-msgstr ""
+msgstr "この会話はまだグループとして識別されていないため、返信先がありません。"
 
 #: src/core/src/bluetooth/groups.cpp
 msgid ""
 "This group has a name but no member list. Add its members before replying."
 msgstr ""
+"このグループには名前がありますがメンバー一覧がありません。返信する前にメン"
+"バーを追加してください。"
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
 msgid "\"{}\" is not in your contacts."
-msgstr ""
+msgstr "「{}」は連絡先にありません。"
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
 msgid "\"{}\" matches more than one contact address."
-msgstr ""
+msgstr "「{}」は複数の連絡先アドレスに一致します。"
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
 msgid "\"{0}\" resolved to an unusable address: {1}"
-msgstr ""
+msgstr "「{0}」は使用できないアドレスに解決されました: {1}"
 
 #: src/core/src/bluetooth/groups.cpp
 msgid "No recipients could be resolved for this group."
-msgstr ""
+msgstr "このグループの宛先を 1 件も解決できませんでした。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "No Bluetooth adapter found."
-msgstr ""
+msgstr "Bluetooth アダプタが見つかりません。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Bluetooth adapter is powered off."
-msgstr ""
+msgstr "Bluetooth アダプタの電源がオフです。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Adapter has no LE central role; ANCS is impossible."
-msgstr ""
+msgstr "アダプタに LE セントラルのロールがないため、ANCS は利用できません。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Adapter cannot advertise as a peripheral, so ANCS cannot be solicited."
 msgstr ""
+"アダプタがペリフェラルとしてアドバタイズできないため、ANCS を要求できません。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "No LE advertising instances available; the iPhone may never show its "
 "Bluetooth permission toggles."
 msgstr ""
+"利用可能な LE アドバタイズインスタンスがありません。iPhone が Bluetooth の許"
+"可設定を表示しない可能性があります。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -586,10 +619,14 @@ msgid ""
 "(org.bluez.Bearer.LE1), which bluetoothd is not exposing. Set this up before "
 "pairing: a bond made without it has no LE half."
 msgstr ""
+"通知のミラーリングには BlueZ の実験的な bearer API (org.bluez.Bearer.LE1) が"
+"必要ですが、bluetoothd がこれを公開していません。ペアリングの前に設定してくだ"
+"さい。これなしで作成したボンドには LE 側がありません。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Bearer API support is unconfirmed until a device is bonded."
 msgstr ""
+"デバイスとボンドを作成するまで、bearer API の対応状況は未確認のままです。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -597,18 +634,25 @@ msgid ""
 "derived, so notification mirroring cannot work on it. Delete this computer "
 "on the iPhone (Forget This Device) and pair again."
 msgstr ""
+"デバイスとボンドがありますが、対象は BR/EDR のみです。LE 鍵が導出されていない"
+"ため、通知のミラーリングは機能しません。iPhone でこのコンピュータを削除し (こ"
+"のデバイスの登録を解除)、もう一度ペアリングしてください。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "Secure Connections is off on this controller, which is what blocks the "
 "derivation; re-pairing will not help until it is on."
 msgstr ""
+"このコントローラで Secure Connections がオフになっており、それが鍵の導出を妨"
+"げています。オンにするまでは、ペアリングをやり直しても解決しません。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "The iPhone will not offer its Messages and Contacts permissions until this "
 "adapter presents itself as A/V Hands-Free (major 4, minor 8)."
 msgstr ""
+"このアダプタが A/V Hands-Free (major 4, minor 8) として提示されるまで、"
+"iPhone はメッセージと連絡先の許可を提示しません。"
 
 #: src/core/src/bluetooth/pairing.cpp
 #, c++-format
@@ -619,38 +663,43 @@ msgid ""
 "\n"
 "{1}"
 msgstr ""
+"{0} がペアリングを求めています。\n"
+"\n"
+"このコードが iPhone 上のものと一致することを確認してください:\n"
+"\n"
+"{1}"
 
 #: src/core/src/bluetooth/pairing.cpp
 msgid "Bluetooth Pairing"
-msgstr ""
+msgstr "Bluetooth ペアリング"
 
 #: src/core/src/bluetooth/pairing.cpp
 msgid "Confirm"
-msgstr ""
+msgstr "確認"
 
 #: src/core/src/bluetooth/pairing.cpp src/gtk/messages_view.cpp
 msgid "Cancel"
-msgstr ""
+msgstr "キャンセル"
 
 #. TRANSLATORS: the feature name Tether shows for this profile.
 #: src/core/src/bluetooth/profile_supervisor.cpp src/daemon/main.cpp
 #: src/gtk/devices_view.cpp src/gtk/main.cpp
 msgid "Messages"
-msgstr ""
+msgstr "メッセージ"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/devices_view.cpp
 msgid "Contacts"
-msgstr ""
+msgstr "連絡先"
 
 #. TRANSLATORS: these two are toggle names in the iPhone's own Settings app.
 #. Use Apple's wording for the target language, not a literal translation.
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Show Message Notifications"
-msgstr ""
+msgstr "メッセージ通知を表示"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Sync Contacts"
-msgstr ""
+msgstr "連絡先を同期"
 
 #. TRANSLATORS: {} is an iPhone Settings toggle name.
 #: src/core/src/bluetooth/profile_supervisor.cpp
@@ -659,6 +708,8 @@ msgid ""
 "Enable \"{}\" for this computer in the iPhone's Settings > Bluetooth > (i). "
 "This is a permission, not a pairing problem."
 msgstr ""
+"iPhone の 設定 > Bluetooth > (i) で、このコンピュータに対して「{}」をオンにし"
+"てください。これは許可の問題であり、ペアリングの問題ではありません。"
 
 #. TRANSLATORS: {0} is Messages or Contacts, {1} is the profile name (map or pbap).
 #: src/core/src/bluetooth/profile_supervisor.cpp
@@ -667,6 +718,8 @@ msgid ""
 "{0} is unavailable because another computer is using the iPhone's {1} "
 "session. Disconnect it there, then this will connect on its own."
 msgstr ""
+"別のコンピュータが iPhone の {1} セッションを使用しているため、{0} は利用でき"
+"ません。そちらで切断すれば、こちらは自動的に接続します。"
 
 #. TRANSLATORS: {0} is Messages or Contacts, {1} is an iPhone Settings toggle name.
 #: src/core/src/bluetooth/profile_supervisor.cpp
@@ -676,11 +729,15 @@ msgid ""
 "phone's Bluetooth session, or \"{1}\" is off in Settings > Bluetooth > (i). "
 "Check both; re-pairing is not the fix."
 msgstr ""
+"iPhone から {0} を取得できませんでした。通常は別のコンピュータが iPhone の "
+"Bluetooth セッションを保持しているか、設定 > Bluetooth > (i) で「{1}」がオフ"
+"になっています。両方を確認してください。ペアリングのやり直しは解決策ではあり"
+"ません。"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 #, c++-format
 msgid "{} is unreachable; waiting for the iPhone to come back."
-msgstr ""
+msgstr "{} に到達できません。iPhone が戻るのを待っています。"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 #, c++-format
@@ -689,258 +746,268 @@ msgid ""
 "Install it (bluez-obex on Arch, bluez-obexd on Debian and Ubuntu). Nothing "
 "needs changing on the iPhone."
 msgstr ""
+"{} には BlueZ の OBEX デーモンが必要ですが、このコンピュータにインストールさ"
+"れていません。インストールしてください (Arch では bluez-obex、Debian と "
+"Ubuntu では bluez-obexd)。iPhone 側で変更すべき点はありません。"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 #, c++-format
 msgid "{} could not be opened."
-msgstr ""
+msgstr "{} を開けませんでした。"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/notifications_view.cpp
 msgid "Waiting for the iPhone."
-msgstr ""
+msgstr "iPhone を待っています。"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Messages and contacts are connected."
-msgstr ""
+msgstr "メッセージと連絡先が接続されています。"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
-msgstr ""
+msgstr "メッセージと連絡先を開いています..."
 
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
 #, c++-format
 msgid "{0} ({1}) wants to pair with this device."
-msgstr ""
+msgstr "{0} ({1}) がこのデバイスとのペアリングを求めています。"
 
 #: src/core/src/net.cpp
 msgid "Pairing Request"
-msgstr ""
+msgstr "ペアリング要求"
 
 #: src/core/src/net.cpp
 msgid "Accept"
-msgstr ""
+msgstr "承認"
 
 #: src/core/src/net.cpp
 msgid "Reject"
-msgstr ""
+msgstr "拒否"
 
 #: src/daemon/notification.cpp
 msgid "File arrived"
-msgstr ""
+msgstr "ファイルが届きました"
 
 #: src/daemon/notification.cpp
 msgid "Open File"
-msgstr ""
+msgstr "ファイルを開く"
 
 #: src/daemon/notification.cpp
 msgid "Open Folder"
-msgstr ""
+msgstr "フォルダを開く"
 
 #: src/daemon/notification.cpp
 msgid "Reply"
-msgstr ""
+msgstr "返信"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"
-msgstr ""
+msgstr "デーモンはオフライン"
 
 #: src/gtk/daemon_client.cpp src/gtk/messages_view.cpp
 msgid "The Tether daemon is not running."
-msgstr ""
+msgstr "Tether デーモンが動作していません。"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Online"
-msgstr ""
+msgstr "デーモンはオンライン"
 
 #: src/gtk/devices_view.cpp
 msgid "Connected."
-msgstr ""
+msgstr "接続しました。"
 
 #: src/gtk/devices_view.cpp
 msgid "Not connected yet."
-msgstr ""
+msgstr "まだ接続していません。"
 
 #: src/gtk/devices_view.cpp
 msgid "Bluetooth is unavailable on this machine."
-msgstr ""
+msgstr "このマシンでは Bluetooth を利用できません。"
 
 #: src/gtk/devices_view.cpp
 msgid "Full mode — messages, contacts, and notifications."
-msgstr ""
+msgstr "フルモード — メッセージ、連絡先、通知。"
 
 #: src/gtk/devices_view.cpp
 msgid "Compatibility mode — messages and contacts, no notification mirroring."
-msgstr ""
+msgstr "互換モード — メッセージと連絡先のみ、通知のミラーリングなし。"
 
 #: src/gtk/devices_view.cpp
 msgid "This machine cannot carry the Bluetooth features."
-msgstr ""
+msgstr "このマシンでは Bluetooth 機能を利用できません。"
 
 #: src/gtk/devices_view.cpp
 msgid "Link"
-msgstr ""
+msgstr "リンク"
 
 #: src/gtk/devices_view.cpp
 msgid "Not paired over Bluetooth yet."
-msgstr ""
+msgstr "まだ Bluetooth でペアリングしていません。"
 
 #: src/gtk/devices_view.cpp
 msgid "Tether is not using this device. Pair it to select it."
 msgstr ""
+"Tether はこのデバイスを使用していません。選択するにはペアリングしてください。"
 
 #: src/gtk/devices_view.cpp
 msgid "Bluetooth is switched off for this iPhone."
-msgstr ""
+msgstr "この iPhone では Bluetooth がオフになっています。"
 
 #: src/gtk/devices_view.cpp
 msgid "Connected and ready."
-msgstr ""
+msgstr "接続済みで使用できます。"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "Device is offline. Open the Tether app on iPhone while on the same network."
 msgstr ""
+"デバイスはオフラインです。同じネットワーク上で iPhone の Tether アプリを開い"
+"てください。"
 
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "Found at {0}:{1}"
-msgstr ""
+msgstr "{0}:{1} で見つかりました"
 
 #: src/gtk/devices_view.cpp
 msgid "Sending pair request..."
-msgstr ""
+msgstr "ペアリング要求を送信しています..."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair request sent. Approve on remote device!"
-msgstr ""
+msgstr "ペアリング要求を送信しました。リモートデバイスで承認してください。"
 
 #: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon."
-msgstr ""
+msgstr "Tether デーモンに接続できませんでした。"
 
 #: src/gtk/devices_view.cpp
 msgid "Pairing… confirm the prompt on the iPhone."
-msgstr ""
+msgstr "ペアリング中… iPhone の確認画面で承認してください。"
 
 #: src/gtk/devices_view.cpp
 #, c-format
 msgid "Remove the Bluetooth pairing with %s?"
-msgstr ""
+msgstr "%s との Bluetooth ペアリングを解除しますか?"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "Also delete this computer from the iPhone's Bluetooth settings before "
 "pairing again, or the phone will keep the stale bond."
 msgstr ""
+"もう一度ペアリングする前に、iPhone の Bluetooth 設定からもこのコンピュータを"
+"削除してください。そうしないと古いボンドが残ります。"
 
 #: src/gtk/devices_view.cpp
 msgid "Removing the pairing…"
-msgstr ""
+msgstr "ペアリングを解除しています…"
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
-msgstr ""
+msgstr "設定用コマンドをクリップボードにコピーしました。"
 
 #: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
 msgid "Asking the iPhone to show its Bluetooth permissions…"
-msgstr ""
+msgstr "iPhone に Bluetooth の許可設定を表示するよう要求しています…"
 
 #. TRANSLATORS: {} is a file name.
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "Sending {}…"
-msgstr ""
+msgstr "{} を送信しています…"
 
 #. TRANSLATORS: {0} is the current file's position, {1} the batch size.
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "({0} of {1})"
-msgstr ""
+msgstr "({1} 件中 {0} 件)"
 
 #: src/gtk/devices_view.cpp
 msgid "Daemon unavailable."
-msgstr ""
+msgstr "デーモンを利用できません。"
 
 #: src/gtk/devices_view.cpp
 msgid "Send File"
-msgstr ""
+msgstr "ファイルを送信"
 
 #: src/gtk/devices_view.cpp
 msgid "Folders can't be sent — drop files instead."
-msgstr ""
+msgstr "フォルダは送信できません。ファイルをドロップしてください。"
 
 #: src/gtk/devices_view.cpp
 msgid "Clipboard, files, and OTP are connected."
-msgstr ""
+msgstr "クリップボード、ファイル、OTP が接続されています。"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired iPhone is connected. Open the Tether app on the phone."
 msgstr ""
+"ペアリング済みの iPhone が接続されていません。iPhone で Tether アプリを開いて"
+"ください。"
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
-msgstr ""
+msgstr "不明なデバイス"
 
 #: src/gtk/devices_view.cpp
 msgid "Scanning for nearby devices..."
-msgstr ""
+msgstr "近くのデバイスを検索しています..."
 
 #: src/gtk/devices_view.cpp
 msgid "Connected"
-msgstr ""
+msgstr "接続済み"
 
 #: src/gtk/devices_view.cpp
 msgid "Offline"
-msgstr ""
+msgstr "オフライン"
 
 #: src/gtk/devices_view.cpp
 msgid "Nearby (Tap to Pair)"
-msgstr ""
+msgstr "近くにあります (タップしてペアリング)"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
-msgstr ""
+msgstr "ペアリング済み"
 
 #: src/gtk/devices_view.cpp
 msgid "Ready"
-msgstr ""
+msgstr "準備完了"
 
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "Sent {0} of {1} file."
 msgid_plural "Sent {0} of {1} files."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{1} 件中 {0} 件のファイルを送信しました。"
 
 #: src/gtk/devices_view.cpp
 #, c++-format
 msgid "Skipped {} non-file item."
 msgid_plural "Skipped {} non-file items."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "ファイルでない項目を {} 件スキップしました。"
 
 #: src/gtk/devices_view.cpp
 msgid "Desktop Clipboard Sync triggered."
-msgstr ""
+msgstr "デスクトップのクリップボード同期を実行しました。"
 
 #: src/gtk/devices_view.cpp
 msgid "Messages and notifications are connected."
-msgstr ""
+msgstr "メッセージと通知が接続されています。"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "No iPhone found. Unlock the phone and open Settings > Bluetooth so it "
 "advertises, then scan again."
 msgstr ""
+"iPhone が見つかりません。iPhone のロックを解除し、設定 > Bluetooth を開いてア"
+"ドバタイズさせてから、もう一度検索してください。"
 
 #: src/gtk/devices_view.cpp
 msgid "Connect your iPhone"
-msgstr ""
+msgstr "iPhone を接続"
 
 #: src/gtk/devices_view.cpp
 msgid "clipboard, files, OTP"
-msgstr ""
+msgstr "クリップボード、ファイル、OTP"
 
 #: src/gtk/devices_view.cpp
 msgid ""
@@ -948,10 +1015,13 @@ msgid ""
 "2.  It finds this computer by itself\n"
 "3.  Approve on both ends"
 msgstr ""
+"1.  iPhone で Tether アプリを開く\n"
+"2.  アプリが自動でこのコンピュータを見つける\n"
+"3.  両方で承認する"
 
 #: src/gtk/devices_view.cpp
 msgid "messages, notifications"
-msgstr ""
+msgstr "メッセージ、通知"
 
 #: src/gtk/devices_view.cpp
 msgid ""
@@ -959,28 +1029,33 @@ msgid ""
 "2.  Press Pair over Bluetooth\n"
 "3.  Grant the two toggles on the phone"
 msgstr ""
+"1.  BLUETOOTH の下で iPhone を選ぶ\n"
+"2.  「Bluetooth でペアリング」を押す\n"
+"3.  iPhone で 2 つの許可を与える"
 
 #: src/gtk/devices_view.cpp
 msgid "Scan for devices"
-msgstr ""
+msgstr "デバイスを検索"
 
 #: src/gtk/devices_view.cpp
 msgid "Bluetooth needs one-time system setup"
-msgstr ""
+msgstr "Bluetooth には一度きりのシステム設定が必要です"
 
 #: src/gtk/devices_view.cpp
 msgid "Copy commands"
-msgstr ""
+msgstr "コマンドをコピー"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "Run these in a terminal. Tether does not change your Bluetooth adapter or "
 "bluetoothd on its own."
 msgstr ""
+"これらをターミナルで実行してください。Tether が独自に Bluetooth アダプタや "
+"bluetoothd を変更することはありません。"
 
 #: src/gtk/devices_view.cpp
 msgid "Connect to this iPhone over Bluetooth"
-msgstr ""
+msgstr "Bluetooth でこの iPhone に接続"
 
 #: src/gtk/devices_view.cpp
 msgid ""
@@ -988,20 +1063,26 @@ msgid ""
 "Turning this off stops Tether reconnecting; a link that is already up stays "
 "up until you disconnect it."
 msgstr ""
+"iPhone との Bluetooth リンクを維持し、切断されるたびに再接続します。オフにす"
+"ると Tether は再接続しなくなります。すでに確立しているリンクは、切断するまで"
+"維持されます。"
 
 #: src/gtk/devices_view.cpp
 msgid "Mirror iPhone notifications"
-msgstr ""
+msgstr "iPhone の通知をミラーリング"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "Show notifications from the iPhone on this desktop. Turned off automatically "
 "when pairing produces no LE bond; turn it back on after re-pairing."
 msgstr ""
+"iPhone からの通知をこのデスクトップに表示します。ペアリングで LE ボンドが作成"
+"されなかった場合は自動的にオフになります。ペアリングをやり直した後にもう一度"
+"オンにしてください。"
 
 #: src/gtk/devices_view.cpp
 msgid "Show notification contents"
-msgstr ""
+msgstr "通知の内容を表示"
 
 #: src/gtk/devices_view.cpp
 msgid ""
@@ -1009,162 +1090,167 @@ msgid ""
 "which app sent it. The phone's own Show Message Notifications toggle still "
 "has to be on."
 msgstr ""
+"どのアプリが送信したかだけでなく、各通知のタイトルと本文も iPhone に要求しま"
+"す。iPhone 側の「メッセージ通知を表示」もオンになっている必要があります。"
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
-msgstr ""
+msgstr "Bluetooth でペアリング"
 
 #: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
 msgid "Show iPhone Permissions"
-msgstr ""
+msgstr "iPhone の許可設定を表示"
 
 #: src/gtk/devices_view.cpp src/gtk/messages_view.cpp
 msgid ""
 "Re-advertise so the iPhone shows its Show Message Notifications and Sync "
 "Contacts toggles under Settings > Bluetooth > (i)."
 msgstr ""
+"アドバタイズし直し、iPhone の 設定 > Bluetooth > (i) に「メッセージ通知を表"
+"示」と「連絡先を同期」が表示されるようにします。"
 
 #: src/gtk/devices_view.cpp
 msgid "Unpair"
-msgstr ""
+msgstr "ペアリングを解除"
 
 #: src/gtk/devices_view.cpp
 msgid "Pair Device"
-msgstr ""
+msgstr "デバイスとペアリング"
 
 #: src/gtk/devices_view.cpp
 msgid "Force Trust (Accept Pending)"
-msgstr ""
+msgstr "強制的に信頼 (保留中を承認)"
 
 #: src/gtk/devices_view.cpp
 msgid "Drop files here to send"
-msgstr ""
+msgstr "送信するファイルをここにドロップ"
 
 #: src/gtk/devices_view.cpp
 msgid "Send Clipboard"
-msgstr ""
+msgstr "クリップボードを送信"
 
 #: src/gtk/devices_view.cpp
 msgid "Clipboard sync requested..."
-msgstr ""
+msgstr "クリップボードの同期を要求しました..."
 
 #: src/gtk/main.cpp
 msgid "Keep running in tray when closed"
-msgstr ""
+msgstr "閉じてもトレイで実行を続ける"
 
 #: src/gtk/main.cpp
 msgid "Quit"
-msgstr ""
+msgstr "終了"
 
 #: src/gtk/main.cpp
 msgid "Devices"
-msgstr ""
+msgstr "デバイス"
 
 #: src/gtk/main.cpp
 msgid "Start hidden in the system tray"
-msgstr ""
+msgstr "システムトレイに隠して起動"
 
 #: src/gtk/main.cpp
 msgid "Open on this tab"
-msgstr ""
+msgstr "このタブで開く"
 
 #: src/gtk/main.cpp
 msgid "Open the messages tab on this conversation"
-msgstr ""
+msgstr "この会話でメッセージタブを開く"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
-msgstr ""
+msgstr "送信中…"
 
 #: src/gtk/messages_view.cpp
 msgid "Enter a recipient."
-msgstr ""
+msgstr "宛先を入力してください。"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation first."
-msgstr ""
+msgstr "先に会話を選択してください。"
 
 #: src/gtk/messages_view.cpp
 msgid "Replying to this conversation is not available."
-msgstr ""
+msgstr "この会話への返信は利用できません。"
 
 #: src/gtk/messages_view.cpp
 msgid "No answer about that message; it may still have been sent."
 msgstr ""
+"そのメッセージについて応答がありません。送信されている可能性はあります。"
 
 #: src/gtk/messages_view.cpp
 msgid "Could not reach the Tether daemon; the message was not sent."
 msgstr ""
+"Tether デーモンに接続できませんでした。メッセージは送信されていません。"
 
 #: src/gtk/messages_view.cpp
 msgid "Sent"
-msgstr ""
+msgstr "送信済み"
 
 #: src/gtk/messages_view.cpp
 msgid "New Message"
-msgstr ""
+msgstr "新規メッセージ"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
-msgstr ""
+msgstr "会話を選択"
 
 #: src/gtk/messages_view.cpp
 msgid "To:"
-msgstr ""
+msgstr "宛先:"
 
 #: src/gtk/messages_view.cpp
 msgid "Phone number or email"
-msgstr ""
+msgstr "電話番号またはメールアドレス"
 
 #: src/gtk/messages_view.cpp
 msgid "Send"
-msgstr ""
+msgstr "送信"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"
-msgstr ""
+msgstr "新しい通知"
 
 #: src/gtk/notifications_view.cpp
 msgid "No notifications yet."
-msgstr ""
+msgstr "まだ通知はありません。"
 
 #: src/gtk/notifications_view.cpp
 msgid "Notification mirroring is unavailable."
-msgstr ""
+msgstr "通知のミラーリングは利用できません。"
 
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
-msgstr ""
+msgstr "接続済み"
 
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "not connected"
-msgstr ""
+msgstr "未接続"
 
 #. TRANSLATORS: {} is a transport name, "Wi-Fi" or "Bluetooth".
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 #, c++-format
 msgid "{}: {}"
-msgstr ""
+msgstr "{}: {}"
 
 #: src/gtk/tray.cpp
 msgid "Daemon: not running"
-msgstr ""
+msgstr "デーモン: 動作していません"
 
 #: src/gtk/tray.cpp
 #, c++-format
 msgid "{} unread message"
 msgid_plural "{} unread messages"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "未読メッセージ {} 件"
 
 #: src/gtk/ui_util.cpp
 msgid "Waiting for the Tether daemon."
-msgstr ""
+msgstr "Tether デーモンを待っています。"
 
 #: src/gtk/tether-gtk.desktop.in
 msgid "Device Synchronization"
-msgstr ""
+msgstr "デバイスの同期"
 
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
-msgstr ""
+msgstr "デバイスをペアリングし、ネットワーク越しにクリップボードを同期します"

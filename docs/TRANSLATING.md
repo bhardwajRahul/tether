@@ -37,8 +37,10 @@ falls back to English; that is correct behavior, not a failure.
   `ctest -R po_` runs it over every catalog.
 - **Reorder with indices, not by moving text.** Use `%1$s` / `%2$s` for printf strings
   and `{0}` / `{1}` for the `{}` kind when the target language needs another word order.
-- **Preserve leading and trailing whitespace and newlines**, especially in the CLI
-  strings, where padding sets the column alignment.
+- **Preserve leading and trailing whitespace and newlines.** Do not add padding to
+  align columns: the CLI computes its own column widths from the translated labels
+  (`tether::display_width` measures terminal columns, so CJK glyphs count as two).
+  A translation that pads by hand will be misaligned.
 - **Keep Pango markup out of your way.** Markup tags are applied around translated
   strings in code, so no msgid should contain `<b>` — if you find one, report it.
 - **Do not translate** protocol and product tokens: `Bluetooth`, `Wi-Fi`, `iPhone`,
@@ -49,7 +51,20 @@ falls back to English; that is correct behavior, not a failure.
   Use the strings Apple ships in that language rather than a literal translation, so the
   advice matches what the user actually sees on the phone.
 
+## Non-Latin scripts
+
+Tether bundles no fonts; glyphs come from the system's fontconfig. Most desktop distros
+ship Noto CJK and friends, but a minimal install may render boxes for `ja`, `ko`, or
+`zh_CN`. That is a missing font package on the host, not a catalog problem.
+
+## Continuous integration
+
+`.github/workflows/i18n.yml` fails a change that adds a `_()` string without re-running
+`make pot`, and fails any catalog that is not fully translated. `ctest -R po_`, which
+runs inside the normal build, checks every catalog's format specifiers.
+
 ## Status of the shipped catalogs
 
-`es`, `fr`, and `de` are machine-assisted drafts that have not been reviewed by native
-speakers. Corrections are welcome.
+All fifteen catalogs — `cs`, `de`, `es`, `fr`, `it`, `ja`, `ko`, `nl`, `pl`, `pt_BR`,
+`ru`, `sv`, `tr`, `uk`, `zh_CN` — are machine-assisted drafts that have not been
+reviewed by native speakers. Corrections are welcome.
