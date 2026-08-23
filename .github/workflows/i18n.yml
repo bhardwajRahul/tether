@@ -5,22 +5,26 @@ on:
     branches: [main, develop]
   pull_request:
 
+# The per-catalog `msgfmt --check-format` run rides along with ctest in build.yml.
+# This job covers what that cannot see: a source string added without re-extracting
+# the template, and a catalog left incomplete.
 jobs:
   catalogs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # update-pot.sh reads the version from git describe
 
       - name: dependencies
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gettext
 
+      # Compare through this runner's own msgcat. Wrapping and ordering differ
+      # between gettext versions, and the header carries a timestamp and the
+      # release version; none of that is what this gate asserts.
       - name: pot is up to date
         run: |
           cp po/tether.pot /tmp/pot.committed
           make pot
-          norm() { msgcat --sort-output --no-location "$1" | grep -v '^"POT-Creation-Date:'; }
+          norm() { msgcat --sort-output --no-location "$1" | grep -vE '^"(POT-Creation-Date|Project-Id-Version):'; }
           if ! diff -u <(norm /tmp/pot.committed) <(norm po/tether.pot); then
               echo "::error::po/tether.pot is stale. Run 'make pot' and commit the result."
               exit 1

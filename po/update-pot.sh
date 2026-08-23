@@ -5,7 +5,10 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-VERSION=$(git describe --tags --always 2>/dev/null | sed 's/^v//' || true)
+# The release version, not `git describe`: a commit count and hash would make the
+# pot stale on every commit, and committing the regenerated pot would change the
+# hash again.
+VERSION=$(sed -n 's/^project(tether VERSION \([0-9][0-9.]*\).*/\1/p' CMakeLists.txt)
 [ -n "$VERSION" ] || VERSION=unknown
 
 # The metadata has to be repeated on the --join-existing call: it rewrites the
