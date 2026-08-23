@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <style id="current-color-scheme" type="text/css">.ColorScheme-Text{color:#bebebe}</style>
   <g transform="translate(0.3 2.9) scale(0.8)">
-    <path fill="#bebebe" d="M1.5 8a3.4 3.4 0 1 1 6.8 0 3.4 3.4 0 1 1-6.8 0zm1.6 0a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 1 0-3.6 0z"/>
-    <path fill="#bebebe" d="M7.7 8a3.4 3.4 0 1 1 6.8 0 3.4 3.4 0 1 1-6.8 0zm1.6 0a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 1 0-3.6 0z"/>
+    <path class="ColorScheme-Text" fill="currentColor" d="M1.5 8a3.4 3.4 0 1 1 6.8 0 3.4 3.4 0 1 1-6.8 0zm1.6 0a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 1 0-3.6 0z"/>
+    <path class="ColorScheme-Text" fill="currentColor" d="M7.7 8a3.4 3.4 0 1 1 6.8 0 3.4 3.4 0 1 1-6.8 0zm1.6 0a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 1 0-3.6 0z"/>
   </g>
-  <circle fill="#bebebe" cx="12.6" cy="3.4" r="2.4"/>
+  <circle class="ColorScheme-Text" fill="currentColor" cx="12.6" cy="3.4" r="2.4"/>
 </svg>
