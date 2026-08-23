@@ -18,11 +18,13 @@ jobs:
 
       - name: pot is up to date
         run: |
+          cp po/tether.pot /tmp/pot.committed
           make pot
-          git diff --exit-code -- po/ || {
-              echo "::error::po/ is stale. Run 'make pot' and commit the result."
+          norm() { msgcat --sort-output --no-location "$1" | grep -v '^"POT-Creation-Date:'; }
+          if ! diff -u <(norm /tmp/pot.committed) <(norm po/tether.pot); then
+              echo "::error::po/tether.pot is stale. Run 'make pot' and commit the result."
               exit 1
-          }
+          fi
 
       - name: catalogs are complete
         run: |

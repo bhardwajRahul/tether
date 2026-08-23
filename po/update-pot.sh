@@ -18,14 +18,17 @@ NEW_STRIPPED=$(mktemp)
 trap 'rm -f "$NEW" "$OLD_STRIPPED" "$NEW_STRIPPED"' EXIT
 
 # shellcheck disable=SC2086
+# --add-location=file: line numbers shift on every unrelated edit, and different
+# gettext versions number the Desktop backend differently, so keeping them would
+# churn all the catalogs and make the pot depend on which machine ran this.
 xgettext --files-from=po/POTFILES.in --directory=. \
          --output="$NEW" --from-code=UTF-8 --c++ \
          --keyword=_ --keyword=N_ --keyword=P_:1,2 \
-         --add-comments=TRANSLATORS $META
+         --add-comments=TRANSLATORS --add-location=file $META
 
 # Desktop entry keys join the same catalog, so msgfmt --desktop can localize them.
 # shellcheck disable=SC2086
-xgettext -j -L Desktop --output="$NEW" \
+xgettext -j -L Desktop --output="$NEW" --add-location=file \
          --keyword=Name --keyword=GenericName --keyword=Comment $META \
          src/gtk/tether-gtk.desktop.in
 
