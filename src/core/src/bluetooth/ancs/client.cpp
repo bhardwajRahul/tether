@@ -78,6 +78,7 @@ namespace tether::bluetooth::ancs {
         bool discover();
         bool subscribe();
         void unsubscribe();
+        void drop_gatt_paths();
         void verify_subscription();
         void handle_source_event(const SourceEvent& event, int64_t now);
         void handle_response(const Request& request, const Response& response, int64_t now);
@@ -241,6 +242,7 @@ namespace tether::bluetooth::ancs {
             return false;
 
         GDBusConnection* conn = monitor->connection();
+        bool object_gone = false;
         auto start_notify = [&](const std::string& path) {
             GError* error = nullptr;
             GVariant* reply = g_dbus_connection_call_sync(conn,
@@ -256,10 +258,12 @@ namespace tether::bluetooth::ancs {
                                                           &error);
             if (!reply) {
                 // StartNotify can race GATT readiness even after the
-                // characteristics appear, so this is retried rather than treated
-                // as a reason to rediscover.
+                // characteristics appear, so a plain failure is retried rather
+                // than treated as a reason to rediscover. UnknownObject is the
+                // exception: that path is gone and no retry can bring it back.
                 const std::string message = error ? error->message : "unknown";
                 g_clear_error(&error);
+                object_gone = message.find("UnknownObject") != std::string::npos;
                 debug::log(INFO, "ancs: StartNotify not ready yet ({})", message);
                 return false;
             }
@@ -267,10 +271,13 @@ namespace tether::bluetooth::ancs {
             return true;
         };
 
-        if (!start_notify(data_source_path))
+        if (!start_notify(data_source_path) || !start_notify(notification_source_path)) {
+            if (object_gone) {
+                debug::log(INFO, "ancs: the characteristics moved, rediscovering the notification service");
+                drop_gatt_paths();
+            }
             return false;
-        if (!start_notify(notification_source_path))
-            return false;
+        }
 
         monitor->invoke_sync([this] {
             GDBusConnection* bus = monitor->connection();
@@ -316,6 +323,21 @@ namespace tether::bluetooth::ancs {
         }
     }
 
+    // The cached characteristic paths belong to one GATT session. Cycling
+    // Bluetooth on the phone rebuilds the tree under fresh paths, and BlueZ then
+    // answers every call on the old ones with UnknownObject forever. Only
+    // rediscovery recovers, so drop what is cached and let the next tick run it.
+    void AncsClientState::drop_gatt_paths() {
+        unsubscribe();
+        subscribed = false;
+        next_subscribe = 0;
+        next_discover = 0;
+        std::lock_guard<std::mutex> lock(inbox);
+        notification_source_path.clear();
+        control_point_path.clear();
+        data_source_path.clear();
+    }
+
     // `subscribed` records that StartNotify once succeeded, which is not the same as a subscription that is still live.
     void AncsClientState::verify_subscription() {
         if (!monitor || !monitor->connection())
@@ -359,14 +381,12 @@ namespace tether::bluetooth::ancs {
         debug::log(INFO,
                    "ancs: the notification subscription is no longer live ({}), rebuilding it",
                    object_gone ? "characteristics gone" : "BlueZ cleared Notifying");
-        unsubscribe();
-        subscribed = false;
-        next_subscribe = 0;
         if (object_gone) {
-            notification_source_path.clear();
-            control_point_path.clear();
-            data_source_path.clear();
-            next_discover = 0;
+            drop_gatt_paths();
+        } else {
+            unsubscribe();
+            subscribed = false;
+            next_subscribe = 0;
         }
         sequencer->reset();
         in_progress.clear();
