@@ -215,7 +215,8 @@ namespace tether::ui {
                 // otherwise report no device selected.
                 reason = _("Bluetooth is switched off for this iPhone.");
             } else {
-                reason = connection.value("profile_reason", "");
+                const bool link_degraded = !classic || !le;
+                reason = connection.value(link_degraded ? "link_reason" : "profile_reason", "");
                 if (reason.empty())
                     reason = connection.value("link_reason", "");
             }

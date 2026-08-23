@@ -571,6 +571,9 @@ namespace tether::bluetooth {
         // When the LE bearer was last seen down, so a blip can be told from a
         // session that is really gone. -1 while it is up.
         int64_t le_down_since = -1;
+        // When the LE link was first seen up while the phone offered no ANCS
+        // service. -1 whenever that is not the case.
+        int64_t ancs_absent_since = -1;
         int map_failures = 0;
         int64_t next_message_poll = 0;
         std::string open_map_path;
@@ -919,14 +922,29 @@ namespace tether::bluetooth {
         const bool hold = ready || le_up || now - le_down_since < ANCS_BEARER_GRACE_SECONDS;
 
         std::string device_path;
+        bool offers_ancs = false;
         if (hold && bearers->status().device_present) {
             auto objects = monitor->snapshot();
             for (const auto& device : objects.devices) {
                 if (device.address == address || normalize_address(device.address) == normalize_address(address)) {
                     device_path = device.path;
+                    offers_ancs = device.supports_ancs();
                     break;
                 }
             }
+        }
+
+        // An LE link the daemon dialled can come up with no ANCS at all: the
+        // phone never answered a solicitation, so it never offered the service.
+        if (ready || !le_up || offers_ancs) {
+            ancs_absent_since = -1;
+        } else if (ancs_absent_since < 0) {
+            ancs_absent_since = now;
+        } else if (now - ancs_absent_since >= ANCS_ABSENT_GRACE_SECONDS) {
+            std::lock_guard<std::mutex> lock(status_mutex);
+            ancs_reason = _("The iPhone is not offering notifications on this link. Asking it again...");
+            if (!current_status.is_null())
+                current_status["ancs_reason"] = ancs_reason;
         }
 
         ancs_client->set_device(device_path);
@@ -963,8 +981,7 @@ namespace tether::bluetooth {
 
             const auto& bearer = bearers->status();
 
-            supervise_ancs_solicitation(
-                *monitor, ancs_enabled && bearer.le_available && !bearer.le_connected && !bearer.le_dialling);
+            supervise_ancs_solicitation(*monitor, should_solicit_ancs(ancs_enabled, bearer, now, ancs_absent_since));
 
             // publish() drops a payload identical to the last one, so refreshing
             // every tick costs nothing and cannot miss a transition.
@@ -1095,6 +1112,7 @@ namespace tether::bluetooth {
         state_->next_message_poll = 0;
         state_->link_was_ready = false;
         state_->device_was_present = false;
+        state_->ancs_absent_since = -1;
         {
             std::lock_guard<std::mutex> lock(state_->status_mutex);
             state_->current_status = nullptr;

@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: tether 0.2.10\n"
+"Project-Id-Version: tether 0.2.10-3-g02f4102\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-22 23:59-0700\n"
+"POT-Creation-Date: 2026-08-23 10:53-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -157,8 +157,8 @@ msgstr ""
 msgid "No Bluetooth devices known to BlueZ.\n"
 msgstr ""
 
-#: src/cli/main.cpp:291 src/cli/main.cpp:502 src/cli/main.cpp:776
-#: src/cli/main.cpp:796
+#: src/cli/main.cpp:291 src/cli/main.cpp:505 src/cli/main.cpp:779
+#: src/cli/main.cpp:799
 msgid "Could not reach the daemon.\n"
 msgstr ""
 
@@ -197,147 +197,154 @@ msgid ""
 "Contacts (PBAP): %s"
 msgstr ""
 
-#: src/cli/main.cpp:371
+#: src/cli/main.cpp:353
+#, c-format
+msgid ""
+"\n"
+"Notifications:   %s\n"
+msgstr ""
+
+#: src/cli/main.cpp:374
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
 msgstr ""
 
-#: src/cli/main.cpp:395
+#: src/cli/main.cpp:398
 msgid "Could not read notifications from the daemon.\n"
 msgstr ""
 
-#: src/cli/main.cpp:401
+#: src/cli/main.cpp:404
 #, c-format
 msgid "No notifications yet. Check 'tether --bt-connection'.\n"
 msgstr ""
 
-#: src/cli/main.cpp:429
+#: src/cli/main.cpp:432
 msgid "Could not read conversations from the daemon.\n"
 msgstr ""
 
-#: src/cli/main.cpp:435
+#: src/cli/main.cpp:438
 #, c-format
 msgid "No conversations yet. Check 'tether --bt-connection'.\n"
 msgstr ""
 
-#: src/cli/main.cpp:449
+#: src/cli/main.cpp:452
 #, c++-format
 msgid "({} unread)"
 msgid_plural "({} unread)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/cli/main.cpp:470
+#: src/cli/main.cpp:473
 msgid "Could not read messages from the daemon.\n"
 msgstr ""
 
-#: src/cli/main.cpp:476
+#: src/cli/main.cpp:479
 #, c-format
 msgid "No messages in %s\n"
 msgstr ""
 
-#: src/cli/main.cpp:484
+#: src/cli/main.cpp:487
 msgid "me"
 msgstr ""
 
-#: src/cli/main.cpp:484
+#: src/cli/main.cpp:487
 msgid "them"
 msgstr ""
 
-#: src/cli/main.cpp:511
+#: src/cli/main.cpp:514
 msgid "Daemon closed the connection before the message was sent.\n"
 msgstr ""
 
-#: src/cli/main.cpp:533
+#: src/cli/main.cpp:536
 #, c-format
 msgid "Sent to %s\n"
 msgstr ""
 
-#: src/cli/main.cpp:536 src/gtk/messages_view.cpp:497
+#: src/cli/main.cpp:539 src/gtk/messages_view.cpp:497
 msgid "The message was not sent."
 msgstr ""
 
-#: src/cli/main.cpp:640
+#: src/cli/main.cpp:643
 msgid "Unknown action. Run tether --help for options\n"
 msgstr ""
 
-#: src/cli/main.cpp:662
+#: src/cli/main.cpp:665
 msgid "  No tetherd instances found.\n"
 msgstr ""
 
-#: src/cli/main.cpp:666
+#: src/cli/main.cpp:669
 msgid "[new]"
 msgstr ""
 
-#: src/cli/main.cpp:668
+#: src/cli/main.cpp:671
 msgid "[known]"
 msgstr ""
 
-#: src/cli/main.cpp:679
+#: src/cli/main.cpp:682
 #, c-format
 msgid "Found %zu device in %.1fs\n"
 msgid_plural "Found %zu devices in %.1fs\n"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/cli/main.cpp:697
+#: src/cli/main.cpp:700
 msgid ""
 "Explicit framework connection locally rejected! Did you target explicitly "
 "invalid TLS or is daemon broken?\n"
 msgstr ""
 
-#: src/cli/main.cpp:727
+#: src/cli/main.cpp:730
 #, c++-format
 msgid "Transfer Failed: {}"
 msgstr ""
 
-#: src/cli/main.cpp:749
+#: src/cli/main.cpp:752
 msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
 msgstr ""
 
-#: src/cli/main.cpp:755
+#: src/cli/main.cpp:758
 msgid ""
 "A conversation and a message are required, e.g. --bt-send tel:+15551234567 "
 "\"hi\"\n"
 msgstr ""
 
-#: src/cli/main.cpp:761
+#: src/cli/main.cpp:764
 msgid "A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n"
 msgstr ""
 
-#: src/cli/main.cpp:769
+#: src/cli/main.cpp:772
 msgid "Expected on or off, e.g. --bt-enable off\n"
 msgstr ""
 
-#: src/cli/main.cpp:780
+#: src/cli/main.cpp:783
 #, c-format
 msgid "Bluetooth enabled.\n"
 msgstr ""
 
-#: src/cli/main.cpp:783
+#: src/cli/main.cpp:786
 #, c-format
 msgid ""
 "Bluetooth disabled. Tether will not reconnect the iPhone. A link that is\n"
 "already up stays up until you disconnect it or the phone goes out of range.\n"
 msgstr ""
 
-#: src/cli/main.cpp:789
+#: src/cli/main.cpp:792
 #, c++-format
 msgid "Expected on or off, e.g. {} on\n"
 msgstr ""
 
-#: src/cli/main.cpp:802
+#: src/cli/main.cpp:805
 msgid "Notification contents enabled."
 msgstr ""
 
-#: src/cli/main.cpp:802
+#: src/cli/main.cpp:805
 msgid "Notification contents disabled."
 msgstr ""
 
-#: src/cli/main.cpp:803
+#: src/cli/main.cpp:806
 msgid "Notification mirroring enabled."
 msgstr ""
 
-#: src/cli/main.cpp:803
+#: src/cli/main.cpp:806
 msgid "Notification mirroring disabled."
 msgstr ""
 
@@ -406,7 +413,12 @@ msgid ""
 "computer only."
 msgstr ""
 
-#: src/core/src/bluetooth/connection.cpp:1159
+#: src/core/src/bluetooth/connection.cpp:951
+msgid ""
+"The iPhone is not offering notifications on this link. Asking it again..."
+msgstr ""
+
+#: src/core/src/bluetooth/connection.cpp:1183
 msgid "No paired iPhone selected."
 msgstr ""
 
@@ -528,7 +540,7 @@ msgid "Cancel"
 msgstr ""
 
 #. TRANSLATORS: the feature name Tether shows for this profile.
-#: src/core/src/bluetooth/profile_supervisor.cpp:76 src/daemon/main.cpp:152
+#: src/core/src/bluetooth/profile_supervisor.cpp:76 src/daemon/main.cpp:169
 #: src/gtk/devices_view.cpp:196 src/gtk/main.cpp:126
 msgid "Messages"
 msgstr ""
@@ -605,20 +617,20 @@ msgid "Opening messages and contacts..."
 msgstr ""
 
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
-#: src/core/src/net.cpp:1421
+#: src/core/src/net.cpp:1437
 #, c++-format
 msgid "{0} ({1}) wants to pair with this device."
 msgstr ""
 
-#: src/core/src/net.cpp:1422
+#: src/core/src/net.cpp:1438
 msgid "Pairing Request"
 msgstr ""
 
-#: src/core/src/net.cpp:1423
+#: src/core/src/net.cpp:1439
 msgid "Accept"
 msgstr ""
 
-#: src/core/src/net.cpp:1424
+#: src/core/src/net.cpp:1440
 msgid "Reject"
 msgstr ""
 
@@ -638,17 +650,17 @@ msgstr ""
 msgid "Reply"
 msgstr ""
 
-#: src/gtk/daemon_client.cpp:56 src/gtk/daemon_client.cpp:163
+#: src/gtk/daemon_client.cpp:56 src/gtk/daemon_client.cpp:151
 msgid "Daemon Offline"
 msgstr ""
 
 #: src/gtk/daemon_client.cpp:57 src/gtk/daemon_client.cpp:58
-#: src/gtk/daemon_client.cpp:164 src/gtk/daemon_client.cpp:165
+#: src/gtk/daemon_client.cpp:152 src/gtk/daemon_client.cpp:153
 #: src/gtk/messages_view.cpp:736
 msgid "The Tether daemon is not running."
 msgstr ""
 
-#: src/gtk/daemon_client.cpp:190
+#: src/gtk/daemon_client.cpp:178
 msgid "Daemon Online"
 msgstr ""
 
