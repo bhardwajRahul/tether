@@ -58,6 +58,12 @@ namespace tether::bluetooth {
         }
 
         // Marked here, translated where it is read: gettext cannot run at namespace scope.
+        constexpr const char* NO_LOCAL_PROFILE_ADVICE =
+            N_("Messages and contacts are connected. BlueZ reports the Bluetooth link down because this computer "
+               "offers the iPhone no profile to connect to — usual on a machine with no audio stack, or one where "
+               "the a2dp_sink and hfp_hf roles are turned off. Nothing is missing and nothing needs changing on "
+               "the iPhone.");
+
         constexpr const char* LE_PHONE_SILENT_ADVICE =
             N_("The iPhone is not answering on LE. Its Bluetooth is wedged on its own side: turn Bluetooth off "
                "and back on on the iPhone, which clears this even when Share System Notifications is already on. "
@@ -77,7 +83,7 @@ namespace tether::bluetooth {
         status_.classic_backoff = 0;
     }
 
-    bool BearerSupervisor::tick(int64_t now) {
+    bool BearerSupervisor::tick(int64_t now, bool obex_up) {
         BearerStatus previous = status_;
 
         status_.device_present = ops_.device_present();
@@ -150,8 +156,14 @@ namespace tether::bluetooth {
 
             // An iPhone that keeps refusing while unlocked, with its Bluetooth
             // permissions already on, is wedged on its own side: nothing here
-            // clears it, and saying "connecting" forever hides that.
-            status_.reason = classic_failures_ >= CLASSIC_FAILURES_BEFORE_ADVICE && !status_.le_connected
+            // clears it, and saying "connecting" forever hides that. A host with
+            // no connectable BR/EDR profile refuses identically, so an OBEX
+            // session the phone is serving right now rules the phone out: after
+            // this many consecutive refusals the transient decline is over, and
+            // what is left is this side having nothing to connect.
+            const bool refused = classic_failures_ >= CLASSIC_FAILURES_BEFORE_ADVICE;
+            status_.reason = refused && obex_up ? _(NO_LOCAL_PROFILE_ADVICE)
+                             : refused && !status_.le_connected
                                  ? _("The iPhone keeps refusing the Bluetooth connection. Turn Bluetooth off and "
                                      "back on on the iPhone — that clears it even when the permissions are already "
                                      "on. Re-pairing is not the fix.")

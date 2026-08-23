@@ -417,7 +417,7 @@ TEST(ObexErrors, AdviceNamesThePermissionToggle) {
     EXPECT_NE(obex_error_advice(ObexError::Busy, "map").find("another computer"), std::string::npos);
 }
 
-TEST(ProfileSupervisor, OpensBothSessionsWhenLinkReady) {
+TEST(ProfileSupervisor, OpensBothSessionsWhenTheDeviceIsReady) {
     FakeProfiles ops;
     ProfileSupervisor sup(ops);
 
@@ -428,7 +428,7 @@ TEST(ProfileSupervisor, OpensBothSessionsWhenLinkReady) {
     EXPECT_FALSE(sup.pbap_session().empty());
 }
 
-TEST(ProfileSupervisor, DoesNothingUntilLinkIsReady) {
+TEST(ProfileSupervisor, DoesNothingUntilTheDeviceIsReady) {
     FakeProfiles ops;
     ProfileSupervisor sup(ops);
 
@@ -779,4 +779,28 @@ TEST(BearerSupervisor, DoesNotBlameThePhoneWhileItAnswersOnLe) {
     }
     EXPECT_EQ(sup.status().reason.find("keeps refusing"), std::string::npos)
         << "told the user to cycle Bluetooth while notifications were mirroring over LE";
+}
+
+// BlueZ reports a Classic link up only while some local profile is connected, so a
+// host that offers none refuses Device1.Connect forever while the phone answers OBEX
+// perfectly well. Sending that user to their phone wastes their time.
+TEST(BearerSupervisor, NamesTheHostWhenObexIsUpAndClassicKeepsRefusing) {
+    FakeBearer ops;
+    BearerSupervisor sup(ops, true);
+
+    ops.classic_succeeds = false;
+    ops.classic_error = "br-connection-unknown";
+
+    int64_t now = 0;
+    sup.tick(now, true);
+    EXPECT_EQ(sup.status().reason.find("offers the iPhone no profile"), std::string::npos)
+        << "named the host on the first refusal, before a transient decline could clear";
+
+    while (now < 1200) {
+        now += BEARER_POLL_SECONDS;
+        sup.tick(now, true);
+    }
+    EXPECT_NE(sup.status().reason.find("offers the iPhone no profile"), std::string::npos);
+    EXPECT_EQ(sup.status().reason.find("keeps refusing"), std::string::npos)
+        << "blamed the phone while it was serving messages and contacts";
 }
