@@ -27,6 +27,11 @@ namespace tether::bluetooth {
     // so a blip must not reset discovery, while a genuine loss still clears.
     inline constexpr int ANCS_BEARER_GRACE_SECONDS = 30;
 
+    // How long an LE link may read connected while the phone offers no ANCS
+    // service before the solicitation goes back on air over it. Long enough for
+    // GATT discovery on a freshly opened link, which runs to about a minute.
+    inline constexpr int ANCS_ABSENT_GRACE_SECONDS = 75;
+
     // What BlueZ did with a request to bring a bearer up. Accepting a request is
     // not a link: only an observed Connected is that.
     enum class ConnectResult {
@@ -66,6 +71,19 @@ namespace tether::bluetooth {
 
         bool operator==(const BearerStatus&) const = default;
     };
+
+    // Whether the ANCS solicitation belongs on air. A live LE link normally means
+    // the phone has been reached and the advert is not needed, but a link that
+    // carries no ANCS is, for notifications, no link at all and the advert is
+    // the only thing that asks the phone for the service. `ancs_absent_since` is
+    // when the link was first seen up with no ANCS offered, or -1 when it is
+    // offered or the link is down. Never solicit over a dial still in flight:
+    // that is what aborted the connect once per cycle.
+    inline bool
+        should_solicit_ancs(bool ancs_enabled, const BearerStatus& bearer, int64_t now, int64_t ancs_absent_since) {
+        const bool link_dead = ancs_absent_since >= 0 && now - ancs_absent_since >= ANCS_ABSENT_GRACE_SECONDS;
+        return ancs_enabled && bearer.le_available && !bearer.le_dialling && (!bearer.le_connected || link_dead);
+    }
 
     // Keeps the Classic and LE halves of one bond connected.
     //

@@ -2,6 +2,8 @@
 
 #include "tray.hpp"
 
+#include <tether/i18n.hpp>
+
 namespace tether::ui {
 
     namespace {
@@ -162,8 +164,8 @@ namespace tether::ui {
         gtk_box_pack_start(GTK_BOX(bar), indicator(Route::WiFi).box, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(bar), indicator(Route::Bluetooth).box, FALSE, FALSE, 0);
 
-        set_route_status(Route::WiFi, false, "Waiting for the Tether daemon.");
-        set_route_status(Route::Bluetooth, false, "Waiting for the Tether daemon.");
+        set_route_status(Route::WiFi, false, _("Waiting for the Tether daemon."));
+        set_route_status(Route::Bluetooth, false, _("Waiting for the Tether daemon."));
         return bar;
     }
 
@@ -179,7 +181,8 @@ namespace tether::ui {
         else
             gtk_style_context_add_class(context, "tether-route-off");
 
-        const std::string state = std::string(r.name) + ": " + (ok ? "connected" : "not connected");
+        // TRANSLATORS: {} is a transport name, "Wi-Fi" or "Bluetooth".
+        const std::string state = tr_format(_("{}: {}"), r.name, ok ? _("connected") : _("not connected"));
         set_text(r.label, state);
         // The reason can be a sentence or two, which would push the other route
         // off the strip, so it lives in the tooltip. The Devices page shows it

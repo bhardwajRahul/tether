@@ -215,6 +215,37 @@ TEST(BearerSupervisor, SolicitationIsHeldOffOnlyWhileTheOneDialIsInFlight) {
     }
 }
 
+// A dialled LE link can come up carrying no ANCS at all, and while it reads
+// connected the solicitation stays off air -- so nothing ever asks the phone for
+// the service, and notifications never arrive (2026-08-23).
+TEST(AncsSolicitation, GoesBackOnAirOverAnLeLinkThatCarriesNoAncs) {
+    BearerStatus bearer;
+    bearer.le_available = true;
+    bearer.le_connected = true;
+
+    // Offered, or not yet timed: the link is doing its job, leave it alone.
+    EXPECT_FALSE(should_solicit_ancs(true, bearer, 10'000, -1));
+    EXPECT_FALSE(should_solicit_ancs(true, bearer, 100, 100)) << "solicited before discovery could finish";
+    EXPECT_FALSE(should_solicit_ancs(true, bearer, 100 + ANCS_ABSENT_GRACE_SECONDS - 1, 100));
+
+    EXPECT_TRUE(should_solicit_ancs(true, bearer, 100 + ANCS_ABSENT_GRACE_SECONDS, 100))
+        << "left the advert off air over a link that carries no ANCS";
+
+    // A dial in flight still owns the radio: the advert aborts it (2026-08-20).
+    bearer.le_dialling = true;
+    EXPECT_FALSE(should_solicit_ancs(true, bearer, 10'000, 100));
+    bearer.le_dialling = false;
+
+    // LE down is the original case, and the timer is irrelevant to it.
+    bearer.le_connected = false;
+    EXPECT_TRUE(should_solicit_ancs(true, bearer, 10'000, -1));
+
+    // Nothing goes on air for a disabled feature or an adapter without LE.
+    EXPECT_FALSE(should_solicit_ancs(false, bearer, 10'000, -1));
+    bearer.le_available = false;
+    EXPECT_FALSE(should_solicit_ancs(true, bearer, 10'000, -1));
+}
+
 // A phone that is answering answers in about a second. A long silence with the
 // advert up is the iPhone having gone quiet, and only cycling Bluetooth on the
 // phone clears that -- so the status has to say so rather than "waiting" forever.

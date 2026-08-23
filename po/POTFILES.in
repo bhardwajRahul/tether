@@ -14,3 +14,4 @@ src/gtk/main.cpp
 src/gtk/messages_view.cpp
 src/gtk/notifications_view.cpp
 src/gtk/tray.cpp
+src/gtk/ui_util.cpp

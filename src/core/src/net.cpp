@@ -568,6 +568,22 @@ namespace tether {
         return tether_dir.string();
     }
 
+    std::string get_state_dir() {
+        const char* xdg_state = std::getenv("XDG_STATE_HOME");
+        const char* home = std::getenv("HOME");
+        std::filesystem::path base;
+        if (xdg_state && *xdg_state)
+            base = xdg_state;
+        else if (home && *home)
+            base = std::filesystem::path(home) / ".local" / "state";
+        else
+            base = "/tmp";
+
+        std::filesystem::path tether_dir = base / "tether";
+        std::filesystem::create_directories(tether_dir);
+        return tether_dir.string();
+    }
+
     void ensure_single_instance() {
         std::string lock_file = get_runtime_dir() + "/tetherd.lock";
         int fd = open(lock_file.c_str(), O_RDWR | O_CREAT, 0600);

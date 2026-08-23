@@ -350,14 +350,17 @@ static int print_bt_connection(tether::Client& client) {
     fprintf(stdout, _("\nContacts (PBAP): %s"), yn(resp.value("pbap_open", false)));
     if (resp.value("pbap_error", std::string("none")) != "none")
         fprintf(stdout, "  [%s]", resp.value("pbap_error", "").c_str());
-    fprintf(stdout, "\n");
+    fprintf(stdout, _("\nNotifications:   %s\n"), yn(resp.value("ancs_ready", false)));
 
     const std::string link = resp.value("link_reason", "");
     const std::string profiles = resp.value("profile_reason", "");
+    const std::string notifications = resp.value("ancs_reason", "");
     if (!link.empty())
         fprintf(stdout, "\n  %s\n", link.c_str());
     if (!profiles.empty())
         fprintf(stdout, "  %s\n", profiles.c_str());
+    if (!notifications.empty())
+        fprintf(stdout, "  %s\n", notifications.c_str());
     return 0;
 }
 

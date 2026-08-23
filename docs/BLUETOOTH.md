@@ -128,6 +128,7 @@ checks the daemon does not make.
 | `tether --bt-status` reports `Bond: BR/EDR only` | The bond was made without cross-transport key derivation, so it has no LE half and can never carry ANCS | Forget this computer on the iPhone and pair again. Check `secure-connections` in the same output first: re-pairing cannot help while it is off |
 | Walked back into range and nothing reconnected for minutes | Fixed. The ANCS advert was gated on the Classic link, and the Classic backoff had no event that ended the absence | Nothing. The advert stays on air whenever LE is down, and an LE link coming up clears the Classic backoff -- see 2026-08-22 |
 | Startup logs `StartNotify not ready yet (InProgress)` for up to a minute | GATT discovery is still running on the new LE link | Nothing. It subscribes on its own. Only treat it as the 2026-08-19 hang if the LE link never comes up |
+| `tether --bt-connection` reports LE and messages up but `Notifications: no`, for hours | Fixed. The LE link was opened by the dial and carries no ANCS. A connected link used to take the solicitation off air, so the phone was never asked for the service | Nothing. The advert goes back on air over a link that has stayed up without ANCS -- see 2026-08-23. To clear it by hand on an older build, `tether --bt-solicit`; do not re-pair, and do not cycle the phone's Bluetooth |
 | The status says the iPhone is not answering on LE, and its permission is on | The phone's Bluetooth stack is wedged, which the granted permission does not prevent | Turn Bluetooth off and back on **on the iPhone**. Re-pairing and re-toggling the permission do not clear this |
 | Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
 | A group conversation cannot be replied to | Working as designed until the route is unambiguous | The thread's `reply_reason` says which condition failed |
@@ -759,6 +760,107 @@ phonebook is personal data, and the cache and journal are both written mode 0600
 Tether's Bluetooth support is an independent implementation written against those published
 findings, Apple's ANCS specification, the Bluetooth SIG MAP and PBAP specifications, and
 the BlueZ D-Bus API.
+
+### 2026-08-23 - The GTK app hid the one line that said what to do
+
+Same hardware, a boot right after the fix above. BR/EDR, MAP and PBAP came up in 1.3s
+and LE never formed. The daemon behaved correctly throughout -- the advert was on air the
+whole time, and at 181.2s the link reason escalated to exactly the right remedy:
+
+```
+t=    1.3s  Connected. Waiting for the iPhone to open the LE link...
+t=  181.2s  The iPhone is not answering on LE. Its Bluetooth is wedged on its own
+            side: turn Bluetooth off and back on on the iPhone...
+t=  633.9s  classic=False            <- Bluetooth cycled on the phone
+t=  644.2s  classic=True le=True     <- link forms on the way back
+t=  651.1s  ancs=True                "Notification mirroring is active."
+```
+
+Ten and a half minutes of silence against a continuously broadcasting advert, cleared
+instantly by the phone-side cycle. That is the 2026-08-19 failure exactly, and the
+status text named it at the three-minute mark.
+
+Nobody saw it. The GTK app picked `profile_reason` first and fell back to `link_reason`
+only when it was empty -- and `profile_reason` was "Messages and contacts are connected."
+So the app calmly reported the working half while discarding the only line that said what
+to do about the broken one, for seven and a half minutes. The advice existed, was
+correct, was on time, and was invisible where the user was actually looking.
+
+A profile that is up is not news. The reason now follows the link: while BR/EDR or LE is
+down the app shows `link_reason`, and `profile_reason` only once both are up.
+
+Worth separating from the entry above: that one is an LE link that comes up carrying no
+ANCS, this one is an LE link that never comes up at all. Same symptom in the app, and
+they need opposite remedies -- which is the recurring lesson in this file.
+
+### 2026-08-23 - A live LE link that carries no ANCS silences its own recovery
+
+| | |
+|---|---|
+| Controller | MediaTek MT7925 (RZ717) Wi-Fi 7 |
+| BlueZ | 5.87 |
+| Phone | iPhone 15 Pro |
+
+Reported as the CLI and the GTK app disagreeing about LE. They did not: both read the
+same payload and both said LE was up. The ✗ was on the Notifications row, and
+`--bt-connection` did not print that row at all, so the two could not be compared. That
+is fixed here as well.
+
+Captured from the daemon's own timeline, on a session that had been in the failed state
+for over thirty minutes:
+
+```
+t=1.3s   BR/EDR up, MAP+PBAP up, LE down
+t=29.7s  LE still down       ancs_reason "The iPhone is not connected over LE."
+t=46.2s  BR/EDR dropped
+t=54.5s  BR/EDR back
+t=61.0s  le_connected -> TRUE   link_reason "Connected over BR/EDR and LE."
+t=61.0s  ancs_reason -> "Waiting for the iPhone's notification service."   [stuck]
+```
+
+At t=61s the one-shot dial opened an LE link. Everything about it read healthy and it
+carried nothing:
+
+| Signal | Value |
+|---|---|
+| `Bearer.LE1` `Connected` / `Paired` / `Bonded` | all true |
+| `Device1.ServicesResolved` | false |
+| GATT objects under the device path | none |
+| ANCS UUID `7905f431-...` in `Device1.UUIDs` | absent |
+| `LEAdvertisingManager1.ActiveInstances` | 0 |
+
+The solicitation was gated on `!le_connected`, so the dial's link took the advert off
+air permanently -- and the advert is the only thing that asks the phone for ANCS.
+`AncsClient::discover()` scanned for characteristics that were never going to appear and
+retried behind "Waiting for the iPhone's notification service." forever. This is the
+daily failure that had been cleared by hand, and the fiddling that cleared it was
+breaking the dead link so the advert could go back up.
+
+**`tether --bt-solicit` alone fixed it, with nothing touched on the phone.** Under a minute:
+
+| | Before | After |
+|---|---|---|
+| `ancs_ready` | false | true |
+| `ancs_reason` | "Waiting for the iPhone's notification service." | "Notification mirroring is active." |
+| ANCS UUID in `Device1.UUIDs` | absent | present |
+| `ServicesResolved` | false | true |
+
+So the iPhone was not withholding ANCS, and no permission was wrong. It was never asked.
+The advert now goes back on air over an LE link that has stayed up for
+`ANCS_ABSENT_GRACE_SECONDS` without the phone offering the service, which is
+`should_solicit_ancs()`. The window is 75s -- longer than the GATT discovery measured on
+2026-08-22, so a normally forming link is never solicited over. A dial in flight still
+holds the advert off (2026-08-20), and a live subscription still outranks every property
+(2026-08-19), so neither recorded failure is reintroduced.
+
+This is the 2026-08-19 lesson in the other direction. `Bearer.LE1.Connected` reads false
+on a live ANCS link and true on a link that carries none: it is not evidence either way,
+and gating on it in either polarity is what breaks.
+
+Inferred, not captured: that the dial rather than an unanswered advert produced the dead
+link. The t=61s transition and the measurements on 2026-08-22 -- where the advert opened
+a link in 1.3s and the dial never opened one -- are what point at it. The fix does not
+depend on which opened it.
 
 ### 2026-08-22 - Coming back in range waited on a backoff nothing could clear
 

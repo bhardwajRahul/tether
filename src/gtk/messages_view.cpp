@@ -866,7 +866,7 @@ namespace tether::ui {
 
         g_messages.compose_bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
         gtk_container_set_border_width(GTK_CONTAINER(g_messages.compose_bar), 8);
-        gtk_box_pack_start(GTK_BOX(g_messages.compose_bar), gtk_label_new("To:"), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(g_messages.compose_bar), gtk_label_new(_("To:")), FALSE, FALSE, 0);
 
         g_messages.compose_entry = gtk_entry_new();
         gtk_entry_set_placeholder_text(GTK_ENTRY(g_messages.compose_entry), _("Phone number or email"));
