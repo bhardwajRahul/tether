@@ -13,6 +13,8 @@ namespace tether {
     // Check if tetherd is already running. Exits if another instance holds the lock.
     void ensure_single_instance();
     std::string get_runtime_dir();
+    // $XDG_STATE_HOME/tether (or ~/.local/state/tether), created if absent.
+    std::string get_state_dir();
 
     class TcpServer;
     class UnixServer;

@@ -1,5 +1,6 @@
 #include "notification.hpp"
 #include <csignal>
+#include <cstdio>
 #include <ctime>
 #include <mutex>
 #include <nlohmann/json.hpp>
@@ -29,7 +30,23 @@ void signal_handler(int) {
     }
 }
 
+// Append stderr/stdout to the state-dir log unless attached to a terminal.
+static void redirect_output_to_log() {
+    if (isatty(STDERR_FILENO))
+        return;
+    try {
+        const std::string log_path = tether::get_state_dir() + "/tetherd.log";
+        if (freopen(log_path.c_str(), "a", stderr) == nullptr)
+            return;
+        if (freopen(log_path.c_str(), "a", stdout) == nullptr) {
+        }
+    } catch (const std::exception&) {
+        // Losing the log is survivable; failing to start is not.
+    }
+}
+
 int main(int argc, char** argv) {
+    redirect_output_to_log();
     tether::init_locale();
     debug::log(INFO, "tetherd version {}", tether::get_version());
 
