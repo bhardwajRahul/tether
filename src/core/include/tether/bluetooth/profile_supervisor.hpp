@@ -63,8 +63,9 @@ namespace tether::bluetooth {
     public:
         explicit ProfileSupervisor(ProfileOps& ops);
 
-        // Drive periodically with a monotonic clock.
-        bool tick(int64_t now, bool link_ready);
+        // Drive periodically with a monotonic clock. `device_ready` is a paired
+        // device, not a link: obexd opens its own transport.
+        bool tick(int64_t now, bool device_ready);
 
         // Drops both sessions after a disconnect so the next tick reopens them.
         void reset();

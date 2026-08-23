@@ -170,13 +170,11 @@ namespace tether::bluetooth {
         return false;
     }
 
-    bool ProfileSupervisor::tick(int64_t now, bool link_ready) {
+    bool ProfileSupervisor::tick(int64_t now, bool device_ready) {
         ProfileStatus previous = status_;
 
-        if (!link_ready) {
-            // Nothing to do until the Classic bearer is up; hold what we have and
-            // let reset() handle an actual disconnect.
-            status_.reason = _("Waiting for the Bluetooth link.");
+        if (!device_ready) {
+            status_.reason = _("Waiting for the iPhone.");
             return !(status_ == previous);
         }
 

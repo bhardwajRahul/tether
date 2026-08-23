@@ -94,7 +94,9 @@ namespace tether::bluetooth {
 
         // Drive once per BEARER_POLL_SECONDS with a monotonic clock. Returns true
         // when the reported status changed, so callers only broadcast on change.
-        bool tick(int64_t now);
+        // `obex_up` is an open MAP or PBAP session, which is proof BR/EDR reaches
+        // the phone whatever BlueZ reports about the link.
+        bool tick(int64_t now, bool obex_up = false);
 
         // Clears connection state and backoff after a disconnect or a resume, so
         // recovery starts immediately instead of waiting out a stale backoff.

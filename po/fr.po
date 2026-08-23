@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-23 10:53-0700\n"
+"POT-Creation-Date: 2026-08-23 14:43-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: French\n"
@@ -433,6 +433,19 @@ msgstr "Duplication des notifications désactivée."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp:62
 msgid ""
+"Messages and contacts are connected. BlueZ reports the Bluetooth link down "
+"because this computer offers the iPhone no profile to connect to — usual on "
+"a machine with no audio stack, or one where the a2dp_sink and hfp_hf roles "
+"are turned off. Nothing is missing and nothing needs changing on the iPhone."
+msgstr ""
+"Les messages et les contacts sont connectés. BlueZ signale la liaison "
+"Bluetooth comme coupée parce que cet ordinateur n'offre à l'iPhone aucun "
+"profil auquel se connecter — habituel sur une machine sans pile audio, ou "
+"sur une machine où les rôles a2dp_sink et hfp_hf sont désactivés. Rien ne "
+"manque et rien n'est à changer sur l'iPhone."
+
+#: src/core/src/bluetooth/bearer_supervisor.cpp:68
+msgid ""
 "The iPhone is not answering on LE. Its Bluetooth is wedged on its own side: "
 "turn Bluetooth off and back on on the iPhone, which clears this even when "
 "Share System Notifications is already on. Messages and contacts are "
@@ -443,7 +456,7 @@ msgstr ""
 "problème même si « Partager les notifications système » est déjà activé. Les "
 "messages et les contacts ne sont pas affectés."
 
-#: src/core/src/bluetooth/bearer_supervisor.cpp:155
+#: src/core/src/bluetooth/bearer_supervisor.cpp:167
 msgid ""
 "The iPhone keeps refusing the Bluetooth connection. Turn Bluetooth off and "
 "back on on the iPhone — that clears it even when the permissions are already "
@@ -453,7 +466,7 @@ msgstr ""
 "réactivez le Bluetooth sur l'iPhone — cela règle le problème même si les "
 "autorisations sont déjà accordées. Réappairer n'est pas la solution."
 
-#: src/core/src/bluetooth/bearer_supervisor.cpp:159
+#: src/core/src/bluetooth/bearer_supervisor.cpp:171
 msgid ""
 "Notifications are connected. Still reaching the iPhone for messages and "
 "contacts..."
@@ -461,15 +474,15 @@ msgstr ""
 "Les notifications sont connectées. Tentative de joindre l'iPhone pour les "
 "messages et les contacts..."
 
-#: src/core/src/bluetooth/bearer_supervisor.cpp:161
+#: src/core/src/bluetooth/bearer_supervisor.cpp:173
 msgid "Connecting to the iPhone over Bluetooth..."
 msgstr "Connexion à l'iPhone en Bluetooth..."
 
-#: src/core/src/bluetooth/bearer_supervisor.cpp:167
+#: src/core/src/bluetooth/bearer_supervisor.cpp:179
 msgid "Connected. Notification mirroring is disabled."
 msgstr "Connecté. La duplication des notifications est désactivée."
 
-#: src/core/src/bluetooth/bearer_supervisor.cpp:172
+#: src/core/src/bluetooth/bearer_supervisor.cpp:184
 msgid ""
 "Connected. BlueZ is not exposing an LE bearer, so notifications are "
 "unavailable."
@@ -477,7 +490,7 @@ msgstr ""
 "Connecté. BlueZ n'expose pas de bearer LE, les notifications sont donc "
 "indisponibles."
 
-#: src/core/src/bluetooth/bearer_supervisor.cpp:194
+#: src/core/src/bluetooth/bearer_supervisor.cpp:206
 msgid ""
 "Connected. Waiting for the iPhone to open the LE link that carries "
 "notifications. If it does not, open Settings > Bluetooth > (i) on the iPhone "
@@ -487,7 +500,7 @@ msgstr ""
 "notifications. S'il ne le fait pas, ouvrez Réglages > Bluetooth > (i) sur "
 "l'iPhone et vérifiez « Partager les notifications système »."
 
-#: src/core/src/bluetooth/bearer_supervisor.cpp:200
+#: src/core/src/bluetooth/bearer_supervisor.cpp:212
 msgid "Connected over BR/EDR and LE."
 msgstr "Connecté en BR/EDR et LE."
 
@@ -512,14 +525,14 @@ msgstr ""
 "L'iPhone ne fournit pas ce message pour le moment ; marqué comme lu sur cet "
 "ordinateur seulement."
 
-#: src/core/src/bluetooth/connection.cpp:951
+#: src/core/src/bluetooth/connection.cpp:945
 msgid ""
 "The iPhone is not offering notifications on this link. Asking it again..."
 msgstr ""
 "L'iPhone ne propose pas de notifications sur cette liaison. Nouvelle demande "
 "en cours..."
 
-#: src/core/src/bluetooth/connection.cpp:1183
+#: src/core/src/bluetooth/connection.cpp:1185
 msgid "No paired iPhone selected."
 msgstr "Aucun iPhone appairé sélectionné."
 
@@ -743,16 +756,17 @@ msgstr ""
 msgid "{} could not be opened."
 msgstr "Impossible d'ouvrir {}."
 
-#: src/core/src/bluetooth/profile_supervisor.cpp:179
-msgid "Waiting for the Bluetooth link."
-msgstr "En attente du lien Bluetooth."
+#: src/core/src/bluetooth/profile_supervisor.cpp:181
+#: src/gtk/notifications_view.cpp:164
+msgid "Waiting for the iPhone."
+msgstr "En attente de l'iPhone."
 
-#: src/core/src/bluetooth/profile_supervisor.cpp:184
-#: src/core/src/bluetooth/profile_supervisor.cpp:201
+#: src/core/src/bluetooth/profile_supervisor.cpp:186
+#: src/core/src/bluetooth/profile_supervisor.cpp:203
 msgid "Messages and contacts are connected."
 msgstr "Les messages et les contacts sont connectés."
 
-#: src/core/src/bluetooth/profile_supervisor.cpp:208
+#: src/core/src/bluetooth/profile_supervisor.cpp:210
 msgid "Opening messages and contacts..."
 msgstr "Ouverture des messages et des contacts..."
 
@@ -850,45 +864,45 @@ msgstr "Tether n'utilise pas cet appareil. Appairez-le pour le sélectionner."
 msgid "Bluetooth is switched off for this iPhone."
 msgstr "Bluetooth est désactivé pour cet iPhone."
 
-#: src/gtk/devices_view.cpp:286
+#: src/gtk/devices_view.cpp:287
 msgid "Connected and ready."
 msgstr "Connecté et prêt."
 
-#: src/gtk/devices_view.cpp:287
+#: src/gtk/devices_view.cpp:288
 msgid ""
 "Device is offline. Open the Tether app on iPhone while on the same network."
 msgstr ""
 "L'appareil est hors ligne. Ouvrez l'app Tether sur l'iPhone en étant sur le "
 "même réseau."
 
-#: src/gtk/devices_view.cpp:298
+#: src/gtk/devices_view.cpp:299
 #, c++-format
 msgid "Found at {0}:{1}"
 msgstr "Trouvé à {0}:{1}"
 
-#: src/gtk/devices_view.cpp:329
+#: src/gtk/devices_view.cpp:330
 msgid "Sending pair request..."
 msgstr "Envoi de la demande d'appairage..."
 
-#: src/gtk/devices_view.cpp:335
+#: src/gtk/devices_view.cpp:336
 msgid "Pair request sent. Approve on remote device!"
 msgstr "Demande d'appairage envoyée. Approuvez-la sur l'appareil distant !"
 
-#: src/gtk/devices_view.cpp:351 src/gtk/devices_view.cpp:406
+#: src/gtk/devices_view.cpp:352 src/gtk/devices_view.cpp:407
 #: src/gtk/messages_view.cpp:339
 msgid "Could not reach the Tether daemon."
 msgstr "Impossible de joindre le démon Tether."
 
-#: src/gtk/devices_view.cpp:355
+#: src/gtk/devices_view.cpp:356
 msgid "Pairing… confirm the prompt on the iPhone."
 msgstr "Appairage… confirmez l'invite sur l'iPhone."
 
-#: src/gtk/devices_view.cpp:366
+#: src/gtk/devices_view.cpp:367
 #, c-format
 msgid "Remove the Bluetooth pairing with %s?"
 msgstr "Supprimer l'appairage Bluetooth avec %s ?"
 
-#: src/gtk/devices_view.cpp:370
+#: src/gtk/devices_view.cpp:371
 msgid ""
 "Also delete this computer from the iPhone's Bluetooth settings before "
 "pairing again, or the phone will keep the stale bond."
@@ -896,105 +910,105 @@ msgstr ""
 "Supprimez aussi cet ordinateur des réglages Bluetooth de l'iPhone avant de "
 "réappairer, sinon le téléphone gardera l'ancien lien."
 
-#: src/gtk/devices_view.cpp:378
+#: src/gtk/devices_view.cpp:379
 msgid "Removing the pairing…"
 msgstr "Suppression de l'appairage…"
 
-#: src/gtk/devices_view.cpp:401
+#: src/gtk/devices_view.cpp:402
 msgid "Setup commands copied to the clipboard."
 msgstr "Commandes de configuration copiées dans le presse-papiers."
 
-#: src/gtk/devices_view.cpp:409 src/gtk/messages_view.cpp:342
+#: src/gtk/devices_view.cpp:410 src/gtk/messages_view.cpp:342
 msgid "Asking the iPhone to show its Bluetooth permissions…"
 msgstr "Demande à l'iPhone d'afficher ses autorisations Bluetooth…"
 
 #. TRANSLATORS: {} is a file name.
-#: src/gtk/devices_view.cpp:418
+#: src/gtk/devices_view.cpp:419
 #, c++-format
 msgid "Sending {}…"
 msgstr "Envoi de {}…"
 
 #. TRANSLATORS: {0} is the current file's position, {1} the batch size.
-#: src/gtk/devices_view.cpp:422
+#: src/gtk/devices_view.cpp:423
 #, c++-format
 msgid "({0} of {1})"
 msgstr "({0} sur {1})"
 
-#: src/gtk/devices_view.cpp:437
+#: src/gtk/devices_view.cpp:438
 msgid "Daemon unavailable."
 msgstr "Démon indisponible."
 
-#: src/gtk/devices_view.cpp:457 src/gtk/devices_view.cpp:1247
+#: src/gtk/devices_view.cpp:458 src/gtk/devices_view.cpp:1248
 msgid "Send File"
 msgstr "Envoyer un fichier"
 
-#: src/gtk/devices_view.cpp:528
+#: src/gtk/devices_view.cpp:529
 msgid "Folders can't be sent — drop files instead."
 msgstr ""
 "Les dossiers ne peuvent pas être envoyés — déposez plutôt des fichiers."
 
-#: src/gtk/devices_view.cpp:538
+#: src/gtk/devices_view.cpp:539
 msgid "Clipboard, files, and OTP are connected."
 msgstr "Le presse-papiers, les fichiers et les OTP sont connectés."
 
-#: src/gtk/devices_view.cpp:539
+#: src/gtk/devices_view.cpp:540
 msgid "No paired iPhone is connected. Open the Tether app on the phone."
 msgstr ""
 "Aucun iPhone appairé n'est connecté. Ouvrez l'app Tether sur le téléphone."
 
-#: src/gtk/devices_view.cpp:551 src/gtk/devices_view.cpp:562
-#: src/gtk/devices_view.cpp:599 src/gtk/devices_view.cpp:814
-#: src/gtk/devices_view.cpp:815
+#: src/gtk/devices_view.cpp:552 src/gtk/devices_view.cpp:563
+#: src/gtk/devices_view.cpp:600 src/gtk/devices_view.cpp:815
+#: src/gtk/devices_view.cpp:816
 msgid "Unknown Device"
 msgstr "Appareil inconnu"
 
-#: src/gtk/devices_view.cpp:581
+#: src/gtk/devices_view.cpp:582
 msgid "Scanning for nearby devices..."
 msgstr "Recherche d'appareils à proximité..."
 
-#: src/gtk/devices_view.cpp:638 src/gtk/devices_view.cpp:672
+#: src/gtk/devices_view.cpp:639 src/gtk/devices_view.cpp:673
 msgid "Connected"
 msgstr "Connecté"
 
-#: src/gtk/devices_view.cpp:638
+#: src/gtk/devices_view.cpp:639
 msgid "Offline"
 msgstr "Hors ligne"
 
-#: src/gtk/devices_view.cpp:638 src/gtk/devices_view.cpp:672
+#: src/gtk/devices_view.cpp:639 src/gtk/devices_view.cpp:673
 msgid "Nearby (Tap to Pair)"
 msgstr "À proximité (toucher pour appairer)"
 
-#: src/gtk/devices_view.cpp:672
+#: src/gtk/devices_view.cpp:673
 msgid "Paired"
 msgstr "Appairé"
 
-#: src/gtk/devices_view.cpp:881 src/gtk/devices_view.cpp:1266
+#: src/gtk/devices_view.cpp:882 src/gtk/devices_view.cpp:1267
 msgid "Ready"
 msgstr "Prêt"
 
-#: src/gtk/devices_view.cpp:903
+#: src/gtk/devices_view.cpp:904
 #, c++-format
 msgid "Sent {0} of {1} file."
 msgid_plural "Sent {0} of {1} files."
 msgstr[0] "{0} fichier envoyé sur {1}."
 msgstr[1] "{0} fichiers envoyés sur {1}."
 
-#: src/gtk/devices_view.cpp:912
+#: src/gtk/devices_view.cpp:913
 #, c++-format
 msgid "Skipped {} non-file item."
 msgid_plural "Skipped {} non-file items."
 msgstr[0] "{} élément non fichier ignoré."
 msgstr[1] "{} éléments non fichiers ignorés."
 
-#: src/gtk/devices_view.cpp:923
+#: src/gtk/devices_view.cpp:924
 msgid "Desktop Clipboard Sync triggered."
 msgstr "Synchronisation du presse-papiers du bureau déclenchée."
 
-#: src/gtk/devices_view.cpp:949
+#: src/gtk/devices_view.cpp:950
 msgid "Messages and notifications are connected."
 msgstr "Les messages et les notifications sont connectés."
 
-#: src/gtk/devices_view.cpp:964
+#: src/gtk/devices_view.cpp:965
 msgid ""
 "No iPhone found. Unlock the phone and open Settings > Bluetooth so it "
 "advertises, then scan again."
@@ -1002,15 +1016,15 @@ msgstr ""
 "Aucun iPhone trouvé. Déverrouillez le téléphone et ouvrez Réglages > "
 "Bluetooth pour qu'il s'annonce, puis relancez la recherche."
 
-#: src/gtk/devices_view.cpp:1013
+#: src/gtk/devices_view.cpp:1014
 msgid "Connect your iPhone"
 msgstr "Connectez votre iPhone"
 
-#: src/gtk/devices_view.cpp:1058
+#: src/gtk/devices_view.cpp:1059
 msgid "clipboard, files, OTP"
 msgstr "presse-papiers, fichiers, OTP"
 
-#: src/gtk/devices_view.cpp:1059
+#: src/gtk/devices_view.cpp:1060
 msgid ""
 "1.  Open the Tether app on the iPhone\n"
 "2.  It finds this computer by itself\n"
@@ -1020,11 +1034,11 @@ msgstr ""
 "2.  Elle trouve cet ordinateur toute seule\n"
 "3.  Approuvez des deux côtés"
 
-#: src/gtk/devices_view.cpp:1067
+#: src/gtk/devices_view.cpp:1068
 msgid "messages, notifications"
 msgstr "messages, notifications"
 
-#: src/gtk/devices_view.cpp:1068
+#: src/gtk/devices_view.cpp:1069
 msgid ""
 "1.  Pick the iPhone under BLUETOOTH\n"
 "2.  Press Pair over Bluetooth\n"
@@ -1034,19 +1048,19 @@ msgstr ""
 "2.  Appuyez sur Appairer en Bluetooth\n"
 "3.  Accordez les deux autorisations sur le téléphone"
 
-#: src/gtk/devices_view.cpp:1076
+#: src/gtk/devices_view.cpp:1077
 msgid "Scan for devices"
 msgstr "Rechercher des appareils"
 
-#: src/gtk/devices_view.cpp:1101
+#: src/gtk/devices_view.cpp:1102
 msgid "Bluetooth needs one-time system setup"
 msgstr "Bluetooth requiert une configuration système ponctuelle"
 
-#: src/gtk/devices_view.cpp:1119
+#: src/gtk/devices_view.cpp:1120
 msgid "Copy commands"
 msgstr "Copier les commandes"
 
-#: src/gtk/devices_view.cpp:1121
+#: src/gtk/devices_view.cpp:1122
 msgid ""
 "Run these in a terminal. Tether does not change your Bluetooth adapter or "
 "bluetoothd on its own."
@@ -1054,11 +1068,11 @@ msgstr ""
 "Lancez ceci dans un terminal. Tether ne modifie pas de lui-même votre "
 "adaptateur Bluetooth ni bluetoothd."
 
-#: src/gtk/devices_view.cpp:1145
+#: src/gtk/devices_view.cpp:1146
 msgid "Connect to this iPhone over Bluetooth"
 msgstr "Se connecter à cet iPhone en Bluetooth"
 
-#: src/gtk/devices_view.cpp:1147
+#: src/gtk/devices_view.cpp:1148
 msgid ""
 "Keep the Bluetooth link to the iPhone up, reconnecting whenever it drops. "
 "Turning this off stops Tether reconnecting; a link that is already up stays "
@@ -1068,11 +1082,11 @@ msgstr ""
 "Désactiver ceci empêche Tether de reconnecter ; un lien déjà établi le reste "
 "jusqu'à ce que vous le coupiez."
 
-#: src/gtk/devices_view.cpp:1154
+#: src/gtk/devices_view.cpp:1155
 msgid "Mirror iPhone notifications"
 msgstr "Dupliquer les notifications de l'iPhone"
 
-#: src/gtk/devices_view.cpp:1156
+#: src/gtk/devices_view.cpp:1157
 msgid ""
 "Show notifications from the iPhone on this desktop. Turned off automatically "
 "when pairing produces no LE bond; turn it back on after re-pairing."
@@ -1081,11 +1095,11 @@ msgstr ""
 "automatiquement quand l'appairage ne produit pas de lien LE ; réactivez-le "
 "après avoir réappairé."
 
-#: src/gtk/devices_view.cpp:1162
+#: src/gtk/devices_view.cpp:1163
 msgid "Show notification contents"
 msgstr "Afficher le contenu des notifications"
 
-#: src/gtk/devices_view.cpp:1164
+#: src/gtk/devices_view.cpp:1165
 msgid ""
 "Ask the iPhone for each notification's title and message text, not just "
 "which app sent it. The phone's own Show Message Notifications toggle still "
@@ -1095,15 +1109,15 @@ msgstr ""
 "seulement l'app émettrice. Le réglage « Afficher les notifications de "
 "messages » du téléphone doit rester activé."
 
-#: src/gtk/devices_view.cpp:1177
+#: src/gtk/devices_view.cpp:1178
 msgid "Pair over Bluetooth"
 msgstr "Appairer en Bluetooth"
 
-#: src/gtk/devices_view.cpp:1182 src/gtk/messages_view.cpp:818
+#: src/gtk/devices_view.cpp:1183 src/gtk/messages_view.cpp:818
 msgid "Show iPhone Permissions"
 msgstr "Afficher les autorisations de l'iPhone"
 
-#: src/gtk/devices_view.cpp:1184 src/gtk/messages_view.cpp:821
+#: src/gtk/devices_view.cpp:1185 src/gtk/messages_view.cpp:821
 msgid ""
 "Re-advertise so the iPhone shows its Show Message Notifications and Sync "
 "Contacts toggles under Settings > Bluetooth > (i)."
@@ -1112,27 +1126,27 @@ msgstr ""
 "notifications de messages » et « Synchroniser les contacts » dans Réglages > "
 "Bluetooth > (i)."
 
-#: src/gtk/devices_view.cpp:1189
+#: src/gtk/devices_view.cpp:1190
 msgid "Unpair"
 msgstr "Désappairer"
 
-#: src/gtk/devices_view.cpp:1212
+#: src/gtk/devices_view.cpp:1213
 msgid "Pair Device"
 msgstr "Appairer l'appareil"
 
-#: src/gtk/devices_view.cpp:1218
+#: src/gtk/devices_view.cpp:1219
 msgid "Force Trust (Accept Pending)"
 msgstr "Forcer la confiance (accepter en attente)"
 
-#: src/gtk/devices_view.cpp:1243
+#: src/gtk/devices_view.cpp:1244
 msgid "Drop files here to send"
 msgstr "Déposez des fichiers ici pour les envoyer"
 
-#: src/gtk/devices_view.cpp:1252
+#: src/gtk/devices_view.cpp:1253
 msgid "Send Clipboard"
 msgstr "Envoyer le presse-papiers"
 
-#: src/gtk/devices_view.cpp:1259
+#: src/gtk/devices_view.cpp:1260
 msgid "Clipboard sync requested..."
 msgstr "Synchronisation du presse-papiers demandée..."
 
@@ -1225,10 +1239,6 @@ msgstr "Aucune notification pour l'instant."
 msgid "Notification mirroring is unavailable."
 msgstr "La duplication des notifications est indisponible."
 
-#: src/gtk/notifications_view.cpp:164
-msgid "Waiting for the iPhone."
-msgstr "En attente de l'iPhone."
-
 #: src/gtk/tray.cpp:277 src/gtk/ui_util.cpp:185
 msgid "connected"
 msgstr "connecté"
@@ -1265,3 +1275,6 @@ msgstr "Synchronisation d'appareils"
 #: src/gtk/tether-gtk.desktop.in:4
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Appairez des appareils et synchronisez le presse-papiers sur le réseau"
+
+#~ msgid "Waiting for the Bluetooth link."
+#~ msgstr "En attente du lien Bluetooth."

@@ -132,6 +132,7 @@ checks the daemon does not make.
 | The status says the iPhone is not answering on LE, and its permission is on | The phone's Bluetooth stack is wedged, which the granted permission does not prevent | Turn Bluetooth off and back on **on the iPhone**. Re-pairing and re-toggling the permission do not clear this |
 | Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
 | A group conversation cannot be replied to | Working as designed until the route is unambiguous | The thread's `reply_reason` says which condition failed |
+| The link reads down forever with `br-connection-unknown`, while messages, contacts and notifications all work | This computer offers the iPhone no BR/EDR profile to connect to, and BlueZ only reports a link up while some local profile is connected | Nothing. Tether no longer waits on that link -- see 2026-08-23 below. Restoring the `a2dp_sink` and `hfp_hf` roles makes it read up again, at the cost of the phone's audio moving here |
 | The iPhone's audio moves to the computer when Tether connects | The machine advertises itself as a Bluetooth speaker/headset, and iOS routes to it. Not caused by Tether beyond bringing the link up | See "Keeping the phone's audio on the phone" below |
 
 ### Keeping the phone's audio on the phone
@@ -178,6 +179,13 @@ Two things that look like fixes and are not:
   phone is silent.
 - `device.disabled = true` in a `monitor.bluez.rules` entry does nothing. Only the
   alsa, v4l2, and libcamera monitors honour that property.
+
+One side effect is worth knowing. `a2dp_sink` was very likely the only BR/EDR profile
+this machine could connect to an iPhone, so dropping it leaves `Device1.Connect` with
+nothing to connect and BlueZ reporting the device disconnected however healthy the
+radio is. That is expected, and it no longer blocks anything: messages, contacts, and
+notifications do not run over that link. A machine with no audio stack at all -- a
+server, a container -- is in the same position from the start.
 
 ### Reporting a problem
 
@@ -760,6 +768,68 @@ phonebook is personal data, and the cache and journal are both written mode 0600
 Tether's Bluetooth support is an independent implementation written against those published
 findings, Apple's ANCS specification, the Bluetooth SIG MAP and PBAP specifications, and
 the BlueZ D-Bus API.
+
+### 2026-08-23 - `Device1.Connect` cannot succeed without a locally connectable profile
+
+iPhone 15 Pro, BlueZ 5.87 with `--experimental`, MediaTek MT7925, WirePlumber 0.5.
+
+After a suspend/resume the daemon settled into a permanent retry loop, with messages,
+contacts, and notifications all working the whole time:
+
+```
+[WARN] bluetooth: BR/EDR connect failed (GDBus.Error:org.bluez.Error.Failed: br-connection-unknown), retrying in 30s
+[INFO] bluetooth: pulled 7 contacts
+[INFO] ancs: Notification mirroring is active.
+```
+
+Captured, not inferred:
+
+- `bluetoothd` logged exactly one profile attempt per retry, on the daemon's own
+  5/10/20/30s cadence: `src/service.c:btd_service_connect() a2dp-source profile
+  connect failed for <addr>: Protocol not available` -- `ENOPROTOOPT`.
+- WirePlumber had registered only `/MediaEndpoint/A2DPSource/*`. Zero `A2DPSink`
+  endpoints existed on that boot.
+- `~/.config/wireplumber/wireplumber.conf.d/51-no-phone-audio.conf` held
+  `bluez5.roles = [ a2dp_source hfp_ag bap_source ]` -- the file this document tells
+  people to write, three sections up.
+- `bluetoothctl info` read `Paired/Bonded/Trusted: yes`, `BREDR.Connected: no`.
+- OBEX kept pulling contacts across the same window, which is proof the radio reached
+  the phone while BlueZ called the device disconnected.
+
+The mechanism: `a2dp-source` -- the iPhone as an audio source -- was the only
+auto-connectable BR/EDR profile this machine had for the phone. With no local A2DP
+sink endpoint BlueZ fails it, finds nothing else to connect, tears the ACL down, and
+answers `Device1.Connect` with `br-connection-unknown`. BlueZ reports a device
+Connected only while some local profile is connected, so on a host with none the flag
+can never go true.
+
+Tether read that flag as "the Classic link is up" and gated `ProfileSupervisor::tick()`
+on it, so MAP and PBAP were never opened -- while `BearerSupervisor` retried a call
+that could not succeed, forever. It had appeared to work before the resume only by
+coincidence: obexd's own transient BR/EDR link made `Device.Connected` true for long
+enough to latch (`bluetoothd: Device is already marked as connected`).
+
+This is not one misconfigured desktop. Whether any local BR/EDR profile can connect to
+a phone is a property of the host's audio and telephony stack, and the same dead loop
+follows from a headless or container install with no PipeWire at all, a minimal
+install without ofono so no HFP either, a distro shipping restricted `bluez5.roles`
+defaults, or simply following the audio section above.
+
+Fixed by treating a Classic link as an outcome the daemon reports, never a
+precondition it waits on. `ProfileSupervisor` is now driven by `device_paired`:
+`obexd` runs its own SDP query and transport connect, so a paired device is the only
+precondition a session ever had, and an unreachable phone was already covered by the
+`Unavailable` branch of the OBEX classifier. `BearerSupervisor::tick()` additionally
+takes `obex_up`, an open MAP or PBAP session; after `CLASSIC_FAILURES_BEFORE_ADVICE`
+consecutive refusals with the phone demonstrably serving OBEX, the status names this
+computer's profile set instead of sending the user to cycle Bluetooth on a phone that
+is answering.
+
+What was deliberately **not** changed: the `LE_UP_CLASSIC_BACKOFF_MAX_SECONDS` ceiling
+from 2026-08-22. An open OBEX session does not distinguish this case from the
+transient iOS decline that entry describes -- OBEX is up in both -- so widening the
+ceiling on `obex_up` would have restored the exact bug that ceiling was added to fix.
+The 30s retry costs one D-Bus call; the retry rate was never the defect.
 
 ### 2026-08-23 - The GTK app hid the one line that said what to do
 

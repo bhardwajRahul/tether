@@ -958,7 +958,9 @@ namespace tether::bluetooth {
         while (running) {
             const int64_t now = duration_cast<seconds>(steady_clock::now() - started).count();
 
-            bearers->tick(now);
+            const bool obex_up = profiles->status().map_open || profiles->status().pbap_open;
+
+            bearers->tick(now, obex_up);
             const bool present = bearers->status().device_present;
             const bool link_ready = bearers->status().classic_connected;
 
@@ -977,7 +979,7 @@ namespace tether::bluetooth {
             }
             link_was_ready = link_ready;
 
-            profiles->tick(now, link_ready);
+            profiles->tick(now, bearers->status().device_paired);
 
             const auto& bearer = bearers->status();
 
