@@ -14,20 +14,20 @@ struct ContentView: View {
     var body: some View {
         @Bindable var vm = viewModel
 
-        TabView {
-            Tab("Dashboard", systemImage: "antenna.radiowaves.left.and.right") {
+        TabView(selection: $vm.selectedTab) {
+            Tab("Dashboard", systemImage: "antenna.radiowaves.left.and.right", value: AppTab.dashboard) {
                 DashboardView()
             }
 
-            Tab("Clipboard", systemImage: "clipboard") {
+            Tab("Clipboard", systemImage: "clipboard", value: AppTab.clipboard) {
                 ClipboardView()
             }
 
-            Tab("Files", systemImage: "arrow.up.arrow.down") {
+            Tab("Files", systemImage: "arrow.up.arrow.down", value: AppTab.files) {
                 FilesView()
             }
 
-            Tab("Settings", systemImage: "gearshape") {
+            Tab("Settings", systemImage: "gearshape", value: AppTab.settings) {
                 SettingsView()
             }
         }
