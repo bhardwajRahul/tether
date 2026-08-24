@@ -4,12 +4,15 @@
 //
 //  The Share Extension principal class.
 //
-//  Parses the incoming NSExtensionItem to determine content type, then presents
+//  Parses the incoming NSExtensionItem(s) to determine content, then presents
 //  a SwiftUI sheet with only the routes applicable to that content:
 //
-//    • Text  → 📋 Send to Clipboard  |  🔑 Send as OTP
-//    • Image → 📁 Send as File
-//    • File  → 📁 Send as File
+//    • Text (single item)  → 📋 Send to Clipboard  |  🔑 Send as OTP
+//    • Image/Video/Contact/Audio/File (single item) → 📁 Send as File
+//    • Multiple items (Photos multi-select, etc.)   → 📁 Send N Files
+//
+//  Every attachment on every input item is resolved (not just the first),
+//  so multi-select shares from Photos/Files aren't silently truncated.
 //
 
 import SwiftUI
@@ -50,103 +53,137 @@ final class ShareViewController: UIViewController {
     // MARK: - Private
 
     private func loadPayload(completion: @escaping (IncomingPayload) -> Void) {
-        guard let item = extensionContext?.inputItems.first as? NSExtensionItem,
-              let attachments = item.attachments, !attachments.isEmpty else {
+        let providers: [NSItemProvider] = (extensionContext?.inputItems as? [NSExtensionItem] ?? [])
+            .flatMap { $0.attachments ?? [] }
+
+        guard !providers.isEmpty else {
             completion(.unsupported)
             return
         }
 
-        let provider = attachments[0]
-
-        // 1. Explicit File URL (Files app, high-quality Photo Library shares)
-        if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
-                DispatchQueue.main.async {
-                    if let url = item as? URL {
-                        let isSecured = url.startAccessingSecurityScopedResource()
-                        defer { if isSecured { url.stopAccessingSecurityScopedResource() } }
-                        let filename = url.lastPathComponent
-                        let data = (try? Data(contentsOf: url)) ?? Data()
-                        completion(.file(data, filename: filename))
-                    } else {
-                        completion(.unsupported)
-                    }
+        Task {
+            var items: [SharedItem] = []
+            for provider in providers {
+                if let item = await Self.resolveItem(from: provider) {
+                    items.append(item)
                 }
             }
-            return
+
+            await MainActor.run {
+                switch items.count {
+                case 0:
+                    completion(.unsupported)
+                case 1:
+                    completion(.single(items[0]))
+                default:
+                    completion(.multiple(items))
+                }
+            }
+        }
+    }
+
+    /// Resolves a single `NSItemProvider` into a `SharedItem`, checking
+    /// content types in priority order. Returns `nil` if nothing usable
+    /// could be extracted.
+    private static func resolveItem(from provider: NSItemProvider) async -> SharedItem? {
+        // 1. Explicit File URL (Files app, high-quality Photo Library shares)
+        if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+            return await loadFileBackedItem(provider, typeIdentifier: UTType.fileURL.identifier)
         }
 
         // 2. General URL (Could be web link or disguised file URL)
         if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
-            provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { item, _ in
-                DispatchQueue.main.async {
+            return await withCheckedContinuation { continuation in
+                provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { item, _ in
                     if let url = item as? URL, url.isFileURL {
-                        let isSecured = url.startAccessingSecurityScopedResource()
-                        defer { if isSecured { url.stopAccessingSecurityScopedResource() } }
-                        let filename = url.lastPathComponent
-                        let data = (try? Data(contentsOf: url)) ?? Data()
-                        completion(.file(data, filename: filename))
+                        continuation.resume(returning: readFile(at: url))
                     } else {
                         let text = (item as? URL)?.absoluteString ?? (item as? String) ?? ""
-                        completion(.text(text))
+                        continuation.resume(returning: text.isEmpty ? nil : .text(text))
                     }
                 }
             }
-            return
         }
 
         // 3. Plain Text (Must be checked after URLs so we don't accidentally treat links as raw strings too early, though order here is flexible)
         if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
-            provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { item, _ in
-                DispatchQueue.main.async {
+            return await withCheckedContinuation { continuation in
+                provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { item, _ in
                     let text = (item as? String) ?? ""
-                    completion(.text(text))
+                    continuation.resume(returning: text.isEmpty ? nil : .text(text))
                 }
             }
-            return
         }
 
-        // 4. Image fallback (If it didn't conform to fileURL, like in-memory UIImages)
+        // 4. Image (in-memory UIImage or URL-backed)
         if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-            provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { item, _ in
-                DispatchQueue.main.async {
+            return await withCheckedContinuation { continuation in
+                provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { item, _ in
                     if let image = item as? UIImage, let data = image.jpegData(compressionQuality: 0.9) {
-                        completion(.file(data, filename: "image.jpg"))
+                        continuation.resume(returning: .file(data, filename: "image.jpg"))
                     } else if let url = item as? URL {
-                        let isSecured = url.startAccessingSecurityScopedResource()
-                        defer { if isSecured { url.stopAccessingSecurityScopedResource() } }
-                        let filename = url.lastPathComponent
-                        let data = (try? Data(contentsOf: url)) ?? Data()
-                        completion(.file(data, filename: filename))
+                        continuation.resume(returning: readFile(at: url, defaultFilename: "image.jpg"))
                     } else {
-                        completion(.unsupported)
+                        continuation.resume(returning: nil)
                     }
                 }
             }
-            return
         }
 
-        // 5. Generic Data (Other file representations)
+        // 5. Video/Movie
+        if provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
+            return await loadFileBackedItem(provider, typeIdentifier: UTType.movie.identifier, defaultFilename: "video.mov")
+        }
+
+        // 6. Contact (vCard) — rides the generic file path; lands as a plain
+        // .vcf file on the Linux side, same as any other file.
+        if provider.hasItemConformingToTypeIdentifier(UTType.vCard.identifier) {
+            return await loadFileBackedItem(provider, typeIdentifier: UTType.vCard.identifier, defaultFilename: "Contact.vcf")
+        }
+
+        // 7. Audio
+        if provider.hasItemConformingToTypeIdentifier(UTType.audio.identifier) {
+            return await loadFileBackedItem(provider, typeIdentifier: UTType.audio.identifier, defaultFilename: "audio.m4a")
+        }
+
+        // 8. Generic Data (catch-all for any other file representation)
         if provider.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
-            provider.loadItem(forTypeIdentifier: UTType.data.identifier, options: nil) { item, _ in
-                DispatchQueue.main.async {
-                    if let url = item as? URL {
-                        let isSecured = url.startAccessingSecurityScopedResource()
-                        defer { if isSecured { url.stopAccessingSecurityScopedResource() } }
-                        let filename = url.lastPathComponent
-                        let data = (try? Data(contentsOf: url)) ?? Data()
-                        completion(.file(data, filename: filename))
-                    } else if let data = item as? Data {
-                        completion(.file(data, filename: "shared_file.bin"))
-                    } else {
-                        completion(.unsupported)
-                    }
-                }
-            }
-            return
+            return await loadFileBackedItem(provider, typeIdentifier: UTType.data.identifier, defaultFilename: "shared_file.bin")
         }
 
-        completion(.unsupported)
+        return nil
+    }
+
+    /// Loads an item expected to be either a `URL` (file-backed) or raw
+    /// `Data`, wrapping it as `.file`. Used for any URL-or-Data-representable
+    /// type identifier (movie, vCard, audio, generic data, etc.).
+    private static func loadFileBackedItem(
+        _ provider: NSItemProvider,
+        typeIdentifier: String,
+        defaultFilename: String? = nil
+    ) async -> SharedItem? {
+        await withCheckedContinuation { continuation in
+            provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, _ in
+                if let url = item as? URL {
+                    continuation.resume(returning: readFile(at: url, defaultFilename: defaultFilename))
+                } else if let data = item as? Data {
+                    continuation.resume(returning: .file(data, filename: defaultFilename ?? "shared_file.bin"))
+                } else {
+                    continuation.resume(returning: nil)
+                }
+            }
+        }
+    }
+
+    /// Reads the contents of a (possibly security-scoped) file URL into a
+    /// `.file` SharedItem, falling back to `defaultFilename` if the URL has
+    /// no usable last path component.
+    private static func readFile(at url: URL, defaultFilename: String? = nil) -> SharedItem {
+        let isSecured = url.startAccessingSecurityScopedResource()
+        defer { if isSecured { url.stopAccessingSecurityScopedResource() } }
+        let filename = url.lastPathComponent.isEmpty ? (defaultFilename ?? "shared_file.bin") : url.lastPathComponent
+        let data = (try? Data(contentsOf: url)) ?? Data()
+        return .file(data, filename: filename)
     }
 
     private func completeRequest() {
@@ -163,9 +200,17 @@ final class ShareViewController: UIViewController {
 
 // MARK: - Incoming Payload (internal to extension)
 
-enum IncomingPayload {
+/// A single resolved share item — either text or file-like binary content.
+enum SharedItem {
     case text(String)
     case file(Data, filename: String)
+}
+
+enum IncomingPayload {
+    /// Exactly one attachment was resolved.
+    case single(SharedItem)
+    /// More than one attachment was resolved (e.g. a Photos multi-select).
+    case multiple([SharedItem])
     case unsupported
 }
 
@@ -179,6 +224,7 @@ private struct ShareSheetView: View {
     @State private var isSending = false
     @State private var resultMessage: String?
     @State private var didFail = false
+    @State private var progress: (completed: Int, total: Int)?
 
     var body: some View {
         NavigationStack {
@@ -235,32 +281,17 @@ private struct ShareSheetView: View {
             // Route buttons — only show relevant ones
             VStack(spacing: 12) {
                 switch payload {
-                case .text(let text):
-                    ActionButton(
-                        icon: "clipboard",
-                        label: "Send to Clipboard",
-                        subtitle: "Sets your desktop clipboard",
-                        color: .cyan
-                    ) {
-                        perform(.clipboard(text))
-                    }
-                    ActionButton(
-                        icon: "key.fill",
-                        label: "Send as OTP",
-                        subtitle: "Stores in the Tether OTP vault",
-                        color: Color(hue: 0.15, saturation: 0.8, brightness: 0.9)
-                    ) {
-                        perform(.otp(text, source: "iPhone Share"))
-                    }
+                case .single(let item):
+                    singleItemActions(for: item)
 
-                case .file(let data, let filename):
+                case .multiple(let items):
                     ActionButton(
                         icon: "arrow.up.doc.fill",
-                        label: "Send as File",
-                        subtitle: filename,
+                        label: "Send \(items.count) Files",
+                        subtitle: multiItemSummary(items),
                         color: Color(hue: 0.75, saturation: 0.7, brightness: 0.9)
                     ) {
-                        perform(.file(data, filename: filename))
+                        performMultiple(items)
                     }
 
                 case .unsupported:
@@ -276,11 +307,72 @@ private struct ShareSheetView: View {
         }
     }
 
+    @ViewBuilder
+    private func singleItemActions(for item: SharedItem) -> some View {
+        switch item {
+        case .text(let text):
+            ActionButton(
+                icon: "clipboard",
+                label: "Send to Clipboard",
+                subtitle: "Sets your desktop clipboard",
+                color: .cyan
+            ) {
+                perform(.clipboard(text))
+            }
+            ActionButton(
+                icon: "key.fill",
+                label: "Send as OTP",
+                subtitle: "Stores in the Tether OTP vault",
+                color: Color(hue: 0.15, saturation: 0.8, brightness: 0.9)
+            ) {
+                perform(.otp(text, source: "iPhone Share"))
+            }
+
+        case .file(let data, let filename):
+            ActionButton(
+                icon: "arrow.up.doc.fill",
+                label: "Send as File",
+                subtitle: filename,
+                color: Color(hue: 0.75, saturation: 0.7, brightness: 0.9)
+            ) {
+                perform(.file(data, filename: filename))
+            }
+        }
+    }
+
     // MARK: Content Preview
 
     @ViewBuilder
     private var contentPreview: some View {
         switch payload {
+        case .single(let item):
+            singleItemPreview(for: item)
+
+        case .multiple(let items):
+            VStack(spacing: 6) {
+                Image(systemName: "square.stack.3d.up.fill")
+                    .font(.largeTitle)
+                    .foregroundStyle(.purple)
+                Text("\(items.count) items")
+                    .font(.subheadline)
+                    .foregroundStyle(.white)
+                Text(multiItemSummary(items))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+            .padding()
+
+        case .unsupported:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private func singleItemPreview(for item: SharedItem) -> some View {
+        switch item {
         case .text(let text):
             VStack(alignment: .leading, spacing: 4) {
                 Label("Text", systemImage: "text.quote")
@@ -307,10 +399,21 @@ private struct ShareSheetView: View {
                     .foregroundStyle(.white)
             }
             .padding()
-
-        case .unsupported:
-            EmptyView()
         }
+    }
+
+    /// Short "name, name, name +N more" summary used in the multi-item
+    /// preview and action button subtitle.
+    private func multiItemSummary(_ items: [SharedItem]) -> String {
+        let names = items.prefix(3).map { item -> String in
+            switch item {
+            case .text: return "Text"
+            case .file(_, let filename): return filename
+            }
+        }
+        let remainder = items.count - names.count
+        let suffix = remainder > 0 ? " +\(remainder) more" : ""
+        return names.joined(separator: ", ") + suffix
     }
 
     // MARK: Sending / Result
@@ -320,10 +423,17 @@ private struct ShareSheetView: View {
             ProgressView()
                 .tint(.cyan)
                 .scaleEffect(1.4)
-            Text("Connecting to Tether...")
+            Text(sendingStatusText)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var sendingStatusText: String {
+        if let progress {
+            return "Sending \(progress.completed) of \(progress.total)…"
+        }
+        return "Connecting to Tether..."
     }
 
     private func resultView(message: String, failed: Bool) -> some View {
@@ -376,6 +486,57 @@ private struct ShareSheetView: View {
         case .clipboard: return "Sent to clipboard ✓"
         case .otp: return "OTP stored in vault ✓"
         case .file(_, let name): return "\(name) sent ✓"
+        }
+    }
+
+    private func performMultiple(_ items: [SharedItem]) {
+        isSending = true
+        progress = (0, items.count)
+        let files = Self.filesForTransfer(items)
+
+        Task {
+            let results = await ShareSender.sendFiles(files) { completed, total in
+                Task { @MainActor in
+                    progress = (completed, total)
+                }
+            }
+
+            await MainActor.run {
+                isSending = false
+                progress = nil
+
+                let succeeded = results.filter {
+                    if case .success = $0 { return true }
+                    return false
+                }.count
+                let total = results.count
+
+                if succeeded == total {
+                    resultMessage = "\(total) of \(total) sent ✓"
+                    didFail = false
+                } else {
+                    resultMessage = "\(succeeded) of \(total) sent — \(total - succeeded) failed"
+                    didFail = succeeded == 0
+                }
+            }
+        }
+    }
+
+    /// Converts resolved items into (data, filename) pairs for `ShareSender.sendFiles`.
+    /// Text items don't have a single obvious destination when batched with
+    /// other files (unlike the single-item case's dedicated clipboard/OTP
+    /// actions), so they're encoded as plain-text files instead.
+    private static func filesForTransfer(_ items: [SharedItem]) -> [(data: Data, filename: String)] {
+        var textCounter = 0
+        return items.map { item in
+            switch item {
+            case .file(let data, let filename):
+                return (data, filename)
+            case .text(let text):
+                textCounter += 1
+                let filename = textCounter == 1 ? "shared_text.txt" : "shared_text_\(textCounter).txt"
+                return (Data(text.utf8), filename)
+            }
         }
     }
 }
