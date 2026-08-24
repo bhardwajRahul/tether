@@ -19,7 +19,7 @@
 [![Debian](https://github.com/zackb/tether/actions/workflows/debian.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/debian.yml)
 [![Ubuntu](https://github.com/zackb/tether/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/zackb/tether/actions/workflows/ubuntu.yml)
 
-![tether](docs/img/screenshot_messages.png)
+![tether](docs/img/messages.webp)
 
 ## Features
 
