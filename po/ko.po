@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-23 16:13-0700\n"
+"POT-Creation-Date: 2026-08-24 20:53-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -761,6 +761,24 @@ msgstr "메시지와 연락처가 연결되었습니다."
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
 msgstr "메시지와 연락처를 여는 중..."
+
+#: src/core/src/net.cpp
+msgid "Notification mirroring is already active; nothing to do."
+msgstr "알림 미러링이 이미 활성 상태입니다. 할 일이 없습니다."
+
+#. TRANSLATORS: "Show Message Notifications" and the Settings path are
+#. the iPhone's own wording; use Apple's for the target language.
+#: src/core/src/net.cpp
+msgid ""
+"Asked the iPhone to re-offer notification access. Watch the connection "
+"status. If it does not go active within a minute or two, toggle Show Message "
+"Notifications off and on in Settings > Bluetooth > (i) -- it can need re-"
+"granting even when it already looks enabled."
+msgstr "iPhone에 알림 접근 권한을 다시 제공하도록 요청했습니다. 연결 상태를 확인하십시오. 1~2분 안에 활성 상태가 되지 않으면 설정 > Bluetooth > (i)에서 '메시지 알림 보기'를 껐다가 다시 켜십시오. 켜져 있는 것처럼 보여도 다시 허용해야 할 수 있습니다."
+
+#: src/core/src/net.cpp
+msgid "Bluetooth is unavailable."
+msgstr "Bluetooth를 사용할 수 없습니다."
 
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp

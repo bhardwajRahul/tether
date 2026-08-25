@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-23 16:13-0700\n"
+"POT-Creation-Date: 2026-08-24 20:53-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Brazilian Portuguese\n"
@@ -788,6 +788,24 @@ msgstr "Mensagens e contatos estão conectados."
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
 msgstr "Abrindo mensagens e contatos..."
+
+#: src/core/src/net.cpp
+msgid "Notification mirroring is already active; nothing to do."
+msgstr "O espelhamento de notificações já está ativo; nada a fazer."
+
+#. TRANSLATORS: "Show Message Notifications" and the Settings path are
+#. the iPhone's own wording; use Apple's for the target language.
+#: src/core/src/net.cpp
+msgid ""
+"Asked the iPhone to re-offer notification access. Watch the connection "
+"status. If it does not go active within a minute or two, toggle Show Message "
+"Notifications off and on in Settings > Bluetooth > (i) -- it can need re-"
+"granting even when it already looks enabled."
+msgstr "Foi pedido ao iPhone que ofereça novamente o acesso às notificações. Acompanhe o estado da conexão. Se ele não ficar ativo em um ou dois minutos, desative e reative \"Mostrar Notificações de Mensagens\" em Ajustes > Bluetooth > (i): às vezes é preciso conceder de novo, mesmo que já pareça ativado."
+
+#: src/core/src/net.cpp
+msgid "Bluetooth is unavailable."
+msgstr "O Bluetooth está indisponível."
 
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
