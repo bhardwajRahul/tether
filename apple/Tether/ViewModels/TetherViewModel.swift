@@ -21,6 +21,14 @@ enum AppConnectionState: Equatable {
     case connected
 }
 
+// The top-level tab currently shown.
+enum AppTab: Hashable {
+    case dashboard
+    case clipboard
+    case files
+    case settings
+}
+
 // A clipboard history entry.
 struct ClipboardEntry: Identifiable {
     let id = UUID()
@@ -98,6 +106,9 @@ final class TetherViewModel {
 
     // Whether the pairing sheet should be presented.
     var showPairingSheet = false
+
+    // The currently selected top-level tab.
+    var selectedTab: AppTab = .dashboard
 
     // Status message for the pairing flow.
     private(set) var pairingStatus: String = ""
@@ -657,6 +668,7 @@ final class TetherViewModel {
                 transfer.isComplete = true
                 transfer.savedURL = destination
                 completedTransfers.insert(transfer, at: 0)
+                selectedTab = .files
             }
         } catch {
             if let idx = activeTransfers.firstIndex(where: { $0.id == transferId }) {

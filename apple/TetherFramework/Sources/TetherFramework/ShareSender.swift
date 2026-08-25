@@ -67,6 +67,74 @@ public actor ShareSender {
     /// - Parameter payload: The content to send.
     /// - Returns: `Result<Void, Error>` — success or a descriptive error.
     public static func send(_ payload: SharePayload) async -> Result<Void, Error> {
+        let connection: TetherConnection
+        switch await connectToLastKnownHost() {
+        case .success(let conn):
+            connection = conn
+        case .failure(let error):
+            return .failure(error)
+        }
+
+        let sendResult: Result<Void, Error>
+        switch payload {
+        case .clipboard(let text):
+            connection.send(.clipboardSet(text))
+            // Give the message time to flush before disconnecting
+            try? await Task.sleep(for: .milliseconds(300))
+            sendResult = .success(())
+
+        case .otp(let code, let source):
+            connection.send(.newOtp(code, source: source))
+            try? await Task.sleep(for: .milliseconds(300))
+            sendResult = .success(())
+
+        case .file(let data, let filename):
+            sendResult = await sendFile(data: data, filename: filename, via: connection)
+        }
+
+        connection.disconnect()
+        return sendResult
+    }
+
+    /// Send several files in one share as a batch, reusing a single mTLS
+    /// connection instead of reconnecting per file — matters given the
+    /// Share Extension's tight time/memory budget for multi-item shares.
+    ///
+    /// - Parameters:
+    ///   - files: The files to send, in order.
+    ///   - onProgress: Called after each file finishes (successfully or not)
+    ///     with `(completedCount, total)`.
+    /// - Returns: One `Result` per input file, in the same order.
+    public static func sendFiles(
+        _ files: [(data: Data, filename: String)],
+        onProgress: (@Sendable (Int, Int) -> Void)? = nil
+    ) async -> [Result<Void, Error>] {
+        let connection: TetherConnection
+        switch await connectToLastKnownHost() {
+        case .success(let conn):
+            connection = conn
+        case .failure(let error):
+            return files.map { _ in .failure(error) }
+        }
+
+        var results: [Result<Void, Error>] = []
+        results.reserveCapacity(files.count)
+        for file in files {
+            let result = await sendFile(data: file.data, filename: file.filename, via: connection)
+            results.append(result)
+            onProgress?(results.count, files.count)
+        }
+
+        connection.disconnect()
+        return results
+    }
+
+    // MARK: - Private — Connection
+
+    /// Bootstraps a fresh mTLS connection to the last-known tetherd host.
+    /// Shared by `send(_:)` and `sendFiles(_:onProgress:)` so multi-file
+    /// shares only pay the connect/handshake cost once.
+    private static func connectToLastKnownHost() async -> Result<TetherConnection, Error> {
         // 1. Initialize certificate manager (reads from shared Keychain + UserDefaults)
         let certManager = CertificateManager()
         certManager.initialize()
@@ -136,26 +204,7 @@ public actor ShareSender {
             return .failure(error)
         }
 
-        // 5. Send payload
-        let sendResult: Result<Void, Error>
-        switch payload {
-        case .clipboard(let text):
-            connection.send(.clipboardSet(text))
-            // Give the message time to flush before disconnecting
-            try? await Task.sleep(for: .milliseconds(300))
-            sendResult = .success(())
-
-        case .otp(let code, let source):
-            connection.send(.newOtp(code, source: source))
-            try? await Task.sleep(for: .milliseconds(300))
-            sendResult = .success(())
-
-        case .file(let data, let filename):
-            sendResult = await sendFile(data: data, filename: filename, via: connection)
-        }
-
-        connection.disconnect()
-        return sendResult
+        return .success(connection)
     }
 
     // MARK: - Private — File Transfer

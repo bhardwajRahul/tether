@@ -303,6 +303,8 @@ struct FilesView: View {
             return "archivebox"
         case "txt", "md", "log":
             return "doc.text"
+        case "vcf":
+            return "person.crop.square.fill"
         default:
             return "doc"
         }
