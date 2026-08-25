@@ -853,7 +853,7 @@ namespace tether {
                             // state. Nothing needs soliciting in that case.
                             if (build_bt_connection_status().value("ancs_ready", false)) {
                                 event["success"] = true;
-                                event["message"] = "Notification mirroring is already active; nothing to do.";
+                                event["message"] = _("Notification mirroring is already active; nothing to do.");
                                 broadcast_local_event(event.dump());
                                 return;
                             }
@@ -862,11 +862,13 @@ namespace tether {
                             event["success"] = bluetooth::g_bluez && bluetooth::solicit_ancs(*bluetooth::g_bluez, err);
                             event["message"] =
                                 event["success"]
-                                    ? "Asked the iPhone to re-offer notification access. Watch the connection "
-                                      "status. If it does not go active within a minute or two, toggle Show "
-                                      "Message Notifications off and on in Settings > Bluetooth > (i) -- it can "
-                                      "need re-granting even when it already looks enabled."
-                                    : (err.empty() ? "Bluetooth is unavailable." : err);
+                                    // TRANSLATORS: "Show Message Notifications" and the Settings path are
+                                    // the iPhone's own wording; use Apple's for the target language.
+                                    ? _("Asked the iPhone to re-offer notification access. Watch the connection "
+                                        "status. If it does not go active within a minute or two, toggle Show "
+                                        "Message Notifications off and on in Settings > Bluetooth > (i) -- it can "
+                                        "need re-granting even when it already looks enabled.")
+                                    : (err.empty() ? _("Bluetooth is unavailable.") : err);
                             broadcast_local_event(event.dump());
                         }).detach();
                     } else if (j.contains("command") && j["command"] == "bt_set_ancs") {

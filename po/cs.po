@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-23 16:13-0700\n"
+"POT-Creation-Date: 2026-08-24 20:53-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Czech\n"
@@ -784,6 +784,24 @@ msgstr "Zprávy a kontakty jsou připojeny."
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
 msgstr "Otevírání zpráv a kontaktů..."
+
+#: src/core/src/net.cpp
+msgid "Notification mirroring is already active; nothing to do."
+msgstr "Zrcadlení oznámení je již aktivní, není co dělat."
+
+#. TRANSLATORS: "Show Message Notifications" and the Settings path are
+#. the iPhone's own wording; use Apple's for the target language.
+#: src/core/src/net.cpp
+msgid ""
+"Asked the iPhone to re-offer notification access. Watch the connection "
+"status. If it does not go active within a minute or two, toggle Show Message "
+"Notifications off and on in Settings > Bluetooth > (i) -- it can need re-"
+"granting even when it already looks enabled."
+msgstr "iPhone byl požádán o opětovnou nabídku přístupu k oznámením. Sledujte stav připojení. Pokud se do minuty či dvou nestane aktivním, vypněte a znovu zapněte „Zobrazovat oznámení zpráv“ v Nastavení > Bluetooth > (i) – oprávnění může být nutné udělit znovu, i když vypadá zapnuté."
+
+#: src/core/src/net.cpp
+msgid "Bluetooth is unavailable."
+msgstr "Bluetooth není dostupné."
 
 #. TRANSLATORS: {0} is the device name, {1} is a shortened key fingerprint.
 #: src/core/src/net.cpp
