@@ -155,8 +155,10 @@ namespace {
         devices_view_trigger_discovery();
         devices_view_refresh();
 
+        gtk_widget_show_all(root);
+        gtk_widget_show_all(header_bar);
         if (!g_start_hidden)
-            gtk_widget_show_all(window);
+            gtk_widget_show(window);
         gtk_stack_set_visible_child_name(GTK_STACK(stack), "devices");
     }
 
