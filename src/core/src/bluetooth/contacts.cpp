@@ -22,18 +22,6 @@ namespace tether::bluetooth {
             return {};
         }
 
-        // The nationally significant part of a number
-        constexpr size_t TEL_SUFFIX_DIGITS = 10;
-
-        std::string tel_suffix(const std::string& normalized) {
-            std::string digits;
-            for (char c : normalized) {
-                if (std::isdigit(static_cast<unsigned char>(c)))
-                    digits += c;
-            }
-            return digits.size() < TEL_SUFFIX_DIGITS ? std::string{} : digits.substr(digits.size() - TEL_SUFFIX_DIGITS);
-        }
-
     } // namespace
 
     void ContactStore::set(std::vector<VCard> contacts) {

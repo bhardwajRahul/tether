@@ -55,6 +55,14 @@ namespace tether::bluetooth {
     // The stable key for one conversation.
     std::string thread_key_for(const VCardParty& party);
 
+    // The nationally significant digits of a number, used to recognize two
+    // spellings of one number. Empty when there are fewer than 10 digits.
+    std::string tel_suffix(const std::string& raw);
+
+    // Groups the thread keys that name one peer. MAP spells the same number
+    // several ways (+15555550123, 15555550123, 5555550123)
+    std::string thread_bucket(const std::string& thread_key);
+
     // Parses MAP's basic-ISO timestamp (optionally with a trailing offset) into a Unix epoch.
     // Returns 0 when unparseable.
     int64_t parse_map_timestamp(const std::string& text);

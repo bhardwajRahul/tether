@@ -21,6 +21,13 @@ namespace tether::ui {
     // to be told when it comes and goes.
     void messages_view_set_visible(bool visible);
 
+    // The window's ctrl+n and ctrl+f
+    void messages_view_new_message();
+    void messages_view_focus_search();
+
+    // Records the sidebar width. The caller writes prefs out once at shutdown.
+    void messages_view_store_prefs();
+
     // Drops anything that was waiting on a daemon reply. Without this a send in
     // flight when the daemon goes away leaves the composer disabled for good.
     void messages_view_handle_disconnect();

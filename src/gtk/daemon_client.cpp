@@ -9,6 +9,7 @@
 #include <cstring>
 #include <filesystem>
 #include <gtk/gtk.h>
+#include <string_view>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/wait.h>
@@ -87,13 +88,17 @@ namespace tether::ui {
                         return FALSE;
                     }
                     if (line && length > 0) {
-                        try {
-                            if (g_on_event)
-                                g_on_event(nlohmann::json::parse(std::string(line, length)));
-                        } catch (const std::exception& e) {
-                            // Silence here hides a dropped update as a view that
-                            // simply did not refresh.
-                            debug::log(WARN, "daemon: discarding an unreadable event ({})", e.what());
+                        std::string_view payload(line, length);
+                        while (!payload.empty() && (payload.back() == '\n' || payload.back() == '\r'))
+                            payload.remove_suffix(1);
+
+                        if (!payload.empty() && payload != "OK") {
+                            try {
+                                if (g_on_event)
+                                    g_on_event(nlohmann::json::parse(payload));
+                            } catch (const std::exception& e) {
+                                debug::log(WARN, "daemon: discarding an unreadable event ({})", e.what());
+                            }
                         }
                     }
                     if (line)

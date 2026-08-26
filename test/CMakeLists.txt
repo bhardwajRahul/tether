@@ -17,6 +17,8 @@ add_executable(tether_test
     test_display_width.cpp
     test_file_transfer.cpp
     test_otp.cpp
+    test_message_format.cpp
+    ../src/gtk/message_format.cpp
 )
 
 target_include_directories(tether_test PRIVATE

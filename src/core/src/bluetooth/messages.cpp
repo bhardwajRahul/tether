@@ -36,9 +36,41 @@ namespace tether::bluetooth {
             return out;
         }
 
+        // Which of two spellings of one address to file the conversation under.
+        bool better_key(const std::string& candidate, const std::string& current) {
+            const std::string a = candidate.substr(candidate.find(':') + 1);
+            const std::string b = current.substr(current.find(':') + 1);
+            const bool a_plus = !a.empty() && a.front() == '+';
+            const bool b_plus = !b.empty() && b.front() == '+';
+            if (a_plus != b_plus)
+                return a_plus;
+            if (a.size() != b.size())
+                return a.size() > b.size();
+            return a < b;
+        }
+
     } // namespace
 
     MessageStore::MessageStore(size_t max_messages) : max_messages_(max_messages) {}
+
+    const std::string& MessageStore::canonical_key(const std::string& thread_key) {
+        const std::string bucket = thread_bucket(thread_key);
+        auto [at, fresh] = representative_.emplace(bucket, thread_key);
+        if (fresh || at->second == thread_key)
+            return at->second;
+        if (!better_key(thread_key, at->second))
+            return at->second;
+
+        // A better spelling arrived; move the conversation to it so every
+        // consumer sees one key.
+        const std::string previous = at->second;
+        at->second = thread_key;
+        for (auto& [handle, stored] : by_handle_) {
+            if (stored.thread_key == previous)
+                stored.thread_key = thread_key;
+        }
+        return at->second;
+    }
 
     bool MessageStore::add(const Message& message) {
         if (message.handle.empty())
@@ -50,11 +82,15 @@ namespace tether::bluetooth {
             return false;
         }
 
-        if (message.outgoing && !is_local_handle(message.handle))
-            drop_local_echo(message);
+        Message stored = message;
+        if (!stored.thread_key.empty())
+            stored.thread_key = canonical_key(stored.thread_key);
 
-        by_handle_.emplace(message.handle, message);
-        order_.push_back(message.handle);
+        if (stored.outgoing && !is_local_handle(stored.handle))
+            drop_local_echo(stored);
+
+        order_.push_back(stored.handle);
+        by_handle_.emplace(stored.handle, std::move(stored));
         trim();
         return true;
     }
@@ -143,9 +179,11 @@ namespace tether::bluetooth {
     }
 
     std::vector<Message> MessageStore::messages(const std::string& thread_key, size_t limit) const {
+        // Matched on the bucket, not the string
+        const std::string bucket = thread_bucket(thread_key);
         std::vector<Message> result;
         for (const auto& [handle, message] : by_handle_) {
-            if (message.thread_key == thread_key)
+            if (thread_bucket(message.thread_key) == bucket)
                 result.push_back(message);
         }
 

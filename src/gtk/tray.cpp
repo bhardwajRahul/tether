@@ -1,10 +1,9 @@
 #include "tray.hpp"
 
 #include "daemon_client.hpp"
+#include "prefs.hpp"
 #include <tether/i18n.hpp>
 
-#include <filesystem>
-#include <fstream>
 #include <gio/gio.h>
 #include <gtk/gtk.h>
 #include <nlohmann/json.hpp>
@@ -77,42 +76,9 @@ namespace tether::ui {
         RouteState& state(Route route) { return g_state[route == Route::WiFi ? 0 : 1]; }
         const char* route_name(Route route) { return route == Route::WiFi ? "Wi-Fi" : "Bluetooth"; }
 
-        std::string prefs_path() {
-            const char* home = g_get_home_dir();
-            if (!home || !*home)
-                return {};
-            return (std::filesystem::path(home) / ".config" / "tether" / "gtk.json").string();
-        }
-
         void load_prefs() {
-            const std::string path = prefs_path();
-            if (path.empty())
-                return;
-            try {
-                std::ifstream in(path);
-                if (!in)
-                    return;
-                const nlohmann::json prefs = nlohmann::json::parse(in);
-                g_close_to_tray = prefs.value("close_to_tray", false);
-                g_icon_style = prefs.value("tray_icon", std::string("symbolic"));
-            } catch (const std::exception& e) {
-                // unreadable file means defaults, not a dead tray.
-                debug::log(WARN, "tray: ignoring {} ({})", path, e.what());
-            }
-        }
-
-        void save_prefs() {
-            const std::string path = prefs_path();
-            if (path.empty())
-                return;
-            try {
-                std::error_code ec;
-                std::filesystem::create_directories(std::filesystem::path(path).parent_path(), ec);
-                std::ofstream out(path);
-                out << nlohmann::json{{"close_to_tray", g_close_to_tray}, {"tray_icon", g_icon_style}}.dump(2) << "\n";
-            } catch (const std::exception& e) {
-                debug::log(ERR, "tray: could not write {} ({})", path, e.what());
-            }
+            g_close_to_tray = prefs().value("close_to_tray", false);
+            g_icon_style = prefs().value("tray_icon", std::string("symbolic"));
         }
 
         // Symbolic icons are drawn in the panel's foreground color, so the item matches the rest of
@@ -312,7 +278,8 @@ namespace tether::ui {
         if (g_close_to_tray == enabled)
             return;
         g_close_to_tray = enabled;
-        save_prefs();
+        prefs()["close_to_tray"] = enabled;
+        prefs_save();
     }
 
 } // namespace tether::ui

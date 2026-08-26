@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-25 20:55-0700\n"
+"POT-Creation-Date: 2026-08-25 22:13-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -102,7 +102,9 @@ msgstr "Bluetooth로 iPhone과 페어링합니다."
 msgid ""
 "Ask the iPhone to authenticate directly instead of connecting first. Tether "
 "falls back to this on its own; use it to skip straight there."
-msgstr "먼저 연결하는 대신 iPhone에 직접 인증을 요청합니다. Tether가 자동으로 이 방식으로 전환합니다. 바로 사용하려면 지정하세요."
+msgstr ""
+"먼저 연결하는 대신 iPhone에 직접 인증을 요청합니다. Tether가 자동으로 이 방식"
+"으로 전환합니다. 바로 사용하려면 지정하세요."
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
@@ -1174,6 +1176,14 @@ msgstr "이 탭에서 열기"
 msgid "Open the messages tab on this conversation"
 msgstr "이 대화에서 메시지 탭 열기"
 
+#: src/gtk/message_format.cpp
+msgid "Yesterday"
+msgstr "어제"
+
+#: src/gtk/message_format.cpp
+msgid "Today"
+msgstr "오늘"
+
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
 msgstr "보내는 중…"
@@ -1207,6 +1217,10 @@ msgid "New Message"
 msgstr "새 메시지"
 
 #: src/gtk/messages_view.cpp
+msgid "Search conversations"
+msgstr "대화 검색"
+
+#: src/gtk/messages_view.cpp
 msgid "Select a conversation"
 msgstr "대화 선택"
 
@@ -1221,6 +1235,10 @@ msgstr "전화번호 또는 이메일"
 #: src/gtk/messages_view.cpp
 msgid "Send"
 msgstr "보내기"
+
+#: src/gtk/messages_view.cpp
+msgid "Retry"
+msgstr "다시 시도"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

@@ -249,6 +249,33 @@ namespace tether::bluetooth {
     }
 
     namespace {
+        constexpr size_t TEL_SUFFIX_DIGITS = 10;
+    } // namespace
+
+    std::string tel_suffix(const std::string& raw) {
+        std::string digits;
+        for (char c : raw) {
+            if (std::isdigit(static_cast<unsigned char>(c)))
+                digits += c;
+        }
+        return digits.size() < TEL_SUFFIX_DIGITS ? std::string{} : digits.substr(digits.size() - TEL_SUFFIX_DIGITS);
+    }
+
+    std::string thread_bucket(const std::string& thread_key) {
+        if (thread_key.rfind("tel:", 0) != 0)
+            return thread_key;
+        const std::string number = thread_key.substr(4);
+        std::string suffix = tel_suffix(number);
+        if (suffix.empty()) {
+            for (char c : number) {
+                if (std::isdigit(static_cast<unsigned char>(c)))
+                    suffix += c;
+            }
+        }
+        return suffix.empty() ? thread_key : "tel:" + suffix;
+    }
+
+    namespace {
 
         // Anything below 0x20, plus DEL. CR and LF are the injection vector, but
         // no control character has a legitimate place in an address.
