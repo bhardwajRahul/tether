@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-24 20:53-0700\n"
+"POT-Creation-Date: 2026-08-25 20:55-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Czech\n"
@@ -98,6 +98,12 @@ msgstr "Odpovědět v jedné konverzaci."
 #: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Spárovat iPhone přes Bluetooth."
+
+#: src/cli/main.cpp
+msgid ""
+"Ask the iPhone to authenticate directly instead of connecting first. Tether "
+"falls back to this on its own; use it to skip straight there."
+msgstr ""
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
@@ -797,7 +803,11 @@ msgid ""
 "status. If it does not go active within a minute or two, toggle Show Message "
 "Notifications off and on in Settings > Bluetooth > (i) -- it can need re-"
 "granting even when it already looks enabled."
-msgstr "iPhone byl požádán o opětovnou nabídku přístupu k oznámením. Sledujte stav připojení. Pokud se do minuty či dvou nestane aktivním, vypněte a znovu zapněte „Zobrazovat oznámení zpráv“ v Nastavení > Bluetooth > (i) – oprávnění může být nutné udělit znovu, i když vypadá zapnuté."
+msgstr ""
+"iPhone byl požádán o opětovnou nabídku přístupu k oznámením. Sledujte stav "
+"připojení. Pokud se do minuty či dvou nestane aktivním, vypněte a znovu "
+"zapněte „Zobrazovat oznámení zpráv“ v Nastavení > Bluetooth > (i) – "
+"oprávnění může být nutné udělit znovu, i když vypadá zapnuté."
 
 #: src/core/src/net.cpp
 msgid "Bluetooth is unavailable."

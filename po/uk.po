@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-24 20:53-0700\n"
+"POT-Creation-Date: 2026-08-25 20:55-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Ukrainian\n"
@@ -100,6 +100,12 @@ msgstr "Відповісти в одній розмові."
 #: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Створити пару з iPhone через Bluetooth."
+
+#: src/cli/main.cpp
+msgid ""
+"Ask the iPhone to authenticate directly instead of connecting first. Tether "
+"falls back to this on its own; use it to skip straight there."
+msgstr ""
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
@@ -801,7 +807,12 @@ msgid ""
 "status. If it does not go active within a minute or two, toggle Show Message "
 "Notifications off and on in Settings > Bluetooth > (i) -- it can need re-"
 "granting even when it already looks enabled."
-msgstr "iPhone отримав запит знову надати доступ до сповіщень. Стежте за станом з'єднання. Якщо він не стане активним протягом хвилини-двох, вимкніть і знову ввімкніть «Показ сповіщень про повідомлення» у Параметри > Bluetooth > (i): іноді дозвіл потрібно надати повторно, навіть якщо він виглядає ввімкненим."
+msgstr ""
+"iPhone отримав запит знову надати доступ до сповіщень. Стежте за станом "
+"з'єднання. Якщо він не стане активним протягом хвилини-двох, вимкніть і "
+"знову ввімкніть «Показ сповіщень про повідомлення» у Параметри > Bluetooth > "
+"(i): іноді дозвіл потрібно надати повторно, навіть якщо він виглядає "
+"ввімкненим."
 
 #: src/core/src/net.cpp
 msgid "Bluetooth is unavailable."

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-24 20:53-0700\n"
+"POT-Creation-Date: 2026-08-25 20:55-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Turkish\n"
@@ -97,6 +97,12 @@ msgstr "Bir konuşmada yanıtla."
 #: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Bluetooth üzerinden bir iPhone ile eşleş."
+
+#: src/cli/main.cpp
+msgid ""
+"Ask the iPhone to authenticate directly instead of connecting first. Tether "
+"falls back to this on its own; use it to skip straight there."
+msgstr ""
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
@@ -791,7 +797,11 @@ msgid ""
 "status. If it does not go active within a minute or two, toggle Show Message "
 "Notifications off and on in Settings > Bluetooth > (i) -- it can need re-"
 "granting even when it already looks enabled."
-msgstr "iPhone'dan bildirim erişimini yeniden sunması istendi. Bağlantı durumunu izleyin. Bir iki dakika içinde etkin duruma geçmezse Ayarlar > Bluetooth > (i) altında \"Mesaj Bildirimlerini Göster\" seçeneğini kapatıp yeniden açın; etkin görünse bile izin yeniden verilmesi gerekebilir."
+msgstr ""
+"iPhone'dan bildirim erişimini yeniden sunması istendi. Bağlantı durumunu "
+"izleyin. Bir iki dakika içinde etkin duruma geçmezse Ayarlar > Bluetooth > "
+"(i) altında \"Mesaj Bildirimlerini Göster\" seçeneğini kapatıp yeniden açın; "
+"etkin görünse bile izin yeniden verilmesi gerekebilir."
 
 #: src/core/src/net.cpp
 msgid "Bluetooth is unavailable."

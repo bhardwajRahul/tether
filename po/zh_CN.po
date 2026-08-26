@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-24 20:53-0700\n"
+"POT-Creation-Date: 2026-08-25 20:55-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -97,6 +97,12 @@ msgstr "在某个会话中回复。"
 #: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "通过蓝牙与 iPhone 配对。"
+
+#: src/cli/main.cpp
+msgid ""
+"Ask the iPhone to authenticate directly instead of connecting first. Tether "
+"falls back to this on its own; use it to skip straight there."
+msgstr ""
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
@@ -754,7 +760,10 @@ msgid ""
 "status. If it does not go active within a minute or two, toggle Show Message "
 "Notifications off and on in Settings > Bluetooth > (i) -- it can need re-"
 "granting even when it already looks enabled."
-msgstr "已请求 iPhone 重新提供通知访问权限。请留意连接状态。若一两分钟内仍未变为活动状态，请在 设置 > 蓝牙 > (i) 中关闭再打开“显示信息通知”——即使看起来已启用，有时也需要重新授权。"
+msgstr ""
+"已请求 iPhone 重新提供通知访问权限。请留意连接状态。若一两分钟内仍未变为活动"
+"状态，请在 设置 > 蓝牙 > (i) 中关闭再打开“显示信息通知”——即使看起来已启用，有"
+"时也需要重新授权。"
 
 #: src/core/src/net.cpp
 msgid "Bluetooth is unavailable."

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-24 20:53-0700\n"
+"POT-Creation-Date: 2026-08-25 20:55-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Spanish\n"
@@ -99,6 +99,12 @@ msgstr "Responder en una conversación."
 #: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Emparejar con un iPhone por Bluetooth."
+
+#: src/cli/main.cpp
+msgid ""
+"Ask the iPhone to authenticate directly instead of connecting first. Tether "
+"falls back to this on its own; use it to skip straight there."
+msgstr ""
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
@@ -796,7 +802,8 @@ msgstr "Abriendo mensajes y contactos..."
 
 #: src/core/src/net.cpp
 msgid "Notification mirroring is already active; nothing to do."
-msgstr "La duplicación de notificaciones ya está activa; no hay nada que hacer."
+msgstr ""
+"La duplicación de notificaciones ya está activa; no hay nada que hacer."
 
 #. TRANSLATORS: "Show Message Notifications" and the Settings path are
 #. the iPhone's own wording; use Apple's for the target language.
@@ -806,7 +813,12 @@ msgid ""
 "status. If it does not go active within a minute or two, toggle Show Message "
 "Notifications off and on in Settings > Bluetooth > (i) -- it can need re-"
 "granting even when it already looks enabled."
-msgstr "Se ha pedido al iPhone que vuelva a ofrecer el acceso a las notificaciones. Observa el estado de la conexión. Si no pasa a activo en uno o dos minutos, desactiva y vuelve a activar «Mostrar notificaciones de mensajes» en Ajustes > Bluetooth > (i): a veces hay que concederlo de nuevo aunque ya parezca activado."
+msgstr ""
+"Se ha pedido al iPhone que vuelva a ofrecer el acceso a las notificaciones. "
+"Observa el estado de la conexión. Si no pasa a activo en uno o dos minutos, "
+"desactiva y vuelve a activar «Mostrar notificaciones de mensajes» en Ajustes "
+"> Bluetooth > (i): a veces hay que concederlo de nuevo aunque ya parezca "
+"activado."
 
 #: src/core/src/net.cpp
 msgid "Bluetooth is unavailable."

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-24 20:53-0700\n"
+"POT-Creation-Date: 2026-08-25 20:55-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: German\n"
@@ -98,6 +98,12 @@ msgstr "In einer Unterhaltung antworten."
 #: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Ein iPhone per Bluetooth koppeln."
+
+#: src/cli/main.cpp
+msgid ""
+"Ask the iPhone to authenticate directly instead of connecting first. Tether "
+"falls back to this on its own; use it to skip straight there."
+msgstr ""
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
@@ -814,7 +820,12 @@ msgid ""
 "status. If it does not go active within a minute or two, toggle Show Message "
 "Notifications off and on in Settings > Bluetooth > (i) -- it can need re-"
 "granting even when it already looks enabled."
-msgstr "Das iPhone wurde gebeten, den Zugriff auf Mitteilungen erneut anzubieten. Beobachten Sie den Verbindungsstatus. Wird er nicht innerhalb von ein bis zwei Minuten aktiv, schalten Sie „Nachrichtenmitteilungen anzeigen“ unter Einstellungen > Bluetooth > (i) aus und wieder ein – die Freigabe muss mitunter neu erteilt werden, auch wenn sie bereits aktiviert aussieht."
+msgstr ""
+"Das iPhone wurde gebeten, den Zugriff auf Mitteilungen erneut anzubieten. "
+"Beobachten Sie den Verbindungsstatus. Wird er nicht innerhalb von ein bis "
+"zwei Minuten aktiv, schalten Sie „Nachrichtenmitteilungen anzeigen“ unter "
+"Einstellungen > Bluetooth > (i) aus und wieder ein – die Freigabe muss "
+"mitunter neu erteilt werden, auch wenn sie bereits aktiviert aussieht."
 
 #: src/core/src/net.cpp
 msgid "Bluetooth is unavailable."

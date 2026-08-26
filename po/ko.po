@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-24 20:53-0700\n"
+"POT-Creation-Date: 2026-08-25 20:55-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -97,6 +97,12 @@ msgstr "한 대화에서 답장합니다."
 #: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Bluetooth로 iPhone과 페어링합니다."
+
+#: src/cli/main.cpp
+msgid ""
+"Ask the iPhone to authenticate directly instead of connecting first. Tether "
+"falls back to this on its own; use it to skip straight there."
+msgstr ""
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
@@ -774,7 +780,11 @@ msgid ""
 "status. If it does not go active within a minute or two, toggle Show Message "
 "Notifications off and on in Settings > Bluetooth > (i) -- it can need re-"
 "granting even when it already looks enabled."
-msgstr "iPhone에 알림 접근 권한을 다시 제공하도록 요청했습니다. 연결 상태를 확인하십시오. 1~2분 안에 활성 상태가 되지 않으면 설정 > Bluetooth > (i)에서 '메시지 알림 보기'를 껐다가 다시 켜십시오. 켜져 있는 것처럼 보여도 다시 허용해야 할 수 있습니다."
+msgstr ""
+"iPhone에 알림 접근 권한을 다시 제공하도록 요청했습니다. 연결 상태를 확인하십"
+"시오. 1~2분 안에 활성 상태가 되지 않으면 설정 > Bluetooth > (i)에서 '메시지 "
+"알림 보기'를 껐다가 다시 켜십시오. 켜져 있는 것처럼 보여도 다시 허용해야 할 "
+"수 있습니다."
 
 #: src/core/src/net.cpp
 msgid "Bluetooth is unavailable."
