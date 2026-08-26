@@ -155,6 +155,7 @@ checks the daemon does not make.
 | The phone never offers notifications / Sync Contacts | The class is wrong, or the ANCS advertisement is not running | Check for `class=ok` in `tether --bt-status`, can take minutes |
 | MAP or PBAP reports `forbidden` | The matching toggle on the phone is off | Turn it on. This is not a pairing failure |
 | Pairing never starts, and the only log line is a profile connect refused with `Connection refused (111)` | `Device1.Connect()` induces pairing only as a side effect of a profile connect, and this phone refuses that profile from an unbonded device | Nothing. Tether retries the transaction as an explicit `Device1.Pair()` on its own. To go straight there, `tether --bt-pair <addr> --explicit-pair` |
+| The phone shows a pairing code, then "Pairing Unsuccessful" a moment later, and the daemon reports the transaction failed about 90s after `confirm` | `tetherd` has no display, so the confirmation dialog could not be shown, and an unshowable dialog used to count as a refusal | Fixed. The comparison now goes to whichever client started the pairing -- the CLI prompts on the terminal, the GTK app opens its own dialog. On an older build, start `tetherd` from a graphical session so it inherits `DISPLAY` or `WAYLAND_DISPLAY` |
 | MAP reports `busy`, or the transport says `Connection refused (111)` on an already-paired phone | Another computer holds the iPhone's single MAP session | Stop the other client |
 | Pairing fails with `br-connection-key-missing` | A stale bond on one side, or the adapter is not `Pairable` | Delete the computer's entry on the phone (Forget This Device) and `tether --bt-unpair <addr>` locally, then pair again |
 | The phone shows two entries for this computer | A failed pairing left both a Classic and an LE record | Delete both on the phone before retrying |
@@ -1238,3 +1239,56 @@ One incidental: `StartDiscovery` began failing with `org.bluez.Error.InProgress`
 `bluetoothd` restart cleared it, matching the auto-connect wedge already in the troubleshooting
 table. `tether-btclass@hci0` restored the class across that restart without intervention, after
 the adapter briefly came back `Powered: no` with `Class: 0x00000000`.
+
+### 2026-08-26 - A confirmation nobody could see counted as a refusal
+
+| | |
+|---|---|
+| Controller | Reported on Realtek `0bda:a728`; mechanism captured on MediaTek MT7925 (RZ717) |
+| BlueZ | 5.87 with `--experimental` |
+| Phone | iPhone SE, iOS 27.0 beta (reporter); mechanism is phone-independent |
+
+Issue #49, after the explicit-pair fallback shipped. Pairing now reached the numeric comparison
+and the iPhone displayed a code, but the bond never completed. The reporter's timeline:
+
+```
+    519 ms  pairing      <phone>
+   1258 ms  confirm      085363
+  91715 ms  bt_pair_result   (fail)
+```
+
+91715 - 90000 (`PAIR_TIMEOUT_SECONDS`) = 1715. `Device1.Pair()` returned an error roughly 450 ms
+after the agent asked for confirmation. That is a dialog dying, not a person deciding. Two
+consecutive `confirm` steps 468 ms apart with different passkeys are the phone restarting SSP
+after the rejection, not the passkey "regenerating".
+
+Captured locally, no phone involved:
+
+```
+$ env -i HOME=$HOME tether-dialog --title t --body b --accept ok --reject no --timeout 3
+Gtk-WARNING **: cannot open display:
+exit=1
+```
+
+`gtk_init` failed and GTK exited 1. `confirm_with_dialog()` treated every non-zero exit as a
+refusal, so the agent answered BlueZ `RequestConfirmation` with "Rejected by the user" within
+milliseconds. **A `tetherd` with no display auto-declined every pairing.** It also explains the
+attempts that went to "Pairing Unsuccessful" without ever offering Pair: the rejection landed
+before iOS finished drawing the prompt.
+
+The correlation to #49 is inferred from that arithmetic; the mechanism is captured.
+
+Three things were wrong, and all three are fixed:
+
+- `tether-dialog` now uses `gtk_init_check()` and exits 3 -- the code already reserved for a
+  display failure -- instead of exiting 1, which is indistinguishable from the reject button.
+- "Could not ask" is no longer "the user said no". It does not set `user_rejected`, it does not
+  suppress the connect-first retry by pretending to be a refusal, and it does not silently
+  accept either: bonding without the comparison is exactly what the comparison exists to prevent.
+- The question is routed to the client that started the transaction. The daemon broadcasts
+  `bt_pair_confirm_request` with the code and blocks up to 60s for a `bt_pair_confirm` answer.
+  `tether --bt-pair` prompts on the terminal; the GTK app opens a dialog. A daemon that can show
+  its own dialog still does, so nothing changes for a `tetherd` started from a desktop session.
+
+If neither a dialog nor a client can be reached, the result now says so and names the fix,
+rather than reporting a rejection that never happened.

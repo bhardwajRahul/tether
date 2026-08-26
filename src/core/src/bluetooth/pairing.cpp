@@ -404,7 +404,7 @@ namespace tether::bluetooth {
         debug::log(WARN, "bluetooth: could not re-arm the ANCS solicitation ({})", err);
     }
 
-    bool confirm_with_dialog(const std::string& device_name, const std::string& code) {
+    bool confirm_with_dialog(const std::string& device_name, const std::string& code, bool& unavailable) {
         // Translated before the fork: gettext takes a lock, and calling it in the
         // child of a threaded process can deadlock if another thread held it.
         // TRANSLATORS: {0} is the device name, {1} is the numeric pairing code.
@@ -417,6 +417,7 @@ namespace tether::bluetooth {
         pid_t pid = fork();
         if (pid < 0) {
             debug::log(ERR, "bluetooth: fork() for confirmation dialog failed");
+            unavailable = true;
             return false;
         }
 
@@ -459,10 +460,13 @@ namespace tether::bluetooth {
         }
 
         int status = 0;
-        if (waitpid(pid, &status, 0) < 0)
+        if (waitpid(pid, &status, 0) < 0) {
+            unavailable = true;
             return false;
-        // Exit 0 is the only acceptance. A dialog that could not be shown exits 3,
-        // which must reject rather than silently bond.
+        }
+        // Exit 0 is the only acceptance. A dialog that could not be shown at all exits 3
+        if (!WIFEXITED(status) || WEXITSTATUS(status) == 3)
+            unavailable = true;
         return WIFEXITED(status) && WEXITSTATUS(status) == 0;
     }
 
@@ -478,8 +482,8 @@ namespace tether::bluetooth {
         };
     }
 
-    bool should_fall_back(AuthStrategy tried, bool paired, bool user_rejected) {
-        return tried == AuthStrategy::ConnectFirst && !paired && !user_rejected;
+    bool should_fall_back(AuthStrategy tried, bool paired, bool confirmation_failed) {
+        return tried == AuthStrategy::ConnectFirst && !paired && !confirmation_failed;
     }
 
     PairResult pair_device(BluezMonitor& monitor,
@@ -541,12 +545,23 @@ namespace tether::bluetooth {
             // The agent's callback lands on the monitor's GLib thread.
             std::atomic<bool> auth_seen{false};
             std::atomic<bool> user_rejected{false};
+            std::atomic<bool> confirm_unavailable{false};
 
             PairingAgent agent(conn, device.path, [&](const std::string& code) {
                 auth_seen = true;
                 notify(progress, "confirm", code);
-                const bool accepted = confirm ? confirm(code) : confirm_with_dialog(display_name, code);
-                if (!accepted)
+
+                bool unavailable = false;
+                bool accepted = confirm_with_dialog(display_name, code, unavailable);
+
+                if (unavailable && confirm) {
+                    accepted = confirm(code);
+                    unavailable = false;
+                }
+
+                if (unavailable)
+                    confirm_unavailable = true;
+                else if (!accepted)
                     user_rejected = true;
                 return accepted;
             });
@@ -600,13 +615,13 @@ namespace tether::bluetooth {
             // Connect-first is the only transaction that yields the LE half of the
             // bond, and the iPhone's refusal of it can be transient, so it is worth
             // a second attempt before trading notifications away.
-            if (should_fall_back(strategy, paired, user_rejected)) {
+            if (should_fall_back(strategy, paired, user_rejected || confirm_unavailable)) {
                 notify(progress, "retrying", "the iPhone refused the connection; trying once more");
                 clear_attempt_in_flight();
                 paired = attempt(AuthStrategy::ConnectFirst);
             }
 
-            if (should_fall_back(strategy, paired, user_rejected)) {
+            if (should_fall_back(strategy, paired, user_rejected || confirm_unavailable)) {
                 notify(progress,
                        "retrying",
                        "the iPhone will not start pairing over the connection; requesting authentication directly. "
@@ -620,9 +635,15 @@ namespace tether::bluetooth {
             monitor.invoke_sync([&] { agent.unexport_object(); });
 
             if (!paired) {
-                if (user_rejected) {
+                if (confirm_unavailable) {
+                    result.status = "error";
+                    result.message = "The pairing code could not be shown for confirmation: this computer has no "
+                                     "display, and whatever started the pairing did not answer either. Run tether "
+                                     "--bt-pair " +
+                                     result.device_address + " from a terminal and confirm the code there.";
+                } else if (user_rejected) {
                     result.status = "rejected";
-                    result.message = "Pairing was declined on this computer.";
+                    result.message = "Pairing was not confirmed on this computer.";
                 } else if (err.find("Rejected") != std::string::npos) {
                     result.status = "rejected";
                     result.message = "The iPhone declined the pairing request.";

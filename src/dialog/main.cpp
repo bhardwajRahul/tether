@@ -131,7 +131,10 @@ int main(int argc, char** argv) {
         return 3;
     }
 
-    gtk_init(&argc, &argv);
+    if (!gtk_init_check(&argc, &argv)) {
+        debug::log(ERR, "Error: no display available.\n");
+        return 3;
+    }
 
     // Apply CSS
     GtkCssProvider* css_provider = gtk_css_provider_new();
