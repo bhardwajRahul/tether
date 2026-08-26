@@ -103,7 +103,7 @@ msgstr "Spárovat iPhone přes Bluetooth."
 msgid ""
 "Ask the iPhone to authenticate directly instead of connecting first. Tether "
 "falls back to this on its own; use it to skip straight there."
-msgstr ""
+msgstr "Požádat iPhone o přímé ověření místo prvotního připojení. Tether se k tomu uchýlí sám; použijte pro přímý přechod."
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."

@@ -104,7 +104,7 @@ msgstr "Sparuj iPhone'a przez Bluetooth."
 msgid ""
 "Ask the iPhone to authenticate directly instead of connecting first. Tether "
 "falls back to this on its own; use it to skip straight there."
-msgstr ""
+msgstr "Poproś iPhone'a o bezpośrednie uwierzytelnienie zamiast najpierw łączenia. Tether sam się do tego ucieka; użyj, aby przejść od razu."
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."

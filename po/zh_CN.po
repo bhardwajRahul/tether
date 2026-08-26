@@ -102,7 +102,7 @@ msgstr "通过蓝牙与 iPhone 配对。"
 msgid ""
 "Ask the iPhone to authenticate directly instead of connecting first. Tether "
 "falls back to this on its own; use it to skip straight there."
-msgstr ""
+msgstr "请求 iPhone 直接进行身份验证，而不是先建立连接。Tether 会自动回退到此方式；使用该选项可直接跳转到它。"
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."

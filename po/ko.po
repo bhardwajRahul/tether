@@ -102,7 +102,7 @@ msgstr "Bluetooth로 iPhone과 페어링합니다."
 msgid ""
 "Ask the iPhone to authenticate directly instead of connecting first. Tether "
 "falls back to this on its own; use it to skip straight there."
-msgstr ""
+msgstr "먼저 연결하는 대신 iPhone에 직접 인증을 요청합니다. Tether가 자동으로 이 방식으로 전환합니다. 바로 사용하려면 지정하세요."
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
