@@ -79,10 +79,14 @@ namespace tether::bluetooth {
         // now that the phone has listed its own copy of it.
         void drop_local_echo(const Message& arrived);
 
+        // The key every message of `thread_key`'s peer is filed under
+        const std::string& canonical_key(const std::string& thread_key);
+
         size_t max_messages_;
         std::map<std::string, Message> by_handle_;
         // Insertion order, used to evict the oldest when the cap is reached.
         std::vector<std::string> order_;
+        std::map<std::string, std::string> representative_;
     };
 
     nlohmann::json to_json(const Message& message);

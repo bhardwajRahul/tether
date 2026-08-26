@@ -526,6 +526,62 @@ TEST(MessageStore, EchoIsCollapsedOnReplayToo) {
     EXPECT_EQ(store.threads().size(), 1u);
 }
 
+// iOS names the same peer "+14255550123" in the sent folder and "14255550123"
+// in the inbox listing, which used to file one person under two conversations.
+TEST(MessageStore, OneNumberSpelledTwoWaysIsOneThread) {
+    for (bool plus_first : {true, false}) {
+        MessageStore store;
+        const std::string plus = "tel:+14255550123";
+        const std::string bare = "tel:14255550123";
+        store.add(make("a", plus_first ? plus : bare, 100));
+        store.add(make("b", plus_first ? bare : plus, 200));
+
+        auto threads = store.threads();
+        ASSERT_EQ(threads.size(), 1u);
+        EXPECT_EQ(threads[0].key, plus) << "the reply address must keep its E.164 form";
+        EXPECT_EQ(threads[0].count, 2);
+
+        // Either spelling still resolves the conversation, so a client holding
+        // the older key is not left with an empty thread.
+        EXPECT_EQ(store.messages(plus).size(), 2u);
+        EXPECT_EQ(store.messages(bare).size(), 2u);
+    }
+}
+
+// A number with its country code and the same number without one are the same
+// peer; keying them apart splits the conversation the moment the phone changes
+// how it reports the address.
+TEST(MessageStore, NationalAndInternationalFormsShareAThread) {
+    MessageStore store;
+    store.add(make("a", "tel:4255550123", 100));
+    store.add(make("b", "tel:+14255550123", 200));
+
+    auto threads = store.threads();
+    ASSERT_EQ(threads.size(), 1u);
+    EXPECT_EQ(threads[0].key, "tel:+14255550123");
+}
+
+// The local echo is keyed on whatever spelling the UI held, the phone's copy on
+// the sent folder's. Different spellings must not keep them apart, or the reply
+// shows twice.
+TEST(MessageStore, EchoCollapsesAcrossAddressSpellings) {
+    MessageStore store;
+    ASSERT_TRUE(store.add(local_send("tel:14255550123", "on my way", 1000)));
+    ASSERT_TRUE(store.add(phone_copy("m9", "tel:+14255550123", "on my way", 1005)));
+
+    EXPECT_EQ(store.size(), 1u);
+    ASSERT_EQ(store.threads().size(), 1u);
+    EXPECT_EQ(store.messages("tel:+14255550123").size(), 1u);
+}
+
+// Short numbers have no country code to discount, so every digit still counts.
+TEST(MessageStore, ShortNumbersStaySeparate) {
+    MessageStore store;
+    store.add(make("a", "tel:1111", 100));
+    store.add(make("b", "tel:2222", 200));
+    EXPECT_EQ(store.threads().size(), 2u);
+}
+
 // Captured from the phone's own sent folder: iOS writes the originator's number
 // scheme-tagged. The tag is transport framing, not part of the address, and
 // leaving it on would key the conversation under an address nobody has.
