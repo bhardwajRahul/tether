@@ -29,6 +29,7 @@
 #include <fstream>
 #include <mutex>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <set>
 #include <tether/log.hpp>
 #include <thread>
@@ -332,7 +333,7 @@ namespace tether {
         broadcast_local_event(event.dump());
     }
 
-    static void run_bt_pair(const std::string& address) {
+    static void run_bt_pair(const std::string& address, std::optional<bluetooth::AuthStrategy> strategy) {
         if (!bluetooth::g_bluez) {
             nlohmann::json event;
             event["command"] = "bt_pair_result";
@@ -357,7 +358,7 @@ namespace tether {
         auto result = bluetooth::pair_device(
             *bluetooth::g_bluez,
             address,
-            config.auth_strategy,
+            strategy.value_or(config.auth_strategy),
             [](const std::string& step, const std::string& detail) {
                 nlohmann::json event;
                 event["command"] = "bt_pair_progress";
@@ -377,6 +378,9 @@ namespace tether {
                 config.ancs_enabled = true;
             else if (result.status == "paired")
                 config.ancs_enabled = false;
+            // Remember the transaction that bonded only when it produced a bond worth repeating.
+            if (result.status == "paired" && result.dual_bond)
+                config.auth_strategy = result.auth_strategy_used;
             config.enabled = true;
             bluetooth::save_config(config);
             // Point supervision at the device we just bonded with.
@@ -753,7 +757,10 @@ namespace tether {
                         // Pairing waits on the user and the phone, so it runs on
                         // its own thread; progress and the result arrive as events.
                         std::string address = j["address"];
-                        std::thread([address]() { run_bt_pair(address); }).detach();
+                        std::optional<bluetooth::AuthStrategy> strategy;
+                        if (j.contains("strategy"))
+                            strategy = bluetooth::auth_strategy_from_string(j["strategy"]);
+                        std::thread([address, strategy]() { run_bt_pair(address, strategy); }).detach();
                     } else if (j.contains("command") && j["command"] == "bt_unpair" && j.contains("address")) {
                         std::string address = j["address"];
                         std::thread([address]() { run_bt_unpair(address); }).detach();

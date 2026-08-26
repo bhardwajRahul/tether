@@ -174,7 +174,10 @@ static const Opt kOptions[] = {
     {"--bt-threads", N_("List iPhone message conversations.")},
     {"--bt-messages <thread>", N_("Show messages in one conversation.")},
     {"--bt-send <thread> <text>", N_("Reply in one conversation.")},
-    {"--bt-pair <addr>", N_("Pair with an iPhone over Bluetooth.")},
+    {"--bt-pair <addr> [--explicit-pair]", N_("Pair with an iPhone over Bluetooth.")},
+    {"--explicit-pair",
+     N_("Ask the iPhone to authenticate directly instead of connecting first. Tether falls back to this on "
+        "its own; use it to skip straight there.")},
     {"--bt-unpair <addr>", N_("Remove a Bluetooth bond.")},
     {"--bt-solicit",
      N_("Re-advertise for ANCS so the iPhone shows its permission toggles again, without removing "
@@ -364,7 +367,10 @@ static int print_bt_devices(tether::Client& client) {
 
 // Pairing takes tens of seconds and reports progress as it goes, so this
 // subscribes and streams events until the terminal result arrives.
-static int run_bt_transaction(tether::Client& client, const std::string& command, const std::string& address = "") {
+static int run_bt_transaction(tether::Client& client,
+                              const std::string& command,
+                              const std::string& address = "",
+                              const nlohmann::json& extra = nlohmann::json::object()) {
     const std::string result_command = command + "_result";
 
     client.send("{\"command\":\"subscribe\"}\n");
@@ -372,6 +378,7 @@ static int run_bt_transaction(tether::Client& client, const std::string& command
     request["command"] = command;
     if (!address.empty())
         request["address"] = address;
+    request.update(extra);
     if (!client.send(request.dump() + "\n")) {
         debug::log(ERR, _("Could not reach the daemon.\n"));
         return 1;
@@ -641,6 +648,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::string action, arg_val, arg_val2, host = "";
+    bool explicit_pair = false;
     int port = 5134;
     int timeout_ms = 3000;
 
@@ -697,6 +705,8 @@ int main(int argc, char* argv[]) {
             action = "bt_pair";
             if (i + 1 < argc && argv[i + 1][0] != '-')
                 arg_val = argv[++i];
+        } else if (arg == "--explicit-pair") {
+            explicit_pair = true;
         } else if (arg == "--bt-unpair") {
             action = "bt_unpair";
             if (i + 1 < argc && argv[i + 1][0] != '-')
@@ -854,7 +864,10 @@ int main(int argc, char* argv[]) {
             debug::log(ERR, _("A Bluetooth address is required, e.g. --bt-pair AA:BB:CC:DD:EE:FF\n"));
             return 1;
         }
-        return run_bt_transaction(client, action == "bt_pair" ? "bt_pair" : "bt_unpair", arg_val);
+        nlohmann::json extra = nlohmann::json::object();
+        if (action == "bt_pair" && explicit_pair)
+            extra["strategy"] = "explicit-pair";
+        return run_bt_transaction(client, action == "bt_pair" ? "bt_pair" : "bt_unpair", arg_val, extra);
     } else if (action == "bt_solicit") {
         return run_bt_transaction(client, "bt_solicit");
     } else if (action == "bt_enable") {

@@ -26,6 +26,10 @@ namespace tether::bluetooth {
         constexpr int PAIR_TIMEOUT_SECONDS = 90;
         constexpr int DIALOG_TIMEOUT_SECONDS = 60;
 
+        // A refused connect still gets a short grace window, because Connect() can
+        // report failure while authentication completes behind it.
+        constexpr int CONNECT_REFUSED_GRACE_SECONDS = 5;
+
         constexpr int CLASSIC_SETTLE_SECONDS = 3;
         constexpr int DISCOVERY_TIMEOUT_SECONDS = 30;
 
@@ -470,7 +474,12 @@ namespace tether::bluetooth {
             {"message", result.message},
             {"address", result.device_address},
             {"dual_bond", result.dual_bond},
+            {"auth_strategy_used", to_string(result.auth_strategy_used)},
         };
+    }
+
+    bool should_fall_back(AuthStrategy tried, bool paired, bool user_rejected) {
+        return tried == AuthStrategy::ConnectFirst && !paired && !user_rejected;
     }
 
     PairResult pair_device(BluezMonitor& monitor,
@@ -529,9 +538,17 @@ namespace tether::bluetooth {
             // authentication starts.
             stop_advert(monitor);
 
+            // The agent's callback lands on the monitor's GLib thread.
+            std::atomic<bool> auth_seen{false};
+            std::atomic<bool> user_rejected{false};
+
             PairingAgent agent(conn, device.path, [&](const std::string& code) {
+                auth_seen = true;
                 notify(progress, "confirm", code);
-                return confirm ? confirm(code) : confirm_with_dialog(display_name, code);
+                const bool accepted = confirm ? confirm(code) : confirm_with_dialog(display_name, code);
+                if (!accepted)
+                    user_rejected = true;
+                return accepted;
             });
 
             bool exported = false;
@@ -545,32 +562,82 @@ namespace tether::bluetooth {
 
             std::string err;
             bool initiated = false;
-            if (strategy == AuthStrategy::ConnectFirst) {
-                notify(progress, "connecting", display_name);
-                initiated = call_device(conn, device.path, "Connect", PAIR_TIMEOUT_SECONDS * 1000, err);
-            } else {
-                notify(progress, "pairing", display_name);
-                initiated = call_device(conn, device.path, "Pair", PAIR_TIMEOUT_SECONDS * 1000, err);
+
+            // A Connect() that failed can leave an attempt in flight, which makes
+            // the next call fail fast with br-connection-busy.
+            auto clear_attempt_in_flight = [&] {
+                std::string ignored;
+                call_device(conn, device.path, "Disconnect", 5000, ignored);
+                std::this_thread::sleep_for(std::chrono::seconds(2));
+            };
+
+            // The agent stays registered across all attempts; re-registering
+            // mid-transaction races BlueZ's own agent bookkeeping.
+            auto attempt = [&](AuthStrategy how) {
+                err.clear();
+                if (how == AuthStrategy::ConnectFirst) {
+                    notify(progress, "connecting", display_name);
+                    initiated = call_device(conn, device.path, "Connect", PAIR_TIMEOUT_SECONDS * 1000, err);
+                } else {
+                    notify(progress, "pairing", display_name);
+                    initiated = call_device(conn, device.path, "Pair", PAIR_TIMEOUT_SECONDS * 1000, err);
+                }
+
+                // Connect() can report failure while authentication still completes so a refusal is waited out too
+                const int seconds = (!initiated && !auth_seen) ? CONNECT_REFUSED_GRACE_SECONDS : PAIR_TIMEOUT_SECONDS;
+                auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(seconds);
+                while (std::chrono::steady_clock::now() < deadline) {
+                    if (device_is_paired(conn, device.path))
+                        return true;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                }
+                return false;
+            };
+
+            bool paired = attempt(strategy);
+            result.auth_strategy_used = strategy;
+
+            // Connect-first is the only transaction that yields the LE half of the
+            // bond, and the iPhone's refusal of it can be transient, so it is worth
+            // a second attempt before trading notifications away.
+            if (should_fall_back(strategy, paired, user_rejected)) {
+                notify(progress, "retrying", "the iPhone refused the connection; trying once more");
+                clear_attempt_in_flight();
+                paired = attempt(AuthStrategy::ConnectFirst);
             }
 
-            // Connect() can report failure while authentication still completes
-            auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(PAIR_TIMEOUT_SECONDS);
-            bool paired = false;
-            while (std::chrono::steady_clock::now() < deadline) {
-                if (device_is_paired(conn, device.path)) {
-                    paired = true;
-                    break;
-                }
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            if (should_fall_back(strategy, paired, user_rejected)) {
+                notify(progress,
+                       "retrying",
+                       "the iPhone will not start pairing over the connection; requesting authentication directly. "
+                       "A bond made this way can carry messages and contacts but not notifications");
+                clear_attempt_in_flight();
+                result.auth_strategy_used = AuthStrategy::ExplicitPair;
+                paired = attempt(AuthStrategy::ExplicitPair);
             }
 
             agent.unregister_with_bluez();
             monitor.invoke_sync([&] { agent.unexport_object(); });
 
             if (!paired) {
-                result.status = err.find("Rejected") != std::string::npos ? "rejected" : "timeout";
-                result.message = initiated ? "Pairing did not complete. Confirm the prompt on the iPhone."
-                                           : ("Pairing failed: " + err);
+                if (user_rejected) {
+                    result.status = "rejected";
+                    result.message = "Pairing was declined on this computer.";
+                } else if (err.find("Rejected") != std::string::npos) {
+                    result.status = "rejected";
+                    result.message = "The iPhone declined the pairing request.";
+                } else if (!auth_seen) {
+                    result.status = "timeout";
+                    result.message =
+                        "The iPhone refused the connection before pairing started" + (err.empty() ? "" : ": " + err) +
+                        ". Delete every entry for this computer on the iPhone (Settings -> Bluetooth, there can be "
+                        "two), run tether --bt-unpair " +
+                        result.device_address + ", then try again.";
+                } else {
+                    result.status = "timeout";
+                    result.message = initiated ? "Pairing did not complete. Confirm the prompt on the iPhone."
+                                               : ("Pairing failed: " + err);
+                }
                 return result;
             }
 
@@ -595,6 +662,10 @@ namespace tether::bluetooth {
         if (lookup(monitor, result.device_address, settled))
             result.dual_bond = settled.has_le_bearer && settled.le_bonded;
 
+        // Hand the preference back to LE now that Classic has settled. Leaving the
+        // bond pinned to BR/EDR keeps the LE half down indefinitely
+        set_property(conn, device.path, IFACE_DEVICE, "PreferredBearer", g_variant_new_string("le"));
+
         // Only now solicit ANCS. This advert is what makes iOS reveal its
         // "Show Message Notifications" and "Sync Contacts" toggles, and it is safe
         // to broadcast because the bond already exists.
@@ -611,6 +682,10 @@ namespace tether::bluetooth {
         if (!result.dual_bond) {
             result.message += " The bond covers BR/EDR only, so messages and contacts will work but notification "
                               "mirroring will not.";
+            if (result.auth_strategy_used == AuthStrategy::ExplicitPair)
+                result.message += " Only the connect-first transaction derives the LE keys, and the iPhone refused "
+                                  "it this time. To try for notifications, Forget This Device on the iPhone and "
+                                  "pair again.";
         }
         return result;
     }

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <tether/bluetooth/agent.hpp>
 #include <tether/bluetooth/config.hpp>
+#include <tether/bluetooth/pairing.hpp>
 
 using namespace tether::bluetooth;
 
@@ -87,4 +88,41 @@ TEST(BluetoothConfig, SurvivesCorruptFile) {
     // A valid JSON document of the wrong shape must also yield defaults.
     EXPECT_EQ(deserialize_config("[1,2,3]"), Config{});
     EXPECT_EQ(deserialize_config("\"string\""), Config{});
+}
+
+// Connect-first induces authentication only as a side effect of a profile
+// connect. A phone that refuses that profile never starts pairing at all, so the
+// transaction is retried as an explicit Device1.Pair() -- see issue #49.
+TEST(FallbackPolicy, RetriesARefusedConnectFirst) {
+    EXPECT_TRUE(should_fall_back(AuthStrategy::ConnectFirst, /*paired=*/false, /*user_rejected=*/false));
+}
+
+TEST(FallbackPolicy, DoesNotRetryWhatAlreadyWorked) {
+    EXPECT_FALSE(should_fall_back(AuthStrategy::ConnectFirst, /*paired=*/true, /*user_rejected=*/false));
+}
+
+// Re-prompting someone who just declined the numeric comparison reads as the
+// computer ignoring them.
+TEST(FallbackPolicy, DoesNotRetryAUserRejection) {
+    EXPECT_FALSE(should_fall_back(AuthStrategy::ConnectFirst, /*paired=*/false, /*user_rejected=*/true));
+}
+
+// Explicit pair is the fallback; there is nothing further to fall back to.
+TEST(FallbackPolicy, NeverRetriesExplicitPair) {
+    EXPECT_FALSE(should_fall_back(AuthStrategy::ExplicitPair, /*paired=*/false, /*user_rejected=*/false));
+    EXPECT_FALSE(should_fall_back(AuthStrategy::ExplicitPair, /*paired=*/true, /*user_rejected=*/false));
+}
+
+// Which transaction bonded has to survive to the issue report, since it is the
+// one thing that distinguishes this failure from every other pairing failure.
+TEST(PairResultJson, ReportsTheStrategyThatBonded) {
+    PairResult result;
+    result.success = true;
+    result.status = "paired";
+    result.auth_strategy_used = AuthStrategy::ExplicitPair;
+
+    EXPECT_EQ(to_json(result)["auth_strategy_used"], "explicit-pair");
+
+    result.auth_strategy_used = AuthStrategy::ConnectFirst;
+    EXPECT_EQ(to_json(result)["auth_strategy_used"], "connect-first");
 }
