@@ -1233,11 +1233,11 @@ msgstr "Den Nachrichten-Tab bei dieser Unterhaltung öffnen"
 
 #: src/gtk/message_format.cpp
 msgid "Yesterday"
-msgstr ""
+msgstr "Gestern"
 
 #: src/gtk/message_format.cpp
 msgid "Today"
-msgstr ""
+msgstr "Heute"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
@@ -1275,9 +1275,8 @@ msgid "New Message"
 msgstr "Neue Nachricht"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Search conversations"
-msgstr "Wählen Sie eine Unterhaltung"
+msgstr "Unterhaltungen durchsuchen"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
@@ -1297,7 +1296,7 @@ msgstr "Senden"
 
 #: src/gtk/messages_view.cpp
 msgid "Retry"
-msgstr ""
+msgstr "Erneut versuchen"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

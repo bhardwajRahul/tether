@@ -1189,11 +1189,11 @@ msgstr "この会話でメッセージタブを開く"
 
 #: src/gtk/message_format.cpp
 msgid "Yesterday"
-msgstr ""
+msgstr "昨日"
 
 #: src/gtk/message_format.cpp
 msgid "Today"
-msgstr ""
+msgstr "今日"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
@@ -1230,9 +1230,8 @@ msgid "New Message"
 msgstr "新規メッセージ"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Search conversations"
-msgstr "会話を選択"
+msgstr "会話を検索"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
@@ -1252,7 +1251,7 @@ msgstr "送信"
 
 #: src/gtk/messages_view.cpp
 msgid "Retry"
-msgstr ""
+msgstr "再試行"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

@@ -1154,11 +1154,11 @@ msgstr "在此会话中打开信息标签页"
 
 #: src/gtk/message_format.cpp
 msgid "Yesterday"
-msgstr ""
+msgstr "昨天"
 
 #: src/gtk/message_format.cpp
 msgid "Today"
-msgstr ""
+msgstr "今天"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
@@ -1193,9 +1193,8 @@ msgid "New Message"
 msgstr "新信息"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Search conversations"
-msgstr "选择一个会话"
+msgstr "搜索会话"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
@@ -1215,7 +1214,7 @@ msgstr "发送"
 
 #: src/gtk/messages_view.cpp
 msgid "Retry"
-msgstr ""
+msgstr "重试"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

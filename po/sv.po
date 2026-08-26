@@ -1203,11 +1203,11 @@ msgstr "Öppna meddelandefliken på den här konversationen"
 
 #: src/gtk/message_format.cpp
 msgid "Yesterday"
-msgstr ""
+msgstr "Igår"
 
 #: src/gtk/message_format.cpp
 msgid "Today"
-msgstr ""
+msgstr "Idag"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
@@ -1242,9 +1242,8 @@ msgid "New Message"
 msgstr "Nytt meddelande"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Search conversations"
-msgstr "Välj en konversation"
+msgstr "Sök konversationer"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
@@ -1264,7 +1263,7 @@ msgstr "Skicka"
 
 #: src/gtk/messages_view.cpp
 msgid "Retry"
-msgstr ""
+msgstr "Försök igen"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

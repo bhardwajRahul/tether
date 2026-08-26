@@ -1217,11 +1217,11 @@ msgstr "Відкрити вкладку повідомлень на цій ро�
 
 #: src/gtk/message_format.cpp
 msgid "Yesterday"
-msgstr ""
+msgstr "Учора"
 
 #: src/gtk/message_format.cpp
 msgid "Today"
-msgstr ""
+msgstr "Сьогодні"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
@@ -1257,9 +1257,8 @@ msgid "New Message"
 msgstr "Нове повідомлення"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Search conversations"
-msgstr "Виберіть розмову"
+msgstr "Пошук розмов"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
@@ -1279,7 +1278,7 @@ msgstr "Надіслати"
 
 #: src/gtk/messages_view.cpp
 msgid "Retry"
-msgstr ""
+msgstr "Повторити"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

@@ -1220,11 +1220,11 @@ msgstr "Otwórz kartę wiadomości na tej rozmowie"
 
 #: src/gtk/message_format.cpp
 msgid "Yesterday"
-msgstr ""
+msgstr "Wczoraj"
 
 #: src/gtk/message_format.cpp
 msgid "Today"
-msgstr ""
+msgstr "Dzisiaj"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
@@ -1261,9 +1261,8 @@ msgid "New Message"
 msgstr "Nowa wiadomość"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Search conversations"
-msgstr "Wybierz rozmowę"
+msgstr "Szukaj rozmów"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
@@ -1283,7 +1282,7 @@ msgstr "Wyślij"
 
 #: src/gtk/messages_view.cpp
 msgid "Retry"
-msgstr ""
+msgstr "Ponów"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

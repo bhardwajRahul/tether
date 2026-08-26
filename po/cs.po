@@ -1208,11 +1208,11 @@ msgstr "Otevřít kartu zpráv na této konverzaci"
 
 #: src/gtk/message_format.cpp
 msgid "Yesterday"
-msgstr ""
+msgstr "Včera"
 
 #: src/gtk/message_format.cpp
 msgid "Today"
-msgstr ""
+msgstr "Dnes"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
@@ -1247,9 +1247,8 @@ msgid "New Message"
 msgstr "Nová zpráva"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Search conversations"
-msgstr "Vyberte konverzaci"
+msgstr "Hledat konverzace"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
@@ -1269,7 +1268,7 @@ msgstr "Odeslat"
 
 #: src/gtk/messages_view.cpp
 msgid "Retry"
-msgstr ""
+msgstr "Zkusit znovu"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

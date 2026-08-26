@@ -1178,11 +1178,11 @@ msgstr "이 대화에서 메시지 탭 열기"
 
 #: src/gtk/message_format.cpp
 msgid "Yesterday"
-msgstr ""
+msgstr "어제"
 
 #: src/gtk/message_format.cpp
 msgid "Today"
-msgstr ""
+msgstr "오늘"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
@@ -1217,9 +1217,8 @@ msgid "New Message"
 msgstr "새 메시지"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Search conversations"
-msgstr "대화 선택"
+msgstr "대화 검색"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
@@ -1239,7 +1238,7 @@ msgstr "보내기"
 
 #: src/gtk/messages_view.cpp
 msgid "Retry"
-msgstr ""
+msgstr "다시 시도"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

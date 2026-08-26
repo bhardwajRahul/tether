@@ -1216,11 +1216,11 @@ msgstr "Het tabblad Berichten op dit gesprek openen"
 
 #: src/gtk/message_format.cpp
 msgid "Yesterday"
-msgstr ""
+msgstr "Gisteren"
 
 #: src/gtk/message_format.cpp
 msgid "Today"
-msgstr ""
+msgstr "Vandaag"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
@@ -1255,9 +1255,8 @@ msgid "New Message"
 msgstr "Nieuw bericht"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Search conversations"
-msgstr "Selecteer een gesprek"
+msgstr "Gesprekken doorzoeken"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
@@ -1277,7 +1276,7 @@ msgstr "Versturen"
 
 #: src/gtk/messages_view.cpp
 msgid "Retry"
-msgstr ""
+msgstr "Opnieuw proberen"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

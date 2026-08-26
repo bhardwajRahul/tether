@@ -1200,11 +1200,11 @@ msgstr "Mesajlar sekmesini bu konuşmada aç"
 
 #: src/gtk/message_format.cpp
 msgid "Yesterday"
-msgstr ""
+msgstr "Dün"
 
 #: src/gtk/message_format.cpp
 msgid "Today"
-msgstr ""
+msgstr "Bugün"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
@@ -1239,9 +1239,8 @@ msgid "New Message"
 msgstr "Yeni mesaj"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Search conversations"
-msgstr "Bir konuşma seçin"
+msgstr "Konuşmalarda ara"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
@@ -1261,7 +1260,7 @@ msgstr "Gönder"
 
 #: src/gtk/messages_view.cpp
 msgid "Retry"
-msgstr ""
+msgstr "Yeniden dene"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

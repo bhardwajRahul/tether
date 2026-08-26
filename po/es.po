@@ -1223,11 +1223,11 @@ msgstr "Abrir la pestaña de mensajes en esta conversación"
 
 #: src/gtk/message_format.cpp
 msgid "Yesterday"
-msgstr ""
+msgstr "Ayer"
 
 #: src/gtk/message_format.cpp
 msgid "Today"
-msgstr ""
+msgstr "Hoy"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
@@ -1263,9 +1263,8 @@ msgid "New Message"
 msgstr "Mensaje nuevo"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Search conversations"
-msgstr "Seleccione una conversación"
+msgstr "Buscar conversaciones"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
@@ -1285,7 +1284,7 @@ msgstr "Enviar"
 
 #: src/gtk/messages_view.cpp
 msgid "Retry"
-msgstr ""
+msgstr "Reintentar"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

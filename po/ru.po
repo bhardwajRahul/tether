@@ -1221,11 +1221,11 @@ msgstr "Открыть вкладку сообщений на этой пере�
 
 #: src/gtk/message_format.cpp
 msgid "Yesterday"
-msgstr ""
+msgstr "Вчера"
 
 #: src/gtk/message_format.cpp
 msgid "Today"
-msgstr ""
+msgstr "Сегодня"
 
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
@@ -1260,9 +1260,8 @@ msgid "New Message"
 msgstr "Новое сообщение"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Search conversations"
-msgstr "Выберите переписку"
+msgstr "Поиск переписок"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"
@@ -1282,7 +1281,7 @@ msgstr "Отправить"
 
 #: src/gtk/messages_view.cpp
 msgid "Retry"
-msgstr ""
+msgstr "Повторить"
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"
