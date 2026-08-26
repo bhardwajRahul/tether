@@ -63,6 +63,16 @@ namespace tether::ui {
     font-size: 92%;
 }
 
+.tether-thread-unread {
+    opacity: 1;
+    font-weight: bold;
+}
+
+.tether-send-error {
+    background-color: alpha(#e5a50a, 0.20);
+    border-top: 1px solid alpha(@theme_fg_color, 0.12);
+}
+
 .tether-badge {
     background-color: @theme_selected_bg_color;
     color: @theme_selected_fg_color;

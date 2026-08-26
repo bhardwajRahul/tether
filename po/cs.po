@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-25 20:55-0700\n"
+"POT-Creation-Date: 2026-08-25 22:13-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Czech\n"
@@ -103,7 +103,9 @@ msgstr "Spárovat iPhone přes Bluetooth."
 msgid ""
 "Ask the iPhone to authenticate directly instead of connecting first. Tether "
 "falls back to this on its own; use it to skip straight there."
-msgstr "Požádat iPhone o přímé ověření místo prvotního připojení. Tether se k tomu uchýlí sám; použijte pro přímý přechod."
+msgstr ""
+"Požádat iPhone o přímé ověření místo prvotního připojení. Tether se k tomu "
+"uchýlí sám; použijte pro přímý přechod."
 
 #: src/cli/main.cpp
 msgid "Remove a Bluetooth bond."
@@ -1204,6 +1206,14 @@ msgstr "Otevřít na této kartě"
 msgid "Open the messages tab on this conversation"
 msgstr "Otevřít kartu zpráv na této konverzaci"
 
+#: src/gtk/message_format.cpp
+msgid "Yesterday"
+msgstr ""
+
+#: src/gtk/message_format.cpp
+msgid "Today"
+msgstr ""
+
 #: src/gtk/messages_view.cpp
 msgid "Sending…"
 msgstr "Odesílání…"
@@ -1237,6 +1247,11 @@ msgid "New Message"
 msgstr "Nová zpráva"
 
 #: src/gtk/messages_view.cpp
+#, fuzzy
+msgid "Search conversations"
+msgstr "Vyberte konverzaci"
+
+#: src/gtk/messages_view.cpp
 msgid "Select a conversation"
 msgstr "Vyberte konverzaci"
 
@@ -1251,6 +1266,10 @@ msgstr "Telefonní číslo nebo e-mail"
 #: src/gtk/messages_view.cpp
 msgid "Send"
 msgstr "Odeslat"
+
+#: src/gtk/messages_view.cpp
+msgid "Retry"
+msgstr ""
 
 #: src/gtk/notifications_view.cpp
 msgid "New notification"

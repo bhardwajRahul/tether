@@ -2,9 +2,12 @@
 #include "devices_view.hpp"
 #include "messages_view.hpp"
 #include "notifications_view.hpp"
+#include "prefs.hpp"
 #include "tray.hpp"
 #include "ui_util.hpp"
 
+#include <csignal>
+#include <glib-unix.h>
 #include <gtk/gtk.h>
 #include <string>
 #include <tether/crypto.hpp>
@@ -80,12 +83,88 @@ namespace {
         return button;
     }
 
+    void store_geometry() {
+        GtkWidget* window = main_window();
+        if (!window)
+            return;
+        const gboolean maximized = gtk_window_is_maximized(GTK_WINDOW(window));
+        prefs()["window_maximized"] = maximized == TRUE;
+        if (!maximized) {
+            int width = 0;
+            int height = 0;
+            gtk_window_get_size(GTK_WINDOW(window), &width, &height);
+            if (width > 0 && height > 0) {
+                prefs()["window_width"] = width;
+                prefs()["window_height"] = height;
+            }
+        }
+        messages_view_store_prefs();
+    }
+
+    void save_session_prefs() {
+        store_geometry();
+        prefs_save();
+    }
+
     // Hiding leaves the window alive but unmapped, and a second launch re-activates this instance
     gboolean on_window_delete(GtkWidget* window, GdkEvent*, gpointer) {
+        save_session_prefs();
         if (!tray_close_to_tray())
             return FALSE;
         gtk_widget_hide(window);
         return TRUE;
+    }
+
+    void show_view(const char* name) {
+        if (!g_stack)
+            return;
+        gtk_stack_set_visible_child_name(GTK_STACK(g_stack), name);
+    }
+
+    void install_actions(GtkApplication* app, GtkWidget* window) {
+        struct Accel {
+            const char* name;
+            const char* key;
+            void (*run)();
+        };
+        static const Accel accels[] = {
+            {"new-message",
+             "<Control>n",
+             [] {
+                 show_view("messages");
+                 messages_view_new_message();
+             }},
+            {"search",
+             "<Control>f",
+             [] {
+                 show_view("messages");
+                 messages_view_focus_search();
+             }},
+            {"devices", "<Control>1", [] { show_view("devices"); }},
+            {"messages", "<Control>2", [] { show_view("messages"); }},
+            {"notifications", "<Control>3", [] { show_view("notifications"); }},
+            {"close",
+             "<Control>w",
+             [] {
+                 if (GtkWidget* w = main_window())
+                     gtk_window_close(GTK_WINDOW(w));
+             }},
+        };
+
+        for (const Accel& accel : accels) {
+            GSimpleAction* action = g_simple_action_new(accel.name, nullptr);
+            g_signal_connect(
+                action,
+                "activate",
+                G_CALLBACK(+[](GSimpleAction*, GVariant*, gpointer data) { reinterpret_cast<void (*)()>(data)(); }),
+                reinterpret_cast<gpointer>(accel.run));
+            g_action_map_add_action(G_ACTION_MAP(window), G_ACTION(action));
+            g_object_unref(action);
+
+            const std::string detailed = std::string("win.") + accel.name;
+            const char* keys[] = {accel.key, nullptr};
+            gtk_application_set_accels_for_action(app, detailed.c_str(), keys);
+        }
     }
 
     void activate(GtkApplication* app, gpointer) {
@@ -99,9 +178,15 @@ namespace {
 
         GtkWidget* window = gtk_application_window_new(app);
         gtk_window_set_title(GTK_WINDOW(window), _("Tether"));
-        gtk_window_set_default_size(GTK_WINDOW(window), 820, 560);
+        gtk_window_set_default_size(
+            GTK_WINDOW(window), prefs().value("window_width", 820), prefs().value("window_height", 560));
+        if (prefs().value("window_maximized", false))
+            gtk_window_maximize(GTK_WINDOW(window));
         set_main_window(window);
         g_signal_connect(window, "delete-event", G_CALLBACK(on_window_delete), nullptr);
+        g_signal_connect(
+            window, "destroy", G_CALLBACK(+[](GtkWidget*, gpointer) { set_main_window(nullptr); }), nullptr);
+        install_actions(app, window);
         tray_init();
 
         GtkWidget* header_bar = gtk_header_bar_new();
@@ -207,6 +292,18 @@ int main(int argc, char** argv) {
                      }),
                      nullptr);
     g_signal_connect(app, "activate", G_CALLBACK(activate), nullptr);
+
+    g_signal_connect(app, "shutdown", G_CALLBACK(+[](GApplication*, gpointer) { save_session_prefs(); }), nullptr);
+
+    for (int signal_number : {SIGTERM, SIGINT, SIGHUP}) {
+        g_unix_signal_add(
+            signal_number,
+            +[](gpointer data) -> gboolean {
+                g_application_quit(G_APPLICATION(data));
+                return G_SOURCE_REMOVE;
+            },
+            app);
+    }
     int status = g_application_run(G_APPLICATION(app), argc, argv);
     tether::ui::daemon_client_stop();
     g_object_unref(app);

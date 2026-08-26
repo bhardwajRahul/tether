@@ -11,6 +11,7 @@ src/daemon/notification.cpp
 src/gtk/daemon_client.cpp
 src/gtk/devices_view.cpp
 src/gtk/main.cpp
+src/gtk/message_format.cpp
 src/gtk/messages_view.cpp
 src/gtk/notifications_view.cpp
 src/gtk/tray.cpp
