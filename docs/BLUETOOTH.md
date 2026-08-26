@@ -75,6 +75,42 @@ that can never connect and a bond that never looks dual.
 
 **`obexd` must be running** (user service `obex`) for MAP and PBAP. It is socket-activated under normal use.
 
+## Pairing strategies
+
+Two ways to make the bond, recorded in `auth_strategy` in `~/.config/tether/bluetooth.json`.
+
+**Connect-first** (`connect-first`, the default) calls `Device1.Connect()` on the unpaired
+device. That is a *profile* connect, not an authentication request: it brings the ACL up, the
+iPhone takes the central role, and iOS initiates the pairing. Making the phone the initiator is
+what produces the cross-transport bond that carries ANCS, so this is what every recorded success
+in this file used.
+
+Its weakness is that it only works when BlueZ has some local BR/EDR profile the phone will accept
+from an unbonded device. When it does not, bluetoothd logs one refused profile connect and tears
+the link down before any security procedure runs:
+
+```
+src/profile.c:ext_connect() Hands-Free unit failed connect to <phone>: Connection refused (111)
+```
+
+**Explicit pair** (`explicit-pair`) calls `Device1.Pair()`, which requests authentication
+directly and involves no profile, so neither refusal applies. This is what `bluetoothctl`'s own
+`pair` command does.
+
+**An explicit pair costs the LE half of the bond**, captured 2026-08-25 below. Messages and
+contacts work on it; notifications never can. So it is a last resort, not an equal alternative.
+
+Tether spends connect-first twice -- the iPhone's refusal of it is sometimes transient -- and
+only then falls back to an explicit pair, and never falls back at all if the numeric comparison
+was declined on this computer. A fallback bond is **not** remembered as the preferred strategy
+while it comes back BR/EDR-only, so the next re-pair tries connect-first again from scratch;
+latching it would put notifications permanently out of reach. The transaction that bonded is
+reported as `auth_strategy_used` by `tether --bt-diagnostics`.
+
+`tether --bt-pair <addr> --explicit-pair` forces the fallback for one transaction. Use it when
+connect-first is refused on every attempt and messages and contacts are worth more than
+notifications.
+
 ## Permissions on the phone
 
 After pairing, the iPhone offers "Show Message Notifications" and "Sync Contacts" under
@@ -118,17 +154,19 @@ checks the daemon does not make.
 | Messages and contacts worked, then stopped, and the error mentions a service record | `bluetoothd` restarted and reset the Class of Device | `sudo systemctl enable --now tether-btclass@hci0`, then re-pair if the phone dropped the bond |
 | The phone never offers notifications / Sync Contacts | The class is wrong, or the ANCS advertisement is not running | Check for `class=ok` in `tether --bt-status`, can take minutes |
 | MAP or PBAP reports `forbidden` | The matching toggle on the phone is off | Turn it on. This is not a pairing failure |
-| MAP reports `busy`, or the transport says `Connection refused (111)` | Another computer holds the iPhone's single MAP session | Stop the other client |
+| Pairing never starts, and the only log line is a profile connect refused with `Connection refused (111)` | `Device1.Connect()` induces pairing only as a side effect of a profile connect, and this phone refuses that profile from an unbonded device | Nothing. Tether retries the transaction as an explicit `Device1.Pair()` on its own. To go straight there, `tether --bt-pair <addr> --explicit-pair` |
+| MAP reports `busy`, or the transport says `Connection refused (111)` on an already-paired phone | Another computer holds the iPhone's single MAP session | Stop the other client |
 | Pairing fails with `br-connection-key-missing` | A stale bond on one side, or the adapter is not `Pairable` | Delete the computer's entry on the phone (Forget This Device) and `tether --bt-unpair <addr>` locally, then pair again |
 | The phone shows two entries for this computer | A failed pairing left both a Classic and an LE record | Delete both on the phone before retrying |
 | LE never connects and the log repeats `org.bluez.Error.InProgress` | BlueZ is holding an auto-connect registration that never completed | `sudo systemctl restart bluetooth` -- nothing short of that clears it, see 2026-08-19 below. With `tether-btclass@hci0` enabled the class survives the restart |
 | The log says `could not re-arm the ANCS solicitation` | BlueZ refused to register the advertisement, so nothing is on air for the iPhone to answer | `sudo systemctl restart bluetooth`. Nothing else brings it back, and the LE link cannot form without it |
 | LE never connects and the log repeats `le-connection-abort-by-local` | Something on this side is cancelling the connection. Tether's own cause was a `PreferredBearer` write racing the async connect, fixed; anything else writing that property during a connect will do the same | Check no other Bluetooth tool is driving the same device. The phone is not the cause: `abort-by-local` means the local host cancelled |
 | Notifications stopped and never came back, while messages and contacts kept working | Fixed. The bearer supervisor used to stop retrying LE after six attempts, and only a Classic drop or a daemon restart re-armed it | Nothing. The solicitation is kept on air whenever LE is down, which is what the iPhone answers -- see 2026-08-22 |
-| `tether --bt-status` reports `Bond: BR/EDR only` | The bond was made without cross-transport key derivation, so it has no LE half and can never carry ANCS | Forget this computer on the iPhone and pair again. Check `secure-connections` in the same output first: re-pairing cannot help while it is off |
+| `tether --bt-status` reports `Bond: BR/EDR only` | The bond was made without cross-transport key derivation, so it has no LE half and can never carry ANCS | Forget this computer on the iPhone and pair again -- it can take more than one attempt, the derivation is flaky on identical inputs (2026-08-25). Check `secure-connections` in the same output first: re-pairing cannot help while it is off |
 | Walked back into range and nothing reconnected for minutes | Fixed. The ANCS advert was gated on the Classic link, and the Classic backoff had no event that ended the absence | Nothing. The advert stays on air whenever LE is down, and an LE link coming up clears the Classic backoff -- see 2026-08-22 |
 | Startup logs `StartNotify not ready yet (InProgress)` for up to a minute | GATT discovery is still running on the new LE link | Nothing. It subscribes on its own. Only treat it as the 2026-08-19 hang if the LE link never comes up |
 | `tether --bt-connection` reports LE and messages up but `Notifications: no`, for hours | Fixed. The LE link was opened by the dial and carries no ANCS. A connected link used to take the solicitation off air, so the phone was never asked for the service | Nothing. The advert goes back on air over a link that has stayed up without ANCS -- see 2026-08-23. To clear it by hand on an older build, `tether --bt-solicit`; do not re-pair, and do not cycle the phone's Bluetooth |
+| LE never comes up on a `BR/EDR + LE` bond, the advert is on air, and cycling the phone's Bluetooth changes nothing | The bond is pinned to `PreferredBearer=bredr`, so the inbound LE link the iPhone opens is never accepted | Fixed for new bonds, which are handed back to `le` after pairing. An older bond stays pinned: re-pair it, or set the property by hand with `busctl set-property org.bluez /org/bluez/hci0/dev_<ADDR> org.bluez.Device1 PreferredBearer s le` -- see 2026-08-25 below |
 | The status says the iPhone is not answering on LE, and its permission is on | The phone's Bluetooth stack is wedged, which the granted permission does not prevent | Turn Bluetooth off and back on **on the iPhone**. Re-pairing and re-toggling the permission do not clear this |
 | Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
 | A group conversation cannot be replied to | Working as designed until the route is unambiguous | The thread's `reply_reason` says which condition failed |
@@ -593,7 +631,9 @@ cancelled it, not the phone.
 
 `PreferredBearer` steers `Device1.Connect`. This path calls the per-bearer
 `Bearer.LE1.Connect`, which already names the transport, so the property was
-never needed here. It is now written only on the `Device1.Connect` fallback used
+never needed here. (**Corrected 2026-08-25**: steering `Device1.Connect` is not
+all it does. Left pinned to `"bredr"` it also keeps the inbound LE link from
+forming -- see the entry at the end of this file.) It is now written only on the `Device1.Connect` fallback used
 by BlueZ builds that publish `Bearer.LE1` without a `Connect` method. With the
 writes removed, LE connected on the first attempt from a cold LE-down state and
 held for a three-minute soak with zero aborts.
@@ -1073,3 +1113,128 @@ restart, which is worth nothing here:
 
 The link being up is the discriminator: `InProgress` under a live LE link is discovery
 still running, not a poisoned path.
+
+### 2026-08-25 - Connect-first is refused transiently, and the fallback costs the LE half
+
+| | |
+|---|---|
+| Controller | MediaTek MT7925 (RZ717) Wi-Fi 7 |
+| BlueZ | 5.87 with `--experimental` |
+| Phone | iPhone 15 Pro, iOS 26 |
+| Adapter class | `0x00580408` -- A/V Hands-Free |
+
+Prompted by [#49](https://github.com/zackb/tether/issues/49), where a Realtek `0bda:a728`
+never gets past the connect step: the only line the phone's refusal produces is a profile
+connect failing, and no passkey, agent, or link-key line ever follows.
+
+```
+src/profile.c:ext_connect() Hands-Free unit failed connect to <phone>: Connection refused (111)
+```
+
+That reproduced here, on the hardware every earlier entry in this file was recorded on, with a
+different errno and the same meaning. Two pairings, both from a bond deleted on Linux and
+forgotten on the iPhone, six minutes apart:
+
+**Run 1 -- connect-first refused, fallback bonded.**
+
+```
+bluetoothd: profiles/audio/hfp-hf.c:connect_cb() connect to <phone>: Connection reset by peer (104)
+  connecting   -> confirm 295008   -> no bond           (iPhone: "Pairing Unsuccessful")
+  retrying     -> Device1.Pair()
+  pairing      -> confirm 329348   -> Paired
+```
+
+Result: `Bond: BR/EDR only`. `bluetoothctl info` reported `BREDR.Paired`, `BREDR.Bonded` and
+`BREDR.Connected` with no `LE.` counterparts at all. MAP and PBAP both opened; ANCS could not
+exist on that bond.
+
+**Run 2 -- same machine, same phone, connect-first succeeded on the first attempt.**
+
+```
+  connecting   -> confirm 491968   -> Paired
+```
+
+Result: `Bond: BR/EDR + LE`, `Bearer API: confirmed`.
+
+Three things this settles:
+
+- **An explicit `Device1.Pair()` yields a BR/EDR-only bond.** This was an inference carried in
+  a comment on `AuthStrategy` since the strategy was written; it is now captured. The
+  cross-transport derivation needs the iPhone to be the authentication initiator, which is the
+  whole reason connect-first exists. So the fallback buys messages and contacts at the price of
+  notifications, and is a last resort rather than an equal alternative.
+- **The iPhone's refusal of connect-first is transient.** Same controller, same phone, same
+  clean starting state, opposite outcomes minutes apart. Falling back on the first refusal
+  therefore trades ANCS away for a failure that would have cleared on its own. Connect-first is
+  now attempted twice before the fallback is spent.
+- **Remembering the fallback is a trap.** The first build persisted `auth_strategy` as whatever
+  bonded, so a single refused attempt latched `explicit-pair` into the config and every later
+  re-pair skipped the only path to the LE keys -- with nothing in the UI to undo it. The winning
+  strategy is now persisted only when the bond it produced was dual.
+
+Not captured: why the phone refuses. Both refusals landed on a profile connect (`hfp-hf` here,
+`Hands-Free unit` in #49) and both left the phone showing "Pairing Unsuccessful", which is
+consistent with iOS declining an unbonded peer's profile connect and tearing the ACL down before
+any security procedure runs -- but nothing here rules out a controller or firmware cause, and no
+`btmon` capture was taken of the refusal itself.
+
+### 2026-08-25 - The bond was pinned to BR/EDR, and the LE half never formed
+
+| | |
+|---|---|
+| Controller | MediaTek MT7925 (RZ717) Wi-Fi 7 |
+| BlueZ | 5.87 with `--experimental` |
+| Phone | iPhone 15 Pro, iOS 26 |
+
+A fresh dual bond sat with `LE: no` for over twenty minutes. Everything the earlier entries
+tell you to check was already right: `class=ok`, `secure-connections=on`, `Bond: BR/EDR + LE`,
+`Bearer.LE1` reporting `Paired` and `Bonded`, the solicitation confirmed on air at the
+controller (`LEAdvertisingManager1.ActiveInstances: 1`), and `bluetoothd` logging no dial error
+of any kind -- no `InProgress`, no `abort-by-local`. Cycling Bluetooth on the iPhone, the remedy
+the 2026-08-19 and 2026-08-23 entries prescribe, did nothing: Classic dropped and came back, LE
+stayed down.
+
+The cause was this computer's own bond state. `pair_device()` wrote
+`PreferredBearer = "bredr"` after pairing -- to bring Classic up first and let the ACL settle --
+and never cleared it. The pin stands for the life of the bond.
+
+Captured as an A/B on the live bond, with the phone untouched throughout:
+
+| `PreferredBearer` | LE after `Bearer.LE1.Disconnect()` |
+|---|---|
+| `bredr` | down for 180s, twelve consecutive polls |
+| `le` | up within 12s, `ServicesResolved` true, held 120s |
+
+**This corrects the 2026-08-19 reading that the property "steers the untyped `Device1.Connect`
+and nothing else."** The link the iPhone opens is inbound -- 2026-08-22 captured it as
+`Role: Peripheral`, the phone dialling us in answer to the solicitation -- and no outbound
+`Device1.Connect` is involved at all. A bond pinned to `bredr` does not accept that inbound
+dial. The exact mechanism inside BlueZ was not captured; the behaviour was, twice.
+
+Fixed by handing the preference back after the Classic settle: `pair_device()` writes `"bredr"`,
+waits out `CLASSIC_SETTLE_SECONDS`, then writes `"le"` before soliciting. Verified on a fresh
+pair with no manual step -- `PreferredBearer` read `"le"` straight out of the transaction, LE
+came up at t=12s, ANCS at t=24s, and all six rows of `--bt-connection` read yes. The same code
+path before the fix had left LE down for twenty minutes on the same hardware and phone.
+
+Two things this does **not** cover, both untested rather than ruled out:
+
+- **Bonds made by older builds stay pinned.** Nothing clears `"bredr"` on an existing bond, so
+  they need a re-pair. Correcting it from the supervisor instead is the obvious fix and is
+  deliberately not written: writing this property from the supervisor is what caused
+  `le-connection-abort-by-local` on 2026-08-19 and the LE drop on 2026-08-22, so it wants a
+  measurement, not an assumption.
+- **`connection.cpp` can re-pin `"bredr"`** on the Classic `Device1.Connect` fallback. That path
+  is reached only with nothing connected, but it can undo the fix later in a session.
+
+Also captured, and worth separating from all of the above: **whether connect-first derives the
+LE keys at all is itself flaky.** Same machine, same phone, same code path, two fresh pairs
+forty minutes apart -- 19:38 gave `BR/EDR + LE`, 20:25 gave `BR/EDR only`, with
+`secure-connections=on` and `--experimental` active for both. Until that is understood, the real
+procedure after pairing is to read `Bond:` and re-pair until it says `BR/EDR + LE`.
+
+One incidental: `StartDiscovery` began failing with `org.bluez.Error.InProgress` while
+`Adapter1.Discovering` read false and `StopDiscovery` answered `No discovery started`. Only a
+`bluetoothd` restart cleared it, matching the auto-connect wedge already in the troubleshooting
+table. `tether-btclass@hci0` restored the class across that restart without intervention, after
+the adapter briefly came back `Powered: no` with `Class: 0x00000000`.

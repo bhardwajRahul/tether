@@ -20,7 +20,16 @@ namespace tether::bluetooth {
         std::string device_address;
         // True when the resulting bond covers LE as well as BR/EDR.
         bool dual_bond = false;
+        // Which transaction actually produced the bond, which is not always the
+        // one that was asked for: connect-first falls back to an explicit pair.
+        AuthStrategy auth_strategy_used = AuthStrategy::ConnectFirst;
     };
+
+    // Whether a failed connect-first transaction should be retried as an explicit
+    // Device1.Pair(). Connect-first induces authentication only as a side effect of
+    // a profile connect, so a phone that refuses the profile never starts pairing
+    // at all. Device1.Pair() involves no profile.
+    bool should_fall_back(AuthStrategy tried, bool paired, bool user_rejected);
 
     // Reports progress steps so the CLI and GTK app can show what is happening
     // during a transaction that legitimately takes tens of seconds.
