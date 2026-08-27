@@ -3,6 +3,7 @@
 #include <avahi-client/client.h>
 #include <avahi-client/lookup.h>
 #include <avahi-client/publish.h>
+#include <avahi-common/alternative.h>
 #include <avahi-common/error.h>
 #include <avahi-common/malloc.h>
 #include <avahi-common/simple-watch.h>
@@ -49,6 +50,16 @@ namespace tether {
 
     // ─── Publishing callbacks ───────────────────────────────────────
 
+    static void create_services(DiscoveryImpl* impl);
+
+    // Take the next free variant of the advertised name ("foo" -> "foo #2" -> "foo #3").
+    static void rename_on_collision(DiscoveryImpl* impl) {
+        char* alt = avahi_alternative_service_name(impl->pub_name.c_str());
+        debug::log(ERR, "mDNS: Service name collision for \"{}\", retrying as \"{}\"", impl->pub_name, alt);
+        impl->pub_name = alt;
+        avahi_free(alt);
+    }
+
     static void entry_group_callback(AvahiEntryGroup* g, AvahiEntryGroupState state, void* userdata) {
         auto* impl = static_cast<DiscoveryImpl*>(userdata);
         switch (state) {
@@ -57,7 +68,9 @@ namespace tether {
                 INFO, "mDNS: Published \"{}\" as \"{}\" on port {}", SERVICE_TYPE, impl->pub_name, impl->pub_port);
             break;
         case AVAHI_ENTRY_GROUP_COLLISION:
-            debug::log(ERR, "mDNS: Service name collision for \"{}\"", impl->pub_name);
+            rename_on_collision(impl);
+            avahi_entry_group_reset(g);
+            create_services(impl);
             break;
         case AVAHI_ENTRY_GROUP_FAILURE:
             debug::log(ERR,
@@ -87,7 +100,9 @@ namespace tether {
             std::string txt_fp = "fp=" + impl->pub_fingerprint;
             std::string txt_ver = "v=1";
 
-            int ret = avahi_entry_group_add_service(impl->pub_group,
+            int ret = 0;
+            for (int attempt = 0; attempt < 16; ++attempt) {
+                ret = avahi_entry_group_add_service(impl->pub_group,
                                                     AVAHI_IF_UNSPEC,
                                                     AVAHI_PROTO_UNSPEC,
                                                     (AvahiPublishFlags)0,
@@ -99,7 +114,14 @@ namespace tether {
                                                     txt_fp.c_str(),
                                                     txt_ver.c_str(),
                                                     nullptr // sentinel
-            );
+                );
+
+                if (ret != AVAHI_ERR_COLLISION)
+                    break;
+
+                rename_on_collision(impl);
+                avahi_entry_group_reset(impl->pub_group);
+            }
 
             if (ret < 0) {
                 debug::log(ERR, "mDNS: Failed to add service: {}", avahi_strerror(ret));
@@ -403,6 +425,7 @@ namespace tether {
             &error);
 
         if (!impl_->browse_client) {
+            debug::log(ERR, "mDNS: Failed to create browse client: {}", avahi_strerror(error));
             avahi_threaded_poll_free(impl_->browse_poll);
             impl_->browse_poll = nullptr;
             return;
@@ -422,6 +445,8 @@ namespace tether {
                                                           ctx);
 
         if (!impl_->browse_browser) {
+            debug::log(
+                ERR, "mDNS: Failed to create browser: {}", avahi_strerror(avahi_client_errno(impl_->browse_client)));
             avahi_client_free(impl_->browse_client);
             avahi_threaded_poll_free(impl_->browse_poll);
             impl_->browse_client = nullptr;
