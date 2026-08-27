@@ -1,7 +1,9 @@
 #pragma once
 
+#include <chrono>
 #include <filesystem>
 #include <format>
+#include <iomanip>
 #include <iostream>
 
 template <> struct std::formatter<std::filesystem::path> : std::formatter<std::string> {
@@ -23,6 +25,15 @@ namespace debug {
         if (!verbose && level == TRACE) {
             return;
         }
+        const auto now = std::chrono::system_clock::now();
+        const auto t = std::chrono::system_clock::to_time_t(now);
+        const auto ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+        std::tm tm{};
+        localtime_r(&t, &tm);
+        std::cerr << '[' << std::put_time(&tm, "%F %T") << '.' << std::setfill('0') << std::setw(3)
+                  << ms.count() << std::setfill(' ') << "] ";
+
         std::cerr << '[';
 
         switch (level) {
