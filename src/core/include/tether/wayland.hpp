@@ -11,6 +11,7 @@ class CCWlDisplay;
 class CCWlRegistry;
 class CCWlSeat;
 class CCZwlrDataControlManagerV1;
+class CCExtDataControlManagerV1;
 struct wl_display;
 
 namespace tether {
@@ -34,7 +35,8 @@ namespace tether {
         std::unique_ptr<CCWlRegistry> registry_;
 
         std::unique_ptr<CCWlSeat> seat_;
-        std::unique_ptr<CCZwlrDataControlManagerV1> data_control_manager_;
+        std::unique_ptr<CCZwlrDataControlManagerV1> wlr_data_control_manager_;
+        std::unique_ptr<CCExtDataControlManagerV1> ext_data_control_manager_;
         std::unique_ptr<ClipboardManager> clipboard_;
 
         std::function<void(const std::string&)> clipboard_cb_;

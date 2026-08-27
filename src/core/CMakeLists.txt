@@ -3,7 +3,6 @@ add_library(tether STATIC
     src/i18n.cpp
     src/event_loop.cpp
     src/net.cpp
-    src/clipboard.cpp
     src/base64.cpp
     src/otp.cpp
     src/file_transfer.cpp
@@ -36,6 +35,7 @@ add_library(tether STATIC
     src/wayland.cpp
     src/wayland_protocols/wayland.cpp
     src/wayland_protocols/wlr-data-control-unstable-v1.cpp
+    src/wayland_protocols/ext-data-control-v1.cpp
 )
 
 pkg_check_modules(GLIB REQUIRED IMPORTED_TARGET glib-2.0 gio-2.0)
