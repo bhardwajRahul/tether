@@ -972,6 +972,18 @@ namespace tether::ui {
             set_text(g_devices.lbl_bt_progress, event.value("message", ""));
             return false;
         }
+        if (command == "bt_pair_confirm_request") {
+            GtkWidget* dialog = gtk_message_dialog_new(GTK_WINDOW(main_window()),
+                                                       GTK_DIALOG_MODAL,
+                                                       GTK_MESSAGE_QUESTION,
+                                                       GTK_BUTTONS_OK_CANCEL,
+                                                       _("Does the iPhone show this code?\n\n%s"),
+                                                       event.value("code", "").c_str());
+            const bool confirmed = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK;
+            gtk_widget_destroy(dialog);
+            daemon_send({{"command", "bt_pair_confirm"}, {"accept", confirmed}});
+            return true;
+        }
         if (command == "bt_pair_progress") {
             set_text(g_devices.lbl_bt_progress, event.value("step", "") + "  " + event.value("detail", ""));
             return true;

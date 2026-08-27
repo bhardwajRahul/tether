@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-25 22:13-0700\n"
+"POT-Creation-Date: 2026-08-26 14:40-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Turkish\n"
@@ -278,6 +278,26 @@ msgstr "Arka plan hizmetine ulaşılamadı.\n"
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the operation finished.\n"
 msgstr "Arka plan hizmeti, işlem bitmeden bağlantıyı kapattı.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"  The iPhone should be showing this code: %s\n"
+"  Does it match? [y/N] "
+msgstr ""
+"\n"
+"  iPhone bu kodu gösteriyor olmalı: %s\n"
+"  Eşleşiyor mu? [y/N] "
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"  Cannot confirm the pairing code: input is not a terminal.\n"
+msgstr ""
+"\n"
+"  Eşleştirme kodu doğrulanamıyor: giriş bir terminal değil.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth connection state from the daemon.\n"
@@ -1040,6 +1060,17 @@ msgid ""
 msgstr ""
 "iPhone bulunamadı. Telefonun kilidini açın ve duyuru yapması için Ayarlar > "
 "Bluetooth bölümünü açın, sonra yeniden tarayın."
+
+#: src/gtk/devices_view.cpp
+#, c-format
+msgid ""
+"Does the iPhone show this code?\n"
+"\n"
+"%s"
+msgstr ""
+"iPhone bu kodu gösteriyor mu?\n"
+"\n"
+"%s"
 
 #: src/gtk/devices_view.cpp
 msgid "Connect your iPhone"

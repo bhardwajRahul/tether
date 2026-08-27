@@ -24,6 +24,8 @@
 #include "tether/otp.hpp"
 #include "tether/wayland.hpp"
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -301,6 +303,11 @@ namespace tether {
     // advertisement object paths.
     static std::atomic<bool> g_bt_pair_busy{false};
 
+    constexpr int BT_CONFIRM_TIMEOUT_SECONDS = 60;
+    static std::mutex g_bt_confirm_mutex;
+    static std::condition_variable g_bt_confirm_cv;
+    static int g_bt_confirm_answer = -1; // -1 pending, 0 declined, 1 accepted
+
     // A second StartDiscovery while one is running just gets stopped early by the
     // first one's StopDiscovery.
     static std::atomic<bool> g_bt_scan_busy{false};
@@ -331,6 +338,24 @@ namespace tether {
         event["message"] = ok ? "Bluetooth scan finished." : (err.empty() ? "Bluetooth is unavailable." : err);
         broadcast_local_event(build_bt_devices().dump());
         broadcast_local_event(event.dump());
+    }
+
+    // Runs on the BlueZ monitor's GLib thread, same as the local dialog it replaces.
+    static bool ask_client_to_confirm(const std::string& code) {
+        {
+            std::lock_guard<std::mutex> lock(g_bt_confirm_mutex);
+            g_bt_confirm_answer = -1;
+        }
+
+        nlohmann::json event;
+        event["command"] = "bt_pair_confirm_request";
+        event["code"] = code;
+        broadcast_local_event(event.dump());
+
+        std::unique_lock<std::mutex> lock(g_bt_confirm_mutex);
+        g_bt_confirm_cv.wait_for(
+            lock, std::chrono::seconds(BT_CONFIRM_TIMEOUT_SECONDS), [] { return g_bt_confirm_answer >= 0; });
+        return g_bt_confirm_answer == 1;
     }
 
     static void run_bt_pair(const std::string& address, std::optional<bluetooth::AuthStrategy> strategy) {
@@ -366,7 +391,7 @@ namespace tether {
                 event["detail"] = detail;
                 broadcast_local_event(event.dump());
             },
-            nullptr);
+            ask_client_to_confirm);
 
         if (result.success) {
             config.device_address = result.device_address;
@@ -761,6 +786,12 @@ namespace tether {
                         if (j.contains("strategy"))
                             strategy = bluetooth::auth_strategy_from_string(j["strategy"]);
                         std::thread([address, strategy]() { run_bt_pair(address, strategy); }).detach();
+                    } else if (j.contains("command") && j["command"] == "bt_pair_confirm") {
+                        {
+                            std::lock_guard<std::mutex> lock(g_bt_confirm_mutex);
+                            g_bt_confirm_answer = j.value("accept", false) ? 1 : 0;
+                        }
+                        g_bt_confirm_cv.notify_all();
                     } else if (j.contains("command") && j["command"] == "bt_unpair" && j.contains("address")) {
                         std::string address = j["address"];
                         std::thread([address]() { run_bt_unpair(address); }).detach();

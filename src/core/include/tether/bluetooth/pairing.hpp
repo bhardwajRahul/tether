@@ -29,7 +29,7 @@ namespace tether::bluetooth {
     // Device1.Pair(). Connect-first induces authentication only as a side effect of
     // a profile connect, so a phone that refuses the profile never starts pairing
     // at all. Device1.Pair() involves no profile.
-    bool should_fall_back(AuthStrategy tried, bool paired, bool user_rejected);
+    bool should_fall_back(AuthStrategy tried, bool paired, bool confirmation_failed);
 
     // Reports progress steps so the CLI and GTK app can show what is happening
     // during a transaction that legitimately takes tens of seconds.
@@ -73,6 +73,6 @@ namespace tether::bluetooth {
 
     nlohmann::json to_json(const PairResult& result);
 
-    bool confirm_with_dialog(const std::string& device_name, const std::string& code);
+    bool confirm_with_dialog(const std::string& device_name, const std::string& code, bool& unavailable);
 
 } // namespace tether::bluetooth

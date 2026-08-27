@@ -412,6 +412,22 @@ static int run_bt_transaction(tether::Client& client,
             if (cmd == "bt_pair_progress") {
                 fprintf(stdout, "  %-12s %s\n", event.value("step", "").c_str(), event.value("detail", "").c_str());
                 fflush(stdout);
+            } else if (cmd == "bt_pair_confirm_request") {
+                const std::string code = event.value("code", "");
+                bool accept = false;
+                if (isatty(STDIN_FILENO)) {
+                    fprintf(stdout,
+                            _("\n  The iPhone should be showing this code: %s\n  Does it match? [y/N] "),
+                            code.c_str());
+                    fflush(stdout);
+                    char answer[16] = {0};
+                    if (fgets(answer, sizeof(answer), stdin))
+                        accept = answer[0] == 'y' || answer[0] == 'Y';
+                } else {
+                    fprintf(stdout, _("\n  Cannot confirm the pairing code: input is not a terminal.\n"));
+                    fflush(stdout);
+                }
+                client.send(nlohmann::json({{"command", "bt_pair_confirm"}, {"accept", accept}}).dump() + "\n");
             } else if (cmd == result_command) {
                 fprintf(stdout, "\n%s\n", event.value("message", "").c_str());
                 return event.value("success", false) ? 0 : 1;

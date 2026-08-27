@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-25 22:13-0700\n"
+"POT-Creation-Date: 2026-08-26 14:40-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Dutch\n"
@@ -280,6 +280,26 @@ msgstr "Kon de daemon niet bereiken.\n"
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the operation finished.\n"
 msgstr "De daemon sloot de verbinding voordat de bewerking klaar was.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"  The iPhone should be showing this code: %s\n"
+"  Does it match? [y/N] "
+msgstr ""
+"\n"
+"  De iPhone zou deze code moeten tonen: %s\n"
+"  Komt hij overeen? [y/N] "
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"  Cannot confirm the pairing code: input is not a terminal.\n"
+msgstr ""
+"\n"
+"  Kan de koppelingscode niet bevestigen: invoer is geen terminal.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth connection state from the daemon.\n"
@@ -1056,6 +1076,17 @@ msgid ""
 msgstr ""
 "Geen iPhone gevonden. Ontgrendel de telefoon en open Instellingen > "
 "Bluetooth zodat hij adverteert, en zoek dan opnieuw."
+
+#: src/gtk/devices_view.cpp
+#, c-format
+msgid ""
+"Does the iPhone show this code?\n"
+"\n"
+"%s"
+msgstr ""
+"Toont de iPhone deze code?\n"
+"\n"
+"%s"
 
 #: src/gtk/devices_view.cpp
 msgid "Connect your iPhone"

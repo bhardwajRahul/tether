@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-25 22:13-0700\n"
+"POT-Creation-Date: 2026-08-26 14:40-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -269,6 +269,26 @@ msgstr "无法连接到守护进程。\n"
 #: src/cli/main.cpp
 msgid "Daemon closed the connection before the operation finished.\n"
 msgstr "操作完成前守护进程已关闭连接。\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"  The iPhone should be showing this code: %s\n"
+"  Does it match? [y/N] "
+msgstr ""
+"\n"
+"  iPhone 上应显示此代码：%s\n"
+"  是否一致？[y/N] "
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"  Cannot confirm the pairing code: input is not a terminal.\n"
+msgstr ""
+"\n"
+"  无法确认配对代码：输入不是终端。\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth connection state from the daemon.\n"
@@ -998,6 +1018,17 @@ msgid ""
 "advertises, then scan again."
 msgstr ""
 "未找到 iPhone。请解锁 iPhone 并打开 设置 > 蓝牙 使其开始广播，然后重新搜索。"
+
+#: src/gtk/devices_view.cpp
+#, c-format
+msgid ""
+"Does the iPhone show this code?\n"
+"\n"
+"%s"
+msgstr ""
+"iPhone 上显示的是此代码吗？\n"
+"\n"
+"%s"
 
 #: src/gtk/devices_view.cpp
 msgid "Connect your iPhone"
