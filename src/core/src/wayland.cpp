@@ -1,5 +1,6 @@
 #include "tether/wayland.hpp"
 #include "wayland_protocols/wayland.hpp"
+#include "wayland_protocols/ext-data-control-v1.hpp"
 #include "wayland_protocols/wlr-data-control-unstable-v1.hpp"
 
 #include <cstring>
@@ -18,7 +19,8 @@ namespace tether {
         if (raw_display_) {
             // Crucial: Destroy all regular proxies BEFORE disconnecting the display.
             clipboard_.reset();
-            data_control_manager_.reset();
+            ext_data_control_manager_.reset();
+            wlr_data_control_manager_.reset();
             seat_.reset();
             registry_.reset();
 
@@ -55,7 +57,10 @@ namespace tether {
             } else if (std::strcmp(interface, "zwlr_data_control_manager_v1") == 0) {
                 auto p =
                     wl_registry_bind((wl_registry*)r->resource(), name, &zwlr_data_control_manager_v1_interface, 1);
-                data_control_manager_ = std::make_unique<CCZwlrDataControlManagerV1>((wl_proxy*)p);
+                wlr_data_control_manager_ = std::make_unique<CCZwlrDataControlManagerV1>((wl_proxy*)p);
+            } else if (std::strcmp(interface, "ext_data_control_manager_v1") == 0) {
+                auto p = wl_registry_bind((wl_registry*)r->resource(), name, &ext_data_control_manager_v1_interface, 1);
+                ext_data_control_manager_ = std::make_unique<CCExtDataControlManagerV1>((wl_proxy*)p);
             }
         });
 
@@ -64,12 +69,30 @@ namespace tether {
         wl_display_roundtrip(raw_display_);
         wl_display_roundtrip(raw_display_);
 
-        if (!seat_ || !data_control_manager_) {
-            debug::log(ERR, "WaylandContext: Failed to obtain necessary globals.");
+        if (!seat_) {
+            debug::log(ERR, "WaylandContext: compositor exposes no wl_seat.");
             return false;
         }
 
-        clipboard_ = std::make_unique<ClipboardManager>(data_control_manager_.get(), seat_.get(), loop_, raw_display_);
+        // Prefer the standardized protocol; KWin only implements this one.
+        if (ext_data_control_manager_) {
+            clipboard_ = std::make_unique<DataControlClipboard<CCExtDataControlManagerV1,
+                                                               CCExtDataControlDeviceV1,
+                                                               CCExtDataControlOfferV1,
+                                                               CCExtDataControlSourceV1>>(
+                ext_data_control_manager_.get(), (wl_proxy*)seat_->resource(), loop_, raw_display_);
+        } else if (wlr_data_control_manager_) {
+            clipboard_ = std::make_unique<DataControlClipboard<CCZwlrDataControlManagerV1,
+                                                               CCZwlrDataControlDeviceV1,
+                                                               CCZwlrDataControlOfferV1,
+                                                               CCZwlrDataControlSourceV1>>(
+                wlr_data_control_manager_.get(), (wl_proxy*)seat_->resource(), loop_, raw_display_);
+        } else {
+            debug::log(ERR,
+                       "WaylandContext: compositor exposes neither ext_data_control_manager_v1 nor "
+                       "zwlr_data_control_manager_v1; clipboard sync unavailable.");
+            return false;
+        }
 
         clipboard_->set_update_callback([this](const std::string& text) {
             bool changed = false;
