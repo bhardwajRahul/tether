@@ -1361,8 +1361,12 @@ namespace tether {
                                 ofs << pending.dump(4);
                             }
 
+                            char hostname[256] = {};
+                            gethostname(hostname, sizeof(hostname) - 1);
+
                             nlohmann::json resp;
                             resp["command"] = "pair_pending";
+                            resp["device_name"] = hostname;
                             std::string payload = resp.dump() + "\n";
                             robust_ssl_write(ssl, payload.c_str(), payload.size());
 

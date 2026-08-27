@@ -563,6 +563,10 @@ final class TetherViewModel {
             }
 
         case .pairPending:
+            // Manual (IP) connections have no Bonjour name; take the daemon's.
+            if let name = message.deviceName, !name.isEmpty {
+                connectedDeviceName = name
+            }
             pairingStatus = "Waiting for approval on your desktop...\n\nRun: tether --accept \(certificateManager.myFingerprint)"
 
         case .pairRequest:
