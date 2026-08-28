@@ -48,11 +48,18 @@ namespace tether {
         Discovery(Discovery&&) noexcept;
         Discovery& operator=(Discovery&&) noexcept;
 
+        // Reported when mDNS availability changes: false while avahi-daemon is
+        // down, true once a client is connected to it.
+        using StateCallback = std::function<void(bool available)>;
+        void set_state_callback(StateCallback cb);
+
         // Publish this tetherd instance on the local network.
         // @param name     Human-readable service name (typically the hostname).
         // @param port     TCP port the daemon is listening on.
         // @param fingerprint  SHA-256 fingerprint of the daemon's TLS certificate.
-        // @return true if the service was successfully registered.
+        // @return true if publishing was set up. Registration itself is
+        //         asynchronous and waits for avahi-daemon, which need not be
+        //         running yet; watch set_state_callback() for the outcome.
         bool publish(const std::string& name, uint16_t port, const std::string& fingerprint);
 
         // Stop advertising this instance.  Called automatically by the destructor.

@@ -37,6 +37,13 @@ namespace tether {
     nlohmann::json build_bt_status();
     nlohmann::json build_bt_devices();
 
+    // Whether mDNS is usable (avahi-daemon is running). False until the
+    // Avahi client reports otherwise. Setting it pushes an "mdns_status" event
+    // to local subscribers.
+    void set_mdns_available(bool available);
+    bool mdns_available();
+    nlohmann::json build_mdns_status();
+
     class UnixServer {
     public:
         UnixServer(EpollEventLoop& loop);

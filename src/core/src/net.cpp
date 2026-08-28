@@ -299,6 +299,24 @@ namespace tether {
         return status;
     }
 
+    static std::atomic<bool> g_mdns_available{false};
+
+    bool mdns_available() { return g_mdns_available.load(); }
+
+    nlohmann::json build_mdns_status() {
+        return nlohmann::json{{"command", "mdns_status"}, {"available", g_mdns_available.load()}};
+    }
+
+    void set_mdns_available(bool available) {
+        if (g_mdns_available.exchange(available) == available)
+            return;
+        if (available)
+            debug::log(INFO, "mDNS: avahi-daemon is available");
+        else
+            debug::log(ERR, "mDNS: avahi-daemon is unavailable; this machine cannot be discovered");
+        broadcast_local_event(build_mdns_status().dump());
+    }
+
     // Guards against two pairing transactions racing for the same agent and
     // advertisement object paths.
     static std::atomic<bool> g_bt_pair_busy{false};
@@ -542,6 +560,8 @@ namespace tether {
             item["bytes_written"] = file.bytes_written;
             snapshot["recent_received_files"].push_back(item);
         }
+
+        snapshot["mdns_available"] = g_mdns_available.load();
 
         return snapshot;
     }
