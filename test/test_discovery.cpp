@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 #include <tether/discovery.hpp>
-#include <vector>
+#include <chrono>
+#include <mutex>
 #include <string>
+#include <thread>
+#include <vector>
 
 TEST(DiscoveryTest, GroupDiscoveredHosts_EmptyInput) {
     std::vector<tether::DiscoveredHost> hosts;
@@ -82,4 +85,28 @@ TEST(DiscoveryTest, GroupDiscoveredHosts_MixedFingerprintsAndNames) {
     };
     auto result = tether::group_discovered_hosts(hosts);
     ASSERT_EQ(result.size(), 2);
+}
+
+// Publishing and continuous browse both watch the same daemon and each walks
+// the same client states, so the availability report must collapse repeats:
+// consecutive identical values would flap the UI indicator.
+TEST(DiscoveryTest, StateCallbackReportsOnlyChanges) {
+    tether::Discovery discovery;
+
+    std::mutex mutex;
+    std::vector<bool> reports;
+    discovery.set_state_callback([&](bool available) {
+        std::lock_guard<std::mutex> lock(mutex);
+        reports.push_back(available);
+    });
+
+    discovery.publish("tether-test", 5134, "testfingerprint");
+    discovery.start_continuous_browse([](const std::vector<tether::DiscoveredDevice>&) {});
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    std::lock_guard<std::mutex> lock(mutex);
+    ASSERT_FALSE(reports.empty()) << "availability was never reported";
+    for (size_t i = 1; i < reports.size(); ++i) {
+        EXPECT_NE(reports[i], reports[i - 1]) << "duplicate report at index " << i;
+    }
 }

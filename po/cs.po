@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-26 14:40-0700\n"
+"POT-Creation-Date: 2026-08-27 20:41-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Czech\n"
@@ -238,7 +238,8 @@ msgstr "Secure Connections={}"
 msgid "Bond"
 msgstr "Vazba"
 
-#: src/cli/main.cpp src/gtk/main.cpp src/gtk/tether-gtk.desktop.in
+#: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
+#: src/gtk/tether-gtk.desktop.in
 msgid "Tether"
 msgstr "Tether"
 
@@ -853,6 +854,18 @@ msgstr "Přijmout"
 msgid "Reject"
 msgstr "Odmítnout"
 
+#: src/daemon/main.cpp
+msgid "This PC can't be discovered"
+msgstr "Tento počítač nelze najít"
+
+#: src/daemon/main.cpp
+msgid ""
+"avahi-daemon isn't running, so Tether can't advertise itself on the network. "
+"Start it with: sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"avahi-daemon neběží, takže se Tether nemůže v síti oznamovat. Spusťte jej "
+"příkazem: sudo systemctl enable --now avahi-daemon"
+
 #: src/daemon/notification.cpp
 msgid "File arrived"
 msgstr "Soubor dorazil"
@@ -1004,6 +1017,14 @@ msgstr "Složky nelze odeslat — přetáhněte místo nich soubory."
 #: src/gtk/devices_view.cpp
 msgid "Clipboard, files, and OTP are connected."
 msgstr "Schránka, soubory a OTP jsou připojeny."
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"avahi-daemon isn't running, so the iPhone can't find this PC. Start it with: "
+"sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"avahi-daemon neběží, takže iPhone tento počítač nenajde. Spusťte jej "
+"příkazem: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired iPhone is connected. Open the Tether app on the phone."

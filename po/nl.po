@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-26 14:40-0700\n"
+"POT-Creation-Date: 2026-08-27 20:41-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Dutch\n"
@@ -237,7 +237,8 @@ msgstr "Secure Connections={}"
 msgid "Bond"
 msgstr "Koppeling"
 
-#: src/cli/main.cpp src/gtk/main.cpp src/gtk/tether-gtk.desktop.in
+#: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
+#: src/gtk/tether-gtk.desktop.in
 msgid "Tether"
 msgstr "Tether"
 
@@ -859,6 +860,18 @@ msgstr "Accepteren"
 msgid "Reject"
 msgstr "Weigeren"
 
+#: src/daemon/main.cpp
+msgid "This PC can't be discovered"
+msgstr "Deze pc kan niet worden gevonden"
+
+#: src/daemon/main.cpp
+msgid ""
+"avahi-daemon isn't running, so Tether can't advertise itself on the network. "
+"Start it with: sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"avahi-daemon draait niet, dus Tether kan zichzelf niet op het netwerk "
+"aankondigen. Start het met: sudo systemctl enable --now avahi-daemon"
+
 #: src/daemon/notification.cpp
 msgid "File arrived"
 msgstr "Bestand ontvangen"
@@ -1013,6 +1026,14 @@ msgstr ""
 #: src/gtk/devices_view.cpp
 msgid "Clipboard, files, and OTP are connected."
 msgstr "Klembord, bestanden en OTP zijn verbonden."
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"avahi-daemon isn't running, so the iPhone can't find this PC. Start it with: "
+"sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"avahi-daemon draait niet, dus de iPhone kan deze pc niet vinden. Start het "
+"met: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired iPhone is connected. Open the Tether app on the phone."

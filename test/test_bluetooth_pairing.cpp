@@ -107,6 +107,23 @@ TEST(FallbackPolicy, DoesNotRetryAUserRejection) {
     EXPECT_FALSE(should_fall_back(AuthStrategy::ConnectFirst, /*paired=*/false, /*user_rejected=*/true));
 }
 
+// BlueZ reporting a failed authentication is terminal: polling for a bond after
+// it only buries when the transaction actually broke -- see issue #49.
+TEST(AuthenticationFailure, RecognizesBlueZErrorNames) {
+    EXPECT_TRUE(is_authentication_failure("GDBus.Error:org.bluez.Error.AuthenticationFailed: Authentication Failed"));
+    EXPECT_TRUE(is_authentication_failure("org.bluez.Error.AuthenticationRejected"));
+    EXPECT_TRUE(is_authentication_failure("org.bluez.Error.AuthenticationCanceled"));
+    EXPECT_TRUE(is_authentication_failure("org.bluez.Error.AuthenticationTimeout"));
+}
+
+// A refused profile connect can still be followed by a completed authentication,
+// so those errors must keep the full wait.
+TEST(AuthenticationFailure, IgnoresConnectAndTransportErrors) {
+    EXPECT_FALSE(is_authentication_failure("org.bluez.Error.Failed: br-connection-refused"));
+    EXPECT_FALSE(is_authentication_failure("org.bluez.Error.InProgress"));
+    EXPECT_FALSE(is_authentication_failure(""));
+}
+
 // Explicit pair is the fallback; there is nothing further to fall back to.
 TEST(FallbackPolicy, NeverRetriesExplicitPair) {
     EXPECT_FALSE(should_fall_back(AuthStrategy::ExplicitPair, /*paired=*/false, /*user_rejected=*/false));

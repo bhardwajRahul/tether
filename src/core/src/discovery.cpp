@@ -8,6 +8,7 @@
 #include <avahi-common/malloc.h>
 #include <avahi-common/simple-watch.h>
 #include <avahi-common/thread-watch.h>
+#include <avahi-common/timeval.h>
 
 #include <algorithm>
 #include <chrono>
@@ -24,11 +25,15 @@ namespace tether {
     // ─── Impl ───────────────────────────────────────────────────────
     // Defined at file scope so C-style Avahi callbacks can access it.
 
+    // How long to wait before rebuilding a client whose daemon went away.
+    static constexpr unsigned RECONNECT_DELAY_MS = 1000;
+
     struct DiscoveryImpl {
         // Publishing state
         AvahiThreadedPoll* pub_poll = nullptr;
         AvahiClient* pub_client = nullptr;
         AvahiEntryGroup* pub_group = nullptr;
+        AvahiTimeout* pub_reconnect = nullptr;
         std::string pub_name;
         uint16_t pub_port = 0;
         std::string pub_fingerprint;
@@ -41,12 +46,35 @@ namespace tether {
         AvahiThreadedPoll* browse_poll = nullptr;
         AvahiClient* browse_client = nullptr;
         AvahiServiceBrowser* browse_browser = nullptr;
+        AvahiTimeout* browse_reconnect = nullptr;
         std::function<void(const std::vector<DiscoveredDevice>&)> browse_callback;
         void* browse_ctx = nullptr;
+
+        // Availability reporting
+        std::mutex state_mutex;
+        Discovery::StateCallback state_callback;
+        bool state_known = false;
+        bool state_available = false;
     };
 
     // Wire the pimpl to use DiscoveryImpl
     struct Discovery::Impl : DiscoveryImpl {};
+
+    // Reports availability, collapsing repeats. The publish and browse
+    // clients use the same daemon and the same states
+    static void report_state(DiscoveryImpl* impl, bool available) {
+        Discovery::StateCallback cb;
+        {
+            std::lock_guard<std::mutex> lock(impl->state_mutex);
+            if (impl->state_known && impl->state_available == available)
+                return;
+            impl->state_known = true;
+            impl->state_available = available;
+            cb = impl->state_callback;
+        }
+        if (cb)
+            cb(available);
+    }
 
     // ─── Publishing callbacks ───────────────────────────────────────
 
@@ -135,6 +163,30 @@ namespace tether {
         }
     }
 
+    static void pub_client_callback(AvahiClient* c, AvahiClientState state, void* userdata);
+
+    // Rebuilds the publishing client after avahi-daemon went away.
+    static void pub_reconnect_callback(AvahiTimeout* t, void* userdata) {
+        auto* impl = static_cast<DiscoveryImpl*>(userdata);
+
+        // The group belongs to the dead client and dies with it.
+        impl->pub_group = nullptr;
+        if (impl->pub_client) {
+            avahi_client_free(impl->pub_client);
+            impl->pub_client = nullptr;
+        }
+
+        int error = 0;
+        impl->pub_client = avahi_client_new(
+            avahi_threaded_poll_get(impl->pub_poll), AVAHI_CLIENT_NO_FAIL, pub_client_callback, impl, &error);
+        if (!impl->pub_client) {
+            debug::log(ERR, "mDNS: Failed to recreate client: {}", avahi_strerror(error));
+            struct timeval tv;
+            avahi_elapse_time(&tv, RECONNECT_DELAY_MS, 0);
+            avahi_threaded_poll_get(impl->pub_poll)->timeout_update(t, &tv);
+        }
+    }
+
     static void pub_client_callback(AvahiClient* c, AvahiClientState state, void* userdata) {
         auto* impl = static_cast<DiscoveryImpl*>(userdata);
         impl->pub_client = c;
@@ -142,9 +194,20 @@ namespace tether {
         switch (state) {
         case AVAHI_CLIENT_S_RUNNING:
             create_services(impl);
+            report_state(impl, true);
+            break;
+        case AVAHI_CLIENT_CONNECTING:
+            debug::log(ERR, "mDNS: avahi-daemon is not running; waiting for it to start");
+            report_state(impl, false);
             break;
         case AVAHI_CLIENT_FAILURE:
             debug::log(ERR, "mDNS: Client failure: {}", avahi_strerror(avahi_client_errno(c)));
+            report_state(impl, false);
+            if (avahi_client_errno(c) == AVAHI_ERR_DISCONNECTED && impl->pub_reconnect) {
+                struct timeval tv;
+                avahi_elapse_time(&tv, RECONNECT_DELAY_MS, 0);
+                avahi_threaded_poll_get(impl->pub_poll)->timeout_update(impl->pub_reconnect, &tv);
+            }
             break;
         case AVAHI_CLIENT_S_COLLISION:
         case AVAHI_CLIENT_S_REGISTERING:
@@ -274,6 +337,109 @@ namespace tether {
         }
     }
 
+    // ─── Continuous browse callbacks ────────────────────────────────
+
+    static void browse_client_callback(AvahiClient* c, AvahiClientState state, void* userdata);
+
+    // Counterpart of pub_reconnect_callback for the browsing client.
+    static void browse_reconnect_callback(AvahiTimeout* t, void* userdata) {
+        auto* impl = static_cast<DiscoveryImpl*>(userdata);
+
+        if (impl->browse_client) {
+            avahi_client_free(impl->browse_client);
+            impl->browse_client = nullptr;
+        }
+
+        int error = 0;
+        impl->browse_client = avahi_client_new(
+            avahi_threaded_poll_get(impl->browse_poll), AVAHI_CLIENT_NO_FAIL, browse_client_callback, impl, &error);
+        if (!impl->browse_client) {
+            debug::log(ERR, "mDNS: Failed to recreate browse client: {}", avahi_strerror(error));
+            struct timeval tv;
+            avahi_elapse_time(&tv, RECONNECT_DELAY_MS, 0);
+            avahi_threaded_poll_get(impl->browse_poll)->timeout_update(t, &tv);
+        }
+    }
+
+    static void browse_client_callback(AvahiClient* c, AvahiClientState state, void* userdata) {
+        auto* impl = static_cast<DiscoveryImpl*>(userdata);
+        auto* ctx = static_cast<BrowseContext*>(impl->browse_ctx);
+        impl->browse_client = c;
+        if (ctx)
+            ctx->client = c;
+
+        switch (state) {
+        case AVAHI_CLIENT_S_RUNNING:
+            // The browser can only be created once the daemon is connected, so
+            // it is built here rather than alongside the client.
+            if (!impl->browse_browser && ctx) {
+                impl->browse_browser = avahi_service_browser_new(c,
+                                                                 AVAHI_IF_UNSPEC,
+                                                                 AVAHI_PROTO_UNSPEC,
+                                                                 SERVICE_TYPE,
+                                                                 nullptr, // domain (default .local)
+                                                                 (AvahiLookupFlags)0,
+                                                                 browse_callback,
+                                                                 ctx);
+                if (!impl->browse_browser) {
+                    debug::log(ERR, "mDNS: Failed to create browser: {}", avahi_strerror(avahi_client_errno(c)));
+                    break;
+                }
+            }
+            report_state(impl, true);
+            break;
+        case AVAHI_CLIENT_CONNECTING:
+            report_state(impl, false);
+            break;
+        case AVAHI_CLIENT_FAILURE:
+            debug::log(ERR, "mDNS: Browse client failure: {}", avahi_strerror(avahi_client_errno(c)));
+            report_state(impl, false);
+            // The browser belongs to the dead client; a new one is built when
+            // the replacement client reaches S_RUNNING.
+            impl->browse_browser = nullptr;
+            {
+                std::lock_guard<std::mutex> lock(impl->results_mutex);
+                impl->results.clear();
+            }
+            if (avahi_client_errno(c) == AVAHI_ERR_DISCONNECTED && impl->browse_reconnect) {
+                struct timeval tv;
+                avahi_elapse_time(&tv, RECONNECT_DELAY_MS, 0);
+                avahi_threaded_poll_get(impl->browse_poll)->timeout_update(impl->browse_reconnect, &tv);
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
+    // Per-call state for the one-shot discover(). The browser can only be built
+    // once the daemon is connected, so the callback owns it.
+    struct OneShotBrowse {
+        BrowseContext ctx;
+        AvahiServiceBrowser* browser = nullptr;
+    };
+
+    static void discover_client_callback(AvahiClient* c, AvahiClientState state, void* userdata) {
+        auto* one = static_cast<OneShotBrowse*>(userdata);
+        one->ctx.client = c;
+
+        if (state == AVAHI_CLIENT_S_RUNNING && !one->browser) {
+            one->browser = avahi_service_browser_new(c,
+                                                     AVAHI_IF_UNSPEC,
+                                                     AVAHI_PROTO_UNSPEC,
+                                                     SERVICE_TYPE,
+                                                     nullptr, // domain (default .local)
+                                                     (AvahiLookupFlags)0,
+                                                     browse_callback,
+                                                     &one->ctx);
+            if (!one->browser)
+                debug::log(ERR, "mDNS: Failed to create browser: {}", avahi_strerror(avahi_client_errno(c)));
+        } else if (state == AVAHI_CLIENT_FAILURE) {
+            debug::log(ERR, "mDNS: Browse client failure: {}", avahi_strerror(avahi_client_errno(c)));
+            one->browser = nullptr;
+        }
+    }
+
     // ─── Discovery class ────────────────────────────────────────────
 
     Discovery::Discovery() : impl_(std::make_unique<Impl>()) {}
@@ -288,6 +454,11 @@ namespace tether {
     Discovery::Discovery(Discovery&&) noexcept = default;
     Discovery& Discovery::operator=(Discovery&&) noexcept = default;
 
+    void Discovery::set_state_callback(StateCallback cb) {
+        std::lock_guard<std::mutex> lock(impl_->state_mutex);
+        impl_->state_callback = std::move(cb);
+    }
+
     bool Discovery::publish(const std::string& name, uint16_t port, const std::string& fingerprint) {
         unpublish();
 
@@ -301,23 +472,29 @@ namespace tether {
             return false;
         }
 
+        // Created disabled; armed only when the daemon disconnects. Allocating
+        // it up front keeps the reconnect path free of allocation.
+        const AvahiPoll* poll_api = avahi_threaded_poll_get(impl_->pub_poll);
+        impl_->pub_reconnect = poll_api->timeout_new(poll_api, nullptr, pub_reconnect_callback, impl_.get());
+
+        // NO_FAIL: register whenever avahi-daemon appears rather than only if
+        // it happens to be up right now.
         int error = 0;
-        impl_->pub_client = avahi_client_new(
-            avahi_threaded_poll_get(impl_->pub_poll), (AvahiClientFlags)0, pub_client_callback, impl_.get(), &error);
+        impl_->pub_client = avahi_client_new(poll_api, AVAHI_CLIENT_NO_FAIL, pub_client_callback, impl_.get(), &error);
 
         if (!impl_->pub_client) {
+            // NO_FAIL covers an absent avahi-daemon, so reaching here means the
+            // bus itself is unreachable: nothing to wait for.
             debug::log(ERR, "mDNS: Failed to create client: {}", avahi_strerror(error));
-            avahi_threaded_poll_free(impl_->pub_poll);
-            impl_->pub_poll = nullptr;
+            unpublish();
+            report_state(impl_.get(), false);
             return false;
         }
 
         if (avahi_threaded_poll_start(impl_->pub_poll) < 0) {
             debug::log(ERR, "mDNS: Failed to start threaded poll");
-            avahi_client_free(impl_->pub_client);
-            impl_->pub_client = nullptr;
-            avahi_threaded_poll_free(impl_->pub_poll);
-            impl_->pub_poll = nullptr;
+            unpublish();
+            report_state(impl_.get(), false);
             return false;
         }
 
@@ -327,6 +504,10 @@ namespace tether {
     void Discovery::unpublish() {
         if (impl_->pub_poll) {
             avahi_threaded_poll_stop(impl_->pub_poll);
+        }
+        if (impl_->pub_reconnect) {
+            avahi_threaded_poll_get(impl_->pub_poll)->timeout_free(impl_->pub_reconnect);
+            impl_->pub_reconnect = nullptr;
         }
         if (impl_->pub_group) {
             avahi_entry_group_free(impl_->pub_group);
@@ -355,13 +536,11 @@ namespace tether {
             impl_->results.clear();
         }
 
+        OneShotBrowse one{{impl_.get(), nullptr}, nullptr};
+
         int error = 0;
         AvahiClient* client = avahi_client_new(
-            avahi_threaded_poll_get(poll),
-            (AvahiClientFlags)0,
-            [](AvahiClient*, AvahiClientState, void*) {}, // no-op callback
-            nullptr,
-            &error);
+            avahi_threaded_poll_get(poll), AVAHI_CLIENT_NO_FAIL, discover_client_callback, &one, &error);
 
         if (!client) {
             debug::log(ERR, "mDNS: Failed to create browse client: {}", avahi_strerror(error));
@@ -369,30 +548,14 @@ namespace tether {
             return {};
         }
 
-        BrowseContext ctx{impl_.get(), client};
-
-        AvahiServiceBrowser* browser = avahi_service_browser_new(client,
-                                                                 AVAHI_IF_UNSPEC,
-                                                                 AVAHI_PROTO_UNSPEC,
-                                                                 SERVICE_TYPE,
-                                                                 nullptr, // domain (default .local)
-                                                                 (AvahiLookupFlags)0,
-                                                                 browse_callback,
-                                                                 &ctx);
-
-        if (!browser) {
-            debug::log(ERR, "mDNS: Failed to create browser: {}", avahi_strerror(avahi_client_errno(client)));
-            avahi_client_free(client);
-            avahi_threaded_poll_free(poll);
-            return {};
-        }
-
-        // Run the browse loop for the requested duration
+        // Run the browse loop for the requested duration. With NO_FAIL the scan
+        // still covers a daemon that only becomes available partway through.
         avahi_threaded_poll_start(poll);
         std::this_thread::sleep_for(std::chrono::milliseconds(timeout_ms));
         avahi_threaded_poll_stop(poll);
 
-        avahi_service_browser_free(browser);
+        if (one.browser)
+            avahi_service_browser_free(one.browser);
         avahi_client_free(client);
         avahi_threaded_poll_free(poll);
 
@@ -416,42 +579,19 @@ namespace tether {
             return;
         }
 
+        impl_->browse_ctx = new BrowseContext{impl_.get(), nullptr};
+
+        const AvahiPoll* poll_api = avahi_threaded_poll_get(impl_->browse_poll);
+        impl_->browse_reconnect = poll_api->timeout_new(poll_api, nullptr, browse_reconnect_callback, impl_.get());
+
         int error = 0;
-        impl_->browse_client = avahi_client_new(
-            avahi_threaded_poll_get(impl_->browse_poll),
-            (AvahiClientFlags)0,
-            [](AvahiClient*, AvahiClientState, void*) {},
-            nullptr,
-            &error);
+        impl_->browse_client =
+            avahi_client_new(poll_api, AVAHI_CLIENT_NO_FAIL, browse_client_callback, impl_.get(), &error);
 
         if (!impl_->browse_client) {
             debug::log(ERR, "mDNS: Failed to create browse client: {}", avahi_strerror(error));
-            avahi_threaded_poll_free(impl_->browse_poll);
-            impl_->browse_poll = nullptr;
-            return;
-        }
-
-        // Allocate a dedicated context
-        auto* ctx = new BrowseContext{impl_.get(), impl_->browse_client};
-        impl_->browse_ctx = ctx;
-
-        impl_->browse_browser = avahi_service_browser_new(impl_->browse_client,
-                                                          AVAHI_IF_UNSPEC,
-                                                          AVAHI_PROTO_UNSPEC,
-                                                          SERVICE_TYPE,
-                                                          nullptr,
-                                                          (AvahiLookupFlags)0,
-                                                          browse_callback,
-                                                          ctx);
-
-        if (!impl_->browse_browser) {
-            debug::log(
-                ERR, "mDNS: Failed to create browser: {}", avahi_strerror(avahi_client_errno(impl_->browse_client)));
-            avahi_client_free(impl_->browse_client);
-            avahi_threaded_poll_free(impl_->browse_poll);
-            impl_->browse_client = nullptr;
-            impl_->browse_poll = nullptr;
-            delete ctx;
+            stop_continuous_browse();
+            report_state(impl_.get(), false);
             return;
         }
 
@@ -465,6 +605,11 @@ namespace tether {
         avahi_threaded_poll_stop(impl_->browse_poll);
 
         impl_->browse_callback = nullptr;
+
+        if (impl_->browse_reconnect) {
+            avahi_threaded_poll_get(impl_->browse_poll)->timeout_free(impl_->browse_reconnect);
+            impl_->browse_reconnect = nullptr;
+        }
 
         if (impl_->browse_browser)
             avahi_service_browser_free(impl_->browse_browser);

@@ -21,6 +21,9 @@ namespace tether::ui {
             std::vector<std::pair<std::string, std::string>> paired_devices; // fp, name
             std::vector<std::string> connected_fps;                          // active connections
 
+            // false when avahi-daemon is down
+            bool mdns_ok = true;
+
             // The Bluetooth route
             std::vector<nlohmann::json> bt_devices;
             nlohmann::json bt_status = nlohmann::json::object();
@@ -534,13 +537,24 @@ namespace tether::ui {
 
         void update_wifi_indicator() {
             const bool connected = !g_devices.connected_fps.empty();
-            set_route_status(Route::WiFi,
-                             connected,
-                             connected ? _("Clipboard, files, and OTP are connected.")
-                                       : _("No paired iPhone is connected. Open the Tether app on the phone."));
+            if (connected) {
+                set_route_status(Route::WiFi, true, _("Clipboard, files, and OTP are connected."));
+                return;
+            }
+
+            if (!g_devices.mdns_ok) {
+                set_route_status(Route::WiFi,
+                                 false,
+                                 _("avahi-daemon isn't running, so the iPhone can't find this PC. Start it "
+                                   "with: sudo systemctl enable --now avahi-daemon"));
+                return;
+            }
+            set_route_status(Route::WiFi, false, _("No paired iPhone is connected. Open the Tether app on the phone."));
         }
 
         void apply_state_snapshot(const nlohmann::json& j) {
+
+            g_devices.mdns_ok = j.value("mdns_available", true);
             g_devices.connected_fps.clear();
             if (j.contains("connected_clients") && j["connected_clients"].is_array()) {
                 for (auto& c : j["connected_clients"]) {
@@ -785,6 +799,11 @@ namespace tether::ui {
         const std::string command = event.value("command", "");
         if (command == "state_snapshot") {
             apply_state_snapshot(event);
+            return true;
+        }
+        if (command == "mdns_status") {
+            g_devices.mdns_ok = event.value("available", true);
+            update_wifi_indicator();
             return true;
         }
         if (command == "client_connected") {

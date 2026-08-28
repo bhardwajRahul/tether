@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-26 14:40-0700\n"
+"POT-Creation-Date: 2026-08-27 20:41-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Brazilian Portuguese\n"
@@ -236,7 +236,8 @@ msgstr "Secure Connections={}"
 msgid "Bond"
 msgstr "Vínculo"
 
-#: src/cli/main.cpp src/gtk/main.cpp src/gtk/tether-gtk.desktop.in
+#: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
+#: src/gtk/tether-gtk.desktop.in
 msgid "Tether"
 msgstr "Tether"
 
@@ -298,7 +299,8 @@ msgid ""
 "  Cannot confirm the pairing code: input is not a terminal.\n"
 msgstr ""
 "\n"
-"  Não é possível confirmar o código de pareamento: a entrada não é um terminal.\n"
+"  Não é possível confirmar o código de pareamento: a entrada não é um "
+"terminal.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth connection state from the daemon.\n"
@@ -858,6 +860,18 @@ msgstr "Aceitar"
 msgid "Reject"
 msgstr "Recusar"
 
+#: src/daemon/main.cpp
+msgid "This PC can't be discovered"
+msgstr "Este computador não pode ser descoberto"
+
+#: src/daemon/main.cpp
+msgid ""
+"avahi-daemon isn't running, so Tether can't advertise itself on the network. "
+"Start it with: sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"O avahi-daemon não está em execução, portanto o Tether não pode se anunciar "
+"na rede. Inicie-o com: sudo systemctl enable --now avahi-daemon"
+
 #: src/daemon/notification.cpp
 msgid "File arrived"
 msgstr "Arquivo recebido"
@@ -1010,6 +1024,15 @@ msgstr "Pastas não podem ser enviadas — solte arquivos em vez disso."
 #: src/gtk/devices_view.cpp
 msgid "Clipboard, files, and OTP are connected."
 msgstr "Área de transferência, arquivos e OTP estão conectados."
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"avahi-daemon isn't running, so the iPhone can't find this PC. Start it with: "
+"sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"O avahi-daemon não está em execução, portanto o iPhone não consegue "
+"encontrar este computador. Inicie-o com: sudo systemctl enable --now avahi-"
+"daemon"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired iPhone is connected. Open the Tether app on the phone."

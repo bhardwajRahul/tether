@@ -482,6 +482,15 @@ namespace tether::bluetooth {
         };
     }
 
+    bool is_authentication_failure(const std::string& err) {
+        static const char* const NAMES[] = {
+            "AuthenticationFailed", "AuthenticationRejected", "AuthenticationCanceled", "AuthenticationTimeout"};
+        for (const char* name : NAMES)
+            if (err.find(name) != std::string::npos)
+                return true;
+        return false;
+    }
+
     bool should_fall_back(AuthStrategy tried, bool paired, bool confirmation_failed) {
         return tried == AuthStrategy::ConnectFirst && !paired && !confirmation_failed;
     }
@@ -553,16 +562,22 @@ namespace tether::bluetooth {
 
                 bool unavailable = false;
                 bool accepted = confirm_with_dialog(display_name, code, unavailable);
+                std::string answered_by = "dialog";
 
                 if (unavailable && confirm) {
                     accepted = confirm(code);
                     unavailable = false;
+                    answered_by = "client";
                 }
 
                 if (unavailable)
                     confirm_unavailable = true;
                 else if (!accepted)
                     user_rejected = true;
+
+                notify(progress,
+                       unavailable ? "unanswered" : (accepted ? "confirmed" : "declined"),
+                       unavailable ? "no dialog and no client answered" : answered_by);
                 return accepted;
             });
 
@@ -598,8 +613,13 @@ namespace tether::bluetooth {
                     initiated = call_device(conn, device.path, "Pair", PAIR_TIMEOUT_SECONDS * 1000, err);
                 }
 
-                // Connect() can report failure while authentication still completes so a refusal is waited out too
-                const int seconds = (!initiated && !auth_seen) ? CONNECT_REFUSED_GRACE_SECONDS : PAIR_TIMEOUT_SECONDS;
+                if (!initiated)
+                    notify(progress, "error", err);
+
+                // Connect() can report failure while authentication still completes so a refusal is waited out too.
+                const int seconds = (!initiated && (!auth_seen || is_authentication_failure(err)))
+                                        ? CONNECT_REFUSED_GRACE_SECONDS
+                                        : PAIR_TIMEOUT_SECONDS;
                 auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(seconds);
                 while (std::chrono::steady_clock::now() < deadline) {
                     if (device_is_paired(conn, device.path))

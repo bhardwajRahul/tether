@@ -4,6 +4,7 @@
 #include <ctime>
 #include <mutex>
 #include <nlohmann/json.hpp>
+#include <sys/timerfd.h>
 #include <tether/bluetooth/config.hpp>
 #include <tether/bluetooth/connection.hpp>
 #include <tether/bluetooth/contacts.hpp>
@@ -88,9 +89,9 @@ int main(int argc, char** argv) {
         char hostname[256] = {};
         gethostname(hostname, sizeof(hostname) - 1);
         std::string my_fp = tether::Crypto::instance().get_my_fingerprint();
-        if (!discovery.publish(hostname, 5134, my_fp)) {
-            debug::log(ERR, "Warning: mDNS advertisement failed (is avahi-daemon running?)");
-        }
+
+        discovery.set_state_callback([](bool available) { tether::set_mdns_available(available); });
+        discovery.publish(hostname, 5134, my_fp);
 
         discovery.start_continuous_browse([](const std::vector<tether::DiscoveredDevice>& devices) {
             nlohmann::json payload;
@@ -128,7 +129,8 @@ int main(int argc, char** argv) {
 
     tether::FileReceiveManager file_mgr;
     tether::DesktopNotifier notifier;
-    if (!notifier.init()) {
+    const bool notifier_ready = notifier.init();
+    if (!notifier_ready) {
         debug::log(ERR, "Warning: desktop notifications unavailable");
     } else {
         file_mgr.set_on_complete([&notifier](const std::filesystem::path& path, size_t bytes_written) {
@@ -137,6 +139,32 @@ int main(int argc, char** argv) {
         });
     }
     tether::g_file_manager = &file_mgr;
+
+    if (notifier_ready) {
+        int mdns_warn_fd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
+        if (mdns_warn_fd >= 0) {
+            itimerspec spec{};
+            spec.it_value.tv_sec = 15;
+            timerfd_settime(mdns_warn_fd, 0, &spec, nullptr);
+            loop.addFd(mdns_warn_fd, [&loop, &notifier](int fd) {
+                uint64_t ticks = 0;
+                ssize_t ignored = read(fd, &ticks, sizeof(ticks));
+                (void)ignored;
+                loop.removeFd(fd);
+                close(fd);
+                if (tether::mdns_available())
+                    return;
+                debug::log(ERR, "mDNS: still unavailable after 15s; notifying the user");
+                notifier.notify({_("Tether"),
+                                 _("This PC can't be discovered"),
+                                 _("avahi-daemon isn't running, so Tether can't advertise itself on the "
+                                   "network. Start it with: sudo systemctl enable --now avahi-daemon"),
+                                 {"network-wireless-offline", "network-offline", "dialog-warning"},
+                                 false,
+                                 ""});
+            });
+        }
+    }
 
     // BlueZ runs on its own GLib thread and wakes the loop through an eventfd
     // whenever the adapter or device set changes.

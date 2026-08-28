@@ -16,6 +16,7 @@ add_executable(tether_test
     test_discovery.cpp
     test_display_width.cpp
     test_file_transfer.cpp
+    test_log.cpp
     test_otp.cpp
     test_message_format.cpp
     ../src/gtk/message_format.cpp
