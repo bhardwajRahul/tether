@@ -31,6 +31,9 @@ namespace tether::bluetooth {
     // at all. Device1.Pair() involves no profile.
     bool should_fall_back(AuthStrategy tried, bool paired, bool confirmation_failed);
 
+    // Whether a D-Bus error names an authentication BlueZ already failed. No bond can appear afterwards.
+    bool is_authentication_failure(const std::string& err);
+
     // Reports progress steps so the CLI and GTK app can show what is happening
     // during a transaction that legitimately takes tens of seconds.
     using ProgressFn = std::function<void(const std::string& step, const std::string& detail)>;
