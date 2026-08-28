@@ -900,9 +900,8 @@ msgid "Reply"
 msgstr "Répondre"
 
 #: src/daemon/notification.cpp
-#, fuzzy
 msgid "Copy Code"
-msgstr "Copier les commandes"
+msgstr "Copier le code"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"

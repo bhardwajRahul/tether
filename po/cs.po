@@ -883,9 +883,8 @@ msgid "Reply"
 msgstr "Odpovědět"
 
 #: src/daemon/notification.cpp
-#, fuzzy
 msgid "Copy Code"
-msgstr "Kopírovat příkazy"
+msgstr "Kopírovat kód"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"

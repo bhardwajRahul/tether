@@ -839,9 +839,8 @@ msgid "Reply"
 msgstr "回复"
 
 #: src/daemon/notification.cpp
-#, fuzzy
 msgid "Copy Code"
-msgstr "复制命令"
+msgstr "复制验证码"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"

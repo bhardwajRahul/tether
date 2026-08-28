@@ -877,9 +877,8 @@ msgid "Reply"
 msgstr "Yanıtla"
 
 #: src/daemon/notification.cpp
-#, fuzzy
 msgid "Copy Code"
-msgstr "Komutları kopyala"
+msgstr "Kodu kopyala"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"

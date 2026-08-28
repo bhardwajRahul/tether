@@ -866,9 +866,8 @@ msgid "Reply"
 msgstr "返信"
 
 #: src/daemon/notification.cpp
-#, fuzzy
 msgid "Copy Code"
-msgstr "コマンドをコピー"
+msgstr "コードをコピー"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"

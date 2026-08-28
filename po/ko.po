@@ -860,9 +860,8 @@ msgid "Reply"
 msgstr "답장"
 
 #: src/daemon/notification.cpp
-#, fuzzy
 msgid "Copy Code"
-msgstr "명령 복사"
+msgstr "코드 복사"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"

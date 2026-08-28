@@ -1,7 +1,13 @@
 #!/bin/sh
 # Regenerate po/tether.pot from the sources in POTFILES.in and merge it into
 # every catalog listed in LINGUAS. Run from the repository root, or via `make pot`.
+#
+# With --check nothing is written: the run only reports whether the committed pot
+# still matches the sources, so a test can catch a string added without `make pot`.
 set -e
+
+check_only=0
+[ "$1" = "--check" ] && check_only=1
 
 cd "$(dirname "$0")/.."
 
@@ -47,6 +53,35 @@ if [ -f po/tether.pot ]; then
         pot_changed=0
     fi
 fi
+if [ "$check_only" -eq 1 ]; then
+    missing=""
+    while read -r lang; do
+        [ -n "$lang" ] || continue
+        [ -f "po/$lang.po" ] || missing="$missing $lang"
+    done < po/LINGUAS
+
+    # Compare through msgcat rather than the byte-for-byte cmp above: this runs on
+    # machines other than the one that regenerated the pot, and wrapping and entry
+    # order differ between gettext versions.
+    if [ ! -f po/tether.pot ]; then
+        echo "po/tether.pot is missing. Run 'make pot' and commit the result." >&2
+        exit 1
+    fi
+    norm() { msgcat --sort-output --no-location "$1" | grep -vE '^"(POT-Creation-Date|Project-Id-Version):'; }
+    norm po/tether.pot > "$OLD_STRIPPED"
+    norm "$NEW" > "$NEW_STRIPPED"
+    if ! diff -u "$OLD_STRIPPED" "$NEW_STRIPPED"; then
+        echo "po/tether.pot is stale. Run 'make pot' and commit the result." >&2
+        exit 1
+    fi
+    if [ -n "$missing" ]; then
+        echo "no catalog for:$missing. Run 'make pot' and commit the result." >&2
+        exit 1
+    fi
+    echo "po/tether.pot is up to date; $(wc -l < po/LINGUAS) catalogs present"
+    exit 0
+fi
+
 [ "$pot_changed" -eq 0 ] || cp "$NEW" po/tether.pot
 
 while read -r lang; do

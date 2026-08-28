@@ -888,9 +888,8 @@ msgid "Reply"
 msgstr "Відповісти"
 
 #: src/daemon/notification.cpp
-#, fuzzy
 msgid "Copy Code"
-msgstr "Скопіювати команди"
+msgstr "Скопіювати код"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"
