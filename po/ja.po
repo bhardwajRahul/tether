@@ -838,13 +838,16 @@ msgstr "拒否"
 
 #: src/daemon/main.cpp
 msgid "This PC can't be discovered"
-msgstr ""
+msgstr "このパソコンを検出できません"
 
 #: src/daemon/main.cpp
 msgid ""
 "avahi-daemon isn't running, so Tether can't advertise itself on the network. "
 "Start it with: sudo systemctl enable --now avahi-daemon"
 msgstr ""
+"avahi-daemon が実行されていないため、Tether はネットワーク上で自身を通知でき"
+"ません。次のコマンドで起動してください: sudo systemctl enable --now avahi-"
+"daemon"
 
 #: src/daemon/notification.cpp
 msgid "File arrived"
@@ -1005,6 +1008,8 @@ msgid ""
 "avahi-daemon isn't running, so the iPhone can't find this PC. Start it with: "
 "sudo systemctl enable --now avahi-daemon"
 msgstr ""
+"avahi-daemon が実行されていないため、iPhone はこのパソコンを見つけられませ"
+"ん。次のコマンドで起動してください: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired iPhone is connected. Open the Tether app on the phone."
