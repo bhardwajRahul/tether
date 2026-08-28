@@ -1,6 +1,8 @@
 #include "tether/event_loop.hpp"
+#include <cstdint>
 #include <stdexcept>
 #include <sys/epoll.h>
+#include <sys/eventfd.h>
 #include <tether/log.hpp>
 #include <unistd.h>
 
@@ -11,12 +13,50 @@ namespace tether {
         if (epoll_fd_ < 0) {
             throw std::runtime_error("Failed to create epoll file descriptor");
         }
+
+        post_fd_ = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+        if (post_fd_ < 0) {
+            close(epoll_fd_);
+            throw std::runtime_error("Failed to create eventfd");
+        }
+        addFd(post_fd_, [this](int) { drain_posts(); });
     }
 
     EpollEventLoop::~EpollEventLoop() {
         stop();
+        if (post_fd_ >= 0) {
+            close(post_fd_);
+        }
         if (epoll_fd_ >= 0) {
             close(epoll_fd_);
+        }
+    }
+
+    void EpollEventLoop::post(std::function<void()> fn) {
+        if (!fn)
+            return;
+        {
+            std::lock_guard<std::mutex> lock(post_mutex_);
+            posted_.push_back(std::move(fn));
+        }
+        uint64_t one = 1;
+        if (write(post_fd_, &one, sizeof(one)) < 0) {
+            debug::log(ERR, "Failed to wake the event loop for a posted task");
+        }
+    }
+
+    void EpollEventLoop::drain_posts() {
+        uint64_t ticks = 0;
+        ssize_t ignored = read(post_fd_, &ticks, sizeof(ticks));
+        (void)ignored;
+
+        std::vector<std::function<void()>> batch;
+        {
+            std::lock_guard<std::mutex> lock(post_mutex_);
+            batch.swap(posted_);
+        }
+        for (auto& fn : batch) {
+            fn();
         }
     }
 

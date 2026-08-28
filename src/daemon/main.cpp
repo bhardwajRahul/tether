@@ -140,6 +140,14 @@ int main(int argc, char** argv) {
     }
     tether::g_file_manager = &file_mgr;
 
+    notifier.set_copy_handler([&loop](const std::string& code) {
+        // libnotify dispatches actions on its own thread; the clipboard belongs to the loop.
+        loop.post([code] {
+            if (tether::g_wayland)
+                tether::g_wayland->copy_to_clipboard(code);
+        });
+    });
+
     if (notifier_ready) {
         int mdns_warn_fd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
         if (mdns_warn_fd >= 0) {
@@ -177,8 +185,11 @@ int main(int argc, char** argv) {
             event["command"] = "bt_message";
             tether::broadcast_local_event(event.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
 
-            if (!backfill && !message.outgoing)
-                tether::otp_publish(tether::otp_extract(message.body));
+            std::string otp;
+            if (!backfill && !message.outgoing) {
+                otp = tether::otp_extract(message.body);
+                tether::otp_publish(otp);
+            }
 
             // ANCS deliberately shows no popup for Messages, because MAP is the
             // copy whose read state stays in sync with the phone. This is that popup.
@@ -199,7 +210,8 @@ int main(int argc, char** argv) {
                              message.body,
                              tether::bluetooth::ancs::icon_candidates(as_notification),
                              false,
-                             message.thread_key});
+                             message.thread_key,
+                             otp});
         });
     if (bluez.start()) {
         tether::bluetooth::g_bluez = &bluez;
@@ -236,8 +248,9 @@ int main(int argc, char** argv) {
                                                                         static_cast<int64_t>(std::time(nullptr)));
                     }
 
-                    tether::otp_publish(tether::otp_extract(notification.title + "\n" + notification.subtitle + "\n" +
-                                                            notification.body));
+                    const std::string otp = tether::otp_extract(notification.title + "\n" + notification.subtitle +
+                                                                "\n" + notification.body);
+                    tether::otp_publish(otp);
 
                     nlohmann::json event = tether::bluetooth::ancs::to_json(notification);
                     event["command"] = "bt_notification";
@@ -255,7 +268,9 @@ int main(int argc, char** argv) {
                                      title.empty() ? "iPhone" : title,
                                      body,
                                      tether::bluetooth::ancs::icon_candidates(notification),
-                                     notification.silent});
+                                     notification.silent,
+                                     "",
+                                     otp});
                 },
                 [](uint32_t uid) {
                     nlohmann::json event;

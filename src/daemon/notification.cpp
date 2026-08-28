@@ -6,6 +6,7 @@
 #include <glib.h>
 #include <libnotify/notify.h>
 
+#include <functional>
 #include <mutex>
 #include <string>
 #include <tether/log.hpp>
@@ -99,6 +100,9 @@ namespace tether {
             std::string payload;
         };
 
+        // Set once during startup, before any notification exists.
+        std::function<void(const std::string&)> g_copy_handler;
+
         void free_request(gpointer data) { delete static_cast<NotificationRequest*>(data); }
 
         void free_action_data(gpointer data) { delete static_cast<NotificationActionData*>(data); }
@@ -137,6 +141,12 @@ namespace tether {
                 debug::log(ERR, "Failed to open tether-gtk: {}", error ? error->message : "unknown");
                 g_clear_error(&error);
             }
+        }
+
+        void on_copy_code_action(NotifyNotification*, char*, gpointer user_data) {
+            auto* action = static_cast<NotificationActionData*>(user_data);
+            if (action && g_copy_handler)
+                g_copy_handler(action->payload);
         }
 
         void on_reply_action(NotifyNotification*, char*, gpointer user_data) {
@@ -219,9 +229,11 @@ namespace tether {
             set_identity(notification, spec->app_name);
             notify_notification_set_urgency(notification, spec->quiet ? NOTIFY_URGENCY_LOW : NOTIFY_URGENCY_NORMAL);
 
-            const bool has_actions = !spec->reply_thread.empty();
-            if (has_actions) {
+            const bool has_actions = !spec->reply_thread.empty() || !spec->otp_code.empty();
+            if (has_actions)
                 g_signal_connect(notification, "closed", G_CALLBACK(on_notification_closed), nullptr);
+
+            if (!spec->reply_thread.empty()) {
                 notify_notification_add_action(notification,
                                                "default",
                                                "default",
@@ -233,6 +245,15 @@ namespace tether {
                                                _("Reply"),
                                                on_reply_action,
                                                new NotificationActionData{spec->reply_thread},
+                                               free_action_data);
+            }
+
+            if (!spec->otp_code.empty()) {
+                notify_notification_add_action(notification,
+                                               "copy-code",
+                                               _("Copy Code"),
+                                               on_copy_code_action,
+                                               new NotificationActionData{spec->otp_code},
                                                free_action_data);
             }
 
@@ -304,6 +325,10 @@ namespace tether {
         });
         impl_->initialized = true;
         return true;
+    }
+
+    void DesktopNotifier::set_copy_handler(std::function<void(const std::string&)> handler) {
+        g_copy_handler = std::move(handler);
     }
 
     void DesktopNotifier::notify(const NotificationSpec& spec) {

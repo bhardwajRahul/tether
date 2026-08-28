@@ -3,6 +3,8 @@
 #include <atomic>
 #include <functional>
 #include <map>
+#include <mutex>
+#include <vector>
 
 namespace tether {
 
@@ -20,6 +22,10 @@ namespace tether {
         // Add a file descriptor to be watched for EPOLLIN
         bool addFd(int fd, Callback cb);
 
+        // Queue a function to run on the loop thread. The only member safe to call
+        // from another thread.
+        void post(std::function<void()> fn);
+
         // Remove a file descriptor from being watched
         bool removeFd(int fd);
 
@@ -30,9 +36,14 @@ namespace tether {
         void stop();
 
     private:
+        void drain_posts();
+
         int epoll_fd_;
+        int post_fd_ = -1;
         std::atomic<bool> running_;
         std::map<int, Callback> callbacks_;
+        std::mutex post_mutex_;
+        std::vector<std::function<void()>> posted_;
     };
 
 } // namespace tether

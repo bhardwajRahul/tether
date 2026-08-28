@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-27 20:41-0700\n"
+"POT-Creation-Date: 2026-08-28 16:06-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Spanish\n"
@@ -893,6 +893,11 @@ msgstr "Abrir carpeta"
 #: src/daemon/notification.cpp
 msgid "Reply"
 msgstr "Responder"
+
+#: src/daemon/notification.cpp
+#, fuzzy
+msgid "Copy Code"
+msgstr "Copiar comandos"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"
