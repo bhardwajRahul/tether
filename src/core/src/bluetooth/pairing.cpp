@@ -277,6 +277,23 @@ namespace tether::bluetooth {
 
         std::atomic<bool> g_pairing_owns_advert{false};
 
+        // A solicitation asked for by hand stands for its own window. Without this
+        // the supervisor takes it straight back down on the next tick whenever LE
+        // is up and ANCS is answering -- which is exactly the state someone is in
+        // when the Messages toggle never appeared, and the advert is the only
+        // thing that surfaces it.
+        std::atomic<int64_t> g_advert_hold_until_ms{0};
+
+        int64_t steady_ms() {
+            return std::chrono::duration_cast<std::chrono::milliseconds>(
+                       std::chrono::steady_clock::now().time_since_epoch())
+                .count();
+        }
+
+        void hold_advert_for(int seconds) { g_advert_hold_until_ms = steady_ms() + seconds * 1000; }
+
+        bool advert_held() { return steady_ms() < g_advert_hold_until_ms.load(); }
+
         struct AdvertOwnership {
             AdvertOwnership() { g_pairing_owns_advert = true; }
             ~AdvertOwnership() { g_pairing_owns_advert = false; }
@@ -369,18 +386,38 @@ namespace tether::bluetooth {
         // report what BlueZ actually says.
         auto objects = monitor.snapshot();
         const std::string adapter = objects.adapters.empty() ? std::string{} : objects.adapters.front().path;
-        return start_advert(monitor, adapter, err);
+        if (!start_advert(monitor, adapter, err))
+            return false;
+        hold_advert_for(ANCS_ADVERT_TIMEOUT_SECONDS);
+        return true;
     }
+
+    namespace {
+        // The supervisor's own re-arm takes no hold, so it stays free to free the
+        // advertising instance again as soon as LE is up.
+        bool rearm_solicitation(BluezMonitor& monitor, std::string& err) {
+            if (!monitor.connection()) {
+                err = "Bluetooth is unavailable.";
+                return false;
+            }
+            auto objects = monitor.snapshot();
+            const std::string adapter = objects.adapters.empty() ? std::string{} : objects.adapters.front().path;
+            return start_advert(monitor, adapter, err);
+        }
+    } // namespace
 
     bool ancs_solicitation_active() {
         std::lock_guard<std::mutex> lock(g_advert_mutex);
         return g_advert && g_advert->active();
     }
 
-    void stop_ancs_solicitation(BluezMonitor& monitor) { stop_advert(monitor); }
+    void stop_ancs_solicitation(BluezMonitor& monitor) {
+        g_advert_hold_until_ms = 0;
+        stop_advert(monitor);
+    }
 
     void supervise_ancs_solicitation(BluezMonitor& monitor, bool want) {
-        if (g_pairing_owns_advert)
+        if (g_pairing_owns_advert || advert_held())
             return;
         if (!want) {
             if (ancs_solicitation_active())
@@ -396,7 +433,7 @@ namespace tether::bluetooth {
             return;
 
         std::string err;
-        if (solicit_ancs(monitor, err)) {
+        if (rearm_solicitation(monitor, err)) {
             next_attempt = {};
             return;
         }
@@ -405,14 +442,25 @@ namespace tether::bluetooth {
     }
 
     bool confirm_with_dialog(const std::string& device_name, const std::string& code, bool& unavailable) {
-        // Translated before the fork: gettext takes a lock, and calling it in the
-        // child of a threaded process can deadlock if another thread held it.
+        // Everything the child needs is built before the fork. Only
+        // async-signal-safe calls are legal between fork() and exec() in a
+        // threaded process: gettext takes a lock, and read_symlink and these
+        // strings all allocate. Either deadlocks the child if another thread held
+        // the lock at fork time, and the parent then blocks in waitpid forever.
         // TRANSLATORS: {0} is the device name, {1} is the numeric pairing code.
         const std::string body = tr_format(
             _("{0} wants to pair.\n\nConfirm this code matches the one on your iPhone:\n\n{1}"), device_name, code);
         const std::string title = _("Bluetooth Pairing");
         const std::string accept = _("Confirm");
         const std::string reject = _("Cancel");
+
+        std::filesystem::path self_path;
+        try {
+            self_path = std::filesystem::read_symlink("/proc/self/exe");
+        } catch (...) {
+        }
+        const std::string sibling = (self_path.parent_path() / "tether-dialog").string();
+        const std::string timeout = std::to_string(DIALOG_TIMEOUT_SECONDS);
 
         pid_t pid = fork();
         if (pid < 0) {
@@ -422,14 +470,6 @@ namespace tether::bluetooth {
         }
 
         if (pid == 0) {
-            std::filesystem::path self_path;
-            try {
-                self_path = std::filesystem::read_symlink("/proc/self/exe");
-            } catch (...) {
-            }
-            std::string sibling = (self_path.parent_path() / "tether-dialog").string();
-            std::string timeout = std::to_string(DIALOG_TIMEOUT_SECONDS);
-
             execl(sibling.c_str(),
                   "tether-dialog",
                   "--title",
@@ -712,6 +752,7 @@ namespace tether::bluetooth {
         // to broadcast because the bond already exists.
         std::string advert_err;
         if (start_advert(monitor, adapter_path, advert_err)) {
+            hold_advert_for(ANCS_ADVERT_TIMEOUT_SECONDS);
             notify(progress,
                    "soliciting",
                    "Open Settings > Bluetooth > (i) on the iPhone and enable Show Message Notifications and "

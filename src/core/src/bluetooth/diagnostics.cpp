@@ -1,6 +1,7 @@
 #include "tether/bluetooth/diagnostics.hpp"
 
 #include "tether/bluetooth/config.hpp"
+#include "tether/bluetooth/monitor.hpp"
 #include "tether/bluetooth/pairing.hpp"
 #include "tether/version.hpp"
 
@@ -25,6 +26,20 @@ namespace tether::bluetooth {
         const std::regex kEmail(R"([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})");
         const std::regex kNumber(R"(\+[0-9]{7,15})");
         const std::regex kRuntimeDir(R"(/run/user/[0-9]+)");
+
+        // Device names that identify a model rather than a person.
+        bool is_generic_device_name(const std::string& name) {
+            static const char* const GENERIC[] = {
+                "iphone", "ipad", "ipod", "mac", "macbook", "apple watch", "watch", "airpods", "tether", "phone"};
+            std::string lowered = name;
+            std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](unsigned char c) {
+                return static_cast<char>(std::tolower(c));
+            });
+            for (const char* generic : GENERIC)
+                if (lowered == generic)
+                    return true;
+            return false;
+        }
 
         std::string upper(std::string s) {
             std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::toupper(c); });
@@ -92,8 +107,28 @@ namespace tether::bluetooth {
         return token;
     }
 
+    void Redactor::hide(const std::string& literal, const std::string& kind) {
+        // A one- or two-character alias would shred unrelated text.
+        if (literal.size() < 3)
+            return;
+
+        if (is_generic_device_name(literal))
+            return;
+
+        for (const auto& [existing, token] : literals_)
+            if (existing == literal)
+                return;
+        literals_.emplace_back(literal, placeholder(kind, literal));
+        std::sort(literals_.begin(), literals_.end(), [](const auto& a, const auto& b) {
+            return a.first.size() > b.first.size();
+        });
+    }
+
     std::string Redactor::text(const std::string& in) {
         std::string out = in;
+
+        for (const auto& [literal, token] : literals_)
+            out = replace_literal(out, literal, token);
 
         // Directories first: a path under $HOME can contain anything below.
         if (const char* runtime = std::getenv("XDG_RUNTIME_DIR"); runtime && *runtime)
@@ -180,6 +215,13 @@ namespace tether::bluetooth {
     nlohmann::json build_diagnostics(const nlohmann::json& status, const nlohmann::json& connection) {
         const Config config = load_config();
         Redactor redactor;
+
+        if (g_bluez) {
+            for (const auto& device : g_bluez->snapshot().devices)
+                redactor.hide(device.name, "name");
+            for (const auto& adapter : g_bluez->snapshot().adapters)
+                redactor.hide(adapter.name, "name");
+        }
 
         nlohmann::json report;
         report["command"] = "bt_diagnostics";

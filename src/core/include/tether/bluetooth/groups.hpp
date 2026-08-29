@@ -17,6 +17,7 @@ namespace tether::bluetooth {
         bool is_group = false;
         // when the group has a name
         bool named = false;
+        bool route_invalidated = false;
         std::string name;
         // display names parsed from an unnamed group's subtitle, excluding the user.
         std::vector<std::string> participants;

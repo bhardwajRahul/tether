@@ -15,6 +15,9 @@ namespace tether::bluetooth::ancs {
     // How often to retry discovery, subscription and the readiness probe.
     inline constexpr int ANCS_RETRY_SECONDS = 5;
 
+    // How often a live subscription is re-confirmed against BlueZ.
+    inline constexpr int ANCS_VERIFY_SECONDS = 30;
+
     // Defined in client.cpp.
     struct AncsClientState;
 

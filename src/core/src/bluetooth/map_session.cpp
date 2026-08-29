@@ -2,6 +2,7 @@
 #include "tether/bluetooth/obex_transfer.hpp"
 #include "tether/log.hpp"
 
+#include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -260,13 +261,14 @@ namespace tether::bluetooth {
             return false;
         }
 
-        // obexd reads the message from a file. It is staged in the per-user
-        // runtime directory rather than a shared temp directory, since it holds
-        // the message text and the recipient.
+        static std::atomic<uint64_t> serial{0};
         const char* runtime = getenv("XDG_RUNTIME_DIR");
-        std::filesystem::path source =
-            (runtime && *runtime ? std::filesystem::path(runtime) : std::filesystem::temp_directory_path()) /
-            ("tether-send-" + std::to_string(getpid()) + ".bmsg");
+        if (!runtime || !*runtime) {
+            err = "XDG_RUNTIME_DIR is not set, and a message cannot be staged anywhere else.";
+            return false;
+        }
+        std::filesystem::path source = std::filesystem::path(runtime) / ("tether-send-" + std::to_string(getpid()) +
+                                                                         "-" + std::to_string(serial++) + ".bmsg");
 
         std::error_code ec;
         {
