@@ -794,8 +794,16 @@ namespace tether::bluetooth {
             std::lock_guard<std::mutex> lock(g_messages_mutex);
             for (const auto& listing : listings) {
                 Message message = message_from_listing(listing);
-                if (message.thread_key.empty())
+                if (message.thread_key.empty()) {
+                    debug::log(WARN,
+                               "bluetooth: dropping message {} from folder '{}': no usable address "
+                               "(sender='{}' address='{}')",
+                               listing.handle,
+                               listing.folder,
+                               listing.sender_name,
+                               listing.sender_address);
                     continue;
+                }
                 if (!g_messages.find(message.handle)) {
                     unseen.push_back({std::move(message), &listing});
                     continue;

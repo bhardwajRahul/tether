@@ -23,6 +23,10 @@ namespace tether::bluetooth {
     // True for a MAP folder holding messages the phone sent.
     bool is_outgoing_folder(const std::string& folder);
 
+    // The other party's address as the UI should show it: a normalized number or
+    // email, or the raw sender ID when it is neither.
+    std::string display_address(const VCardParty& party);
+
     struct Message {
         std::string handle;
         std::string object_path;

@@ -205,12 +205,17 @@ int main(int argc, char** argv) {
                 who = message.peer_name.empty() ? message.peer_address : message.peer_name;
             tether::bluetooth::ancs::Notification as_notification;
             as_notification.app_id = tether::bluetooth::ancs::APP_ID_MESSAGES;
+            // The reply action is only offered for a thread that has a route back.
+            tether::bluetooth::Recipient recipient;
+            std::string reply_error;
+            const bool repliable =
+                tether::bluetooth::recipient_from_thread_key(message.thread_key, recipient, reply_error);
             notifier.notify({_("Messages"),
                              who.empty() ? "iPhone" : who,
                              message.body,
                              tether::bluetooth::ancs::icon_candidates(as_notification),
                              false,
-                             message.thread_key,
+                             repliable ? message.thread_key : std::string{},
                              otp});
         });
     if (bluez.start()) {

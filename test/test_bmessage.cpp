@@ -165,6 +165,37 @@ TEST(AddressIdentity, ThreadKeyPrefersTelAndNamespacesTypes) {
     EXPECT_TRUE(thread_key_for(VCardParty{}).empty());
 }
 
+// Providers send OTP SMS from an alphanumeric sender ID. Keyed on the id itself:
+// normalizing it as a phone number leaves nothing, and the message is dropped.
+TEST(AddressIdentity, AlphanumericSenderKeepsItsOwnKey) {
+    VCardParty sender;
+    sender.tel = "MMA";
+    EXPECT_EQ(thread_key_for(sender), "sender:mma");
+
+    VCardParty spelled_differently;
+    spelled_differently.tel = "  mma ";
+    EXPECT_EQ(thread_key_for(spelled_differently), thread_key_for(sender));
+
+    // Digits inside a sender id are not a phone number, and must not be keyed as
+    // one: "tel:123" belongs to whoever really has that number.
+    VCardParty mixed;
+    mixed.tel = "MMA-123";
+    EXPECT_EQ(thread_key_for(mixed), "sender:mma-123");
+
+    VCardParty number;
+    number.tel = "+15551234567";
+    EXPECT_EQ(thread_key_for(number), "tel:+15551234567");
+
+    // Control characters never reach a key; the id around them survives.
+    VCardParty noisy;
+    noisy.tel = "M\x01MA";
+    EXPECT_EQ(thread_key_for(noisy), "sender:mma");
+
+    VCardParty junk;
+    junk.tel = "\x01\x02";
+    EXPECT_TRUE(thread_key_for(junk).empty());
+}
+
 // The display name is not identity; two contacts sharing a name must stay apart.
 TEST(AddressIdentity, NameDoesNotAffectThreadKey) {
     VCardParty a;

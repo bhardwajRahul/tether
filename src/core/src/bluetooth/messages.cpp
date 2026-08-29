@@ -12,12 +12,6 @@ namespace tether::bluetooth {
 
     namespace {
 
-        std::string display_address(const VCardParty& party) {
-            if (!party.tel.empty())
-                return normalize_phone(party.tel);
-            return normalize_email(party.email);
-        }
-
         // Every run of whitespace becomes one space, and the ends are dropped.
         std::string collapse_whitespace(const std::string& text) {
             std::string out;
@@ -50,6 +44,13 @@ namespace tether::bluetooth {
         }
 
     } // namespace
+
+    std::string display_address(const VCardParty& party) {
+        if (party.tel.empty())
+            return normalize_email(party.email);
+        std::string tel = normalize_phone(party.tel);
+        return tel.empty() ? collapse_whitespace(party.tel) : tel;
+    }
 
     MessageStore::MessageStore(size_t max_messages) : max_messages_(max_messages) {}
 
