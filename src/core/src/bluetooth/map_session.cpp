@@ -398,7 +398,7 @@ namespace tether::bluetooth {
         // Empty when the phone gave no usable address for the other end. The
         // caller drops those rather than filing them under a guess.
         message.thread_key = thread_key_for(peer);
-        message.peer_address = peer.tel.empty() ? normalize_email(peer.email) : normalize_phone(peer.tel);
+        message.peer_address = display_address(peer);
         message.peer_name = peer.name;
         return message;
     }

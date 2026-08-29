@@ -232,13 +232,34 @@ namespace tether::bluetooth {
         return out;
     }
 
+    namespace {
+        bool has_letter(const std::string& text) {
+            return std::any_of(text.begin(), text.end(), [](unsigned char c) { return std::isalpha(c) != 0; });
+        }
+
+        // sender ID -> one spelling: printable, no spaces, lowercase.
+        std::string sender_key(const std::string& raw) {
+            std::string out;
+            for (unsigned char c : raw) {
+                if (c <= 0x20 || c == 0x7f)
+                    continue;
+                out += static_cast<char>(std::tolower(c));
+            }
+            return out.empty() ? std::string{} : "sender:" + out;
+        }
+    } // namespace
+
     std::string thread_key_for(const VCardParty& party) {
         // A phone number wins when both are present: it is what the phone routes
         // SMS on, and it is the more stable of the two.
         if (!party.tel.empty()) {
-            std::string tel = normalize_phone(party.tel);
-            if (!tel.empty())
+            // Providers send OTP SMS from an alphanumeric sender ID, identity, not a number
+            if (has_letter(party.tel)) {
+                if (std::string sender = sender_key(party.tel); !sender.empty())
+                    return sender;
+            } else if (std::string tel = normalize_phone(party.tel); !tel.empty()) {
                 return "tel:" + tel;
+            }
         }
         if (!party.email.empty()) {
             std::string email = normalize_email(party.email);

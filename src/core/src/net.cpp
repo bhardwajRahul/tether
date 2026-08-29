@@ -474,7 +474,15 @@ namespace tether {
         // guards, and std::mutex is not recursive.
         for (auto& entry : threads) {
             if (!entry.value("group", false)) {
-                entry["repliable"] = true;
+                // An alphanumeric sender ID has no route back, so the composer must not accept text the phone would
+                // bounce.
+                bluetooth::Recipient recipient;
+                std::string reason;
+                const bool repliable =
+                    bluetooth::recipient_from_thread_key(entry.value("thread", ""), recipient, reason);
+                entry["repliable"] = repliable;
+                if (!repliable)
+                    entry["reply_reason"] = reason;
                 continue;
             }
             std::string reason;
