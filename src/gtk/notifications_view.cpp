@@ -87,6 +87,7 @@ namespace tether::ui {
             GtkWidget* detail_label = gtk_label_new(detail.c_str());
             gtk_label_set_xalign(GTK_LABEL(detail_label), 0.0);
             gtk_label_set_line_wrap(GTK_LABEL(detail_label), TRUE);
+            gtk_label_set_selectable(GTK_LABEL(detail_label), TRUE);
             gtk_box_pack_start(GTK_BOX(box), detail_label, FALSE, FALSE, 0);
 
             // Whatever is left over after the primary line claimed one of them.
@@ -100,6 +101,7 @@ namespace tether::ui {
                 GtkWidget* body_label = gtk_label_new(secondary.c_str());
                 gtk_label_set_xalign(GTK_LABEL(body_label), 0.0);
                 gtk_label_set_line_wrap(GTK_LABEL(body_label), TRUE);
+                gtk_label_set_selectable(GTK_LABEL(body_label), TRUE);
                 gtk_style_context_add_class(gtk_widget_get_style_context(body_label), "muted");
                 gtk_box_pack_start(GTK_BOX(box), body_label, FALSE, FALSE, 0);
             }
