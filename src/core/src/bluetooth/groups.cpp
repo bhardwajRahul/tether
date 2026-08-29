@@ -279,6 +279,12 @@ namespace tether::bluetooth {
             return ReplyEligibility::Disabled;
         }
 
+        if (info.route_invalidated) {
+            reason = _("Someone who is not in this group's saved member list has posted to it, so the list is out of "
+                       "date. Update it in groups.json before replying.");
+            return ReplyEligibility::RouteInvalidated;
+        }
+
         // user-supplied roster is authoritative for either kind of group
         if (const std::vector<std::string>* roster = rosters.find(thread_key)) {
             for (const auto& address : *roster) {

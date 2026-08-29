@@ -215,6 +215,49 @@ TEST(BearerSupervisor, SolicitationIsHeldOffOnlyWhileTheOneDialIsInFlight) {
     }
 }
 
+// A dial outstanding when BR/EDR drops must not latch the solicitation off air.
+// Nothing else on the Classic-down path re-reads it, and the advert is the only
+// thing that brings LE back -- so a stale `true` here is a permanent outage on a
+// host whose Classic link never returns (2026-08-23).
+TEST(BearerSupervisor, ClassicDroppingUnderADialDoesNotLatchTheSolicitationOffAir) {
+    class ListeningBearer : public FakeBearer {
+    public:
+        ConnectResult connect_le(std::string&) override {
+            ++le_attempts;
+            outstanding = true;
+            return ConnectResult::Requested;
+        }
+    } ops;
+
+    BearerSupervisor sup(ops, true);
+    int64_t now = 0;
+    sup.tick(now);
+    sup.tick(++now);
+    now += BEARER_SETTLE_SECONDS;
+    sup.tick(now);
+    ASSERT_EQ(ops.le_attempts, 1);
+    ASSERT_TRUE(sup.status().le_dialling);
+
+    // BR/EDR goes and does not come back, which is what a host with no locally
+    // connectable profile looks like.
+    ops.classic = false;
+    ops.classic_succeeds = false;
+    sup.tick(++now);
+    EXPECT_TRUE(sup.status().le_dialling) << "the dial really is still in flight";
+
+    // BlueZ answers. Nothing re-enters the LE branch, so this is the only place
+    // the flag can be cleared.
+    ops.outstanding = false;
+    for (int i = 0; i < 500; ++i)
+        sup.tick(++now);
+    EXPECT_FALSE(sup.status().le_dialling)
+        << "a finished dial kept the advert off air for the whole time BR/EDR was down";
+
+    BearerStatus bearer = sup.status();
+    bearer.le_available = true;
+    EXPECT_TRUE(should_solicit_ancs(true, bearer, now, -1)) << "the advert is what brings LE back";
+}
+
 // A dialled LE link can come up carrying no ANCS at all, and while it reads
 // connected the solicitation stays off air -- so nothing ever asks the phone for
 // the service, and notifications never arrive (2026-08-23).
