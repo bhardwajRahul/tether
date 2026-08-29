@@ -23,13 +23,15 @@ namespace tether::bluetooth {
             return false;
         }
 
-        // The phonebook is personal data, so it is staged in the per-user runtime
-        // directory rather than a world-readable /tmp.
+        // The phonebook is personal data and obexd writes the file under its own
+        // umask, so there is nowhere safe to stage it but the per-user runtime
+        // directory. Falling back to a shared /tmp would leave it readable and its
+        // predictable name a symlink target; refuse instead.
         std::filesystem::path staging_file() {
             const char* runtime = getenv("XDG_RUNTIME_DIR");
-            std::filesystem::path dir =
-                runtime && *runtime ? std::filesystem::path(runtime) : std::filesystem::temp_directory_path();
-            return dir / ("tether-pbap-" + std::to_string(getpid()) + ".vcf");
+            if (!runtime || !*runtime)
+                return {};
+            return std::filesystem::path(runtime) / ("tether-pbap-" + std::to_string(getpid()) + ".vcf");
         }
 
         std::string read_file(const std::filesystem::path& path) {
@@ -79,6 +81,10 @@ namespace tether::bluetooth {
         std::vector<VCard> contacts;
 
         const std::filesystem::path target = staging_file();
+        if (target.empty()) {
+            err = "XDG_RUNTIME_DIR is not set, and the phonebook cannot be staged anywhere else.";
+            return contacts;
+        }
         std::error_code ec;
         std::filesystem::remove(target, ec);
 

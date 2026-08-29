@@ -2,6 +2,7 @@
 #include <tether/bluetooth/bearer_supervisor.hpp>
 #include <tether/bluetooth/profile_supervisor.hpp>
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -66,6 +67,8 @@ namespace {
         int pbap_attempts = 0;
         std::vector<std::string> removed;
         int session_counter = 0;
+        // Sessions obexd has let go. Everything else answers alive.
+        std::set<std::string> dead;
 
         std::string create_session(const std::string& target, std::string& err) override {
             const bool is_map = target == "map";
@@ -79,6 +82,8 @@ namespace {
         }
 
         void remove_session(const std::string& path) override { removed.push_back(path); }
+
+        bool session_alive(const std::string& path) override { return !dead.count(path); }
     };
 
 } // namespace
@@ -213,6 +218,81 @@ TEST(BearerSupervisor, SolicitationIsHeldOffOnlyWhileTheOneDialIsInFlight) {
         sup.tick(++now);
         ASSERT_FALSE(sup.status().le_dialling) << "took the solicitation off air again at t=" << now;
     }
+}
+
+// A dial outstanding when BR/EDR drops must not latch the solicitation off air.
+// Nothing else on the Classic-down path re-reads it, and the advert is the only
+// thing that brings LE back -- so a stale `true` here is a permanent outage on a
+// host whose Classic link never returns (2026-08-23).
+TEST(BearerSupervisor, ClassicDroppingUnderADialDoesNotLatchTheSolicitationOffAir) {
+    class ListeningBearer : public FakeBearer {
+    public:
+        ConnectResult connect_le(std::string&) override {
+            ++le_attempts;
+            outstanding = true;
+            return ConnectResult::Requested;
+        }
+    } ops;
+
+    BearerSupervisor sup(ops, true);
+    int64_t now = 0;
+    sup.tick(now);
+    sup.tick(++now);
+    now += BEARER_SETTLE_SECONDS;
+    sup.tick(now);
+    ASSERT_EQ(ops.le_attempts, 1);
+    ASSERT_TRUE(sup.status().le_dialling);
+
+    // BR/EDR goes and does not come back, which is what a host with no locally
+    // connectable profile looks like.
+    ops.classic = false;
+    ops.classic_succeeds = false;
+    sup.tick(++now);
+    EXPECT_TRUE(sup.status().le_dialling) << "the dial really is still in flight";
+
+    // BlueZ answers. Nothing re-enters the LE branch, so this is the only place
+    // the flag can be cleared.
+    ops.outstanding = false;
+    for (int i = 0; i < 500; ++i)
+        sup.tick(++now);
+    EXPECT_FALSE(sup.status().le_dialling)
+        << "a finished dial kept the advert off air for the whole time BR/EDR was down";
+
+    BearerStatus bearer = sup.status();
+    bearer.le_available = true;
+    EXPECT_TRUE(should_solicit_ancs(true, bearer, now, -1)) << "the advert is what brings LE back";
+}
+
+// A session obexd has let go still reads open, and the supervisor short-circuits
+// once both are. PBAP has no other liveness signal, and on a host where BlueZ
+// never reports the Classic link up there is no reset() to fall back on either.
+TEST(ProfileSupervisor, ReopensASessionObexdHasDropped) {
+    FakeProfiles ops;
+    ProfileSupervisor sup(ops);
+
+    int64_t now = 0;
+    sup.tick(now, true);
+    ASSERT_TRUE(sup.status().map_open);
+    ASSERT_TRUE(sup.status().pbap_open);
+    const std::string pbap = sup.pbap_session();
+    const int opened = ops.pbap_attempts;
+
+    // Nothing yet: the check is not free, so it runs on its own interval.
+    ops.dead.insert(pbap);
+    sup.tick(++now, true);
+    EXPECT_EQ(ops.pbap_attempts, opened);
+    EXPECT_EQ(sup.pbap_session(), pbap);
+
+    // Dead, with the Classic link never dropping to say so. Noticed and reopened
+    // in the same tick, the way drop_map() already behaves.
+    now += PROFILE_VERIFY_SECONDS;
+    sup.tick(now, true);
+    EXPECT_TRUE(sup.status().pbap_open);
+    EXPECT_GT(ops.pbap_attempts, opened) << "a dropped session read open forever";
+    EXPECT_NE(sup.pbap_session(), pbap);
+
+    EXPECT_TRUE(sup.status().map_open) << "the live session must not be disturbed";
+    EXPECT_EQ(ops.map_attempts, 1);
 }
 
 // A dialled LE link can come up carrying no ANCS at all, and while it reads

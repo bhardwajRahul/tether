@@ -6,6 +6,9 @@
 
 namespace tether::bluetooth {
 
+    // How long BlueZ keeps the solicitation on air before retiring it and calling release
+    inline constexpr int ANCS_ADVERT_TIMEOUT_SECONDS = 180;
+
     struct AdvertState;
 
     // Broadcasts an LE advertisement soliciting the ANCS service.

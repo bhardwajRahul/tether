@@ -9,6 +9,9 @@ namespace tether::bluetooth {
     inline constexpr int PROFILE_INITIAL_POLL_SECONDS = 5;
     inline constexpr int PROFILE_STEADY_POLL_SECONDS = 15;
 
+    // How often an open session is confirmed still to exist.
+    inline constexpr int PROFILE_VERIFY_SECONDS = 30;
+
     // Why an OBEX session could not be opened. Forbidden and Busy look alike from a distance, and reporting one as the
     // other sends the user off re-pairing for nothing.
     enum class ObexError {
@@ -46,6 +49,8 @@ namespace tether::bluetooth {
         // Returns the new session's object path, or an empty string with err set.
         virtual std::string create_session(const std::string& target, std::string& err) = 0;
         virtual void remove_session(const std::string& path) = 0;
+        // Whether obexd still has this session.
+        virtual bool session_alive(const std::string& path) = 0;
     };
 
     struct ProfileStatus {
@@ -81,6 +86,9 @@ namespace tether::bluetooth {
     private:
         bool open_profile(const std::string& target, std::string& path, ObexError& error, bool& retried);
 
+        // Clears map_open/pbap_open for any session obexd has let go
+        void verify_sessions(int64_t now);
+
         ProfileOps& ops_;
         ProfileStatus status_;
         std::string map_path_;
@@ -88,6 +96,7 @@ namespace tether::bluetooth {
         bool map_retried_ = false;
         bool pbap_retried_ = false;
         int64_t next_attempt_ = 0;
+        int64_t next_verify_ = 0;
         bool opened_once_ = false;
     };
 

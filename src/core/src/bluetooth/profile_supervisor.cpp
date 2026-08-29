@@ -125,6 +125,7 @@ namespace tether::bluetooth {
         map_retried_ = false;
         pbap_retried_ = false;
         next_attempt_ = 0;
+        next_verify_ = 0;
         status_.map_open = false;
         status_.pbap_open = false;
     }
@@ -170,6 +171,28 @@ namespace tether::bluetooth {
         return false;
     }
 
+    // A session obexd has dropped still says open, and the short-circuit below means nothing ever notices.
+    void ProfileSupervisor::verify_sessions(int64_t now) {
+        if (now < next_verify_)
+            return;
+        next_verify_ = now + PROFILE_VERIFY_SECONDS;
+
+        if (status_.map_open && !ops_.session_alive(map_path_)) {
+            debug::log(WARN, "bluetooth: the MAP session is gone; reopening it");
+            map_path_.clear();
+            map_retried_ = false;
+            status_.map_open = false;
+            next_attempt_ = 0;
+        }
+        if (status_.pbap_open && !ops_.session_alive(pbap_path_)) {
+            debug::log(WARN, "bluetooth: the PBAP session is gone; reopening it");
+            pbap_path_.clear();
+            pbap_retried_ = false;
+            status_.pbap_open = false;
+            next_attempt_ = 0;
+        }
+    }
+
     bool ProfileSupervisor::tick(int64_t now, bool device_ready) {
         ProfileStatus previous = status_;
 
@@ -177,6 +200,8 @@ namespace tether::bluetooth {
             status_.reason = _("Waiting for the iPhone.");
             return !(status_ == previous);
         }
+
+        verify_sessions(now);
 
         if (status_.map_open && status_.pbap_open) {
             status_.reason = _("Messages and contacts are connected.");

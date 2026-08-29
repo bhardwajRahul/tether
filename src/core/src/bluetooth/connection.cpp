@@ -46,6 +46,22 @@ namespace tether::bluetooth {
         constexpr const char* MAP_FOLDER_SENT = "sent";
     } // namespace
 
+    namespace {
+        bool roster_contradicted(const std::string& thread_key, const std::string& sender_key) {
+            const std::vector<std::string>* roster = g_rosters.find(thread_key);
+            if (!roster || sender_key.empty())
+                return false;
+            std::vector<Recipient> members;
+            for (const auto& address : *roster) {
+                Recipient recipient;
+                std::string ignored;
+                if (recipient_from_thread_key(address, recipient, ignored))
+                    members.push_back(recipient);
+            }
+            return sender_invalidates_route(sender_key, members);
+        }
+    } // namespace
+
     MessageStore& message_store() { return g_messages; }
     std::mutex& message_store_mutex() { return g_messages_mutex; }
 
@@ -153,6 +169,9 @@ namespace tether::bluetooth {
     void reload_group_rosters() {
         std::lock_guard<std::mutex> lock(g_group_mutex);
         g_rosters = load_rosters();
+        // re-reading the file is the user's answer to an invalidation.
+        for (auto& [key, info] : g_group_info)
+            info.route_invalidated = false;
     }
 
     bool mark_message_read(const std::string& handle, bool read, std::string& err_out, bool* synced_out) {
@@ -507,6 +526,35 @@ namespace tether::bluetooth {
                 return session;
             }
 
+            // GetAll rather than a named property: it answers for the interface as
+            // a whole, so this does not depend on which properties this obexd
+            // publishes.
+            bool session_alive(const std::string& path) override {
+                if (path.empty() || !conn_)
+                    return false;
+                GError* error = nullptr;
+                GVariant* reply = g_dbus_connection_call_sync(conn_,
+                                                              OBEX_NAME,
+                                                              path.c_str(),
+                                                              IFACE_PROPS,
+                                                              "GetAll",
+                                                              g_variant_new("(s)", "org.bluez.obex.Session1"),
+                                                              G_VARIANT_TYPE("(a{sv})"),
+                                                              G_DBUS_CALL_FLAGS_NONE,
+                                                              5000,
+                                                              nullptr,
+                                                              &error);
+                if (reply) {
+                    g_variant_unref(reply);
+                    return true;
+                }
+
+                const std::string message = error && error->message ? error->message : "";
+                g_clear_error(&error);
+                return message.find("UnknownObject") == std::string::npos &&
+                       message.find("UnknownMethod") == std::string::npos;
+            }
+
             void remove_session(const std::string& path) override {
                 if (path.empty() || !conn_)
                     return;
@@ -832,11 +880,16 @@ namespace tether::bluetooth {
                     if (g_correlator.correlate(message.body, now, info) == Correlation::Matched) {
                         const std::string key = group_thread_key(info);
                         if (!key.empty()) {
+
+                            const bool stale = !message.outgoing && roster_contradicted(key, message.thread_key);
+
                             // The sender label is display only and never becomes
                             // part of the thread identity or the reply route.
                             message.peer_name = info.sender;
                             message.thread_key = key;
+                            const bool was_stale = g_group_info[key].route_invalidated;
                             g_group_info[key] = info;
+                            g_group_info[key].route_invalidated = was_stale || stale;
                         }
                     }
                 }
@@ -1044,7 +1097,7 @@ namespace tether::bluetooth {
         }
         state_->bearer_ops = std::make_unique<BluezBearerOps>(*state_->monitor, address);
         state_->profile_ops = std::make_unique<ObexProfileOps>(address);
-        state_->bearers = std::make_unique<BearerSupervisor>(*state_->bearer_ops, ancs_enabled);
+        state_->bearers = std::make_unique<BearerSupervisor>(*state_->bearer_ops, ancs_effective);
         state_->profiles = std::make_unique<ProfileSupervisor>(*state_->profile_ops);
 
         // Only built when the caller can actually show notifications and the

@@ -107,6 +107,31 @@ TEST(BMessageBuild, LengthCountsTheWholeMessageBlock) {
     EXPECT_EQ(declared, std::string("hello").size() + 22);
 }
 
+// The block is BEGIN:MSG CRLF <body> CRLF END:MSG, so the CRLF before END:MSG is
+// a delimiter and not content. A body the user ended with a newline used to
+// carry two surplus blank lines into it.
+TEST(BMessageBuild, ATrailingNewlineDoesNotBecomeBlankLines) {
+    auto block = [](const std::string& body) {
+        const std::string out = build_bmessage({tel("+15551234567")}, body);
+        const size_t begin = out.find("BEGIN:MSG\r\n");
+        const size_t end = out.find("END:MSG\r\n", begin);
+        EXPECT_NE(begin, std::string::npos);
+        EXPECT_NE(end, std::string::npos);
+        return out.substr(begin, end + std::string("END:MSG\r\n").size() - begin);
+    };
+
+    EXPECT_EQ(block("hello"), "BEGIN:MSG\r\nhello\r\nEND:MSG\r\n");
+    EXPECT_EQ(block("hello\n"), "BEGIN:MSG\r\nhello\r\nEND:MSG\r\n") << "a trailing newline is not content";
+    EXPECT_EQ(block("a\nb"), "BEGIN:MSG\r\na\r\nb\r\nEND:MSG\r\n");
+    EXPECT_EQ(block("a\n\nb"), "BEGIN:MSG\r\na\r\n\r\nb\r\nEND:MSG\r\n") << "an internal blank line is";
+
+    // LENGTH has to keep counting whatever the block actually became.
+    const std::string out = build_bmessage({tel("+15551234567")}, "hello\n");
+    const size_t length_at = out.find("LENGTH:");
+    ASSERT_NE(length_at, std::string::npos);
+    EXPECT_EQ(std::stoul(out.substr(length_at + 7)), block("hello\n").size());
+}
+
 // --- The trust boundary --------------------------------------------------
 //
 // Every case below is an address that, interpolated verbatim, would add a
