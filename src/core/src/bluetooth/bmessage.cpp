@@ -396,9 +396,6 @@ namespace tether::bluetooth {
     }
 
     std::string stuff_body(const std::string& body) {
-        if (body.empty())
-            return {};
-
         std::string out;
         for (const std::string& line : split_lines(body)) {
             if (line_needs_stuffing(line))
@@ -406,10 +403,10 @@ namespace tether::bluetooth {
             out += line;
             out += "\r\n";
         }
-
-        const size_t surplus = (body.back() == '\n' || body.back() == '\r') ? 4 : 2;
-        if (out.size() >= surplus)
-            out.erase(out.size() - surplus);
+        // split_lines yields a trailing empty element for a body ending in a
+        // line break; drop the extra break it would introduce.
+        if (!body.empty() && body.back() != '\n' && body.back() != '\r' && out.size() >= 2)
+            out.erase(out.size() - 2);
         return out;
     }
 

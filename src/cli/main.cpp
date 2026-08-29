@@ -1,8 +1,6 @@
 #include <algorithm>
 #include <atomic>
-#include <charconv>
 #include <csignal>
-#include <cstring>
 #include <ctime>
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -97,16 +95,6 @@ void run_native_messaging_host(tether::Client& client) {
     if (reader_thread.joinable()) {
         reader_thread.join();
     }
-}
-
-static bool parse_int(const char* text, int& out) {
-    const char* end = text + std::strlen(text);
-    int value = 0;
-    auto [stop, ec] = std::from_chars(text, end, value);
-    if (ec != std::errc{} || stop != end)
-        return false;
-    out = value;
-    return true;
 }
 
 static size_t term_width() {
@@ -749,15 +737,11 @@ int main(int argc, char* argv[]) {
             if (i + 1 < argc && argv[i + 1][0] != '-')
                 host = argv[++i];
         } else if (arg == "--port") {
-            if (i + 1 < argc && argv[i + 1][0] != '-' && !parse_int(argv[++i], port)) {
-                debug::log(ERR, _("--port expects a number.\n"));
-                return 1;
-            }
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                port = std::stoi(argv[++i]);
         } else if (arg == "--timeout") {
-            if (i + 1 < argc && argv[i + 1][0] != '-' && !parse_int(argv[++i], timeout_ms)) {
-                debug::log(ERR, _("--timeout expects a number in milliseconds.\n"));
-                return 1;
-            }
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                timeout_ms = std::stoi(argv[++i]);
         } else if (arg == "-f" || arg == "--send-file") {
             action = "file";
             if (i + 1 < argc && argv[i + 1][0] != '-')

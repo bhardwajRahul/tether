@@ -338,7 +338,7 @@ namespace tether::bluetooth::ancs {
         data_source_path.clear();
     }
 
-    // `subscribed` records that StartNotify once succeeded, and `ready` that iOS once answered on the Data Source.
+    // `subscribed` records that StartNotify once succeeded, which is not the same as a subscription that is still live.
     void AncsClientState::verify_subscription() {
         if (!monitor || !monitor->connection())
             return;
@@ -383,12 +383,10 @@ namespace tether::bluetooth::ancs {
                    object_gone ? "characteristics gone" : "BlueZ cleared Notifying");
         if (object_gone) {
             drop_gatt_paths();
-            set_status(false, "Waiting for the iPhone's notification service.");
         } else {
             unsubscribe();
             subscribed = false;
             next_subscribe = 0;
-            set_status(false, "Subscribing to the iPhone's notifications...");
         }
         sequencer->reset();
         in_progress.clear();
@@ -462,12 +460,6 @@ namespace tether::bluetooth::ancs {
         }
         if (response.command != CommandId::GetNotificationAttributes)
             return;
-
-        if (response.uid != request.uid) {
-            debug::log(
-                WARN, "ancs: discarding a response for uid {} while {} was in flight", response.uid, request.uid);
-            return;
-        }
 
         auto found = in_progress.find(request.uid);
         if (found == in_progress.end())
@@ -598,8 +590,8 @@ namespace tether::bluetooth::ancs {
         if (s->device_path.empty())
             return;
 
-        if (s->subscribed && now >= s->next_verify) {
-            s->next_verify = now + (s->ready ? ANCS_VERIFY_SECONDS : ANCS_RETRY_SECONDS);
+        if (s->subscribed && !s->ready && now >= s->next_verify) {
+            s->next_verify = now + ANCS_RETRY_SECONDS;
             s->verify_subscription();
         }
 

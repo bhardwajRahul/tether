@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <deque>
 #include <filesystem>
-#include <memory>
 #include <string>
 #include <tether/crypto.hpp>
 #include <tether/discovery.hpp>
@@ -99,15 +98,6 @@ namespace tether::ui {
                 return false;
             const std::string supervised = g_devices.bt_status.value("device_address", "");
             return !supervised.empty() && supervised == address;
-        }
-
-        std::string connection_reason(const nlohmann::json& connection) {
-            const bool link_degraded =
-                !connection.value("classic_connected", false) || !connection.value("le_connected", false);
-            std::string reason = connection.value(link_degraded ? "link_reason" : "profile_reason", "");
-            if (reason.empty())
-                reason = connection.value("link_reason", "");
-            return reason;
         }
 
         void set_capability_row(GtkWidget* label, const std::string& title, bool ok, const std::string& note) {
@@ -228,7 +218,10 @@ namespace tether::ui {
                 // otherwise report no device selected.
                 reason = _("Bluetooth is switched off for this iPhone.");
             } else {
-                reason = connection_reason(connection);
+                const bool link_degraded = !classic || !le;
+                reason = connection.value(link_degraded ? "link_reason" : "profile_reason", "");
+                if (reason.empty())
+                    reason = connection.value("link_reason", "");
             }
             set_text(g_devices.lbl_bt_reason, reason);
 
@@ -969,7 +962,9 @@ namespace tether::ui {
         if (command == "bt_connection_changed") {
             g_devices.bt_connection = event;
             const bool connected = event.value("map_open", false) || event.value("ancs_ready", false);
-            std::string detail = connection_reason(event);
+            std::string detail = event.value("profile_reason", "");
+            if (detail.empty())
+                detail = event.value("link_reason", "");
             if (detail.empty() && connected)
                 detail = _("Messages and notifications are connected.");
             set_route_status(Route::Bluetooth, connected, detail);
@@ -997,21 +992,15 @@ namespace tether::ui {
             return false;
         }
         if (command == "bt_pair_confirm_request") {
-            g_idle_add(
-                [](gpointer data) -> gboolean {
-                    std::unique_ptr<std::string> code(static_cast<std::string*>(data));
-                    GtkWidget* dialog = gtk_message_dialog_new(GTK_WINDOW(main_window()),
-                                                               GTK_DIALOG_MODAL,
-                                                               GTK_MESSAGE_QUESTION,
-                                                               GTK_BUTTONS_OK_CANCEL,
-                                                               _("Does the iPhone show this code?\n\n%s"),
-                                                               code->c_str());
-                    const bool confirmed = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK;
-                    gtk_widget_destroy(dialog);
-                    daemon_send({{"command", "bt_pair_confirm"}, {"accept", confirmed}});
-                    return G_SOURCE_REMOVE;
-                },
-                new std::string(event.value("code", "")));
+            GtkWidget* dialog = gtk_message_dialog_new(GTK_WINDOW(main_window()),
+                                                       GTK_DIALOG_MODAL,
+                                                       GTK_MESSAGE_QUESTION,
+                                                       GTK_BUTTONS_OK_CANCEL,
+                                                       _("Does the iPhone show this code?\n\n%s"),
+                                                       event.value("code", "").c_str());
+            const bool confirmed = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK;
+            gtk_widget_destroy(dialog);
+            daemon_send({{"command", "bt_pair_confirm"}, {"accept", confirmed}});
             return true;
         }
         if (command == "bt_pair_progress") {

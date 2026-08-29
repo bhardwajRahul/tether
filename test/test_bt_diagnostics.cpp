@@ -33,35 +33,6 @@ TEST(BtDiagnostics, RedactsEmailAndPhoneNumber) {
     EXPECT_EQ(r.text("sent to zack@example.com"), "sent to <email-1>");
 }
 
-// A device alias is chosen by its owner and is usually a person's name. It
-// reaches the report through free-form fields -- a pairing progress detail, a
-// result message -- where no pattern would recognise it.
-TEST(BtDiagnostics, RedactsARegisteredDeviceAlias) {
-    Redactor r;
-    r.hide("Zack's iPhone", "name");
-    EXPECT_EQ(r.text("connecting  Zack's iPhone"), "connecting  <name-1>");
-    EXPECT_EQ(r.text("Paired with Zack's iPhone."), "Paired with <name-1>.");
-    EXPECT_EQ(r.text("Zack's iPhone"), "<name-1>") << "the same alias keeps the same placeholder";
-}
-
-// Replacing a model name would rewrite the advice strings that name the same
-// word, and it identifies nobody.
-TEST(BtDiagnostics, LeavesAGenericDeviceNameAlone) {
-    Redactor r;
-    r.hide("iPhone", "name");
-    r.hide("AirPods", "name");
-    EXPECT_EQ(r.text("The iPhone is not answering on LE."), "The iPhone is not answering on LE.");
-    EXPECT_EQ(r.text("connecting  AirPods"), "connecting  AirPods");
-}
-
-// An alias can contain an address or a number, and the whole thing should go as
-// one placeholder rather than being half-eaten by the patterns.
-TEST(BtDiagnostics, AnAliasWinsOverThePatternsInsideIt) {
-    Redactor r;
-    r.hide("Zack 60:57:C8:30:6A:F7", "name");
-    EXPECT_EQ(r.text("connecting  Zack 60:57:C8:30:6A:F7"), "connecting  <name-1>");
-}
-
 TEST(BtDiagnostics, LeavesTimestampsAndErrorCodesAlone) {
     Redactor r;
     const std::string out = r.text("2026-08-16T10:11:12 failed with 0x43 after 30000 ms");

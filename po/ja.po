@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-28 20:29-0700\n"
+"POT-Creation-Date: 2026-08-28 16:06-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -385,14 +385,6 @@ msgid "The message was not sent."
 msgstr "メッセージは送信されませんでした。"
 
 #: src/cli/main.cpp
-msgid "--port expects a number.\n"
-msgstr "--port には数値を指定してください。\n"
-
-#: src/cli/main.cpp
-msgid "--timeout expects a number in milliseconds.\n"
-msgstr "--timeout にはミリ秒単位の数値を指定してください。\n"
-
-#: src/cli/main.cpp
 msgid "Unknown action. Run tether --help for options\n"
 msgstr ""
 "不明な操作です。オプションを見るには tether --help を実行してください\n"
@@ -583,12 +575,6 @@ msgstr "ペアリング済みの iPhone が選択されていません。"
 #: src/core/src/bluetooth/groups.cpp
 msgid "Group replies are turned off."
 msgstr "グループへの返信はオフになっています。"
-
-#: src/core/src/bluetooth/groups.cpp
-msgid ""
-"Someone who is not in this group's saved member list has posted to it, so "
-"the list is out of date. Update it in groups.json before replying."
-msgstr "このグループの保存済みメンバーリストにない相手が投稿したため、リストが古くなっています。返信する前に groups.json で更新してください。"
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format

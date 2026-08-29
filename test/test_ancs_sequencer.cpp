@@ -127,34 +127,6 @@ TEST(AncsSequencer, MatchesEachResponseToItsOwnRequest) {
     EXPECT_EQ(harness.completions[1].second.attribute(0), "com.example.second");
 }
 
-// Data Source responses carry no request identifier, so a response that arrives
-// after its own request timed out reassembles cleanly against whatever is in
-// flight by then. The sequencer cannot tell them apart -- the echoed uid is the
-// only thing that can, which is why the client compares it before filing the
-// attributes against a notification.
-TEST(AncsSequencer, ALateResponseIsDeliveredAgainstTheWrongRequest) {
-    Harness harness;
-    auto sequencer = harness.make();
-
-    sequencer.submit(build_notification_request(11, {NotificationAttributeId::AppIdentifier}));
-    sequencer.submit(build_notification_request(22, {NotificationAttributeId::AppIdentifier}));
-    sequencer.tick(0);
-
-    // The phone never answers for 11, so it is failed and 22 goes out.
-    sequencer.tick(REQUEST_TIMEOUT_SECONDS);
-    ASSERT_EQ(harness.failures.size(), 1u);
-    ASSERT_EQ(harness.writes.size(), 2u);
-
-    // 11's answer turns up now, while 22 is the one in flight.
-    auto late = notification_response(11, "com.example.first");
-    sequencer.on_data_source(late.data(), late.size(), REQUEST_TIMEOUT_SECONDS + 1);
-
-    ASSERT_EQ(harness.completions.size(), 1u);
-    EXPECT_EQ(harness.completions[0].first.uid, 22u) << "the sequencer credits it to the live request";
-    EXPECT_EQ(harness.completions[0].second.uid, 11u) << "and the echoed uid is what gives it away";
-    EXPECT_NE(harness.completions[0].first.uid, harness.completions[0].second.uid);
-}
-
 // An action gets no Data Source response at all, so waiting for one would stall
 // every queued request behind it for the full timeout.
 TEST(AncsSequencer, DoesNotWaitForAResponseToAnAction) {
@@ -238,8 +210,8 @@ TEST(AncsSequencer, BoundsTheQueue) {
 
     size_t accepted = 0;
     for (size_t i = 0; i < MAX_QUEUED_REQUESTS + 10; ++i) {
-        if (sequencer.submit(
-                build_notification_request(static_cast<uint32_t>(i), {NotificationAttributeId::AppIdentifier})))
+        if (sequencer.submit(build_notification_request(static_cast<uint32_t>(i),
+                                                        {NotificationAttributeId::AppIdentifier})))
             ++accepted;
     }
     EXPECT_EQ(accepted, MAX_QUEUED_REQUESTS) << "a notification burst must not grow the daemon without bound";

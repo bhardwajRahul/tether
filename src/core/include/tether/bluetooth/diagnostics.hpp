@@ -3,8 +3,6 @@
 #include <map>
 #include <nlohmann/json.hpp>
 #include <string>
-#include <utility>
-#include <vector>
 
 namespace tether::bluetooth {
 
@@ -13,9 +11,6 @@ namespace tether::bluetooth {
     // addresses, and the user's home and runtime directories.
     class Redactor {
     public:
-        // Registers a literal to scrub wherever it appears
-        void hide(const std::string& literal, const std::string& kind);
-
         std::string text(const std::string& in);
 
         // Recursively redacts strings
@@ -25,8 +20,6 @@ namespace tether::bluetooth {
         std::string placeholder(const std::string& kind, const std::string& key);
 
         std::map<std::string, std::string> assigned_;
-        // Longest first, so a name that contains another is replaced whole.
-        std::vector<std::pair<std::string, std::string>> literals_;
     };
 
     // True for keys whose values are personal content and must never appear in

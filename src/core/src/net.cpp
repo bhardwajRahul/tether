@@ -436,12 +436,6 @@ namespace tether {
         broadcast_local_event(build_bt_status().dump());
     }
 
-    static void restart_supervision(bluetooth::Config config) {
-        if (bluetooth::g_bt_connections)
-            bluetooth::g_bt_connections->set_device(bluetooth::supervised_address(config), config.ancs_enabled);
-        broadcast_local_event(build_bt_status().dump());
-    }
-
     static void run_bt_unpair(const std::string& address) {
         if (!bluetooth::g_bluez)
             return;
@@ -746,25 +740,16 @@ namespace tether {
         debug::log(INFO, "UnixServer: New connection (fd: {})", client_fd);
     }
 
-    // Generous against the ~683 KB base64 payloads file transfers push through,
-    // and far short of what an unframed stream would cost.
-    static constexpr size_t MAX_CLIENT_BUFFER_BYTES = 16u * 1024 * 1024;
-
     void UnixServer::handle_client(int client_fd) {
         // 64k buffer sizes for chunks
         char buf[65536];
         ssize_t n = read(client_fd, buf, sizeof(buf));
         if (n > 0) {
+            // Reference + cursor rather than erase(0, ...) per message: the old form
+            // shifted the whole remaining buffer down for every line, which is O(n^2)
+            // over the ~683 KB base64 payloads file transfers push through here.
             std::string& buffer = client_buffers_[client_fd];
             buffer.append(buf, n);
-            if (buffer.size() > MAX_CLIENT_BUFFER_BYTES) {
-                debug::log(ERR, "UnixServer: client {} sent an unframed stream; dropping it", client_fd);
-                client_buffers_.erase(client_fd);
-                unregister_client_fd(client_fd);
-                loop_.removeFd(client_fd);
-                close(client_fd);
-                return;
-            }
 
             size_t start = 0;
             size_t pos;
@@ -779,12 +764,19 @@ namespace tether {
                         register_local_subscriber(client_fd);
                         std::string payload = build_local_state_snapshot().dump() + "\n";
                         write_plain_packet(client_fd, payload);
-
+                        // Replay any current OTP so a freshly reconnected extension
+                        // (MV3 service worker restart) gets it without waiting for a
+                        // new_otp push it may have missed while disconnected. Skip the
+                        // replay once a page has already taken the code, otherwise the
+                        // restart re-injects it into whatever site the user is on now.
                         if (Otp otp = otp_peek(); otp && !otp_is_claimed()) {
                             std::string otp_payload = make_otp_event(otp).dump() + "\n";
                             write_plain_packet(client_fd, otp_payload);
                         }
-
+                        // Same reasoning for Bluetooth: connection status is only
+                        // broadcast when it changes, so a client that subscribed
+                        // after the last change would otherwise never learn whether
+                        // messages are connected, and would keep its composer shut.
                         write_plain_packet(client_fd, build_bt_connection_status().dump() + "\n");
                         continue;
                     } else if (j.contains("command") && j["command"] == "unsubscribe") {
@@ -827,7 +819,10 @@ namespace tether {
                         auto config = bluetooth::load_config();
                         config.device_address = j["address"];
                         bluetooth::save_config(config);
-                        std::thread(restart_supervision, config).detach();
+                        if (bluetooth::g_bt_connections)
+                            bluetooth::g_bt_connections->set_device(bluetooth::supervised_address(config),
+                                                                    config.ancs_enabled);
+                        broadcast_local_event(build_bt_status().dump());
                     } else if (j.contains("command") && j["command"] == "bt_list_threads") {
                         std::string payload = build_bt_threads().dump() + "\n";
                         write_plain_packet(client_fd, payload);
@@ -847,7 +842,10 @@ namespace tether {
                             handles.push_back(j["handle"].get<std::string>());
                         }
                         const bool read = j.value("read", true);
-
+                        // Each write-through is a blocking OBEX call against a
+                        // session that serves them one at a time, so the batch gets
+                        // one worker rather than a thread per message, and reports
+                        // once rather than making the UI refresh per handle.
                         if (!handles.empty()) {
                             std::thread([handles, read]() {
                                 int changed = 0;
@@ -888,6 +886,9 @@ namespace tether {
                             event["thread"] = thread;
                             event["success"] = bluetooth::send_message(thread, body, sent, err);
                             if (event["success"]) {
+                                // The phone reports nothing about a sent message,
+                                // so the local record is announced the same way an
+                                // incoming one would be.
                                 nlohmann::json message = bluetooth::to_json(sent);
                                 message["command"] = "bt_message";
                                 broadcast_local_event(message.dump());
@@ -897,10 +898,17 @@ namespace tether {
                             broadcast_local_event(event.dump());
                         }).detach();
                     } else if (j.contains("command") && j["command"] == "bt_solicit") {
+                        // The advertisement that makes iOS reveal its Messages and
+                        // Contacts permission toggles is otherwise only on air for a
+                        // few minutes after pairing, leaving a full unpair/re-pair as
+                        // the only way back.
                         std::thread([]() {
                             nlohmann::json event;
                             event["command"] = "bt_solicit_result";
 
+                            // Telling someone to switch on what is already on and
+                            // already working reads as the app not knowing its own
+                            // state. Nothing needs soliciting in that case.
                             if (build_bt_connection_status().value("ancs_ready", false)) {
                                 event["success"] = true;
                                 event["message"] = _("Notification mirroring is already active; nothing to do.");
@@ -925,12 +933,18 @@ namespace tether {
                         auto config = bluetooth::load_config();
                         config.ancs_enabled = j.value("enabled", true);
                         bluetooth::save_config(config);
-                        std::thread(restart_supervision, config).detach();
+                        if (bluetooth::g_bt_connections)
+                            bluetooth::g_bt_connections->set_device(bluetooth::supervised_address(config),
+                                                                    config.ancs_enabled);
+                        broadcast_local_event(build_bt_status().dump());
                     } else if (j.contains("command") && j["command"] == "bt_set_enabled") {
                         auto config = bluetooth::load_config();
                         config.enabled = j.value("enabled", true);
                         bluetooth::save_config(config);
-                        std::thread(restart_supervision, config).detach();
+                        if (bluetooth::g_bt_connections)
+                            bluetooth::g_bt_connections->set_device(bluetooth::supervised_address(config),
+                                                                    config.ancs_enabled);
+                        broadcast_local_event(build_bt_status().dump());
                     } else if (j.contains("command") && j["command"] == "bt_set_ancs_content") {
                         auto config = bluetooth::load_config();
                         config.ancs_content_enabled = j.value("enabled", true);
@@ -1121,7 +1135,8 @@ namespace tether {
                         }).detach();
                     } else if (j.contains("command") && j["command"] == "send_file" && j.contains("path")) {
                         std::string path = j["path"];
-                        std::thread([path]() {
+                        int pfd = client_fd; // thread-safe capture
+                        std::thread([path, pfd]() {
                             Client local;
                             if (local.connect("", 0)) { // connects correctly via unix socket
                                 std::string err;
@@ -1131,8 +1146,12 @@ namespace tether {
                                 resp["success"] = ok;
                                 resp["message"] = ok ? ("Sent " + std::filesystem::path(path).filename().string())
                                                      : ("Send failed: " + (err.empty() ? "unknown error" : err));
-
-                                broadcast_local_event(resp.dump());
+                                std::string payload = resp.dump() + "\n";
+                                // direct write is fine, or we can use broadcast_local_event. We'll reply directly to
+                                // the GUI socket.
+                                if (write(pfd, payload.c_str(), payload.size()) < 0) {
+                                    debug::log(ERR, "net write error\n");
+                                }
                             }
                         }).detach();
                         continue; // skip the "OK\n" below because we reply asynchronously
@@ -1320,24 +1339,10 @@ namespace tether {
         char buf[65536];
         int n = SSL_read(ssl, buf, sizeof(buf));
         if (n > 0) {
-
+            // See UnixServer::handle_client — cursor instead of a per-message erase.
+            // This is the hot path for inbound file transfers.
             std::string& buffer = client_buffers_[client_fd];
-
             buffer.append(buf, n);
-            if (buffer.size() > MAX_CLIENT_BUFFER_BYTES) {
-                debug::log(ERR, "TcpServer: client {} sent an unframed stream; dropping it", client_fd);
-                SSL_free(ssl);
-                active_ssl_.erase(client_fd);
-                client_buffers_.erase(client_fd);
-                ssl_handshake_complete_.erase(client_fd);
-                client_paired_.erase(client_fd);
-                client_info_.erase(client_fd);
-                connected_remote_clients.erase(client_fd);
-                unregister_client_fd(client_fd);
-                loop_.removeFd(client_fd);
-                close(client_fd);
-                return;
-            }
 
             size_t start = 0;
             size_t pos;

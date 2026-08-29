@@ -23,7 +23,8 @@ namespace tether::bluetooth {
         constexpr guint16 INERT_MANUFACTURER_ID = 0xffff;
         constexpr const char* INERT_SERVICE_UUID = "00009999-0000-1000-8000-00805f9b34fb";
 
-        constexpr guint16 ADVERT_TIMEOUT_SECONDS = ANCS_ADVERT_TIMEOUT_SECONDS;
+        // iOS needs the it running long enough to notice
+        constexpr guint16 ADVERT_TIMEOUT_SECONDS = 180;
 
         constexpr const char* ADVERT_XML = R"XML(
 <node>

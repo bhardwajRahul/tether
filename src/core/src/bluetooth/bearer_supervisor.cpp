@@ -15,6 +15,8 @@ namespace tether::bluetooth {
         }
 
         // Failures that clear on their own, unlike a refusal from the phone.
+        // Backing off for minutes on these leaves the link down long after the
+        // reason for it is gone (left the room answers with a page timeout, not a rejection).
         bool is_transient(const std::string& err) {
             static const char* const transient[] = {
                 "org.bluez.Error.NotReady",
@@ -79,7 +81,6 @@ namespace tether::bluetooth {
         classic_connected_since_ = -1;
         next_classic_attempt_ = 0;
         status_.classic_backoff = 0;
-        status_.le_dialling = ops_.le_connect_outstanding();
     }
 
     bool BearerSupervisor::tick(int64_t now, bool obex_up) {
@@ -91,7 +92,6 @@ namespace tether::bluetooth {
             status_.classic_connected = false;
             status_.le_connected = false;
             status_.le_available = false;
-            status_.le_dialling = ops_.le_connect_outstanding();
             classic_connected_since_ = -1;
             status_.reason = status_.device_present ? "iPhone is not paired." : "iPhone not known to BlueZ.";
             return !(status_ == previous);
@@ -153,8 +153,6 @@ namespace tether::bluetooth {
                     break;
                 }
             }
-
-            status_.le_dialling = ops_.le_connect_outstanding();
 
             // An iPhone that keeps refusing while unlocked, with its Bluetooth
             // permissions already on, is wedged on its own side: nothing here
