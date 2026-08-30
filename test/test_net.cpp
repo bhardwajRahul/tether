@@ -21,12 +21,38 @@
 
 namespace {
 
+    // Helper RAII class to ensure proper cleanup
+    class CleanupGuard {
+    public:
+        CleanupGuard(const std::string& path) : path_(path) {}
+        ~CleanupGuard() { std::filesystem::remove_all(path_); }
+
+    private:
+        std::string path_;
+    };
+
+    // Helper RAII class to manage process lifecycle
+    class ProcessGuard {
+    public:
+        ProcessGuard(pid_t pid) : pid_(pid) {}
+        ~ProcessGuard() {
+            if (pid_ > 0) {
+                kill(pid_, SIGKILL);
+                waitpid(pid_, nullptr, 0);
+            }
+        }
+
+    private:
+        pid_t pid_;
+    };
+
     // The single-instance lock fd is deliberately leaked so the OS holds it for the
     // process lifetime. Without O_CLOEXEC any helper the daemon exec's (btmgmt, the
     // pair dialog) inherits it and keeps the lock alive after the daemon is gone,
     // which permanently blocks restarts with "tetherd is already running".
     TEST(SingleInstanceLockTest, ExecedHelpersDoNotKeepTheLockAliveAfterTheDaemonExits) {
         const std::string runtime_dir = "/tmp/tether_lock_test";
+        CleanupGuard cleanup_guard(runtime_dir);
         std::filesystem::remove_all(runtime_dir);
         std::filesystem::create_directories(runtime_dir);
         setenv("XDG_RUNTIME_DIR", runtime_dir.c_str(), 1);
@@ -59,6 +85,8 @@ namespace {
         ASSERT_EQ(read(pipefd[0], &helper, sizeof(helper)), static_cast<ssize_t>(sizeof(helper)));
         close(pipefd[0]);
 
+        ProcessGuard helper_guard(helper);
+
         int wstatus = 0;
         ASSERT_EQ(waitpid(daemon, &wstatus, 0), daemon);
         ASSERT_TRUE(WIFEXITED(wstatus));
@@ -84,9 +112,6 @@ namespace {
         EXPECT_EQ(flock(fd, LOCK_EX | LOCK_NB), 0)
             << "the exec'd helper still holds the daemon lock (errno " << errno << ")";
         close(fd);
-
-        kill(helper, SIGKILL);
-        std::filesystem::remove_all(runtime_dir);
     }
 
     // Captures std::cerr under the same mutex debug::log() writes with, so the
@@ -117,10 +142,25 @@ namespace {
         std::streambuf* previous_ = nullptr;
     };
 
+    // Helper RAII class to manage event loop lifecycle
+    class EventLoopGuard {
+    public:
+        EventLoopGuard(tether::EpollEventLoop* loop) : loop_(loop) {}
+        ~EventLoopGuard() {
+            if (loop_) {
+                loop_->post([this] { loop_->stop(); });
+            }
+        }
+
+    private:
+        tether::EpollEventLoop* loop_;
+    };
+
     // A failed handshake used to close the socket with no trace at all, so a phone
     // stuck in a connect/retry loop looked identical to a phone that never called.
     TEST(TcpServerTest, ReportsWhyATlsHandshakeFailed) {
         const std::string home = "/tmp/tether_net_test";
+        CleanupGuard cleanup_guard(home);
         std::filesystem::remove_all(home);
         std::filesystem::create_directories(home);
         setenv("HOME", home.c_str(), 1);
@@ -133,6 +173,7 @@ namespace {
             GTEST_SKIP() << "port " << port << " is unavailable";
 
         CerrCapture captured;
+        EventLoopGuard loop_guard(&loop);
         std::thread loop_thread([&loop] { loop.run(); });
 
         const int client = socket(AF_INET, SOCK_STREAM, 0);
@@ -156,14 +197,11 @@ namespace {
         }
 
         close(client);
-        loop.post([&loop] { loop.stop(); });
         loop_thread.join();
         captured.restore();
 
         EXPECT_NE(log.find("TLS handshake failed"), std::string::npos) << "captured log:\n" << log;
         EXPECT_NE(log.find("127.0.0.1"), std::string::npos) << "captured log:\n" << log;
-
-        std::filesystem::remove_all(home);
     }
 
 } // namespace

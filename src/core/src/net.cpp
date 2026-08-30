@@ -1333,11 +1333,12 @@ namespace tether {
                         reason += "; ";
                     reason += ebuf;
                 }
+                ERR_clear_error();
                 if (reason.empty())
                     reason = (err == SSL_ERROR_ZERO_RETURN || (err == SSL_ERROR_SYSCALL && ret == 0))
                                  ? "peer closed connection during handshake"
                                  : (err == SSL_ERROR_SYSCALL ? std::string("syscall error: ") + std::strerror(errno)
-                                                           : "ssl error " + std::to_string(err));
+                                                             : "ssl error " + std::to_string(err));
                 debug::log(ERR,
                            "TcpServer: TLS handshake failed for {} (fd: {}): {}",
                            client_info_[client_fd].address,
