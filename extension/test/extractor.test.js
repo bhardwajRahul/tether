@@ -167,42 +167,42 @@ describe('extractSenderDomain', () => {
 });
 
 describe('resolveSenderDomain', () => {
-  it('prefers the DKIM signing domain over the From header', () => {
+  it('uses the DKIM domain the receiving server validated', () => {
     expect(resolveSenderDomain(
       { author: 'Amazon <no-reply@example.com>' },
-      { 'dkim-signature': ['v=1; a=rsa-sha256; d=amazon.com; s=mail'] }
+      { 'authentication-results': ['mx.example.com; dkim=pass header.d=amazon.com header.i=@amazon.com'] }
     )).toBe('amazon.com');
   });
 
-  it('parses a quoted DKIM d= tag', () => {
+  it('falls back to header.i when header.d is absent', () => {
     expect(resolveSenderDomain(
-      { author: 'Amazon <noreply@amazon.com>' },
-      { 'dkim-signature': ['v=1; d="amazon.com"; s=mail'] }
+      { author: 'Amazon <no-reply@example.com>' },
+      { 'authentication-results': ['example.com; dkim=pass header.i=@amazon.com header.s=mail'] }
     )).toBe('amazon.com');
   });
 
-  it('falls back to Return-Path when there is no DKIM header', () => {
+  it('ignores a failed DKIM result and leaves the OTP unpinned', () => {
     expect(resolveSenderDomain(
       { author: 'Amazon <noreply@amazon.com>' },
-      { 'return-path': ['bounces@amazon.co.uk'] }
-    )).toBe('amazon.co.uk');
+      { 'authentication-results': ['example.com; dkim=fail header.d=amazon.com'] }
+    )).toBe('');
   });
 
-  it('falls back to the From header when headers are missing', () => {
-    expect(resolveSenderDomain({ author: 'Amazon <noreply@amazon.com>' }, {})).toBe('amazon.com');
+  it('leaves the OTP unpinned when Authentication-Results is missing', () => {
+    expect(resolveSenderDomain({ author: 'Amazon <noreply@amazon.com>' }, {})).toBe('');
   });
 
-  it('prefers the DKIM domain aligned with From among multiple signatures', () => {
+  it('prefers the validated domain aligned with From among multiple passes', () => {
     expect(resolveSenderDomain(
       { author: 'Facebook <security@facebookmail.com>' },
-      { 'dkim-signature': ['v=1; d=sendgrid.net; s=1', 'v=1; d=facebookmail.com; s=2'] }
+      { 'authentication-results': ['example.com; dkim=pass header.d=sendgrid.net; dkim=pass header.d=facebookmail.com'] }
     )).toBe('facebook.com');
   });
 
-  it('maps a known sender domain to its login domain', () => {
+  it('maps a validated sender domain through the alias table', () => {
     expect(resolveSenderDomain(
       { author: 'Facebook <security@facebookmail.com>' },
-      {}
+      { 'authentication-results': ['example.com; dkim=pass header.d=facebookmail.com'] }
     )).toBe('facebook.com');
   });
 });
@@ -231,7 +231,7 @@ describe('processMessage sends the sender domain', () => {
     nativePostMessage.mockClear();
   });
 
-  it('includes sender_domain in the new_otp message', async () => {
+  it('leaves sender_domain empty when the server did not validate DKIM', async () => {
     global.messenger.messages.listInlineTextParts.mockResolvedValueOnce([
       { contentType: 'text/plain', content: 'Your verification code is 123456' }
     ]);
@@ -246,17 +246,17 @@ describe('processMessage sends the sender domain', () => {
       expect.objectContaining({
         command: 'new_otp',
         otp: '123456',
-        sender_domain: 'amazon.com'
+        sender_domain: ''
       })
     );
   });
 
-  it('uses the DKIM signing domain when available', async () => {
+  it('uses the validated DKIM domain when available', async () => {
     global.messenger.messages.listInlineTextParts.mockResolvedValueOnce([
       { contentType: 'text/plain', content: 'Your verification code is 123456' }
     ]);
     global.messenger.messages.getFull.mockResolvedValueOnce({
-      headers: { 'dkim-signature': ['v=1; d=amazon.com; s=mail'] },
+      headers: { 'authentication-results': ['example.com; dkim=pass header.d=amazon.com'] },
       parts: []
     });
 

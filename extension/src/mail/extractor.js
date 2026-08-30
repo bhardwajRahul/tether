@@ -3,7 +3,7 @@
 
 // single entry point for the mail extension
 import '../background/background.js';
-import { sendToNativeHost, hostMatchesDomain, registrableDomain } from '../shared/native.js';
+import { sendToNativeHost, registrableDomain } from '../shared/native.js';
 
 const OTP_CONTEXT_KEYWORDS = [
   'code', 'otp', 'one-time', 'verification', 'confirm', 'passcode',
@@ -105,29 +105,38 @@ export function extractSenderDomain(author) {
 }
 
 function normalizeDomainValue(d) {
-  return String(d || '').toLowerCase().replace(/\.+$/, '');
+  return String(d || '').toLowerCase().replace(/\.+$/, '').replace(/"/g, '');
 }
 
-// DKIM-Signature headers are `;`-separated tag=value pairs; `d=` is the signing
-// domain. An email may carry several signatures (one per hop).
-function dkimDomains(headers) {
-  const raw = headers?.['dkim-signature'] || [];
+// Only trust domains the receiving server actually validated. Raw From/Return-Path
+// and even a raw DKIM-Signature header are attacker-controlled; the server's own
+// Authentication-Results header records what really passed. We only look at the
+// first (topmost) header — the one added by the user's receiving server.
+function validatedDkimDomains(headers) {
+  const raw = headers?.['authentication-results'] || [];
+  if (!raw.length) return [];
   const domains = [];
-  for (const value of raw) {
-    for (const part of String(value).split(';')) {
-      const m = part.trim().match(/^d\s*=\s*(?:"([^"]+)"|([^;\s]+))/i);
-      if (m) {
-        const d = normalizeDomainValue(m[1] || m[2] || '');
-        if (d) domains.push(d);
+  for (const part of String(raw[0]).split(';')) {
+    if (!/dkim\s*=\s*pass/i.test(part)) continue;
+
+    let m = part.match(/header\.d\s*=\s*"?([^";\s]+)"?/i);
+    if (m) {
+      const d = normalizeDomainValue(m[1]);
+      if (d) {
+        domains.push(d);
+        continue;
       }
+    }
+
+    m = part.match(/header\.i\s*=\s*"?([^";\s]+)"?/i);
+    if (m) {
+      const addr = m[1];
+      const at = addr.indexOf('@');
+      const d = normalizeDomainValue(at >= 0 ? addr.slice(at + 1) : addr);
+      if (d) domains.push(d);
     }
   }
   return domains;
-}
-
-function returnPathDomain(headers) {
-  const raw = headers?.['return-path'] || [];
-  return extractSenderDomain(raw[0]);
 }
 
 // Some services send transactional mail (including OTPs) from a registrable
@@ -143,19 +152,19 @@ export function canonicalizeSenderDomain(domain) {
   return SENDER_DOMAIN_ALIASES.get(rd) || rd;
 }
 
-// Prefer the DKIM signing domain, then the Return-Path, then the From header.
-// DKIM and Return-Path are validated by the receiving server, so they are
-// harder to spoof than a free-form From display name.
+// Derive the sender domain solely from the server-validated DKIM result. When
+// the receiving server did not record a passing DKIM signature, return "" so the
+// OTP is left unpinned instead of trusting a spoofable From/Return-Path header.
 export function resolveSenderDomain(message, headers) {
   const from = extractSenderDomain(message?.author);
-  const dkim = dkimDomains(headers);
-  let domain;
-  if (dkim.length > 0) {
-    domain = dkim.find((d) => hostMatchesDomain(d, from)) || dkim[dkim.length - 1];
-  } else {
-    domain = returnPathDomain(headers) || from;
+  const validated = validatedDkimDomains(headers);
+  if (validated.length > 0) {
+    // Prefer the validated domain aligned with the From header, otherwise the
+    // first one the receiving server reported.
+    const domain = validated.find((d) => registrableDomain(d) === registrableDomain(from)) || validated[0];
+    return canonicalizeSenderDomain(domain);
   }
-  return canonicalizeSenderDomain(domain);
+  return '';
 }
 
 // Fetch the raw headers and derive the best sender domain. getFull() is the
