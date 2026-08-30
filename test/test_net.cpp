@@ -6,6 +6,7 @@
 #include <tether/net.hpp>
 
 #include <arpa/inet.h>
+#include <cerrno>
 #include <chrono>
 #include <csignal>
 #include <cstdlib>
@@ -20,6 +21,10 @@
 #include <unistd.h>
 
 namespace {
+
+    std::string unique_test_dir(const std::string& prefix) {
+        return (std::filesystem::temp_directory_path() / (prefix + "_" + std::to_string(getpid()))).string();
+    }
 
     // Helper RAII class to ensure proper cleanup
     class CleanupGuard {
@@ -41,10 +46,20 @@ namespace {
     public:
         ProcessGuard(pid_t pid) : pid_(pid) {}
         ~ProcessGuard() {
-            if (pid_ > 0) {
-                kill(pid_, SIGKILL);
-                waitpid(pid_, nullptr, 0);
+            if (pid_ <= 0)
+                return;
+
+            int status = 0;
+            const pid_t waited = waitpid(pid_, &status, WNOHANG);
+            if (waited == pid_) {
+                pid_ = -1;
+                return;
             }
+            if (waited == 0) {
+                kill(pid_, SIGKILL);
+                waitpid(pid_, &status, 0);
+            }
+            pid_ = -1;
         }
 
     private:
@@ -56,7 +71,7 @@ namespace {
     // pair dialog) inherits it and keeps the lock alive after the daemon is gone,
     // which permanently blocks restarts with "tetherd is already running".
     TEST(SingleInstanceLockTest, ExecedHelpersDoNotKeepTheLockAliveAfterTheDaemonExits) {
-        const std::string runtime_dir = "/tmp/tether_lock_test";
+        const std::string runtime_dir = unique_test_dir("tether_lock_test");
         CleanupGuard cleanup_guard(runtime_dir);
         std::filesystem::remove_all(runtime_dir);
         std::filesystem::create_directories(runtime_dir);
@@ -152,7 +167,7 @@ namespace {
     };
 
     TEST(TcpServerTest, ReportsWhyATlsHandshakeFailed) {
-        const std::string home = "/tmp/tether_net_test";
+        const std::string home = unique_test_dir("tether_net_test");
         CleanupGuard cleanup_guard(home);
         std::filesystem::remove_all(home);
         std::filesystem::create_directories(home);
