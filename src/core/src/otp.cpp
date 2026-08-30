@@ -11,6 +11,7 @@ namespace tether {
     namespace {
         std::mutex g_mutex;
         std::string g_code;
+        std::string g_sender_domain; // registrable domain of the code's source; "" = unknown
         uint64_t g_id = 0;
         uint64_t g_next_id = 1;
         std::string g_claimed_host; // empty until some host takes the code
@@ -19,6 +20,7 @@ namespace tether {
         // Caller holds g_mutex.
         void clear_locked() {
             g_code.clear();
+            g_sender_domain.clear();
             g_id = 0;
             g_claimed_host.clear();
         }
@@ -31,17 +33,39 @@ namespace tether {
                 clear_locked();
                 return {};
             }
-            return {g_code, g_id};
+            return {g_code, g_sender_domain, g_id};
+        }
+
+        std::string normalize_domain(std::string d) {
+            std::transform(d.begin(), d.end(), d.begin(), [](unsigned char c) { return std::tolower(c); });
+            while (!d.empty() && d.back() == '.')
+                d.pop_back();
+            return d;
+        }
+
+        // A page host matches a pinned sender domain when it is equal or a
+        // subdomain: "amazon.com" matches "amazon.com" and "www.amazon.com", but
+        // not "amazon.com.evil.com" or "evilamazon.com". An empty domain means the
+        // code is not pinned and any host may claim it.
+        bool host_matches_domain(const std::string& host, const std::string& domain) {
+            const std::string h = normalize_domain(host);
+            const std::string d = normalize_domain(domain);
+            if (d.empty())
+                return true;
+            if (h == d)
+                return true;
+            return h.size() > d.size() && h.ends_with("." + d);
         }
     } // namespace
 
-    uint64_t otp_store(const std::string& code, OtpClock::time_point now) {
+    uint64_t otp_store(const std::string& code, const std::string& sender_domain, OtpClock::time_point now) {
         std::lock_guard<std::mutex> lock(g_mutex);
         if (code.empty()) {
             clear_locked();
             return 0;
         }
         g_code = code;
+        g_sender_domain = normalize_domain(sender_domain);
         g_id = g_next_id++;
         g_claimed_host.clear();
         g_set_at = now;
@@ -57,6 +81,11 @@ namespace tether {
         std::lock_guard<std::mutex> lock(g_mutex);
         Otp current = peek_locked(now);
         if (!current)
+            return {};
+
+        // If the code came from email, only serve it to the domain the email was
+        // sent by. A phishing page on a different domain gets nothing.
+        if (!host_matches_domain(host, g_sender_domain))
             return {};
 
         // An unknown host (older extension that doesn't send url) may take an unclaimed

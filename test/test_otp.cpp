@@ -20,7 +20,7 @@ TEST_F(OtpTest, EmptyVaultServesNothing) {
 }
 
 TEST_F(OtpTest, StoreAndPeek) {
-    uint64_t id = otp_store("123456", t0);
+    uint64_t id = otp_store("123456", "", t0);
     EXPECT_NE(id, 0u);
 
     Otp got = otp_peek(t0);
@@ -30,19 +30,19 @@ TEST_F(OtpTest, StoreAndPeek) {
 }
 
 TEST_F(OtpTest, IdsAreUniqueAndIncreasing) {
-    uint64_t first = otp_store("111111", t0);
-    uint64_t second = otp_store("222222", t0);
+    uint64_t first = otp_store("111111", "", t0);
+    uint64_t second = otp_store("222222", "", t0);
     EXPECT_GT(second, first);
 }
 
 TEST_F(OtpTest, StoringEmptyCodeClearsVault) {
-    otp_store("123456", t0);
-    EXPECT_EQ(otp_store("", t0), 0u);
+    otp_store("123456", "", t0);
+    EXPECT_EQ(otp_store("", "", t0), 0u);
     EXPECT_FALSE(otp_peek(t0));
 }
 
 TEST_F(OtpTest, ExpiresAfterTtl) {
-    otp_store("123456", t0);
+    otp_store("123456", "", t0);
     EXPECT_TRUE(otp_peek(t0 + std::chrono::minutes(4)));
     EXPECT_FALSE(otp_peek(t0 + kOtpTtl));
     // Expiry is destructive: the slot is empty even back at t0.
@@ -52,7 +52,7 @@ TEST_F(OtpTest, ExpiresAfterTtl) {
 // The reported bug: a code taken by one site must not be served to the next site
 // the user visits, even while it is still within its TTL.
 TEST_F(OtpTest, CodeIsClaimedByTheFirstHostThatTakesIt) {
-    otp_store("123456", t0);
+    otp_store("123456", "", t0);
 
     Otp a = otp_take_for_host("a.com", t0);
     ASSERT_TRUE(a);
@@ -63,7 +63,7 @@ TEST_F(OtpTest, CodeIsClaimedByTheFirstHostThatTakesIt) {
 }
 
 TEST_F(OtpTest, ClaimingHostKeepsPollingSuccessfully) {
-    otp_store("123456", t0);
+    otp_store("123456", "", t0);
     ASSERT_TRUE(otp_take_for_host("a.com", t0));
     // a.com's content script polls every 2s until it fills; it must keep getting the code.
     Otp again = otp_take_for_host("a.com", t0);
@@ -72,12 +72,12 @@ TEST_F(OtpTest, ClaimingHostKeepsPollingSuccessfully) {
 }
 
 TEST_F(OtpTest, NewCodeResetsTheClaim) {
-    otp_store("111111", t0);
+    otp_store("111111", "", t0);
     ASSERT_TRUE(otp_take_for_host("a.com", t0));
     EXPECT_FALSE(otp_take_for_host("b.com", t0));
 
     // A fresh email arrives; b.com is now entitled to it.
-    otp_store("222222", t0);
+    otp_store("222222", "", t0);
     EXPECT_FALSE(otp_is_claimed());
     Otp b = otp_take_for_host("b.com", t0);
     ASSERT_TRUE(b);
@@ -87,20 +87,72 @@ TEST_F(OtpTest, NewCodeResetsTheClaim) {
 TEST_F(OtpTest, UnknownHostTakesButDoesNotClaim) {
     // Older extension builds don't send `url`. They may still fill, but must not
     // lock every other site out of the code.
-    otp_store("123456", t0);
+    otp_store("123456", "", t0);
     EXPECT_TRUE(otp_take_for_host("", t0));
     EXPECT_FALSE(otp_is_claimed());
     EXPECT_TRUE(otp_take_for_host("a.com", t0));
 }
 
 TEST_F(OtpTest, UnknownHostDoesNotStealAClaimedCode) {
-    otp_store("123456", t0);
+    otp_store("123456", "", t0);
     ASSERT_TRUE(otp_take_for_host("a.com", t0));
     EXPECT_FALSE(otp_take_for_host("", t0));
 }
 
+TEST_F(OtpTest, PinnedCodeServesOnlyMatchingDomain) {
+    otp_store("123456", "amazon.com", t0);
+
+    EXPECT_FALSE(otp_take_for_host("evil.com", t0));
+    EXPECT_FALSE(otp_is_claimed()) << "a mismatched host must not claim the code";
+
+    Otp got = otp_take_for_host("amazon.com", t0);
+    ASSERT_TRUE(got);
+    EXPECT_EQ(got.code, "123456");
+}
+
+TEST_F(OtpTest, PinnedCodeServesSubdomains) {
+    otp_store("123456", "amazon.com", t0);
+    EXPECT_TRUE(otp_take_for_host("www.amazon.com", t0));
+}
+
+TEST_F(OtpTest, PinnedCodeRejectsSuffixSpoofs) {
+    otp_store("123456", "amazon.com", t0);
+    EXPECT_FALSE(otp_take_for_host("amazon.com.evil.com", t0));
+    EXPECT_FALSE(otp_take_for_host("evilamazon.com", t0));
+    EXPECT_FALSE(otp_take_for_host("notamazon.com", t0));
+}
+
+TEST_F(OtpTest, PinnedCodeRejectsUnknownHost) {
+    otp_store("123456", "amazon.com", t0);
+    EXPECT_FALSE(otp_take_for_host("", t0));
+}
+
+TEST_F(OtpTest, UnpinnedCodeKeepsLegacyBehaviour) {
+    otp_store("123456", "", t0);
+    EXPECT_TRUE(otp_take_for_host("", t0));
+    EXPECT_FALSE(otp_is_claimed());
+    EXPECT_TRUE(otp_take_for_host("a.com", t0));
+}
+
+TEST_F(OtpTest, PinnedCodeClaimIsScopedToHostWithinDomain) {
+    otp_store("111111", "amazon.com", t0);
+    ASSERT_TRUE(otp_take_for_host("www.amazon.com", t0));
+    // The claiming host keeps polling successfully.
+    EXPECT_TRUE(otp_take_for_host("www.amazon.com", t0));
+    // A different host — even within the same domain — does not steal the claim.
+    EXPECT_FALSE(otp_take_for_host("amazon.com", t0));
+    // A different domain still gets nothing.
+    EXPECT_FALSE(otp_take_for_host("evil.com", t0));
+}
+
+TEST_F(OtpTest, SenderDomainIsNormalized) {
+    otp_store("123456", "Amazon.COM.", t0);
+    EXPECT_TRUE(otp_take_for_host("www.amazon.com", t0));
+    EXPECT_FALSE(otp_take_for_host("amazon.com.evil.com", t0));
+}
+
 TEST_F(OtpTest, ConsumeClearsMatchingId) {
-    uint64_t id = otp_store("123456", t0);
+    uint64_t id = otp_store("123456", "", t0);
     otp_consume(id);
     EXPECT_FALSE(otp_peek(t0));
 }
@@ -108,8 +160,8 @@ TEST_F(OtpTest, ConsumeClearsMatchingId) {
 // A consume can arrive late (service worker wake-up, native host restart). It must
 // not delete the code that arrived in the meantime for the page now waiting.
 TEST_F(OtpTest, StaleConsumeDoesNotClearNewerCode) {
-    uint64_t first = otp_store("111111", t0);
-    uint64_t second = otp_store("222222", t0);
+    uint64_t first = otp_store("111111", "", t0);
+    uint64_t second = otp_store("222222", "", t0);
 
     otp_consume(first);
 
@@ -121,20 +173,20 @@ TEST_F(OtpTest, StaleConsumeDoesNotClearNewerCode) {
 
 TEST_F(OtpTest, ConsumeWithoutIdClearsUnconditionally) {
     // Backwards compatibility with extension builds that predate otp_id.
-    otp_store("123456", t0);
+    otp_store("123456", "", t0);
     otp_consume(0);
     EXPECT_FALSE(otp_peek(t0));
 }
 
 TEST_F(OtpTest, ConsumeIsIdempotent) {
-    uint64_t id = otp_store("123456", t0);
+    uint64_t id = otp_store("123456", "", t0);
     otp_consume(id);
     otp_consume(id);
     EXPECT_FALSE(otp_peek(t0));
 }
 
 TEST_F(OtpTest, ConsumingClearsTheClaim) {
-    otp_store("111111", t0);
+    otp_store("111111", "", t0);
     uint64_t id = otp_take_for_host("a.com", t0).id;
     otp_consume(id);
     EXPECT_FALSE(otp_is_claimed());

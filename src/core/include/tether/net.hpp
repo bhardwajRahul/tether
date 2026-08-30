@@ -29,7 +29,9 @@ namespace tether {
     void broadcast_local_event(const std::string& msg, int exclude_fd = -1);
 
     // Store an OTP and push it to local subscribers (browser extension, GTK).
-    void otp_publish(const std::string& code, int exclude_fd = -1);
+    // sender_domain is the registrable domain of the email sender, "" when the
+    // code did not come from email.
+    void otp_publish(const std::string& code, const std::string& sender_domain = "", int exclude_fd = -1);
     void record_received_file(const std::filesystem::path& path, size_t bytes_written);
     size_t broadcast_tcp_message(const std::string& msg, int exclude_fd = -1);
 

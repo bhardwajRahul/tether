@@ -94,6 +94,16 @@ export function isFalsePositive(num, context) {
   return false;
 }
 
+// Pull the registrable domain out of a From header such as
+// "Amazon <noreply@amazon.com>" or a bare "no-reply@accounts.google.com".
+export function extractSenderDomain(author) {
+  if (!author || typeof author !== 'string') return '';
+  const match = author.match(/[\w.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+/);
+  if (!match) return '';
+  const domain = match[0].split('@')[1];
+  return domain.toLowerCase().replace(/\.+$/, '');
+}
+
 // ---------------------------------------------------------------------------
 // FALLBACK text extraction: manually walk getFull() parts.
 // Recovery path for messages whose MIME tree makes listInlineTextParts() throw.
@@ -268,7 +278,8 @@ export async function processMessage(message) {
       sendToNativeHost({
         command: "new_otp",
         otp: best.num.replace(/[-\s]/g, ''),
-        source: message.subject
+        source: message.subject,
+        sender_domain: extractSenderDomain(message.author)
       });
     }
   }

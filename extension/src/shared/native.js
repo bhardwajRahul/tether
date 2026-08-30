@@ -77,21 +77,40 @@ function isValidOtp(value) {
   return typeof value === 'string' && value.length > 0 && value.length <= 64;
 }
 
+function normalizeDomain(d) {
+  return String(d || '').toLowerCase().replace(/\.+$/, '');
+}
+
+// A page host matches a pinned sender domain when it is equal or a subdomain:
+// "amazon.com" matches "amazon.com" and "www.amazon.com", but not
+// "amazon.com.evil.com" or "evilamazon.com". An empty domain means the OTP is
+// not pinned and any host may take it.
+export function hostMatchesDomain(host, domain) {
+  const d = normalizeDomain(domain);
+  if (!d) return true;
+  const h = normalizeDomain(host);
+  if (h === d) return true;
+  return h.endsWith('.' + d);
+}
+
 // Deliver an OTP only to tabs that asked for one, most-relevant first, and stop
 // at the first tab that reports it actually filled a field. We never blast the
 // code to unrelated tabs: a page with an OTP-shaped input must not be handed a
-// code it did not request.
+// code it did not request, and when the code came from email we only hand it to
+// the domain the email was sent by.
 export function deliverOtpToTabs(message) {
   if (typeof chrome === 'undefined' || !chrome.tabs) return;
   if (!message || !isValidOtp(message.otp)) return;
 
   pruneOtpRequests();
 
+  const senderDomain = typeof message.sender_domain === 'string' ? message.sender_domain : '';
+
   chrome.tabs.query({}, function(tabs) {
     const byId = new Map((tabs || []).map((t) => [t.id, t]));
 
     const candidates = [...requestingTabs.entries()]
-      .filter(([id]) => byId.has(id))
+      .filter(([id, req]) => byId.has(id) && hostMatchesDomain(req.host, senderDomain))
       .sort((a, b) => {
         const ta = byId.get(a[0]);
         const tb = byId.get(b[0]);

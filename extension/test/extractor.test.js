@@ -32,7 +32,17 @@ global.messenger = {
   }
 };
 
-import { scoreCandidate, isFalsePositive, OTP_PATTERNS } from '../src/mail/extractor.js';
+global.browser = {
+  runtime: {
+    connectNative: vi.fn().mockReturnValue({
+      postMessage: vi.fn(),
+      onMessage: { addListener: vi.fn() },
+      onDisconnect: { addListener: vi.fn() }
+    })
+  }
+};
+
+import { scoreCandidate, isFalsePositive, OTP_PATTERNS, processMessage, extractSenderDomain } from '../src/mail/extractor.js';
 
 function extractOtpCandidates(text) {
   const candidates = [];
@@ -130,6 +140,50 @@ describe('OTP pattern matching', () => {
     const regex = new RegExp(OTP_PATTERNS[1].source, OTP_PATTERNS[1].flags);
     const matches = text.match(regex);
     expect(matches).toBeTruthy();
+  });
+});
+
+describe('extractSenderDomain', () => {
+  it('extracts the domain from a display-name header', () => {
+    expect(extractSenderDomain('Amazon <noreply@amazon.com>')).toBe('amazon.com');
+    expect(extractSenderDomain('Google <no-reply@accounts.google.com>')).toBe('accounts.google.com');
+  });
+
+  it('extracts the domain from a bare address', () => {
+    expect(extractSenderDomain('noreply@amazon.com')).toBe('amazon.com');
+  });
+
+  it('returns empty string for missing or malformed input', () => {
+    expect(extractSenderDomain('')).toBe('');
+    expect(extractSenderDomain(null)).toBe('');
+    expect(extractSenderDomain('not an email')).toBe('');
+  });
+
+  it('lowercases and strips trailing dots', () => {
+    expect(extractSenderDomain('NoReply@Amazon.COM.')).toBe('amazon.com');
+  });
+});
+
+describe('processMessage sends the sender domain', () => {
+  it('includes sender_domain in the new_otp message', async () => {
+    global.messenger.messages.listInlineTextParts.mockResolvedValueOnce([
+      { contentType: 'text/plain', content: 'Your verification code is 123456' }
+    ]);
+
+    await processMessage({
+      id: 42,
+      subject: 'Your verification code',
+      author: 'Amazon <noreply@amazon.com>'
+    });
+
+    const postMessage = global.browser.runtime.connectNative.mock.results[0].value.postMessage;
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: 'new_otp',
+        otp: '123456',
+        sender_domain: 'amazon.com'
+      })
+    );
   });
 });
 

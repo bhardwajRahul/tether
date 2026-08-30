@@ -31,7 +31,7 @@ beforeEach(() => {
   installChrome([{ id: 1 }, { id: 2 }, { id: 3 }]);
 });
 
-const { connectToNativeHost, registerOtpRequest, _resetOtpRequests } =
+const { connectToNativeHost, registerOtpRequest, _resetOtpRequests, hostMatchesDomain } =
   await import('../src/shared/native.js');
 
 describe('native host receive/routing', () => {
@@ -76,6 +76,47 @@ describe('native host receive/routing', () => {
     expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
   });
 
+  it('only delivers a pinned OTP to a matching requesting domain', () => {
+    connectToNativeHost();
+    registerOtpRequest(1, 'evil.com');
+    registerOtpRequest(2, 'www.amazon.com');
+
+    messageListener({
+      command: 'otp_available',
+      otp: '123456',
+      otp_id: 9,
+      sender_domain: 'amazon.com'
+    });
+
+    const tabIds = chrome.tabs.sendMessage.mock.calls.map((c) => c[0]);
+    expect(tabIds).toEqual([2]);
+    expect(tabIds).not.toContain(1);
+  });
+
+  it('delivers an unpinned OTP to any requesting domain', () => {
+    connectToNativeHost();
+    registerOtpRequest(1, 'evil.com');
+
+    messageListener({ command: 'otp_available', otp: '123456', otp_id: 9 });
+
+    const tabIds = chrome.tabs.sendMessage.mock.calls.map((c) => c[0]);
+    expect(tabIds).toEqual([1]);
+  });
+
+  it('does not deliver a pinned OTP when no requesting tab matches', () => {
+    connectToNativeHost();
+    registerOtpRequest(1, 'evil.com');
+
+    messageListener({
+      command: 'otp_available',
+      otp: '123456',
+      otp_id: 9,
+      sender_domain: 'amazon.com'
+    });
+
+    expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
+  });
+
   it('ignores an otp_available event with an empty code', () => {
     connectToNativeHost();
     registerOtpRequest(1, 'a.example.com');
@@ -90,5 +131,28 @@ describe('native host receive/routing', () => {
     messageListener('garbage');
     messageListener({ command: 'something_else', otp: '123456' });
     expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe('hostMatchesDomain', () => {
+  it('matches exact and subdomain hosts', () => {
+    expect(hostMatchesDomain('amazon.com', 'amazon.com')).toBe(true);
+    expect(hostMatchesDomain('www.amazon.com', 'amazon.com')).toBe(true);
+    expect(hostMatchesDomain('login.amazon.com', 'amazon.com')).toBe(true);
+  });
+
+  it('rejects suffix spoofs', () => {
+    expect(hostMatchesDomain('amazon.com.evil.com', 'amazon.com')).toBe(false);
+    expect(hostMatchesDomain('evilamazon.com', 'amazon.com')).toBe(false);
+    expect(hostMatchesDomain('notamazon.com', 'amazon.com')).toBe(false);
+  });
+
+  it('treats an empty domain as unpinned', () => {
+    expect(hostMatchesDomain('anything.example.com', '')).toBe(true);
+    expect(hostMatchesDomain('', '')).toBe(true);
+  });
+
+  it('normalizes case and trailing dots', () => {
+    expect(hostMatchesDomain('www.amazon.com', 'Amazon.COM.')).toBe(true);
   });
 });

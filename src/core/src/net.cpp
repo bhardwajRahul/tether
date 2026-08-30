@@ -104,16 +104,18 @@ namespace tether {
         event["command"] = "otp_available";
         event["otp"] = otp.code;
         event["otp_id"] = otp.id;
+        if (!otp.sender_domain.empty())
+            event["sender_domain"] = otp.sender_domain;
         return event;
     }
 
-    void otp_publish(const std::string& code, int exclude_fd) {
+    void otp_publish(const std::string& code, const std::string& sender_domain, int exclude_fd) {
         if (code.empty())
             return;
         if (Otp current = otp_peek(); current && current.code == code)
             return;
-        uint64_t id = otp_store(code);
-        broadcast_local_event(make_otp_event({code, id}).dump(), exclude_fd);
+        uint64_t id = otp_store(code, sender_domain);
+        broadcast_local_event(make_otp_event({code, sender_domain, id}).dump(), exclude_fd);
     }
 
     void register_local_subscriber(int fd) {
@@ -1008,7 +1010,9 @@ namespace tether {
                             continue;
                         }
                     } else if (j.contains("command") && j["command"] == "new_otp" && j.contains("otp")) {
-                        otp_publish(otp_from_json(j["otp"]), client_fd);
+                        otp_publish(otp_from_json(j["otp"]),
+                                    j.value("sender_domain", std::string{}),
+                                    client_fd);
                         std::string payload = "{\"status\":\"ok\"}\n";
                         write_plain_packet(client_fd, payload);
                         continue;
@@ -1442,7 +1446,8 @@ namespace tether {
                         }
                     } else if (j.contains("command") && j["command"] == "new_otp" && j.contains("otp")) {
                         // OTP sent from a mobile client (iPhone Share Extension) over mTLS.
-                        otp_publish(otp_from_json(j["otp"]));
+                        otp_publish(otp_from_json(j["otp"]),
+                                    j.value("sender_domain", std::string{}));
                         std::string payload = "{\"status\":\"ok\"}\n";
                         robust_ssl_write(ssl, payload.c_str(), payload.size());
                         continue;
