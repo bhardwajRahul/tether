@@ -1670,7 +1670,14 @@ namespace tether {
                     ofs << pending.dump(4);
                 }
             } else {
-                debug::log(INFO, "[Pairing Rejected] {} (exit code {})", info.device_name, exit_code);
+
+                if (!bluetooth::dialog_answered(status))
+                    debug::log(ERR,
+                               "[Pairing Denied] {}: the confirmation dialog could not run (exit code {})",
+                               info.device_name,
+                               exit_code);
+                else
+                    debug::log(INFO, "[Pairing Rejected] {} (exit code {})", info.device_name, exit_code);
 
                 auto remote_it = connected_remote_clients.find(info.client_fd);
                 auto ssl_it = active_ssl_.find(info.client_fd);

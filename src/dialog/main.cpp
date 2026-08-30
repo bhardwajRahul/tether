@@ -148,13 +148,17 @@ int main(int argc, char** argv) {
     gtk_window_set_default_size(GTK_WINDOW(window), 380, -1);
     gtk_window_set_decorated(GTK_WINDOW(window), FALSE);
 
-    // Layer shell setup
-    gtk_layer_init_for_window(GTK_WINDOW(window));
-    gtk_layer_set_layer(GTK_WINDOW(window), GTK_LAYER_SHELL_LAYER_OVERLAY);
-    gtk_layer_set_keyboard_mode(GTK_WINDOW(window), GTK_LAYER_SHELL_KEYBOARD_MODE_EXCLUSIVE);
-    gtk_layer_set_namespace(GTK_WINDOW(window), "tether-dialog");
-
-    // Center on screen (no anchors = centered)
+    // Layer shell setup. fall back to an ordinary centered window.
+    if (gtk_layer_is_supported()) {
+        gtk_layer_init_for_window(GTK_WINDOW(window));
+        gtk_layer_set_layer(GTK_WINDOW(window), GTK_LAYER_SHELL_LAYER_OVERLAY);
+        gtk_layer_set_keyboard_mode(GTK_WINDOW(window), GTK_LAYER_SHELL_KEYBOARD_MODE_EXCLUSIVE);
+        gtk_layer_set_namespace(GTK_WINDOW(window), "tether-dialog");
+        // No anchors = centered
+    } else {
+        gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
+        gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
+    }
 
     // Main container
     GtkWidget* frame = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);

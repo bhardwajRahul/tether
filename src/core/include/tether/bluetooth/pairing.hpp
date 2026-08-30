@@ -31,6 +31,9 @@ namespace tether::bluetooth {
     // at all. Device1.Pair() involves no profile.
     bool should_fall_back(AuthStrategy tried, bool paired, bool confirmation_failed);
 
+    // Whether a finished tether-dialog answered one way or another.
+    bool dialog_answered(int wait_status);
+
     // Whether a D-Bus error names an authentication BlueZ already failed. No bond can appear afterwards.
     bool is_authentication_failure(const std::string& err);
 

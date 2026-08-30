@@ -1,4 +1,6 @@
+#include <csignal>
 #include <gtest/gtest.h>
+#include <sys/wait.h>
 #include <tether/bluetooth/agent.hpp>
 #include <tether/bluetooth/config.hpp>
 #include <tether/bluetooth/pairing.hpp>
@@ -105,6 +107,22 @@ TEST(FallbackPolicy, DoesNotRetryWhatAlreadyWorked) {
 // computer ignoring them.
 TEST(FallbackPolicy, DoesNotRetryAUserRejection) {
     EXPECT_FALSE(should_fall_back(AuthStrategy::ConnectFirst, /*paired=*/false, /*user_rejected=*/true));
+}
+
+// tether-dialog dies in the dynamic loader with 127 when gtk-layer-shell is
+// missing. Reading that as a refusal declined every pairing -- see issue #49.
+TEST(DialogAnswer, OnlyAcceptRejectAndTimeoutAreAnswers) {
+    EXPECT_TRUE(dialog_answered(W_EXITCODE(0, 0)));
+    EXPECT_TRUE(dialog_answered(W_EXITCODE(1, 0)));
+    EXPECT_TRUE(dialog_answered(W_EXITCODE(2, 0)));
+}
+
+TEST(DialogAnswer, ADialogThatCouldNotRunAnsweredNothing) {
+    EXPECT_FALSE(dialog_answered(W_EXITCODE(3, 0)));   // bad args or no display
+    EXPECT_FALSE(dialog_answered(W_EXITCODE(126, 0))); // not executable
+    EXPECT_FALSE(dialog_answered(W_EXITCODE(127, 0))); // shared library missing
+    EXPECT_FALSE(dialog_answered(W_EXITCODE(0, SIGSEGV)));
+    EXPECT_FALSE(dialog_answered(W_EXITCODE(0, SIGABRT)));
 }
 
 // BlueZ reporting a failed authentication is terminal: polling for a bond after
