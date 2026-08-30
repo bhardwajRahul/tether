@@ -4,19 +4,21 @@ project(tether VERSION 0.2.18 LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# version from git
-execute_process(
-    COMMAND git describe --tags --always --dirty
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_VERSION
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    ERROR_QUIET
-)
+# version from git unless a packager supplied one
+if(NOT DEFINED TETHER_VERSION)
+    execute_process(
+        COMMAND git describe --tags --always --dirty
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
 
-if(GIT_VERSION)
-    string(REGEX REPLACE "^v" "" TETHER_VERSION "${GIT_VERSION}")
-else()
-    set(TETHER_VERSION "${PROJECT_VERSION}-unknown")
+    if(GIT_VERSION)
+        string(REGEX REPLACE "^v" "" TETHER_VERSION "${GIT_VERSION}")
+    else()
+        set(TETHER_VERSION "${PROJECT_VERSION}-unknown")
+    endif()
 endif()
 
 configure_file(
