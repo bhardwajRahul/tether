@@ -147,19 +147,6 @@ namespace {
         std::streambuf* previous_ = nullptr;
     };
 
-    // Helper RAII class to manage event loop lifecycle
-    class EventLoopGuard {
-    public:
-        EventLoopGuard(tether::EpollEventLoop* loop) : loop_(loop) {}
-        ~EventLoopGuard() {
-            if (loop_)
-                loop_->stop();
-        }
-
-    private:
-        tether::EpollEventLoop* loop_;
-    };
-
     TEST(TcpServerTest, ReportsWhyATlsHandshakeFailed) {
         const std::string home = "/tmp/tether_net_test";
         CleanupGuard cleanup_guard(home);
@@ -175,7 +162,6 @@ namespace {
             GTEST_SKIP() << "port " << port << " is unavailable";
 
         CerrCapture captured;
-        EventLoopGuard loop_guard(&loop);
         std::thread loop_thread([&loop] { loop.run(); });
 
         const int client = socket(AF_INET, SOCK_STREAM, 0);
@@ -199,7 +185,7 @@ namespace {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
-        loop.stop();
+        loop.post([&loop] { loop.stop(); });
         loop_thread.join();
         captured.restore();
 
