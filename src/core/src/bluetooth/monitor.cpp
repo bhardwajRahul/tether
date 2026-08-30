@@ -1,13 +1,21 @@
 #include "tether/bluetooth/monitor.hpp"
 #include "tether/log.hpp"
 
+#include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <cerrno>
+#include <csignal>
+#include <fcntl.h>
 #include <filesystem>
 #include <fstream>
 #include <gio/gio.h>
 #include <mutex>
+#include <optional>
+#include <poll.h>
+#include <sys/wait.h>
 #include <sys/eventfd.h>
 #include <thread>
 #include <unistd.h>
@@ -40,11 +48,15 @@ namespace tether::bluetooth {
         mutable std::mutex mutex;
         BluezObjects objects;
         Capability cap;
+        std::string secure_adapter;
+        std::optional<bool> secure_connections;
+        std::chrono::steady_clock::time_point secure_checked_at{};
 
         void run();
         void refresh();
         void schedule_refresh();
         void notify();
+        std::optional<bool> read_secure_connections(const std::string& adapter_id);
     };
 
     namespace {
@@ -129,6 +141,145 @@ namespace tether::bluetooth {
         return value;
     }
 
+    std::optional<bool> probe_secure_connections(const std::string& adapter_id,
+                                                 std::chrono::milliseconds timeout) {
+        if (adapter_id.empty())
+            return std::nullopt;
+
+        std::array<gchar*, 5> argv = {
+            const_cast<gchar*>("btmgmt"),
+            const_cast<gchar*>("--index"),
+            const_cast<gchar*>(adapter_id.c_str()),
+            const_cast<gchar*>("info"),
+            nullptr,
+        };
+
+        GPid child = 0;
+        gint output_fd = -1;
+        GError* error = nullptr;
+        const auto flags = static_cast<GSpawnFlags>(G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD |
+                                                    G_SPAWN_STDERR_TO_DEV_NULL | G_SPAWN_CLOEXEC_PIPES);
+        if (!g_spawn_async_with_pipes(nullptr,
+                                      argv.data(),
+                                      nullptr,
+                                      flags,
+                                      nullptr,
+                                      nullptr,
+                                      &child,
+                                      nullptr,
+                                      &output_fd,
+                                      nullptr,
+                                      &error)) {
+            debug::log(WARN,
+                       "bluetooth: cannot start btmgmt for {}: {}",
+                       adapter_id,
+                       error ? error->message : "unknown error");
+            g_clear_error(&error);
+            return std::nullopt;
+        }
+
+        const int old_flags = fcntl(output_fd, F_GETFL, 0);
+        if (old_flags >= 0)
+            fcntl(output_fd, F_SETFL, old_flags | O_NONBLOCK);
+
+        std::string output;
+        output.reserve(2048);
+        int status = 0;
+        bool exited = false;
+        const auto started = std::chrono::steady_clock::now();
+        const auto deadline = started + std::max(timeout, std::chrono::milliseconds::zero());
+
+        auto drain_output = [&] {
+            char buffer[1024];
+            for (;;) {
+                const ssize_t count = read(output_fd, buffer, sizeof(buffer));
+                if (count > 0) {
+                    if (output.size() < 64 * 1024)
+                        output.append(buffer, std::min<size_t>(static_cast<size_t>(count), 64 * 1024 - output.size()));
+                    continue;
+                }
+                if (count < 0 && errno == EINTR)
+                    continue;
+                break;
+            }
+        };
+
+        while (std::chrono::steady_clock::now() < deadline) {
+            drain_output();
+            const pid_t waited = waitpid(child, &status, WNOHANG);
+            if (waited == child) {
+                exited = true;
+                break;
+            }
+            if (waited < 0 && errno != EINTR)
+                break;
+
+            const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+                deadline - std::chrono::steady_clock::now());
+            pollfd watched{output_fd, POLLIN | POLLHUP, 0};
+            poll(&watched, 1, static_cast<int>(std::clamp<int64_t>(remaining.count(), 1, 50)));
+        }
+
+        if (!exited) {
+            kill(child, SIGTERM);
+            const auto grace_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(100);
+            while (std::chrono::steady_clock::now() < grace_deadline) {
+                const pid_t waited = waitpid(child, &status, WNOHANG);
+                if (waited == child) {
+                    exited = true;
+                    break;
+                }
+                if (waited < 0 && errno != EINTR)
+                    break;
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            }
+            if (!exited) {
+                kill(child, SIGKILL);
+                while (waitpid(child, &status, 0) < 0 && errno == EINTR) {
+                }
+            }
+
+            const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - started);
+            debug::log(WARN, "bluetooth: btmgmt info for {} timed out after {}ms", adapter_id, elapsed.count());
+            close(output_fd);
+            g_spawn_close_pid(child);
+            return std::nullopt;
+        }
+
+        drain_output();
+        close(output_fd);
+        g_spawn_close_pid(child);
+        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+            return std::nullopt;
+
+        const size_t settings = output.find("current settings:");
+        if (settings == std::string::npos)
+            return std::nullopt;
+        const size_t line_end = output.find('\n', settings);
+        const std::string line = output.substr(settings, line_end - settings);
+        return line.find("secure-conn") != std::string::npos;
+    }
+
+    std::optional<bool> MonitorState::read_secure_connections(const std::string& adapter_id) {
+        constexpr auto RECHECK_AFTER = std::chrono::seconds(30);
+        if (adapter_id.empty()) {
+            secure_adapter.clear();
+            secure_connections.reset();
+            secure_checked_at = {};
+            return std::nullopt;
+        }
+
+        const auto now = std::chrono::steady_clock::now();
+        if (adapter_id != secure_adapter || secure_checked_at == std::chrono::steady_clock::time_point{} ||
+            now - secure_checked_at >= RECHECK_AFTER) {
+            secure_adapter = adapter_id;
+            secure_connections = probe_secure_connections(adapter_id);
+            secure_checked_at = std::chrono::steady_clock::now();
+        }
+        return secure_connections;
+    }
+
     void MonitorState::refresh() {
         GError* error = nullptr;
         GVariant* reply = g_dbus_connection_call_sync(conn,
@@ -152,6 +303,7 @@ namespace tether::bluetooth {
         g_variant_unref(reply);
         parsed.experimental_api = bluetoothd_has_experimental();
         Capability resolved = resolve_capability(parsed);
+        resolved = resolve_capability(parsed, read_secure_connections(resolved.adapter_id));
 
         {
             std::lock_guard<std::mutex> lock(mutex);
@@ -222,29 +374,6 @@ namespace tether::bluetooth {
             g_clear_error(&error);
             return false;
         }
-
-        // fail fast when bluetoothd is not present
-        GVariant* probe = g_dbus_connection_call_sync(impl_->conn,
-                                                      BLUEZ_NAME,
-                                                      "/",
-                                                      OBJECT_MANAGER,
-                                                      "GetManagedObjects",
-                                                      nullptr,
-                                                      G_VARIANT_TYPE("(a{oa{sa{sv}}})"),
-                                                      G_DBUS_CALL_FLAGS_NONE,
-                                                      5000,
-                                                      nullptr,
-                                                      &error);
-        if (!probe) {
-            debug::log(WARN, "bluetooth: BlueZ unavailable: {}", error ? error->message : "unknown");
-            g_clear_error(&error);
-            g_clear_object(&impl_->conn);
-            return false;
-        }
-        impl_->objects = parse_managed_objects(probe);
-        impl_->objects.experimental_api = bluetoothd_has_experimental();
-        impl_->cap = resolve_capability(impl_->objects);
-        g_variant_unref(probe);
 
         impl_->efd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
         if (impl_->efd < 0) {

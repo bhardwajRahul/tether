@@ -18,8 +18,8 @@ namespace tether::bluetooth {
         constexpr const char* ADVERT_MANAGER = "org.bluez.LEAdvertisingManager1";
 
         // Private/test identifiers that claim no Apple or hardware-vendor
-        // identity, following the convention ancs4linux established. No meaning; they exist because the advert iOS
-        // responds to carries them.
+        // identity, following the convention ancs4linux established. No meaning;
+        // they exist because the advert iOS responds to carries them.
         constexpr guint16 INERT_MANUFACTURER_ID = 0xffff;
         constexpr const char* INERT_SERVICE_UUID = "00009999-0000-1000-8000-00805f9b34fb";
 
@@ -144,7 +144,7 @@ namespace tether::bluetooth {
         return true;
     }
 
-    bool AncsAdvertisement::register_with_bluez() {
+    bool AncsAdvertisement::register_with_bluez(std::string* failure) {
         if (state_->registered_with_bluez)
             return true;
         if (state_->registration_id == 0)
@@ -165,7 +165,10 @@ namespace tether::bluetooth {
                                                       nullptr,
                                                       &error);
         if (!reply) {
-            debug::log(ERR, "bluetooth: RegisterAdvertisement failed: {}", error ? error->message : "unknown");
+            const std::string message = error && error->message ? error->message : "unknown error";
+            debug::log(ERR, "bluetooth: RegisterAdvertisement failed: {}", message);
+            if (failure)
+                *failure = message;
             g_clear_error(&error);
             return false;
         }

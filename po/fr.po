@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-30 11:33-0700\n"
+"POT-Creation-Date: 2026-08-31 19:04-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: French\n"
@@ -949,6 +949,10 @@ msgid "Bluetooth is unavailable on this machine."
 msgstr "Bluetooth est indisponible sur cette machine."
 
 #: src/gtk/devices_view.cpp
+msgid "Scanning for nearby devices..."
+msgstr "Recherche d'appareils à proximité..."
+
+#: src/gtk/devices_view.cpp
 msgid "Full mode — messages, contacts, and notifications."
 msgstr "Mode complet — messages, contacts et notifications."
 
@@ -1083,10 +1087,6 @@ msgid "Unknown Device"
 msgstr "Appareil inconnu"
 
 #: src/gtk/devices_view.cpp
-msgid "Scanning for nearby devices..."
-msgstr "Recherche d'appareils à proximité..."
-
-#: src/gtk/devices_view.cpp
 msgid "Connected"
 msgstr "Connecté"
 
@@ -1097,6 +1097,10 @@ msgstr "Hors ligne"
 #: src/gtk/devices_view.cpp
 msgid "Nearby (Tap to Pair)"
 msgstr "À proximité (toucher pour appairer)"
+
+#: src/gtk/devices_view.cpp
+msgid "Partially connected"
+msgstr "Partiellement connecté"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
@@ -1314,6 +1318,14 @@ msgid "Today"
 msgstr "Aujourd'hui"
 
 #: src/gtk/messages_view.cpp
+msgid "Bluetooth connection needed to sync messages."
+msgstr "Une connexion Bluetooth est nécessaire pour synchroniser les messages."
+
+#: src/gtk/messages_view.cpp
+msgid "Select a conversation"
+msgstr "Sélectionnez une conversation"
+
+#: src/gtk/messages_view.cpp
 msgid "Sending…"
 msgstr "Envoi…"
 
@@ -1349,10 +1361,6 @@ msgstr "Nouveau message"
 #: src/gtk/messages_view.cpp
 msgid "Search conversations"
 msgstr "Rechercher des conversations"
-
-#: src/gtk/messages_view.cpp
-msgid "Select a conversation"
-msgstr "Sélectionnez une conversation"
 
 #: src/gtk/messages_view.cpp
 msgid "To:"

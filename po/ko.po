@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-30 11:33-0700\n"
+"POT-Creation-Date: 2026-08-31 19:04-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -908,6 +908,10 @@ msgid "Bluetooth is unavailable on this machine."
 msgstr "이 컴퓨터에서는 Bluetooth를 사용할 수 없습니다."
 
 #: src/gtk/devices_view.cpp
+msgid "Scanning for nearby devices..."
+msgstr "근처 기기를 검색하는 중..."
+
+#: src/gtk/devices_view.cpp
 msgid "Full mode — messages, contacts, and notifications."
 msgstr "전체 모드 — 메시지, 연락처, 알림."
 
@@ -1036,10 +1040,6 @@ msgid "Unknown Device"
 msgstr "알 수 없는 기기"
 
 #: src/gtk/devices_view.cpp
-msgid "Scanning for nearby devices..."
-msgstr "근처 기기를 검색하는 중..."
-
-#: src/gtk/devices_view.cpp
 msgid "Connected"
 msgstr "연결됨"
 
@@ -1050,6 +1050,10 @@ msgstr "오프라인"
 #: src/gtk/devices_view.cpp
 msgid "Nearby (Tap to Pair)"
 msgstr "근처 (탭하여 페어링)"
+
+#: src/gtk/devices_view.cpp
+msgid "Partially connected"
+msgstr "부분적으로 연결됨"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
@@ -1261,6 +1265,14 @@ msgid "Today"
 msgstr "오늘"
 
 #: src/gtk/messages_view.cpp
+msgid "Bluetooth connection needed to sync messages."
+msgstr "메시지를 동기화하려면 Bluetooth 연결이 필요합니다."
+
+#: src/gtk/messages_view.cpp
+msgid "Select a conversation"
+msgstr "대화 선택"
+
+#: src/gtk/messages_view.cpp
 msgid "Sending…"
 msgstr "보내는 중…"
 
@@ -1295,10 +1307,6 @@ msgstr "새 메시지"
 #: src/gtk/messages_view.cpp
 msgid "Search conversations"
 msgstr "대화 검색"
-
-#: src/gtk/messages_view.cpp
-msgid "Select a conversation"
-msgstr "대화 선택"
 
 #: src/gtk/messages_view.cpp
 msgid "To:"

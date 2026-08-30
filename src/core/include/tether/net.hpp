@@ -48,7 +48,7 @@ namespace tether {
 
     class UnixServer {
     public:
-        UnixServer(EpollEventLoop& loop);
+        UnixServer(EpollEventLoop& loop, TcpServer& tcp_server);
         ~UnixServer();
 
         bool start();
@@ -59,6 +59,7 @@ namespace tether {
         void handle_client(int client_fd);
 
         EpollEventLoop& loop_;
+        TcpServer& tcp_server_;
         int server_fd_ = -1;
         std::string socket_path_;
         std::map<int, std::string> client_buffers_;
@@ -72,6 +73,10 @@ namespace tether {
 
         bool start();
         void stop();
+
+        // Trusts a fingerprint and promotes every matching live TLS session.
+        // Returns true when at least one connected client was promoted.
+        bool accept_device(const std::string& fingerprint, const std::string& fallback_name = "Paired Device");
 
     private:
         struct ConnectedClientInfo {

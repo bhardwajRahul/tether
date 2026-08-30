@@ -2,7 +2,6 @@
 #include <tether/i18n.hpp>
 
 #include <algorithm>
-#include <cstdio>
 #include <cstring>
 #include <filesystem>
 
@@ -284,35 +283,6 @@ namespace tether::bluetooth {
             return "/usr/lib/bluetooth/bluetoothd";
         }
 
-        // Reads the controller's current mgmt settings. BlueZ exposes Secure
-        // Connections nowhere on D-Bus, and it is the precondition for the
-        // cross-transport key derivation that gives a BR/EDR bond its LE half.
-        // without it the bond is Classic-only and ANCS is unreachable, which is
-        // otherwise indistinguishable from a dozen other failures.
-        //
-        // TODO: shelling out to btmgmt, which reads the mgmt socket
-        // unprivileged. Only worth opening an AF_BLUETOOTH mgmt socket here if
-        // this ever needs to run somewhere btmgmt is not installed.
-        bool read_secure_connections(const std::string& adapter_id, bool& enabled) {
-            const std::string cmd = "btmgmt --index " + adapter_id + " info 2>/dev/null";
-            FILE* pipe = popen(cmd.c_str(), "r");
-            if (!pipe)
-                return false;
-
-            bool found = false;
-            char line[1024];
-            while (std::fgets(line, sizeof(line), pipe)) {
-                const std::string text(line);
-                if (text.find("current settings:") == std::string::npos)
-                    continue;
-                enabled = text.find("secure-conn") != std::string::npos;
-                found = true;
-                break;
-            }
-            pclose(pipe);
-            return found;
-        }
-
         // The package ships the drop-in for the user to copy.
         std::string enable_experimental_command() {
             const std::string shipped = std::string(TETHER_DATADIR) + "/bluetooth-experimental.conf";
@@ -334,7 +304,7 @@ namespace tether::bluetooth {
 
     } // namespace
 
-    Capability resolve_capability(const BluezObjects& objects) {
+    Capability resolve_capability(const BluezObjects& objects, std::optional<bool> secure_connections) {
         Capability cap;
 
         // prefer powered adapter, fall back to the first so the reasons below
@@ -380,7 +350,10 @@ namespace tether::bluetooth {
         if (cap.bearer_api != BearerApi::Confirmed)
             cap.bearer_api = objects.experimental_api ? BearerApi::Unknown : BearerApi::Absent;
 
-        cap.secure_connections_known = read_secure_connections(cap.adapter_id, cap.secure_connections);
+        if (secure_connections.has_value()) {
+            cap.secure_connections_known = true;
+            cap.secure_connections = *secure_connections;
+        }
 
         if (!cap.powered) {
             cap.reasons.emplace_back(_("Bluetooth adapter is powered off."));

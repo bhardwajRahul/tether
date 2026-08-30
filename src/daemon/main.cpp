@@ -71,13 +71,13 @@ int main(int argc, char** argv) {
     tether::EpollEventLoop loop;
     g_loop = &loop;
 
-    tether::UnixServer unix_srv(loop);
+    tether::TcpServer tcp_srv(loop, 5134);
+    tether::UnixServer unix_srv(loop, tcp_srv);
     if (!unix_srv.start()) {
         debug::log(ERR, "Failed to start Unix server");
         return 1;
     }
 
-    tether::TcpServer tcp_srv(loop, 5134);
     if (!tcp_srv.start()) {
         debug::log(ERR, "Failed to start TCP server");
         return 1;

@@ -2,9 +2,11 @@
 
 #include "tether/bluetooth/objects.hpp"
 
+#include <chrono>
 #include <functional>
 #include <gio/gio.h>
 #include <memory>
+#include <optional>
 
 namespace tether::bluetooth {
 
@@ -19,8 +21,9 @@ namespace tether::bluetooth {
         BluezMonitor(const BluezMonitor&) = delete;
         BluezMonitor& operator=(const BluezMonitor&) = delete;
 
-        // Connects to the system bus and starts the watcher thread. Returns false
-        // if BlueZ is unreachable; the daemon runs on without Bluetooth support.
+        // Connects to the system bus and starts the watcher thread. BlueZ object
+        // and controller capability reads happen on that thread so daemon startup
+        // and the network event loop never wait for Bluetooth tooling.
         bool start();
         void stop();
         bool running() const;
@@ -44,5 +47,12 @@ namespace tether::bluetooth {
     };
 
     extern BluezMonitor* g_bluez;
+
+    // BlueZ exposes Secure Connections only through the management interface.
+    // Runs btmgmt without a shell and returns no value if it fails or exceeds the
+    // deadline. Public so the process boundary and timeout can be tested directly.
+    std::optional<bool> probe_secure_connections(
+        const std::string& adapter_id,
+        std::chrono::milliseconds timeout = std::chrono::seconds(1));
 
 } // namespace tether::bluetooth
