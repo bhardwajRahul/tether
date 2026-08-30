@@ -3,7 +3,7 @@
 
 // single entry point for the mail extension
 import '../background/background.js';
-import { sendToNativeHost } from '../shared/native.js';
+import { sendToNativeHost, registrableDomain } from '../shared/native.js';
 
 const OTP_CONTEXT_KEYWORDS = [
   'code', 'otp', 'one-time', 'verification', 'confirm', 'passcode',
@@ -92,6 +92,91 @@ export function isFalsePositive(num, context) {
   const lower = context.toLowerCase();
   if (lower.includes('order') || lower.includes('tracking')) return true;
   return false;
+}
+
+// Pull the registrable domain out of a From header such as
+// "Amazon <noreply@amazon.com>" or a bare "no-reply@accounts.google.com".
+export function extractSenderDomain(author) {
+  if (!author || typeof author !== 'string') return '';
+  const match = author.match(/[\w.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+/);
+  if (!match) return '';
+  const domain = match[0].split('@')[1];
+  return domain.toLowerCase().replace(/\.+$/, '');
+}
+
+function normalizeDomainValue(d) {
+  return String(d || '').toLowerCase().replace(/\.+$/, '').replace(/"/g, '');
+}
+
+// Only trust domains the receiving server actually validated. Raw From/Return-Path
+// and even a raw DKIM-Signature header are attacker-controlled; the server's own
+// Authentication-Results header records what really passed. We only look at the
+// first (topmost) header — the one added by the user's receiving server.
+function validatedDkimDomains(headers) {
+  const raw = headers?.['authentication-results'] || [];
+  if (!raw.length) return [];
+  const domains = [];
+  for (const part of String(raw[0]).split(';')) {
+    if (!/dkim\s*=\s*pass/i.test(part)) continue;
+
+    let m = part.match(/header\.d\s*=\s*"?([^";\s]+)"?/i);
+    if (m) {
+      const d = normalizeDomainValue(m[1]);
+      if (d) {
+        domains.push(d);
+        continue;
+      }
+    }
+
+    m = part.match(/header\.i\s*=\s*"?([^";\s]+)"?/i);
+    if (m) {
+      const addr = m[1];
+      const at = addr.indexOf('@');
+      const d = normalizeDomainValue(at >= 0 ? addr.slice(at + 1) : addr);
+      if (d) domains.push(d);
+    }
+  }
+  return domains;
+}
+
+// Some services send transactional mail (including OTPs) from a registrable
+// domain that differs from the site the user logs in on. Map those sender
+// domains to the login domain so the correlation still matches.
+const SENDER_DOMAIN_ALIASES = new Map([
+  // Facebook sends security/verification mail from facebookmail.com.
+  ['facebookmail.com', 'facebook.com'],
+]);
+
+export function canonicalizeSenderDomain(domain) {
+  const rd = registrableDomain(domain);
+  return SENDER_DOMAIN_ALIASES.get(rd) || rd;
+}
+
+// Derive the sender domain solely from the server-validated DKIM result. When
+// the receiving server did not record a passing DKIM signature, return "" so the
+// OTP is left unpinned instead of trusting a spoofable From/Return-Path header.
+export function resolveSenderDomain(message, headers) {
+  const from = extractSenderDomain(message?.author);
+  const validated = validatedDkimDomains(headers);
+  if (validated.length > 0) {
+    // Prefer the validated domain aligned with the From header, otherwise the
+    // first one the receiving server reported.
+    const domain = validated.find((d) => registrableDomain(d) === registrableDomain(from)) || validated[0];
+    return canonicalizeSenderDomain(domain);
+  }
+  return '';
+}
+
+// Fetch the raw headers and derive the best sender domain. getFull() is the
+// only API that exposes headers; it is only called once an OTP candidate has
+// been found, so ordinary (non-OTP) mail never pays for it.
+async function getSenderDomain(message) {
+  try {
+    const full = await messenger.messages.getFull(message.id);
+    return resolveSenderDomain(message, full.headers);
+  } catch (e) {
+    return extractSenderDomain(message.author);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -265,10 +350,12 @@ export async function processMessage(message) {
 
     if (best.score > 0) {
       console.log("Found OTP candidate in email with score:", best.score);
+      const senderDomain = await getSenderDomain(message);
       sendToNativeHost({
         command: "new_otp",
         otp: best.num.replace(/[-\s]/g, ''),
-        source: message.subject
+        source: message.subject,
+        sender_domain: senderDomain
       });
     }
   }

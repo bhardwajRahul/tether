@@ -5,12 +5,17 @@
 #include <mutex>
 #include <regex>
 #include <string_view>
+#include <unordered_set>
+#include <vector>
+
+#include "psl_data.hpp"
 
 namespace tether {
 
     namespace {
         std::mutex g_mutex;
         std::string g_code;
+        std::string g_sender_domain; // registrable domain of the code's source; "" = unknown
         uint64_t g_id = 0;
         uint64_t g_next_id = 1;
         std::string g_claimed_host; // empty until some host takes the code
@@ -19,6 +24,7 @@ namespace tether {
         // Caller holds g_mutex.
         void clear_locked() {
             g_code.clear();
+            g_sender_domain.clear();
             g_id = 0;
             g_claimed_host.clear();
         }
@@ -31,17 +37,156 @@ namespace tether {
                 clear_locked();
                 return {};
             }
-            return {g_code, g_id};
+            return {g_code, g_sender_domain, g_id};
+        }
+
+        std::string normalize_domain(std::string d) {
+            std::transform(d.begin(), d.end(), d.begin(), [](unsigned char c) { return std::tolower(c); });
+            while (!d.empty() && d.back() == '.')
+                d.pop_back();
+            return d;
+        }
+
+        struct PslSets {
+            std::unordered_set<std::string> normal;
+            std::unordered_set<std::string> wildcard;
+            std::unordered_set<std::string> exception;
+        };
+
+        std::string trim(std::string_view v) {
+            size_t begin = 0;
+            size_t end = v.size();
+            while (begin < end && (v[begin] == ' ' || v[begin] == '\t' || v[begin] == '\r'))
+                ++begin;
+            while (end > begin && (v[end - 1] == ' ' || v[end - 1] == '\t' || v[end - 1] == '\r'))
+                --end;
+            return std::string(v.substr(begin, end - begin));
+        }
+
+        // Built once from the generated Public Suffix List (psl_data.hpp).
+        const PslSets& psl_sets() {
+            static const PslSets sets = [] {
+                PslSets s;
+                size_t pos = 0;
+                while (pos <= kPslData.size()) {
+                    size_t nl = kPslData.find('\n', pos);
+                    if (nl == std::string_view::npos)
+                        nl = kPslData.size();
+                    const std::string rule = trim(kPslData.substr(pos, nl - pos));
+                    pos = nl + 1;
+
+                    if (rule.empty())
+                        continue;
+                    if (rule.front() == '!')
+                        s.exception.insert(rule.substr(1));
+                    else if (rule.size() >= 2 && rule[0] == '*' && rule[1] == '.')
+                        s.wildcard.insert(rule.substr(2));
+                    else
+                        s.normal.insert(rule);
+                }
+                return s;
+            }();
+            return sets;
+        }
+
+        std::string join_labels(const std::vector<std::string>& labels, size_t start) {
+            std::string out;
+            for (size_t i = start; i < labels.size(); ++i) {
+                if (i > start)
+                    out += '.';
+                out += labels[i];
+            }
+            return out;
+        }
+
+        std::vector<std::string> split_labels(const std::string& s) {
+            std::vector<std::string> labels;
+            std::string cur;
+            for (char c : s) {
+                if (c == '.') {
+                    labels.push_back(cur);
+                    cur.clear();
+                } else {
+                    cur += c;
+                }
+            }
+            labels.push_back(cur);
+            return labels;
+        }
+
+        bool is_ip_literal(const std::string& d) {
+            if (d.find(':') != std::string::npos)
+                return true;
+            int dots = 0;
+            for (unsigned char c : d) {
+                if (c == '.') {
+                    ++dots;
+                    continue;
+                }
+                if (!std::isdigit(c))
+                    return false;
+            }
+            return dots == 3;
+        }
+
+        // Registrable domain (eTLD+1) per the Public Suffix List prevailing-rule
+        // algorithm. Returns "" when there is no registrable label (the input is
+        // itself a public suffix, e.g. "com" or "test.ck").
+        std::string registrable_domain(const std::string& host) {
+            const std::string d = normalize_domain(host);
+            if (d.empty() || d.front() == '.')
+                return "";
+            if (is_ip_literal(d))
+                return d;
+
+            const std::vector<std::string> labels = split_labels(d);
+            const size_t n = labels.size();
+            const PslSets& sets = psl_sets();
+
+            int suffix_start = -1;
+            for (size_t i = 0; i < n; ++i) {
+                const std::string candidate = join_labels(labels, i);
+                if (sets.exception.count(candidate) != 0) {
+                    suffix_start = static_cast<int>(i) + 1;
+                    break;
+                }
+                if (sets.normal.count(candidate) != 0) {
+                    suffix_start = static_cast<int>(i);
+                    break;
+                }
+                if (i + 1 < n && sets.wildcard.count(join_labels(labels, i + 1)) != 0) {
+                    suffix_start = static_cast<int>(i);
+                    break;
+                }
+            }
+            if (suffix_start == -1)
+                suffix_start = static_cast<int>(n) - 1;
+            if (suffix_start == 0)
+                return "";
+            return join_labels(labels, static_cast<size_t>(suffix_start) - 1);
+        }
+
+        // A page host matches a pinned sender domain when they share the same
+        // registrable domain: "accounts.google.com" matches "google.com", and
+        // "www.amazon.co.uk" matches "amazon.co.uk", while "amazon.com.evil.com"
+        // and "evilamazon.com" never match "amazon.com". An empty domain means the
+        // code is not pinned and any host may claim it.
+        bool host_matches_domain(const std::string& host, const std::string& domain) {
+            const std::string d = normalize_domain(domain);
+            if (d.empty())
+                return true;
+            return registrable_domain(host) == registrable_domain(d);
         }
     } // namespace
 
-    uint64_t otp_store(const std::string& code, OtpClock::time_point now) {
+    uint64_t otp_store(const std::string& code, const std::string& sender_domain, OtpClock::time_point now) {
         std::lock_guard<std::mutex> lock(g_mutex);
         if (code.empty()) {
             clear_locked();
             return 0;
         }
         g_code = code;
+        g_sender_domain = normalize_domain(sender_domain);
         g_id = g_next_id++;
         g_claimed_host.clear();
         g_set_at = now;
@@ -57,6 +202,11 @@ namespace tether {
         std::lock_guard<std::mutex> lock(g_mutex);
         Otp current = peek_locked(now);
         if (!current)
+            return {};
+
+        // If the code came from email, only serve it to the domain the email was
+        // sent by. A phishing page on a different domain gets nothing.
+        if (!host_matches_domain(host, g_sender_domain))
             return {};
 
         // An unknown host (older extension that doesn't send url) may take an unclaimed

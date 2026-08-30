@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 global.messenger = {
   messages: {
@@ -32,7 +32,19 @@ global.messenger = {
   }
 };
 
-import { scoreCandidate, isFalsePositive, OTP_PATTERNS } from '../src/mail/extractor.js';
+const nativePostMessage = vi.fn();
+
+global.browser = {
+  runtime: {
+    connectNative: vi.fn().mockReturnValue({
+      postMessage: nativePostMessage,
+      onMessage: { addListener: vi.fn() },
+      onDisconnect: { addListener: vi.fn() }
+    })
+  }
+};
+
+import { scoreCandidate, isFalsePositive, OTP_PATTERNS, processMessage, extractSenderDomain, resolveSenderDomain, canonicalizeSenderDomain } from '../src/mail/extractor.js';
 
 function extractOtpCandidates(text) {
   const candidates = [];
@@ -130,6 +142,137 @@ describe('OTP pattern matching', () => {
     const regex = new RegExp(OTP_PATTERNS[1].source, OTP_PATTERNS[1].flags);
     const matches = text.match(regex);
     expect(matches).toBeTruthy();
+  });
+});
+
+describe('extractSenderDomain', () => {
+  it('extracts the domain from a display-name header', () => {
+    expect(extractSenderDomain('Amazon <noreply@amazon.com>')).toBe('amazon.com');
+    expect(extractSenderDomain('Google <no-reply@accounts.google.com>')).toBe('accounts.google.com');
+  });
+
+  it('extracts the domain from a bare address', () => {
+    expect(extractSenderDomain('noreply@amazon.com')).toBe('amazon.com');
+  });
+
+  it('returns empty string for missing or malformed input', () => {
+    expect(extractSenderDomain('')).toBe('');
+    expect(extractSenderDomain(null)).toBe('');
+    expect(extractSenderDomain('not an email')).toBe('');
+  });
+
+  it('lowercases and strips trailing dots', () => {
+    expect(extractSenderDomain('NoReply@Amazon.COM.')).toBe('amazon.com');
+  });
+});
+
+describe('resolveSenderDomain', () => {
+  it('uses the DKIM domain the receiving server validated', () => {
+    expect(resolveSenderDomain(
+      { author: 'Amazon <no-reply@example.com>' },
+      { 'authentication-results': ['mx.example.com; dkim=pass header.d=amazon.com header.i=@amazon.com'] }
+    )).toBe('amazon.com');
+  });
+
+  it('falls back to header.i when header.d is absent', () => {
+    expect(resolveSenderDomain(
+      { author: 'Amazon <no-reply@example.com>' },
+      { 'authentication-results': ['example.com; dkim=pass header.i=@amazon.com header.s=mail'] }
+    )).toBe('amazon.com');
+  });
+
+  it('ignores a failed DKIM result and leaves the OTP unpinned', () => {
+    expect(resolveSenderDomain(
+      { author: 'Amazon <noreply@amazon.com>' },
+      { 'authentication-results': ['example.com; dkim=fail header.d=amazon.com'] }
+    )).toBe('');
+  });
+
+  it('leaves the OTP unpinned when Authentication-Results is missing', () => {
+    expect(resolveSenderDomain({ author: 'Amazon <noreply@amazon.com>' }, {})).toBe('');
+  });
+
+  it('prefers the validated domain aligned with From among multiple passes', () => {
+    expect(resolveSenderDomain(
+      { author: 'Facebook <security@facebookmail.com>' },
+      { 'authentication-results': ['example.com; dkim=pass header.d=sendgrid.net; dkim=pass header.d=facebookmail.com'] }
+    )).toBe('facebook.com');
+  });
+
+  it('maps a validated sender domain through the alias table', () => {
+    expect(resolveSenderDomain(
+      { author: 'Facebook <security@facebookmail.com>' },
+      { 'authentication-results': ['example.com; dkim=pass header.d=facebookmail.com'] }
+    )).toBe('facebook.com');
+  });
+});
+
+describe('canonicalizeSenderDomain', () => {
+  it('maps facebookmail.com to facebook.com', () => {
+    expect(canonicalizeSenderDomain('facebookmail.com')).toBe('facebook.com');
+  });
+
+  it('maps a subdomain of a known sender domain', () => {
+    expect(canonicalizeSenderDomain('mail.facebookmail.com')).toBe('facebook.com');
+  });
+
+  it('returns the registrable domain for unrelated domains', () => {
+    expect(canonicalizeSenderDomain('amazon.com')).toBe('amazon.com');
+    expect(canonicalizeSenderDomain('www.amazon.co.uk')).toBe('amazon.co.uk');
+  });
+
+  it('returns empty for empty input', () => {
+    expect(canonicalizeSenderDomain('')).toBe('');
+  });
+});
+
+describe('processMessage sends the sender domain', () => {
+  beforeEach(() => {
+    nativePostMessage.mockClear();
+  });
+
+  it('leaves sender_domain empty when the server did not validate DKIM', async () => {
+    global.messenger.messages.listInlineTextParts.mockResolvedValueOnce([
+      { contentType: 'text/plain', content: 'Your verification code is 123456' }
+    ]);
+
+    await processMessage({
+      id: 42,
+      subject: 'Your verification code',
+      author: 'Amazon <noreply@amazon.com>'
+    });
+
+    expect(nativePostMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: 'new_otp',
+        otp: '123456',
+        sender_domain: ''
+      })
+    );
+  });
+
+  it('uses the validated DKIM domain when available', async () => {
+    global.messenger.messages.listInlineTextParts.mockResolvedValueOnce([
+      { contentType: 'text/plain', content: 'Your verification code is 123456' }
+    ]);
+    global.messenger.messages.getFull.mockResolvedValueOnce({
+      headers: { 'authentication-results': ['example.com; dkim=pass header.d=amazon.com'] },
+      parts: []
+    });
+
+    await processMessage({
+      id: 43,
+      subject: 'Your verification code',
+      author: 'Amazon <no-reply@example.com>'
+    });
+
+    expect(nativePostMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: 'new_otp',
+        otp: '123456',
+        sender_domain: 'amazon.com'
+      })
+    );
   });
 });
 
