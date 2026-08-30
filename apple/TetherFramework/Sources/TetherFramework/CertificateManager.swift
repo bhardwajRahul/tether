@@ -62,6 +62,7 @@ public final class CertificateManager {
 
     private static let keyTag = "net.jeedup.Tether.key"
     private static let certLabel = "net.jeedup.Tether.cert"
+    private static let certCommonName = "Tether-iOS"
     private static let knownHostsKey = "TetherKnownHosts"
     private static let localDeviceNameKey = "TetherLocalDeviceName"
     private static let lastConnectedFingerprintKey = "TetherLastConnectedFingerprint"
@@ -73,6 +74,9 @@ public final class CertificateManager {
 
     // SHA-256 fingerprint of our own certificate (lowercase hex, no separators).
     public private(set) var myFingerprint: String = ""
+
+    // Step and OSStatus of the last identity bootstrap failure, for diagnostics.
+    public private(set) var lastIdentityError: String?
 
     // Map of known host fingerprints → device name.
     public private(set) var knownHosts: [String: String] = [:]
@@ -100,6 +104,7 @@ public final class CertificateManager {
 
     // Load or create the TLS identity and populate known hosts.
     public func initialize() {
+        lastIdentityError = nil
         loadKnownHosts()
         loadLocalDeviceName()
         lastConnectedFingerprint = Self.sharedDefaults.string(forKey: Self.lastConnectedFingerprintKey)
@@ -112,7 +117,6 @@ public final class CertificateManager {
 
         // First launch — generate a new self-signed identity.
         guard let newIdentity = generateAndStoreIdentity() else {
-            print("CertificateManager: Failed to generate TLS identity")
             return
         }
         identity = newIdentity
@@ -152,8 +156,44 @@ public final class CertificateManager {
 
     // MARK: - Private — Keychain
 
+    // Record the failing bootstrap step so the UI can report it. The first failure of a
+    // run is the most specific, so later ones do not overwrite it.
+    @discardableResult
+    private func identityFailure(_ step: String) -> SecIdentity? {
+        if lastIdentityError == nil {
+            lastIdentityError = step
+        }
+        print("CertificateManager: \(step)")
+        return nil
+    }
+
+    // Identity searches do not reliably filter on key attributes, so enumerate the
+    // identities in our access group and match on our certificate's common name.
     private func loadIdentityFromKeychain() -> SecIdentity? {
-        // First check if the private key exists in the shared access group
+        let identityQuery: [String: Any] = [
+            kSecClass as String: kSecClassIdentity,
+            kSecAttrAccessGroup as String: Self.keychainAccessGroup,
+            kSecMatchLimit as String: kSecMatchLimitAll,
+            kSecReturnRef as String: true,
+        ]
+        var identityResult: CFTypeRef?
+        guard SecItemCopyMatching(identityQuery as CFDictionary, &identityResult) == errSecSuccess,
+              let identities = identityResult as? [SecIdentity]
+        else {
+            return nil
+        }
+
+        return identities.first { identity in
+            var cert: SecCertificate?
+            guard SecIdentityCopyCertificate(identity, &cert) == errSecSuccess, let cert else {
+                return false
+            }
+            return (SecCertificateCopySubjectSummary(cert) as String?) == Self.certCommonName
+        }
+    }
+
+    // The permanent private key from a previous launch, if one was stored.
+    private func loadPrivateKeyFromKeychain() -> SecKey? {
         let keyQuery: [String: Any] = [
             kSecClass as String: kSecClassKey,
             kSecAttrApplicationTag as String: Self.keyTag.data(using: .utf8)!,
@@ -165,19 +205,7 @@ public final class CertificateManager {
         guard SecItemCopyMatching(keyQuery as CFDictionary, &keyResult) == errSecSuccess else {
             return nil
         }
-
-        // Now look for the identity (cert + key pair) in the shared access group
-        let identityQuery: [String: Any] = [
-            kSecClass as String: kSecClassIdentity,
-            kSecAttrApplicationTag as String: Self.keyTag.data(using: .utf8)!,
-            kSecAttrAccessGroup as String: Self.keychainAccessGroup,
-            kSecReturnRef as String: true,
-        ]
-        var identityResult: CFTypeRef?
-        guard SecItemCopyMatching(identityQuery as CFDictionary, &identityResult) == errSecSuccess else {
-            return nil
-        }
-        return (identityResult as! SecIdentity)
+        return (keyResult as! SecKey)
     }
 
     private func fingerprintFromIdentity(_ identity: SecIdentity) -> String? {
@@ -232,54 +260,69 @@ public final class CertificateManager {
             ] as [String: Any],
         ]
 
-        var error: Unmanaged<CFError>?
-        guard let privateKey = SecKeyCreateRandomKey(keyAttrs as CFDictionary, &error) else {
-            print("CertificateManager: Key generation failed: \(error!.takeRetainedValue())")
-            return nil
+        // Reuse the key left behind by a partial bootstrap: regenerating it would fail
+        // with errSecDuplicateItem and leave the identity permanently unavailable.
+        let privateKey: SecKey
+        if let existingKey = loadPrivateKeyFromKeychain() {
+            privateKey = existingKey
+        } else {
+            var error: Unmanaged<CFError>?
+            guard let newKey = SecKeyCreateRandomKey(keyAttrs as CFDictionary, &error) else {
+                let reason = error.map { String(describing: $0.takeRetainedValue()) } ?? "unknown"
+                return identityFailure("key generation failed: \(reason)")
+            }
+            privateKey = newKey
         }
 
         guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
-            print("CertificateManager: Failed to derive public key")
-            return nil
+            return identityFailure("failed to derive public key")
         }
 
         // 2. Get public key PKCS#1 DER
         guard let pubKeyDER = SecKeyCopyExternalRepresentation(publicKey, nil) as Data? else {
-            print("CertificateManager: Failed to export public key")
-            return nil
+            return identityFailure("failed to export public key")
         }
 
         // 3. Build self-signed X.509v3 certificate
         guard let certDER = buildSelfSignedCertificate(
             publicKeyDER: pubKeyDER,
             privateKey: privateKey,
-            commonName: "Tether-iOS"
+            commonName: Self.certCommonName
         ) else {
-            print("CertificateManager: Failed to build certificate")
-            return nil
+            return identityFailure("failed to build certificate")
         }
 
-        // 4. Import certificate into Keychain (shared access group)
+        // 4. Import certificate into Keychain (shared access group).
+        // Certificates carry no accessibility attribute; passing one fails with errSecParam.
         guard let certificate = SecCertificateCreateWithData(nil, certDER as CFData) else {
-            print("CertificateManager: Failed to create SecCertificate from DER")
-            return nil
+            return identityFailure("failed to create SecCertificate from DER")
         }
+
+        // Drop a stale certificate from an earlier bootstrap so the stored one always
+        // pairs with the key above.
+        let staleCertQuery: [String: Any] = [
+            kSecClass as String: kSecClassCertificate,
+            kSecAttrLabel as String: Self.certLabel,
+            kSecAttrAccessGroup as String: Self.keychainAccessGroup,
+        ]
+        SecItemDelete(staleCertQuery as CFDictionary)
 
         let addCertQuery: [String: Any] = [
             kSecClass as String: kSecClassCertificate,
             kSecValueRef as String: certificate,
             kSecAttrLabel as String: Self.certLabel,
             kSecAttrAccessGroup as String: Self.keychainAccessGroup,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
         ]
         let addStatus = SecItemAdd(addCertQuery as CFDictionary, nil)
         guard addStatus == errSecSuccess || addStatus == errSecDuplicateItem else {
-            print("CertificateManager: Failed to add certificate to keychain: \(addStatus)")
-            return nil
+            return identityFailure("failed to add certificate to keychain: OSStatus \(addStatus)")
         }
 
         // 5. Retrieve the paired identity
-        return loadIdentityFromKeychain()
+        guard let identity = loadIdentityFromKeychain() else {
+            return identityFailure("certificate stored but identity lookup failed")
+        }
+        return identity
     }
 
     // MARK: - ASN.1 DER Construction
@@ -333,7 +376,8 @@ public final class CertificateManager {
             Data(tbsDER) as CFData,
             &signError
         ) as Data? else {
-            print("CertificateManager: Signing failed: \(signError!.takeRetainedValue())")
+            let reason = signError.map { String(describing: $0.takeRetainedValue()) } ?? "unknown"
+            identityFailure("signing failed: \(reason)")
             return nil
         }
 
