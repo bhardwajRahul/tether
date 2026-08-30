@@ -115,6 +115,8 @@ namespace tether::bluetooth {
 
     ProfileSupervisor::ProfileSupervisor(ProfileOps& ops) : ops_(ops) {}
 
+    ProfileSupervisor::~ProfileSupervisor() { reset(); }
+
     void ProfileSupervisor::reset() {
         if (!map_path_.empty())
             ops_.remove_session(map_path_);

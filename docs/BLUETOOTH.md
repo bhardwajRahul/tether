@@ -122,6 +122,12 @@ Settings -> Bluetooth -> (i) for the computer's entry. Off by default.
 - A failed pairing can leave two records for the same computer, the toggles may appear
   under either one. Check both, and delete both before retrying a clean pairing.
 
+Mirroring can be turned off without losing messages or contacts -- they ride BR/EDR OBEX, not the
+LE bearer ANCS needs. Group threads are the exception: MAP gives them no conversation identifier,
+so they are recognised only by correlating a Messages notification. Note also that the phone's
+toggles surface only while the advert is broadcasting, so a permission that has to be re-granted
+needs mirroring on to ask for it.
+
 Without the relevant permission, MAP or PBAP is visible at the SDP level but rejects the
 OBEX connection with `Forbidden` / `0x43`. That is a permissions state, not a pairing
 failure (do not re-pair). A transport-level `Connection refused (111)` is different and
@@ -163,6 +169,7 @@ checks the daemon does not make.
 | LE never connects and the log repeats `org.bluez.Error.InProgress` | BlueZ is holding an auto-connect registration that never completed | `sudo systemctl restart bluetooth` -- nothing short of that clears it, see 2026-08-19 below. With `tether-btclass@hci0` enabled the class survives the restart |
 | The log says `could not re-arm the ANCS solicitation` | BlueZ refused to register the advertisement, so nothing is on air for the iPhone to answer | `sudo systemctl restart bluetooth`. Nothing else brings it back, and the LE link cannot form without it |
 | LE never connects and the log repeats `le-connection-abort-by-local` | Something on this side is cancelling the connection. Tether's own cause was a `PreferredBearer` write racing the async connect, fixed; anything else writing that property during a connect will do the same | Check no other Bluetooth tool is driving the same device. The phone is not the cause: `abort-by-local` means the local host cancelled |
+| Messages stopped after turning notification mirroring off | Fixed. The toggle used to restart supervision, which abandoned the MAP and PBAP sessions at obexd instead of removing them, and the iPhone serves one MAP session at a time | Nothing. Mirroring is switched in place now, and a dropped profile supervisor releases its sessions. On an older build, restart `tetherd` |
 | Notifications stopped and never came back, while messages and contacts kept working | Fixed. The bearer supervisor used to stop retrying LE after six attempts, and only a Classic drop or a daemon restart re-armed it | Nothing. The solicitation is kept on air whenever LE is down, which is what the iPhone answers -- see 2026-08-22 |
 | `tether --bt-status` reports `Bond: BR/EDR only` | The bond was made without cross-transport key derivation, so it has no LE half and can never carry ANCS | Forget this computer on the iPhone and pair again -- it can take more than one attempt, the derivation is flaky on identical inputs (2026-08-25). Check `secure-connections` in the same output first: re-pairing cannot help while it is off |
 | Walked back into range and nothing reconnected for minutes | Fixed. The ANCS advert was gated on the Classic link, and the Classic backoff had no event that ended the absence | Nothing. The advert stays on air whenever LE is down, and an LE link coming up clears the Classic backoff -- see 2026-08-22 |
@@ -1340,3 +1347,29 @@ did not derive. This is the first capture of what a `Device1.Pair()` bond yields
 what the `ConnectFirst` comment in `config.hpp` claimed without evidence. One sample, on a
 controller whose cross-transport derivation is already known to be flaky, so it is not yet proof
 that explicit-pair cannot produce a dual bond.
+
+### 2026-08-29 - Turning mirroring off took messages down with it
+
+Reported as #64: unchecking "Mirror iPhone notifications" stopped message send and receive, which
+read as notifications being a dependency of messages. They are not -- ANCS rides LE, MAP and PBAP
+ride BR/EDR OBEX -- and two separate things made it look like one.
+
+`bt_set_ancs` applied the preference by restarting the whole supervision stack
+(`set_device()` -> `stop()` + `start()`), so a setting about LE tore down the OBEX sessions
+messages ride on. `stop()` never called `profiles->reset()` and `ProfileSupervisor` had no
+destructor, so those sessions were abandoned at obexd rather than removed. The iPhone serves one
+MAP session at a time, so the reopen could come back `Connection refused (111)` or `forbidden`,
+and `send_message()` then reported "Messages are not connected" until `tetherd` restarted. Every
+`set_device()` caller leaked the same way: pairing, the Bluetooth on/off checkbox, and the
+capability re-read that fires on BlueZ events.
+
+Fixed:
+
+- `ProfileSupervisor` releases both sessions in its destructor. That covers every path that drops
+  one, not just this toggle.
+- `ConnectionManager::set_ancs_enabled()` records the preference; the supervisor thread applies
+  it on its next tick -- the bearer supervisor's flag, the ANCS client, and the solicitation. The
+  profile supervisor is not touched. The preference and the controller's capability are re-read
+  every tick, so `refresh_capability()` had nothing left to do and is gone.
+- Group replies follow `ancs_enabled`, not only `ancs_content_enabled`. With mirroring off the
+  correlator is never fed, so a group thread that still advertised a reply route could only fail.

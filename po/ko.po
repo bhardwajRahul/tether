@@ -586,7 +586,9 @@ msgstr "그룹 답장이 꺼져 있습니다."
 msgid ""
 "Someone who is not in this group's saved member list has posted to it, so "
 "the list is out of date. Update it in groups.json before replying."
-msgstr "이 그룹의 저장된 구성원 목록에 없는 사람이 글을 보냈으므로 목록이 오래되었습니다. 답장하기 전에 groups.json에서 업데이트하세요."
+msgstr ""
+"이 그룹의 저장된 구성원 목록에 없는 사람이 글을 보냈으므로 목록이 오래되었습"
+"니다. 답장하기 전에 groups.json에서 업데이트하세요."
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format

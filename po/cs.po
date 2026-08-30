@@ -606,7 +606,9 @@ msgstr "Skupinové odpovědi jsou vypnuté."
 msgid ""
 "Someone who is not in this group's saved member list has posted to it, so "
 "the list is out of date. Update it in groups.json before replying."
-msgstr "Do této skupiny napsal někdo, kdo není v jejím uloženém seznamu členů, takže seznam je zastaralý. Před odpovědí jej aktualizujte v souboru groups.json."
+msgstr ""
+"Do této skupiny napsal někdo, kdo není v jejím uloženém seznamu členů, takže "
+"seznam je zastaralý. Před odpovědí jej aktualizujte v souboru groups.json."
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format

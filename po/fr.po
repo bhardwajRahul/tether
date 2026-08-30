@@ -614,7 +614,10 @@ msgstr "Les réponses aux groupes sont désactivées."
 msgid ""
 "Someone who is not in this group's saved member list has posted to it, so "
 "the list is out of date. Update it in groups.json before replying."
-msgstr "Quelqu'un qui ne figure pas dans la liste des membres enregistrée de ce groupe y a écrit ; la liste est donc obsolète. Mettez-la à jour dans groups.json avant de répondre."
+msgstr ""
+"Quelqu'un qui ne figure pas dans la liste des membres enregistrée de ce "
+"groupe y a écrit ; la liste est donc obsolète. Mettez-la à jour dans "
+"groups.json avant de répondre."
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format

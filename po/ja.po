@@ -588,7 +588,9 @@ msgstr "グループへの返信はオフになっています。"
 msgid ""
 "Someone who is not in this group's saved member list has posted to it, so "
 "the list is out of date. Update it in groups.json before replying."
-msgstr "このグループの保存済みメンバーリストにない相手が投稿したため、リストが古くなっています。返信する前に groups.json で更新してください。"
+msgstr ""
+"このグループの保存済みメンバーリストにない相手が投稿したため、リストが古く"
+"なっています。返信する前に groups.json で更新してください。"
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format
