@@ -152,17 +152,14 @@ namespace {
     public:
         EventLoopGuard(tether::EpollEventLoop* loop) : loop_(loop) {}
         ~EventLoopGuard() {
-            if (loop_) {
-                loop_->post([this] { loop_->stop(); });
-            }
+            if (loop_)
+                loop_->stop();
         }
 
     private:
         tether::EpollEventLoop* loop_;
     };
 
-    // A failed handshake used to close the socket with no trace at all, so a phone
-    // stuck in a connect/retry loop looked identical to a phone that never called.
     TEST(TcpServerTest, ReportsWhyATlsHandshakeFailed) {
         const std::string home = "/tmp/tether_net_test";
         CleanupGuard cleanup_guard(home);
@@ -189,9 +186,10 @@ namespace {
         addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
         ASSERT_EQ(connect(client, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)), 0);
 
-        // Plain text where a TLS ClientHello belongs.
         const char garbage[] = "this is not a tls client hello\n";
         ASSERT_GT(write(client, garbage, sizeof(garbage) - 1), 0);
+        shutdown(client, SHUT_RDWR);
+        close(client);
 
         std::string log;
         for (int attempt = 0; attempt < 200; ++attempt) {
@@ -201,7 +199,7 @@ namespace {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
-        close(client);
+        loop.stop();
         loop_thread.join();
         captured.restore();
 

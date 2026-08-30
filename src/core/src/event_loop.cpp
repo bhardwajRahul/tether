@@ -107,6 +107,14 @@ namespace tether {
         }
     }
 
-    void EpollEventLoop::stop() { running_ = false; }
+    void EpollEventLoop::stop() {
+        running_ = false;
+        if (post_fd_ >= 0) {
+            uint64_t one = 1;
+            if (write(post_fd_, &one, sizeof(one)) < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+                debug::log(ERR, "Failed to wake the event loop during stop");
+            }
+        }
+    }
 
 } // namespace tether

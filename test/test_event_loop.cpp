@@ -2,6 +2,8 @@
 #include <tether/event_loop.hpp>
 
 #include <atomic>
+#include <chrono>
+#include <future>
 #include <thread>
 
 using namespace tether;
@@ -38,4 +40,14 @@ TEST(EventLoopTest, RunsWorkPostedBeforeRun) {
     loop.run();
 
     EXPECT_TRUE(ran);
+}
+
+TEST(EventLoopTest, StopFromAnotherThreadWakesTheLoop) {
+    EpollEventLoop loop;
+    auto run_future = std::async(std::launch::async, [&] { loop.run(); });
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    loop.stop();
+
+    EXPECT_EQ(run_future.wait_for(std::chrono::seconds(2)), std::future_status::ready);
 }
