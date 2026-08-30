@@ -63,6 +63,10 @@ namespace tether::bluetooth {
     public:
         explicit ProfileSupervisor(ProfileOps& ops);
 
+        // Releases both obexd sessions. The iPhone serves one MAP session at a
+        // time, so a session abandoned here blocks the next one.
+        ~ProfileSupervisor();
+
         // Drive periodically with a monotonic clock. `device_ready` is a paired
         // device, not a link: obexd opens its own transport.
         bool tick(int64_t now, bool device_ready);

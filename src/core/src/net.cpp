@@ -940,7 +940,13 @@ namespace tether {
                         auto config = bluetooth::load_config();
                         config.ancs_enabled = j.value("enabled", true);
                         bluetooth::save_config(config);
-                        std::thread(restart_supervision, config).detach();
+
+                        if (bluetooth::g_bt_connections)
+                            bluetooth::g_bt_connections->set_ancs_enabled(config.ancs_enabled);
+
+                        bluetooth::set_group_replies_enabled(config.group_messages_enabled &&
+                                                             config.ancs_content_enabled && config.ancs_enabled);
+                        broadcast_local_event(build_bt_status().dump());
                     } else if (j.contains("command") && j["command"] == "bt_set_enabled") {
                         auto config = bluetooth::load_config();
                         config.enabled = j.value("enabled", true);
@@ -955,7 +961,7 @@ namespace tether {
                         // Group correlation reads notification bodies, so it
                         // follows this toggle.
                         bluetooth::set_group_replies_enabled(config.group_messages_enabled &&
-                                                             config.ancs_content_enabled);
+                                                             config.ancs_content_enabled && config.ancs_enabled);
                         broadcast_local_event(build_bt_status().dump());
                     } else if (j.contains("command") && j["command"] == "bt_list_notifications") {
                         nlohmann::json payload;

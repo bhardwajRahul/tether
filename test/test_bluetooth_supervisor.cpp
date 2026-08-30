@@ -566,6 +566,19 @@ TEST(ProfileSupervisor, ResetRemovesSessions) {
     EXPECT_TRUE(sup.status().map_open);
 }
 
+// The iPhone serves one MAP session at a time, so a supervisor that is dropped
+// without releasing its sessions blocks the next one until obexd is restarted.
+TEST(ProfileSupervisor, DestructionReleasesSessions) {
+    FakeProfiles ops;
+    {
+        ProfileSupervisor sup(ops);
+        sup.tick(0, true);
+        ASSERT_TRUE(sup.status().map_open);
+        ASSERT_TRUE(sup.status().pbap_open);
+    }
+    EXPECT_EQ(ops.removed.size(), 2u);
+}
+
 TEST(ProfileSupervisor, BusySessionKeepsPollingWithoutRetryBurst) {
     FakeProfiles ops;
     ops.map_error = "Connection refused (111)";

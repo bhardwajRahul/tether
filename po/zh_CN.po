@@ -574,7 +574,9 @@ msgstr "群组回复已关闭。"
 msgid ""
 "Someone who is not in this group's saved member list has posted to it, so "
 "the list is out of date. Update it in groups.json before replying."
-msgstr "有不在该群组已保存成员列表中的人发了消息，说明该列表已过期。回复前请在 groups.json 中更新它。"
+msgstr ""
+"有不在该群组已保存成员列表中的人发了消息，说明该列表已过期。回复前请在 "
+"groups.json 中更新它。"
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format

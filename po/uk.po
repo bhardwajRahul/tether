@@ -609,7 +609,9 @@ msgstr "Групові відповіді вимкнено."
 msgid ""
 "Someone who is not in this group's saved member list has posted to it, so "
 "the list is out of date. Update it in groups.json before replying."
-msgstr "У цю групу написав хтось, кого немає в її збереженому списку учасників, тож список застарів. Оновіть його у файлі groups.json, перш ніж відповідати."
+msgstr ""
+"У цю групу написав хтось, кого немає в її збереженому списку учасників, тож "
+"список застарів. Оновіть його у файлі groups.json, перш ніж відповідати."
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format

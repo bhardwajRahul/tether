@@ -40,6 +40,9 @@ namespace tether::bluetooth {
         // for a GATT session it will not use.
         void set_notification_handlers(NotificationFn on_notification, WithdrawFn on_withdraw);
 
+        // Turns notification mirroring on or off in place, on the next supervisor tick.
+        void set_ancs_enabled(bool enabled);
+
         // Whether mirrored notifications carry their title and body, or only
         // which app sent them. Takes effect on the next notification.
         void set_ancs_content_enabled(bool enabled);
@@ -60,10 +63,6 @@ namespace tether::bluetooth {
         // `ancs_enabled` is the user's preference. Whether the controller can
         // actually carry ANCS is decided here rather than by the caller.
         void set_device(const std::string& address, bool ancs_enabled);
-
-        // Re-decides whether notification mirroring can run, against the
-        // controller's current capability. Cheap and idempotent
-        void refresh_capability();
 
         nlohmann::json status() const;
 

@@ -605,7 +605,10 @@ msgstr "Groepsantwoorden staan uit."
 msgid ""
 "Someone who is not in this group's saved member list has posted to it, so "
 "the list is out of date. Update it in groups.json before replying."
-msgstr "Iemand die niet in de opgeslagen ledenlijst van deze groep staat, heeft erin geschreven, dus de lijst is verouderd. Werk hem bij in groups.json voordat u antwoordt."
+msgstr ""
+"Iemand die niet in de opgeslagen ledenlijst van deze groep staat, heeft erin "
+"geschreven, dus de lijst is verouderd. Werk hem bij in groups.json voordat u "
+"antwoordt."
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format

@@ -611,10 +611,18 @@ namespace tether::bluetooth {
         bool ancs_ready = false;
         std::string ancs_reason;
 
+        std::atomic<bool> ancs_wanted{true};
+        std::atomic<bool> ancs_content_wanted{true};
+
         void run();
         void sync_messages(int64_t now);
         void sync_contacts();
         void sync_ancs(int64_t now);
+
+        // Brings the ANCS client and the bearer supervisor in line with the wanted preference and the controller's
+        // current capability.
+        void apply_ancs_preference();
+        void build_ancs_client();
 
         // Rebuilds the cached payload from the supervisors. Supervisor thread
         // only: it is the sole writer of BearerStatus and ProfileStatus, both of
@@ -983,12 +991,66 @@ namespace tether::bluetooth {
         ancs_client->tick(now);
     }
 
+    void ConnectionState::build_ancs_client() {
+        ancs_client = std::make_unique<ancs::AncsClient>(
+            *monitor,
+            [this](const ancs::Notification& notification) {
+                if (on_notification)
+                    on_notification(notification);
+            },
+            [this](uint32_t uid) {
+                if (on_withdraw)
+                    on_withdraw(uid);
+            },
+            [this](bool ready, const std::string& reason) {
+                {
+                    // runs on the glib thread, which must not read supervisor state.
+                    std::lock_guard<std::mutex> lock(status_mutex);
+                    ancs_ready = ready;
+                    ancs_reason = reason;
+                    if (!current_status.is_null()) {
+                        current_status["ancs_ready"] = ready;
+                        current_status["ancs_reason"] = reason;
+                    }
+                }
+                debug::log(INFO, "ancs: {}", reason);
+                publish();
+            });
+        ancs_client->set_content_enabled(ancs_content_wanted.load());
+    }
+
+    void ConnectionState::apply_ancs_preference() {
+        ancs_preference = ancs_wanted.load();
+        const bool effective = ancs_preference && ancs_available();
+        if (effective == ancs_enabled) {
+            if (ancs_client)
+                ancs_client->set_content_enabled(ancs_content_wanted.load());
+            return;
+        }
+
+        ancs_enabled = effective;
+        bearers->set_ancs_enabled(effective);
+        ancs_absent_since = -1;
+        if (effective && on_notification)
+            build_ancs_client();
+        else
+            ancs_client.reset();
+        {
+            std::lock_guard<std::mutex> lock(status_mutex);
+            ancs_ready = false;
+            ancs_reason.clear();
+        }
+        debug::log(INFO, "bluetooth: notification mirroring {}", effective ? "enabled" : "disabled");
+    }
+
     void ConnectionState::run() {
         using namespace std::chrono;
         const auto started = steady_clock::now();
 
         while (running) {
             const int64_t now = duration_cast<seconds>(steady_clock::now() - started).count();
+
+            apply_ancs_preference();
 
             const bool obex_up = profiles->status().map_open || profiles->status().pbap_open;
 
@@ -1050,6 +1112,8 @@ namespace tether::bluetooth {
 
         state_->address = address;
         state_->ancs_preference = ancs_enabled;
+        state_->ancs_wanted = ancs_enabled;
+        state_->ancs_content_wanted = load_config().ancs_content_enabled;
         // Read the controller's capability here rather than letting each caller
         // latch its own copy. At startup BlueZ may not have finished enumerating
         // the adapter, and its free advertising-instance count drops to zero
@@ -1081,35 +1145,8 @@ namespace tether::bluetooth {
 
         // Only built when the caller can actually show notifications and the
         // bond can carry them.
-        if (ancs_effective && state_->on_notification) {
-            auto* raw = state_.get();
-            state_->ancs_client = std::make_unique<ancs::AncsClient>(
-                *state_->monitor,
-                [raw](const ancs::Notification& notification) {
-                    if (raw->on_notification)
-                        raw->on_notification(notification);
-                },
-                [raw](uint32_t uid) {
-                    if (raw->on_withdraw)
-                        raw->on_withdraw(uid);
-                },
-                [raw](bool ready, const std::string& reason) {
-                    {
-                        // Fold straight into the cached payload: this runs on the
-                        // GLib thread, which must not read supervisor state.
-                        std::lock_guard<std::mutex> lock(raw->status_mutex);
-                        raw->ancs_ready = ready;
-                        raw->ancs_reason = reason;
-                        if (!raw->current_status.is_null()) {
-                            raw->current_status["ancs_ready"] = ready;
-                            raw->current_status["ancs_reason"] = reason;
-                        }
-                    }
-                    debug::log(INFO, "ancs: {}", reason);
-                    raw->publish();
-                });
-            state_->ancs_client->set_content_enabled(load_config().ancs_content_enabled);
-        }
+        if (ancs_effective && state_->on_notification)
+            state_->build_ancs_client();
 
         state_->running = true;
         state_->thread = std::thread([this] { state_->run(); });
@@ -1161,10 +1198,7 @@ namespace tether::bluetooth {
         state_->on_withdraw = std::move(on_withdraw);
     }
 
-    void ConnectionManager::set_ancs_content_enabled(bool enabled) {
-        if (state_->ancs_client)
-            state_->ancs_client->set_content_enabled(enabled);
-    }
+    void ConnectionManager::set_ancs_content_enabled(bool enabled) { state_->ancs_content_wanted = enabled; }
 
     bool ConnectionManager::perform_notification_action(uint32_t uid, ancs::ActionId action) {
         return state_->ancs_client && state_->ancs_client->perform_action(uid, action);
@@ -1186,18 +1220,7 @@ namespace tether::bluetooth {
         start(address, ancs_enabled);
     }
 
-    void ConnectionManager::refresh_capability() {
-        if (!state_->running || state_->address.empty())
-            return;
-        const bool wanted = state_->ancs_preference && ancs_available();
-        if (wanted == state_->ancs_enabled)
-            return;
-        debug::log(INFO,
-                   "bluetooth: notification mirroring is now {} (controller capability changed)",
-                   wanted ? "available" : "unavailable");
-        const std::string address = state_->address;
-        set_device(address, state_->ancs_preference);
-    }
+    void ConnectionManager::set_ancs_enabled(bool enabled) { state_->ancs_wanted = enabled; }
 
     nlohmann::json ConnectionManager::status() const {
         // The supervisors' own status objects belong to the supervisor thread;

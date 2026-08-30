@@ -601,7 +601,9 @@ msgstr "Grup yanıtları kapalı."
 msgid ""
 "Someone who is not in this group's saved member list has posted to it, so "
 "the list is out of date. Update it in groups.json before replying."
-msgstr "Bu grubun kayıtlı üye listesinde olmayan biri gruba yazdı, dolayısıyla liste güncel değil. Yanıtlamadan önce groups.json dosyasında güncelleyin."
+msgstr ""
+"Bu grubun kayıtlı üye listesinde olmayan biri gruba yazdı, dolayısıyla liste "
+"güncel değil. Yanıtlamadan önce groups.json dosyasında güncelleyin."
 
 #: src/core/src/bluetooth/groups.cpp
 #, c++-format

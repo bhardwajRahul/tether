@@ -220,11 +220,9 @@ int main(int argc, char** argv) {
         });
     if (bluez.start()) {
         tether::bluetooth::g_bluez = &bluez;
-        loop.addFd(bluez.event_fd(), [&bluez, &connections](int) {
+        loop.addFd(bluez.event_fd(), [&bluez](int) {
             bluez.drain();
             tether::broadcast_local_event(tether::build_bt_status().dump());
-            // controller capability re-read on every bluez
-            connections.refresh_capability();
         });
         auto cap = bluez.capability();
         debug::log(INFO, "Bluetooth: {} mode", tether::bluetooth::to_string(cap.mode));
@@ -238,7 +236,7 @@ int main(int argc, char** argv) {
         tether::bluetooth::g_bt_connections = &connections;
 
         tether::bluetooth::set_group_replies_enabled(bt_config.group_messages_enabled &&
-                                                     bt_config.ancs_content_enabled);
+                                                     bt_config.ancs_content_enabled && bt_config.ancs_enabled);
         tether::bluetooth::reload_group_rosters();
 
         {
