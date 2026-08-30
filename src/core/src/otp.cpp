@@ -5,6 +5,8 @@
 #include <mutex>
 #include <regex>
 #include <string_view>
+#include <unordered_set>
+#include <vector>
 
 namespace tether {
 
@@ -43,18 +45,111 @@ namespace tether {
             return d;
         }
 
-        // A page host matches a pinned sender domain when it is equal or a
-        // subdomain: "amazon.com" matches "amazon.com" and "www.amazon.com", but
-        // not "amazon.com.evil.com" or "evilamazon.com". An empty domain means the
+        // Common two-label public suffixes. Without these, "amazon.co.uk" would
+        // be reduced to "co.uk" and match every *.co.uk site. Keep this in sync
+        // with MULTI_PART_SUFFIXES in extension/src/shared/native.js.
+        const std::unordered_set<std::string> kMultiPartSuffixes = {
+            "co.uk", "org.uk", "gov.uk", "ac.uk", "net.uk", "me.uk", "ltd.uk", "plc.uk", "sch.uk",
+            "com.au", "net.au", "org.au", "edu.au", "gov.au", "asn.au", "id.au",
+            "co.jp", "or.jp", "ne.jp", "ac.jp", "go.jp",
+            "co.nz", "net.nz", "org.nz", "govt.nz", "ac.nz",
+            "com.br", "net.br", "org.br", "gov.br", "edu.br",
+            "co.in", "net.in", "org.in", "gen.in", "firm.in", "ind.in",
+            "co.kr", "or.kr", "ne.kr", "go.kr", "ac.kr",
+            "com.mx", "net.mx", "org.mx", "edu.mx", "gob.mx",
+            "com.ar", "net.ar", "org.ar", "gob.ar", "edu.ar",
+            "co.za", "org.za", "net.za", "gov.za", "ac.za",
+            "com.sg", "net.sg", "org.sg", "gov.sg", "edu.sg",
+            "com.hk", "net.hk", "org.hk", "edu.hk", "gov.hk", "idv.hk",
+            "com.tw", "net.tw", "org.tw", "edu.tw", "gov.tw",
+            "com.cn", "net.cn", "org.cn", "gov.cn", "edu.cn",
+            "com.tr", "net.tr", "org.tr", "gov.tr", "edu.tr",
+            "com.ua", "net.ua", "org.ua", "gov.ua", "edu.ua",
+            "com.ru", "net.ru", "org.ru",
+            "co.id", "net.id", "or.id", "go.id", "ac.id",
+            "co.th", "in.th", "go.th", "ac.th",
+            "com.vn", "net.vn", "org.vn", "gov.vn", "edu.vn",
+            "co.il", "org.il", "net.il", "gov.il", "ac.il",
+            "com.ph", "net.ph", "org.ph", "gov.ph", "edu.ph",
+            "com.my", "net.my", "org.my", "gov.my", "edu.my",
+            "com.pk", "net.pk", "org.pk", "gov.pk", "edu.pk",
+            "com.eg", "net.eg", "org.eg", "gov.eg", "edu.eg",
+            "com.sa", "net.sa", "org.sa", "gov.sa", "edu.sa",
+            "com.ng", "net.ng", "org.ng", "gov.ng", "edu.ng",
+            "co.ke", "or.ke", "ne.ke", "go.ke", "ac.ke",
+            "com.co", "net.co", "org.co", "gov.co", "edu.co",
+            "com.pe", "net.pe", "org.pe", "gob.pe", "edu.pe",
+            "com.ec", "net.ec", "org.ec", "gob.ec", "edu.ec",
+            "com.uy", "net.uy", "org.uy", "gub.uy", "edu.uy",
+            "com.ve", "net.ve", "org.ve", "gob.ve", "edu.ve",
+            "com.py", "net.py", "org.py", "gov.py", "edu.py",
+            "com.bo", "net.bo", "org.bo", "gob.bo", "edu.bo",
+            "com.do", "net.do", "org.do", "gov.do", "edu.do",
+            "com.gt", "net.gt", "org.gt", "gob.gt", "edu.gt",
+            "co.cr", "or.cr", "go.cr", "ac.cr"
+        };
+
+        std::vector<std::string> split_labels(const std::string& s) {
+            std::vector<std::string> labels;
+            std::string cur;
+            for (char c : s) {
+                if (c == '.') {
+                    labels.push_back(cur);
+                    cur.clear();
+                } else {
+                    cur += c;
+                }
+            }
+            labels.push_back(cur);
+            return labels;
+        }
+
+        bool is_ip_literal(const std::string& d) {
+            if (d.find(':') != std::string::npos)
+                return true;
+            int dots = 0;
+            for (unsigned char c : d) {
+                if (c == '.') {
+                    ++dots;
+                    continue;
+                }
+                if (!std::isdigit(c))
+                    return false;
+            }
+            return dots == 3;
+        }
+
+        // eTLD+1 approximation: strip the public suffix and return it plus one label.
+        std::string registrable_domain(const std::string& host) {
+            const std::string d = normalize_domain(host);
+            if (d.empty())
+                return d;
+            if (is_ip_literal(d))
+                return d;
+
+            const std::vector<std::string> labels = split_labels(d);
+            if (labels.size() == 1)
+                return d;
+
+            const std::string last_two = labels[labels.size() - 2] + "." + labels.back();
+            if (kMultiPartSuffixes.count(last_two) != 0) {
+                if (labels.size() == 2)
+                    return d;
+                return labels[labels.size() - 3] + "." + last_two;
+            }
+            return last_two;
+        }
+
+        // A page host matches a pinned sender domain when they share the same
+        // registrable domain: "accounts.google.com" matches "google.com", and
+        // "www.amazon.co.uk" matches "amazon.co.uk", while "amazon.com.evil.com"
+        // and "evilamazon.com" never match "amazon.com". An empty domain means the
         // code is not pinned and any host may claim it.
         bool host_matches_domain(const std::string& host, const std::string& domain) {
-            const std::string h = normalize_domain(host);
             const std::string d = normalize_domain(domain);
             if (d.empty())
                 return true;
-            if (h == d)
-                return true;
-            return h.size() > d.size() && h.ends_with("." + d);
+            return registrable_domain(host) == registrable_domain(d);
         }
     } // namespace
 

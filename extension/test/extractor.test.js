@@ -42,7 +42,7 @@ global.browser = {
   }
 };
 
-import { scoreCandidate, isFalsePositive, OTP_PATTERNS, processMessage, extractSenderDomain } from '../src/mail/extractor.js';
+import { scoreCandidate, isFalsePositive, OTP_PATTERNS, processMessage, extractSenderDomain, resolveSenderDomain } from '../src/mail/extractor.js';
 
 function extractOtpCandidates(text) {
   const candidates = [];
@@ -164,6 +164,40 @@ describe('extractSenderDomain', () => {
   });
 });
 
+describe('resolveSenderDomain', () => {
+  it('prefers the DKIM signing domain over the From header', () => {
+    expect(resolveSenderDomain(
+      { author: 'Amazon <noreply@amazon.com>' },
+      { 'dkim-signature': ['v=1; a=rsa-sha256; d=amazon.com; s=mail'] }
+    )).toBe('amazon.com');
+  });
+
+  it('parses a quoted DKIM d= tag', () => {
+    expect(resolveSenderDomain(
+      { author: 'Amazon <noreply@amazon.com>' },
+      { 'dkim-signature': ['v=1; d="amazon.com"; s=mail'] }
+    )).toBe('amazon.com');
+  });
+
+  it('falls back to Return-Path when there is no DKIM header', () => {
+    expect(resolveSenderDomain(
+      { author: 'Amazon <noreply@amazon.com>' },
+      { 'return-path': ['bounces@bounce.amazon.com'] }
+    )).toBe('bounce.amazon.com');
+  });
+
+  it('falls back to the From header when headers are missing', () => {
+    expect(resolveSenderDomain({ author: 'Amazon <noreply@amazon.com>' }, {})).toBe('amazon.com');
+  });
+
+  it('prefers the DKIM domain aligned with From among multiple signatures', () => {
+    expect(resolveSenderDomain(
+      { author: 'Facebook <security@facebookmail.com>' },
+      { 'dkim-signature': ['v=1; d=sendgrid.net; s=1', 'v=1; d=facebookmail.com; s=2'] }
+    )).toBe('facebookmail.com');
+  });
+});
+
 describe('processMessage sends the sender domain', () => {
   it('includes sender_domain in the new_otp message', async () => {
     global.messenger.messages.listInlineTextParts.mockResolvedValueOnce([
@@ -182,6 +216,31 @@ describe('processMessage sends the sender domain', () => {
         command: 'new_otp',
         otp: '123456',
         sender_domain: 'amazon.com'
+      })
+    );
+  });
+
+  it('uses the DKIM signing domain when available', async () => {
+    global.messenger.messages.listInlineTextParts.mockResolvedValueOnce([
+      { contentType: 'text/plain', content: 'Your verification code is 123456' }
+    ]);
+    global.messenger.messages.getFull.mockResolvedValueOnce({
+      headers: { 'dkim-signature': ['v=1; d=accounts.google.com; s=mail'] },
+      parts: []
+    });
+
+    await processMessage({
+      id: 43,
+      subject: 'Your verification code',
+      author: 'Google <no-reply@google.com>'
+    });
+
+    const postMessage = global.browser.runtime.connectNative.mock.results[0].value.postMessage;
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: 'new_otp',
+        otp: '123456',
+        sender_domain: 'accounts.google.com'
       })
     );
   });

@@ -151,6 +151,23 @@ TEST_F(OtpTest, SenderDomainIsNormalized) {
     EXPECT_FALSE(otp_take_for_host("amazon.com.evil.com", t0));
 }
 
+TEST_F(OtpTest, PinnedCodeMatchesApexWhenSenderIsSubdomain) {
+    otp_store("123456", "accounts.google.com", t0);
+    EXPECT_TRUE(otp_take_for_host("google.com", t0));
+}
+
+TEST_F(OtpTest, PinnedCodeMatchesRegistrableCctld) {
+    otp_store("123456", "amazon.co.uk", t0);
+    EXPECT_TRUE(otp_take_for_host("www.amazon.co.uk", t0));
+    EXPECT_FALSE(otp_take_for_host("amazon.com", t0));
+    EXPECT_FALSE(otp_take_for_host("evil.co.uk", t0));
+}
+
+TEST_F(OtpTest, PinnedCodeRejectsCctldSpoof) {
+    otp_store("123456", "amazon.co.uk", t0);
+    EXPECT_FALSE(otp_take_for_host("amazon.co.uk.evil.com", t0));
+}
+
 TEST_F(OtpTest, ConsumeClearsMatchingId) {
     uint64_t id = otp_store("123456", "", t0);
     otp_consume(id);

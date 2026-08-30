@@ -3,7 +3,7 @@
 
 // single entry point for the mail extension
 import '../background/background.js';
-import { sendToNativeHost } from '../shared/native.js';
+import { sendToNativeHost, hostMatchesDomain } from '../shared/native.js';
 
 const OTP_CONTEXT_KEYWORDS = [
   'code', 'otp', 'one-time', 'verification', 'confirm', 'passcode',
@@ -102,6 +102,56 @@ export function extractSenderDomain(author) {
   if (!match) return '';
   const domain = match[0].split('@')[1];
   return domain.toLowerCase().replace(/\.+$/, '');
+}
+
+function normalizeDomainValue(d) {
+  return String(d || '').toLowerCase().replace(/\.+$/, '');
+}
+
+// DKIM-Signature headers are `;`-separated tag=value pairs; `d=` is the signing
+// domain. An email may carry several signatures (one per hop).
+function dkimDomains(headers) {
+  const raw = headers?.['dkim-signature'] || [];
+  const domains = [];
+  for (const value of raw) {
+    for (const part of String(value).split(';')) {
+      const m = part.trim().match(/^d\s*=\s*(?:"([^"]+)"|([^;\s]+))/i);
+      if (m) {
+        const d = normalizeDomainValue(m[1] || m[2] || '');
+        if (d) domains.push(d);
+      }
+    }
+  }
+  return domains;
+}
+
+function returnPathDomain(headers) {
+  const raw = headers?.['return-path'] || [];
+  return extractSenderDomain(raw[0]);
+}
+
+// Prefer the DKIM signing domain, then the Return-Path, then the From header.
+// DKIM and Return-Path are validated by the receiving server, so they are
+// harder to spoof than a free-form From display name.
+export function resolveSenderDomain(message, headers) {
+  const from = extractSenderDomain(message?.author);
+  const dkim = dkimDomains(headers);
+  if (dkim.length > 0) {
+    return dkim.find((d) => hostMatchesDomain(d, from)) || dkim[dkim.length - 1];
+  }
+  return returnPathDomain(headers) || from;
+}
+
+// Fetch the raw headers and derive the best sender domain. getFull() is the
+// only API that exposes headers; it is only called once an OTP candidate has
+// been found, so ordinary (non-OTP) mail never pays for it.
+async function getSenderDomain(message) {
+  try {
+    const full = await messenger.messages.getFull(message.id);
+    return resolveSenderDomain(message, full.headers);
+  } catch (e) {
+    return extractSenderDomain(message.author);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -275,11 +325,12 @@ export async function processMessage(message) {
 
     if (best.score > 0) {
       console.log("Found OTP candidate in email with score:", best.score);
+      const senderDomain = await getSenderDomain(message);
       sendToNativeHost({
         command: "new_otp",
         otp: best.num.replace(/[-\s]/g, ''),
         source: message.subject,
-        sender_domain: extractSenderDomain(message.author)
+        sender_domain: senderDomain
       });
     }
   }

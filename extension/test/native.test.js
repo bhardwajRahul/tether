@@ -31,7 +31,7 @@ beforeEach(() => {
   installChrome([{ id: 1 }, { id: 2 }, { id: 3 }]);
 });
 
-const { connectToNativeHost, registerOtpRequest, _resetOtpRequests, hostMatchesDomain } =
+const { connectToNativeHost, registerOtpRequest, _resetOtpRequests, hostMatchesDomain, registrableDomain } =
   await import('../src/shared/native.js');
 
 describe('native host receive/routing', () => {
@@ -154,5 +154,34 @@ describe('hostMatchesDomain', () => {
 
   it('normalizes case and trailing dots', () => {
     expect(hostMatchesDomain('www.amazon.com', 'Amazon.COM.')).toBe(true);
+  });
+
+  it('matches an apex page against a subdomain sender', () => {
+    expect(hostMatchesDomain('google.com', 'accounts.google.com')).toBe(true);
+  });
+
+  it('matches ccTLD subdomains', () => {
+    expect(hostMatchesDomain('www.amazon.co.uk', 'amazon.co.uk')).toBe(true);
+  });
+
+  it('rejects a different registrable domain under the same ccTLD', () => {
+    expect(hostMatchesDomain('evil.co.uk', 'amazon.co.uk')).toBe(false);
+  });
+
+  it('rejects suffix spoofs on ccTLD domains', () => {
+    expect(hostMatchesDomain('amazon.co.uk.evil.com', 'amazon.co.uk')).toBe(false);
+  });
+});
+
+describe('registrableDomain', () => {
+  it('returns eTLD+1 for common domains', () => {
+    expect(registrableDomain('www.amazon.com')).toBe('amazon.com');
+    expect(registrableDomain('accounts.google.com')).toBe('google.com');
+    expect(registrableDomain('www.amazon.co.uk')).toBe('amazon.co.uk');
+    expect(registrableDomain('amazon.com.evil.com')).toBe('evil.com');
+  });
+
+  it('leaves IP literals alone', () => {
+    expect(registrableDomain('192.168.1.1')).toBe('192.168.1.1');
   });
 });
