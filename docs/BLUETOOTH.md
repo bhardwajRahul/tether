@@ -156,6 +156,7 @@ checks the daemon does not make.
 | MAP or PBAP reports `forbidden` | The matching toggle on the phone is off | Turn it on. This is not a pairing failure |
 | Pairing never starts, and the only log line is a profile connect refused with `Connection refused (111)` | `Device1.Connect()` induces pairing only as a side effect of a profile connect, and this phone refuses that profile from an unbonded device | Nothing. Tether retries the transaction as an explicit `Device1.Pair()` on its own. To go straight there, `tether --bt-pair <addr> --explicit-pair` |
 | The phone shows a pairing code, then "Pairing Unsuccessful" a moment later, and the daemon reports the transaction failed about 90s after `confirm` | `tetherd` has no display, so the confirmation dialog could not be shown, and an unshowable dialog used to count as a refusal | Fixed. The comparison now goes to whichever client started the pairing -- the CLI prompts on the terminal, the GTK app opens its own dialog. On an older build, start `tetherd` from a graphical session so it inherits `DISPLAY` or `WAYLAND_DISPLAY` |
+| Pairing fails a few hundred ms after `confirm`, and `tetherd.log` says `tether-dialog: error while loading shared libraries: libgtk-layer-shell.so.0` | `tether-dialog` is linked against `gtk-layer-shell`, which the package did not depend on, so it died in the dynamic loader with exit 127 -- read as the user refusing | Install `gtk-layer-shell`. Fixed in the package dependencies, and a dialog that cannot run now routes the comparison to the client that started the pairing instead of declining it -- see 2026-08-29 below |
 | MAP reports `busy`, or the transport says `Connection refused (111)` on an already-paired phone | Another computer holds the iPhone's single MAP session | Stop the other client |
 | Pairing fails with `br-connection-key-missing` | A stale bond on one side, or the adapter is not `Pairable` | Delete the computer's entry on the phone (Forget This Device) and `tether --bt-unpair <addr>` locally, then pair again |
 | The phone shows two entries for this computer | A failed pairing left both a Classic and an LE record | Delete both on the phone before retrying |
@@ -1292,3 +1293,50 @@ Three things were wrong, and all three are fixed:
 
 If neither a dialog nor a client can be reached, the result now says so and names the fix,
 rather than reporting a rejection that never happened.
+
+
+### 2026-08-29 - A missing library declined every pairing
+
+| | |
+|---|---|
+| Controller | Realtek `0bda:a728` (reporter) |
+| BlueZ | 5.87, running with `--experimental` |
+| Compositor | niri (Wayland), Arch Linux |
+| Package | `tether-bin` 0.2.17 |
+| Phone | iPhone SE, iOS 27.0 beta |
+
+Issue #49, resolved. The reporter's `tetherd.log` showed, on every attempt, immediately after
+`confirm <code>`:
+
+```
+tether-dialog: error while loading shared libraries: libgtk-layer-shell.so.0: cannot open shared
+object file: No such file or directory
+```
+
+`tether-bin` did not list `gtk-layer-shell` in `depends`, so `/usr/bin/tether-dialog` never started:
+the dynamic loader killed it with exit 127 in milliseconds. `confirm_with_dialog()` treated only
+exit 3 and a signal as "could not ask", so 127 counted as a refusal and the agent answered BlueZ
+"Rejected by the user" ~400 ms after the phone showed its code. The 90s the reporter saw was
+Tether's own `PAIR_TIMEOUT_SECONDS` poll running out after the failure, not a stall.
+
+`bluetoothctl` bonded on the same hardware throughout the thread because it uses its own agent and
+never launches `tether-dialog`. The controller was never the problem.
+
+After `pacman -S gtk-layer-shell`, `tether --bt-pair <addr> --explicit-pair` bonded on the first
+attempt, with MAP and PBAP both working and contact names resolved.
+
+Fixed:
+
+- `gtk-layer-shell` is declared in both PKGBUILDs. The DEB and RPM dependency lists already had it.
+- Only exit 0, 1 and 2 -- accept, reject, timeout -- now count as an answer. Every other exit, and
+  any signal, means the dialog answered nothing, which routes the comparison to the CLI or GTK
+  client. The previous fix only covered the one exit code it knew about.
+- `tether-dialog` checks `gtk_layer_is_supported()` before `gtk_layer_init_for_window()`, which
+  otherwise aborts where the compositor has no `wlr-layer-shell`, and falls back to an ordinary
+  centered window.
+
+**Explicit-pair bond, captured:** the bond came up `BR/EDR only` -- MAP and PBAP work, the LE half
+did not derive. This is the first capture of what a `Device1.Pair()` bond yields, and it matches
+what the `ConnectFirst` comment in `config.hpp` claimed without evidence. One sample, on a
+controller whose cross-transport derivation is already known to be flaky, so it is not yet proof
+that explicit-pair cannot produce a dual bond.

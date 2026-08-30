@@ -504,10 +504,8 @@ namespace tether::bluetooth {
             unavailable = true;
             return false;
         }
-        // Exit 0 is the only acceptance. A dialog that could not be shown at all exits 3
-        if (!WIFEXITED(status) || WEXITSTATUS(status) == 3)
-            unavailable = true;
-        return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+        unavailable = !dialog_answered(status);
+        return !unavailable && WEXITSTATUS(status) == 0;
     }
 
     nlohmann::json to_json(const PairResult& result) {
@@ -520,6 +518,13 @@ namespace tether::bluetooth {
             {"dual_bond", result.dual_bond},
             {"auth_strategy_used", to_string(result.auth_strategy_used)},
         };
+    }
+
+    bool dialog_answered(int wait_status) {
+        if (!WIFEXITED(wait_status))
+            return false;
+        const int code = WEXITSTATUS(wait_status);
+        return code == 0 || code == 1 || code == 2;
     }
 
     bool is_authentication_failure(const std::string& err) {
