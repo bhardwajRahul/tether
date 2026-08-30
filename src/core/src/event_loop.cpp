@@ -105,8 +105,6 @@ namespace tether {
         }
     }
 
-    void EpollEventLoop::stop() {
-        running_ = false;
-    }
+    void EpollEventLoop::stop() { running_ = false; }
 
 } // namespace tether
