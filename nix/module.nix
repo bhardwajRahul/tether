@@ -58,6 +58,11 @@ in
     (lib.mkIf cfg.enable {
       environment.systemPackages = [ cfg.package ];
       programs.firefox.nativeMessagingHosts.packages = [ cfg.package ];
+      programs.thunderbird.package = lib.mkDefault (
+        pkgs.thunderbird.override {
+          nativeMessagingHosts = [ cfg.package ];
+        }
+      );
       environment.etc = {
         "chromium/native-messaging-hosts/com.tether.extension.json".source =
           "${cfg.package}/etc/chromium/native-messaging-hosts/com.tether.extension.json";
