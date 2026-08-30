@@ -1,5 +1,19 @@
+import { PSL_DATA } from './psl.js';
+
 // Native messaging connection logic
 let port = null;
+
+// Built once from the generated Public Suffix List (psl.js).
+const PSL_NORMAL = new Set();
+const PSL_WILDCARD = new Set();
+const PSL_EXCEPTION = new Set();
+for (const rule of PSL_DATA.split('\n')) {
+  const r = rule.trim();
+  if (!r) continue;
+  if (r.startsWith('!')) PSL_EXCEPTION.add(r.slice(1));
+  else if (r.startsWith('*.')) PSL_WILDCARD.add(r.slice(2));
+  else PSL_NORMAL.add(r);
+}
 
 // Tabs that have asked for an OTP. Delivery is scoped to these tabs only so a
 // code meant for the site the user is logging into can't be harvested by some
@@ -81,73 +95,56 @@ function normalizeDomain(d) {
   return String(d || '').toLowerCase().replace(/\.+$/, '');
 }
 
-// Common two-label public suffixes. Without these, "amazon.co.uk" would be
-// reduced to "co.uk" and match every *.co.uk site. This is a curated subset of
-// the Public Suffix List covering the common country-code second-level domains.
-const MULTI_PART_SUFFIXES = new Set([
-  'co.uk', 'org.uk', 'gov.uk', 'ac.uk', 'net.uk', 'me.uk', 'ltd.uk', 'plc.uk', 'sch.uk',
-  'com.au', 'net.au', 'org.au', 'edu.au', 'gov.au', 'asn.au', 'id.au',
-  'co.jp', 'or.jp', 'ne.jp', 'ac.jp', 'go.jp',
-  'co.nz', 'net.nz', 'org.nz', 'govt.nz', 'ac.nz',
-  'com.br', 'net.br', 'org.br', 'gov.br', 'edu.br',
-  'co.in', 'net.in', 'org.in', 'gen.in', 'firm.in', 'ind.in',
-  'co.kr', 'or.kr', 'ne.kr', 'go.kr', 'ac.kr',
-  'com.mx', 'net.mx', 'org.mx', 'edu.mx', 'gob.mx',
-  'com.ar', 'net.ar', 'org.ar', 'gob.ar', 'edu.ar',
-  'co.za', 'org.za', 'net.za', 'gov.za', 'ac.za',
-  'com.sg', 'net.sg', 'org.sg', 'gov.sg', 'edu.sg',
-  'com.hk', 'net.hk', 'org.hk', 'edu.hk', 'gov.hk', 'idv.hk',
-  'com.tw', 'net.tw', 'org.tw', 'edu.tw', 'gov.tw',
-  'com.cn', 'net.cn', 'org.cn', 'gov.cn', 'edu.cn',
-  'com.tr', 'net.tr', 'org.tr', 'gov.tr', 'edu.tr',
-  'com.ua', 'net.ua', 'org.ua', 'gov.ua', 'edu.ua',
-  'com.ru', 'net.ru', 'org.ru',
-  'co.id', 'net.id', 'or.id', 'go.id', 'ac.id',
-  'co.th', 'in.th', 'go.th', 'ac.th',
-  'com.vn', 'net.vn', 'org.vn', 'gov.vn', 'edu.vn',
-  'co.il', 'org.il', 'net.il', 'gov.il', 'ac.il',
-  'com.ph', 'net.ph', 'org.ph', 'gov.ph', 'edu.ph',
-  'com.my', 'net.my', 'org.my', 'gov.my', 'edu.my',
-  'com.pk', 'net.pk', 'org.pk', 'gov.pk', 'edu.pk',
-  'com.eg', 'net.eg', 'org.eg', 'gov.eg', 'edu.eg',
-  'com.sa', 'net.sa', 'org.sa', 'gov.sa', 'edu.sa',
-  'com.ng', 'net.ng', 'org.ng', 'gov.ng', 'edu.ng',
-  'co.ke', 'or.ke', 'ne.ke', 'go.ke', 'ac.ke',
-  'com.co', 'net.co', 'org.co', 'gov.co', 'edu.co',
-  'com.pe', 'net.pe', 'org.pe', 'gob.pe', 'edu.pe',
-  'com.ec', 'net.ec', 'org.ec', 'gob.ec', 'edu.ec',
-  'com.uy', 'net.uy', 'org.uy', 'gub.uy', 'edu.uy',
-  'com.ve', 'net.ve', 'org.ve', 'gob.ve', 'edu.ve',
-  'com.py', 'net.py', 'org.py', 'gov.py', 'edu.py',
-  'com.bo', 'net.bo', 'org.bo', 'gob.bo', 'edu.bo',
-  'com.do', 'net.do', 'org.do', 'gov.do', 'edu.do',
-  'com.gt', 'net.gt', 'org.gt', 'gob.gt', 'edu.gt',
-  'co.cr', 'or.cr', 'go.cr', 'ac.cr'
-]);
+// The PSL rules are stored in punycoded ASCII; convert Unicode inputs the same
+// way so IDN domains match their rules. Browsers already hand us punycoded
+// hostnames, but be defensive.
+function toAsciiHostname(d) {
+  if (!/[^\x00-\x7F]/.test(d)) return d;
+  try {
+    return new URL('http://' + d).hostname;
+  } catch {
+    return d;
+  }
+}
 
-// eTLD+1 approximation: strip the public suffix and return it plus one label.
+// Registrable domain (eTLD+1) per the Public Suffix List prevailing-rule
+// algorithm. Returns '' when the input has no registrable label (e.g. it is
+// itself a public suffix like "com" or "test.ck").
 export function registrableDomain(host) {
-  const d = normalizeDomain(host);
-  if (!d) return '';
+  let d = normalizeDomain(host);
+  if (!d || d.startsWith('.')) return '';
+  d = toAsciiHostname(d);
   // IP literals are not DNS names; compare them verbatim.
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(d) || d.includes(':')) return d;
 
   const labels = d.split('.');
-  if (labels.length === 1) return d;
+  const n = labels.length;
 
-  const lastTwo = labels.slice(-2).join('.');
-  if (MULTI_PART_SUFFIXES.has(lastTwo)) {
-    if (labels.length === 2) return d;
-    return labels.slice(-3).join('.');
+  let suffixStart = -1;
+  for (let i = 0; i < n; i++) {
+    const candidate = labels.slice(i).join('.');
+    if (PSL_EXCEPTION.has(candidate)) {
+      suffixStart = i + 1;
+      break;
+    }
+    if (PSL_NORMAL.has(candidate)) {
+      suffixStart = i;
+      break;
+    }
+    if (n - i >= 2 && PSL_WILDCARD.has(labels.slice(i + 1).join('.'))) {
+      suffixStart = i;
+      break;
+    }
   }
-  return lastTwo;
+  if (suffixStart === -1) suffixStart = n - 1; // default rule: last label
+  if (suffixStart === 0) return ''; // the whole domain is a public suffix
+
+  return labels.slice(suffixStart - 1).join('.');
 }
 
 // A page host matches a pinned sender domain when they share the same
-// registrable domain: "accounts.google.com" matches "google.com", and
-// "www.amazon.co.uk" matches "amazon.co.uk", while "amazon.com.evil.com" and
-// "evilamazon.com" never match "amazon.com". An empty domain means the OTP is
-// not pinned and any host may take it.
+// registrable domain. An empty domain means the OTP is not pinned and any host
+// may take it.
 export function hostMatchesDomain(host, domain) {
   const d = normalizeDomain(domain);
   if (!d) return true;

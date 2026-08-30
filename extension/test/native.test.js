@@ -171,6 +171,14 @@ describe('hostMatchesDomain', () => {
   it('rejects suffix spoofs on ccTLD domains', () => {
     expect(hostMatchesDomain('amazon.co.uk.evil.com', 'amazon.co.uk')).toBe(false);
   });
+
+  it('rejects different registrants under a multi-part ccTLD', () => {
+    expect(hostMatchesDomain('evil.com.cy', 'bank.com.cy')).toBe(false);
+  });
+
+  it('rejects different sites on a private suffix', () => {
+    expect(hostMatchesDomain('foo.github.io', 'bar.github.io')).toBe(false);
+  });
 });
 
 describe('registrableDomain', () => {
@@ -183,5 +191,27 @@ describe('registrableDomain', () => {
 
   it('leaves IP literals alone', () => {
     expect(registrableDomain('192.168.1.1')).toBe('192.168.1.1');
+  });
+
+  it('handles wildcard and exception suffixes', () => {
+    expect(registrableDomain('test.ck')).toBe('');
+    expect(registrableDomain('b.test.ck')).toBe('b.test.ck');
+    expect(registrableDomain('www.ck')).toBe('www.ck');
+    expect(registrableDomain('www.www.ck')).toBe('www.ck');
+  });
+
+  it('distinguishes registrants on multi-part ccTLDs', () => {
+    expect(registrableDomain('evil.com.cy')).toBe('evil.com.cy');
+    expect(registrableDomain('bank.com.cy')).toBe('bank.com.cy');
+  });
+
+  it('distinguishes sites on private suffixes', () => {
+    expect(registrableDomain('foo.github.io')).toBe('foo.github.io');
+    expect(registrableDomain('bar.github.io')).toBe('bar.github.io');
+  });
+
+  it('returns empty for bare public suffixes', () => {
+    expect(registrableDomain('com')).toBe('');
+    expect(registrableDomain('biz')).toBe('');
   });
 });

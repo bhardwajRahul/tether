@@ -8,6 +8,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "psl_data.hpp"
+
 namespace tether {
 
     namespace {
@@ -45,49 +47,57 @@ namespace tether {
             return d;
         }
 
-        // Common two-label public suffixes. Without these, "amazon.co.uk" would
-        // be reduced to "co.uk" and match every *.co.uk site. Keep this in sync
-        // with MULTI_PART_SUFFIXES in extension/src/shared/native.js.
-        const std::unordered_set<std::string> kMultiPartSuffixes = {
-            "co.uk", "org.uk", "gov.uk", "ac.uk", "net.uk", "me.uk", "ltd.uk", "plc.uk", "sch.uk",
-            "com.au", "net.au", "org.au", "edu.au", "gov.au", "asn.au", "id.au",
-            "co.jp", "or.jp", "ne.jp", "ac.jp", "go.jp",
-            "co.nz", "net.nz", "org.nz", "govt.nz", "ac.nz",
-            "com.br", "net.br", "org.br", "gov.br", "edu.br",
-            "co.in", "net.in", "org.in", "gen.in", "firm.in", "ind.in",
-            "co.kr", "or.kr", "ne.kr", "go.kr", "ac.kr",
-            "com.mx", "net.mx", "org.mx", "edu.mx", "gob.mx",
-            "com.ar", "net.ar", "org.ar", "gob.ar", "edu.ar",
-            "co.za", "org.za", "net.za", "gov.za", "ac.za",
-            "com.sg", "net.sg", "org.sg", "gov.sg", "edu.sg",
-            "com.hk", "net.hk", "org.hk", "edu.hk", "gov.hk", "idv.hk",
-            "com.tw", "net.tw", "org.tw", "edu.tw", "gov.tw",
-            "com.cn", "net.cn", "org.cn", "gov.cn", "edu.cn",
-            "com.tr", "net.tr", "org.tr", "gov.tr", "edu.tr",
-            "com.ua", "net.ua", "org.ua", "gov.ua", "edu.ua",
-            "com.ru", "net.ru", "org.ru",
-            "co.id", "net.id", "or.id", "go.id", "ac.id",
-            "co.th", "in.th", "go.th", "ac.th",
-            "com.vn", "net.vn", "org.vn", "gov.vn", "edu.vn",
-            "co.il", "org.il", "net.il", "gov.il", "ac.il",
-            "com.ph", "net.ph", "org.ph", "gov.ph", "edu.ph",
-            "com.my", "net.my", "org.my", "gov.my", "edu.my",
-            "com.pk", "net.pk", "org.pk", "gov.pk", "edu.pk",
-            "com.eg", "net.eg", "org.eg", "gov.eg", "edu.eg",
-            "com.sa", "net.sa", "org.sa", "gov.sa", "edu.sa",
-            "com.ng", "net.ng", "org.ng", "gov.ng", "edu.ng",
-            "co.ke", "or.ke", "ne.ke", "go.ke", "ac.ke",
-            "com.co", "net.co", "org.co", "gov.co", "edu.co",
-            "com.pe", "net.pe", "org.pe", "gob.pe", "edu.pe",
-            "com.ec", "net.ec", "org.ec", "gob.ec", "edu.ec",
-            "com.uy", "net.uy", "org.uy", "gub.uy", "edu.uy",
-            "com.ve", "net.ve", "org.ve", "gob.ve", "edu.ve",
-            "com.py", "net.py", "org.py", "gov.py", "edu.py",
-            "com.bo", "net.bo", "org.bo", "gob.bo", "edu.bo",
-            "com.do", "net.do", "org.do", "gov.do", "edu.do",
-            "com.gt", "net.gt", "org.gt", "gob.gt", "edu.gt",
-            "co.cr", "or.cr", "go.cr", "ac.cr"
+        struct PslSets {
+            std::unordered_set<std::string> normal;
+            std::unordered_set<std::string> wildcard;
+            std::unordered_set<std::string> exception;
         };
+
+        std::string trim(std::string_view v) {
+            size_t begin = 0;
+            size_t end = v.size();
+            while (begin < end && (v[begin] == ' ' || v[begin] == '\t' || v[begin] == '\r'))
+                ++begin;
+            while (end > begin && (v[end - 1] == ' ' || v[end - 1] == '\t' || v[end - 1] == '\r'))
+                --end;
+            return std::string(v.substr(begin, end - begin));
+        }
+
+        // Built once from the generated Public Suffix List (psl_data.hpp).
+        const PslSets& psl_sets() {
+            static const PslSets sets = [] {
+                PslSets s;
+                size_t pos = 0;
+                while (pos <= kPslData.size()) {
+                    size_t nl = kPslData.find('\n', pos);
+                    if (nl == std::string_view::npos)
+                        nl = kPslData.size();
+                    const std::string rule = trim(kPslData.substr(pos, nl - pos));
+                    pos = nl + 1;
+
+                    if (rule.empty())
+                        continue;
+                    if (rule.front() == '!')
+                        s.exception.insert(rule.substr(1));
+                    else if (rule.size() >= 2 && rule[0] == '*' && rule[1] == '.')
+                        s.wildcard.insert(rule.substr(2));
+                    else
+                        s.normal.insert(rule);
+                }
+                return s;
+            }();
+            return sets;
+        }
+
+        std::string join_labels(const std::vector<std::string>& labels, size_t start) {
+            std::string out;
+            for (size_t i = start; i < labels.size(); ++i) {
+                if (i > start)
+                    out += '.';
+                out += labels[i];
+            }
+            return out;
+        }
 
         std::vector<std::string> split_labels(const std::string& s) {
             std::vector<std::string> labels;
@@ -119,25 +129,41 @@ namespace tether {
             return dots == 3;
         }
 
-        // eTLD+1 approximation: strip the public suffix and return it plus one label.
+        // Registrable domain (eTLD+1) per the Public Suffix List prevailing-rule
+        // algorithm. Returns "" when there is no registrable label (the input is
+        // itself a public suffix, e.g. "com" or "test.ck").
         std::string registrable_domain(const std::string& host) {
             const std::string d = normalize_domain(host);
-            if (d.empty())
-                return d;
+            if (d.empty() || d.front() == '.')
+                return "";
             if (is_ip_literal(d))
                 return d;
 
             const std::vector<std::string> labels = split_labels(d);
-            if (labels.size() == 1)
-                return d;
+            const size_t n = labels.size();
+            const PslSets& sets = psl_sets();
 
-            const std::string last_two = labels[labels.size() - 2] + "." + labels.back();
-            if (kMultiPartSuffixes.count(last_two) != 0) {
-                if (labels.size() == 2)
-                    return d;
-                return labels[labels.size() - 3] + "." + last_two;
+            int suffix_start = -1;
+            for (size_t i = 0; i < n; ++i) {
+                const std::string candidate = join_labels(labels, i);
+                if (sets.exception.count(candidate) != 0) {
+                    suffix_start = static_cast<int>(i) + 1;
+                    break;
+                }
+                if (sets.normal.count(candidate) != 0) {
+                    suffix_start = static_cast<int>(i);
+                    break;
+                }
+                if (i + 1 < n && sets.wildcard.count(join_labels(labels, i + 1)) != 0) {
+                    suffix_start = static_cast<int>(i);
+                    break;
+                }
             }
-            return last_two;
+            if (suffix_start == -1)
+                suffix_start = static_cast<int>(n) - 1;
+            if (suffix_start == 0)
+                return "";
+            return join_labels(labels, static_cast<size_t>(suffix_start) - 1);
         }
 
         // A page host matches a pinned sender domain when they share the same

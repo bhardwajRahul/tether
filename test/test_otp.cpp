@@ -168,6 +168,30 @@ TEST_F(OtpTest, PinnedCodeRejectsCctldSpoof) {
     EXPECT_FALSE(otp_take_for_host("amazon.co.uk.evil.com", t0));
 }
 
+TEST_F(OtpTest, PinnedCodeDoesNotMatchDifferentCctldRegistrant) {
+    otp_store("123456", "bank.com.cy", t0);
+    EXPECT_FALSE(otp_take_for_host("evil.com.cy", t0));
+    EXPECT_TRUE(otp_take_for_host("www.bank.com.cy", t0));
+}
+
+TEST_F(OtpTest, PinnedCodeDoesNotMatchDifferentPrivateSuffixSite) {
+    otp_store("123456", "foo.github.io", t0);
+    EXPECT_FALSE(otp_take_for_host("bar.github.io", t0));
+    EXPECT_TRUE(otp_take_for_host("www.foo.github.io", t0));
+}
+
+TEST_F(OtpTest, PinnedCodeHandlesWildcardSuffix) {
+    otp_store("123456", "b.test.ck", t0);
+    EXPECT_FALSE(otp_take_for_host("c.test.ck", t0));
+    EXPECT_TRUE(otp_take_for_host("b.test.ck", t0));
+}
+
+TEST_F(OtpTest, PinnedCodeHandlesExceptionSuffix) {
+    otp_store("123456", "www.ck", t0);
+    EXPECT_FALSE(otp_take_for_host("test.ck", t0));
+    EXPECT_TRUE(otp_take_for_host("www.ck", t0));
+}
+
 TEST_F(OtpTest, ConsumeClearsMatchingId) {
     uint64_t id = otp_store("123456", "", t0);
     otp_consume(id);
