@@ -69,6 +69,7 @@ namespace tether {
             debug::log(ERR, "Failed to add fd to epoll: {}", fd);
             return false;
         }
+        std::lock_guard<std::mutex> lock(callbacks_mutex_);
         callbacks_[fd] = std::move(cb);
         return true;
     }
@@ -77,6 +78,7 @@ namespace tether {
         if (epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, nullptr) < 0) {
             return false;
         }
+        std::lock_guard<std::mutex> lock(callbacks_mutex_);
         callbacks_.erase(fd);
         return true;
     }
@@ -97,12 +99,16 @@ namespace tether {
 
             for (int i = 0; i < n; ++i) {
                 int fd = events[i].data.fd;
-                auto it = callbacks_.find(fd);
-                if (it != callbacks_.end()) {
-                    // Copy the callback to ensure it stays alive even if removeFd is called inside it
-                    auto cb = it->second;
-                    cb(fd);
+                Callback cb;
+                {
+                    std::lock_guard<std::mutex> lock(callbacks_mutex_);
+                    auto it = callbacks_.find(fd);
+                    if (it == callbacks_.end())
+                        continue;
+                    cb = it->second;
                 }
+                // Copy the callback to ensure it stays alive even if removeFd is called inside it.
+                cb(fd);
             }
         }
     }

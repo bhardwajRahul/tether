@@ -42,6 +42,7 @@ namespace tether {
         int post_fd_ = -1;
         std::atomic<bool> running_;
         std::map<int, Callback> callbacks_;
+        std::mutex callbacks_mutex_;
         std::mutex post_mutex_;
         std::vector<std::function<void()>> posted_;
     };
