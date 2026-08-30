@@ -31,6 +31,7 @@
 #include <fstream>
 #include <mutex>
 #include <nlohmann/json.hpp>
+#include <openssl/err.h>
 #include <optional>
 #include <set>
 #include <tether/log.hpp>
@@ -649,7 +650,7 @@ namespace tether {
 
     void ensure_single_instance() {
         std::string lock_file = get_runtime_dir() + "/tetherd.lock";
-        int fd = open(lock_file.c_str(), O_RDWR | O_CREAT, 0600);
+        int fd = open(lock_file.c_str(), O_RDWR | O_CREAT | O_CLOEXEC, 0600);
         if (fd < 0) {
             throw std::system_error(errno, std::system_category(), "Failed to open lock file");
         }
@@ -1324,6 +1325,24 @@ namespace tether {
                 }
 
                 // Handshake strictly failed
+                std::string reason;
+                while (unsigned long e = ERR_get_error()) {
+                    char ebuf[256];
+                    ERR_error_string_n(e, ebuf, sizeof(ebuf));
+                    if (!reason.empty())
+                        reason += "; ";
+                    reason += ebuf;
+                }
+                if (reason.empty())
+                    reason = (err == SSL_ERROR_ZERO_RETURN || (err == SSL_ERROR_SYSCALL && ret == 0))
+                                 ? "peer closed connection during handshake"
+                                 : "ssl error " + std::to_string(err);
+                debug::log(ERR,
+                           "TcpServer: TLS handshake failed for {} (fd: {}): {}",
+                           client_info_[client_fd].address,
+                           client_fd,
+                           reason);
+
                 SSL_free(ssl);
                 active_ssl_.erase(client_fd);
                 client_buffers_.erase(client_fd);
