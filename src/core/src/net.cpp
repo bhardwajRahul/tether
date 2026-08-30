@@ -1285,6 +1285,10 @@ namespace tether {
         SSL* ssl = active_ssl_[client_fd];
 
         if (!ssl_handshake_complete_[client_fd]) {
+            // OpenSSL keeps a per-thread error queue. Clear it before each new
+            // handshake attempt so the diagnostics below reflect only this socket's
+            // failure, not stale errors from earlier operations.
+            ERR_clear_error();
             int ret = SSL_accept(ssl);
             if (ret == 1) {
                 ssl_handshake_complete_[client_fd] = true;
@@ -1360,6 +1364,7 @@ namespace tether {
         }
 
         char buf[65536];
+        ERR_clear_error();
         int n = SSL_read(ssl, buf, sizeof(buf));
         if (n > 0) {
 
