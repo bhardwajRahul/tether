@@ -655,6 +655,7 @@ namespace tether::ui {
             if (g_messages.sending) {
                 g_messages.sending = false;
                 update_composer_sensitivity();
+                focus_composer_soon();
                 set_status_main(_("No answer about that message; it may still have been sent."));
             }
             return G_SOURCE_REMOVE;
@@ -712,6 +713,7 @@ namespace tether::ui {
         void on_send_result(const nlohmann::json& event) {
             clear_sending();
             update_composer_sensitivity();
+            focus_composer_soon();
 
             if (event.value("success", false)) {
                 // Only cleared once the phone accepted it, so a failed send
