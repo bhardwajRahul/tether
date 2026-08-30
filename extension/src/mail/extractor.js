@@ -3,7 +3,7 @@
 
 // single entry point for the mail extension
 import '../background/background.js';
-import { sendToNativeHost, hostMatchesDomain } from '../shared/native.js';
+import { sendToNativeHost, hostMatchesDomain, registrableDomain } from '../shared/native.js';
 
 const OTP_CONTEXT_KEYWORDS = [
   'code', 'otp', 'one-time', 'verification', 'confirm', 'passcode',
@@ -130,16 +130,32 @@ function returnPathDomain(headers) {
   return extractSenderDomain(raw[0]);
 }
 
+// Some services send transactional mail (including OTPs) from a registrable
+// domain that differs from the site the user logs in on. Map those sender
+// domains to the login domain so the correlation still matches.
+const SENDER_DOMAIN_ALIASES = new Map([
+  // Facebook sends security/verification mail from facebookmail.com.
+  ['facebookmail.com', 'facebook.com'],
+]);
+
+export function canonicalizeSenderDomain(domain) {
+  const rd = registrableDomain(domain);
+  return SENDER_DOMAIN_ALIASES.get(rd) || rd;
+}
+
 // Prefer the DKIM signing domain, then the Return-Path, then the From header.
 // DKIM and Return-Path are validated by the receiving server, so they are
 // harder to spoof than a free-form From display name.
 export function resolveSenderDomain(message, headers) {
   const from = extractSenderDomain(message?.author);
   const dkim = dkimDomains(headers);
+  let domain;
   if (dkim.length > 0) {
-    return dkim.find((d) => hostMatchesDomain(d, from)) || dkim[dkim.length - 1];
+    domain = dkim.find((d) => hostMatchesDomain(d, from)) || dkim[dkim.length - 1];
+  } else {
+    domain = returnPathDomain(headers) || from;
   }
-  return returnPathDomain(headers) || from;
+  return canonicalizeSenderDomain(domain);
 }
 
 // Fetch the raw headers and derive the best sender domain. getFull() is the

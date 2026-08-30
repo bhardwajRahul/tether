@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 global.messenger = {
   messages: {
@@ -32,17 +32,19 @@ global.messenger = {
   }
 };
 
+const nativePostMessage = vi.fn();
+
 global.browser = {
   runtime: {
     connectNative: vi.fn().mockReturnValue({
-      postMessage: vi.fn(),
+      postMessage: nativePostMessage,
       onMessage: { addListener: vi.fn() },
       onDisconnect: { addListener: vi.fn() }
     })
   }
 };
 
-import { scoreCandidate, isFalsePositive, OTP_PATTERNS, processMessage, extractSenderDomain, resolveSenderDomain } from '../src/mail/extractor.js';
+import { scoreCandidate, isFalsePositive, OTP_PATTERNS, processMessage, extractSenderDomain, resolveSenderDomain, canonicalizeSenderDomain } from '../src/mail/extractor.js';
 
 function extractOtpCandidates(text) {
   const candidates = [];
@@ -167,7 +169,7 @@ describe('extractSenderDomain', () => {
 describe('resolveSenderDomain', () => {
   it('prefers the DKIM signing domain over the From header', () => {
     expect(resolveSenderDomain(
-      { author: 'Amazon <noreply@amazon.com>' },
+      { author: 'Amazon <no-reply@example.com>' },
       { 'dkim-signature': ['v=1; a=rsa-sha256; d=amazon.com; s=mail'] }
     )).toBe('amazon.com');
   });
@@ -182,8 +184,8 @@ describe('resolveSenderDomain', () => {
   it('falls back to Return-Path when there is no DKIM header', () => {
     expect(resolveSenderDomain(
       { author: 'Amazon <noreply@amazon.com>' },
-      { 'return-path': ['bounces@bounce.amazon.com'] }
-    )).toBe('bounce.amazon.com');
+      { 'return-path': ['bounces@amazon.co.uk'] }
+    )).toBe('amazon.co.uk');
   });
 
   it('falls back to the From header when headers are missing', () => {
@@ -194,11 +196,41 @@ describe('resolveSenderDomain', () => {
     expect(resolveSenderDomain(
       { author: 'Facebook <security@facebookmail.com>' },
       { 'dkim-signature': ['v=1; d=sendgrid.net; s=1', 'v=1; d=facebookmail.com; s=2'] }
-    )).toBe('facebookmail.com');
+    )).toBe('facebook.com');
+  });
+
+  it('maps a known sender domain to its login domain', () => {
+    expect(resolveSenderDomain(
+      { author: 'Facebook <security@facebookmail.com>' },
+      {}
+    )).toBe('facebook.com');
+  });
+});
+
+describe('canonicalizeSenderDomain', () => {
+  it('maps facebookmail.com to facebook.com', () => {
+    expect(canonicalizeSenderDomain('facebookmail.com')).toBe('facebook.com');
+  });
+
+  it('maps a subdomain of a known sender domain', () => {
+    expect(canonicalizeSenderDomain('mail.facebookmail.com')).toBe('facebook.com');
+  });
+
+  it('returns the registrable domain for unrelated domains', () => {
+    expect(canonicalizeSenderDomain('amazon.com')).toBe('amazon.com');
+    expect(canonicalizeSenderDomain('www.amazon.co.uk')).toBe('amazon.co.uk');
+  });
+
+  it('returns empty for empty input', () => {
+    expect(canonicalizeSenderDomain('')).toBe('');
   });
 });
 
 describe('processMessage sends the sender domain', () => {
+  beforeEach(() => {
+    nativePostMessage.mockClear();
+  });
+
   it('includes sender_domain in the new_otp message', async () => {
     global.messenger.messages.listInlineTextParts.mockResolvedValueOnce([
       { contentType: 'text/plain', content: 'Your verification code is 123456' }
@@ -210,8 +242,7 @@ describe('processMessage sends the sender domain', () => {
       author: 'Amazon <noreply@amazon.com>'
     });
 
-    const postMessage = global.browser.runtime.connectNative.mock.results[0].value.postMessage;
-    expect(postMessage).toHaveBeenCalledWith(
+    expect(nativePostMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         command: 'new_otp',
         otp: '123456',
@@ -225,22 +256,21 @@ describe('processMessage sends the sender domain', () => {
       { contentType: 'text/plain', content: 'Your verification code is 123456' }
     ]);
     global.messenger.messages.getFull.mockResolvedValueOnce({
-      headers: { 'dkim-signature': ['v=1; d=accounts.google.com; s=mail'] },
+      headers: { 'dkim-signature': ['v=1; d=amazon.com; s=mail'] },
       parts: []
     });
 
     await processMessage({
       id: 43,
       subject: 'Your verification code',
-      author: 'Google <no-reply@google.com>'
+      author: 'Amazon <no-reply@example.com>'
     });
 
-    const postMessage = global.browser.runtime.connectNative.mock.results[0].value.postMessage;
-    expect(postMessage).toHaveBeenCalledWith(
+    expect(nativePostMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         command: 'new_otp',
         otp: '123456',
-        sender_domain: 'accounts.google.com'
+        sender_domain: 'amazon.com'
       })
     );
   });
