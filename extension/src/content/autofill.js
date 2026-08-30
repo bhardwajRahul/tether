@@ -107,6 +107,38 @@ function fireInputEvents(el) {
   el.dispatchEvent(new Ev('change', { bubbles: true }));
 }
 
+// A field is only eligible for filling if it is actually rendered. This stops a
+// malicious page from planting a hidden "OTP" input to siphon a real code.
+export function isFieldVisible(el) {
+  if (!el || el.hidden || el.type === 'hidden') return false;
+  for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+    if (n.hidden) return false;
+    const s = n.style;
+    if (s && (s.display === 'none' || s.visibility === 'hidden' || s.visibility === 'collapse')) {
+      return false;
+    }
+  }
+  // In a real browser, also reject elements with no rendered box. jsdom has no
+  // layout engine, so only enforce this where getComputedStyle is meaningful.
+  const view = el.ownerDocument?.defaultView;
+  if (view && typeof view.getComputedStyle === 'function') {
+    try {
+      const cs = view.getComputedStyle(el);
+      if (cs && (cs.display === 'none' || cs.visibility === 'hidden' || cs.visibility === 'collapse')) {
+        return false;
+      }
+    } catch (e) { /* ignore */ }
+  }
+  return true;
+}
+
+// The page must be the tab the user is actually looking at before we request or
+// fill an OTP. Engines without visibility reporting are treated as visible.
+export function isPageVisible(doc) {
+  const vs = doc?.visibilityState;
+  return !vs || vs === 'visible';
+}
+
 // codes this page has already filled
 const filledOtpIds = new Set();
 
@@ -121,7 +153,7 @@ export function handleFillOtp(doc, msg, io = {}) {
   if (id && filledOtpIds.has(id)) return { filled: false };
 
   const splitFields = detectSplitOtp(doc);
-  if (splitFields) {
+  if (splitFields && splitFields.every(isFieldVisible)) {
     for (let i = 0; i < Math.min(otp.length, splitFields.length); i++) {
       setNativeValue(splitFields[i], otp[i]);
       // dispatch events so react/vue/angular crap pick up the change
@@ -132,7 +164,7 @@ export function handleFillOtp(doc, msg, io = {}) {
     return { filled: true };
   }
 
-  const regularFields = findOtpInputs(doc);
+  const regularFields = findOtpInputs(doc).filter(isFieldVisible);
   // fill when empty, or overwrite a stale/partial value
   if (regularFields.length > 0 && regularFields[0].value !== otp) {
     setNativeValue(regularFields[0], otp);
@@ -174,12 +206,17 @@ function hasOtpFields() {
 // Check every 2 seconds for up to 2 minutes
 let otpFlowStarted = false;
 function startOtpFlow() {
+  // Never request codes while the tab is hidden in the background.
+  if (!isPageVisible(document)) return;
   if (otpFlowStarted) return;
   otpFlowStarted = true;
   requestOtp();
 
   let attempts = 0;
   otpInterval = setInterval(() => {
+    // While the tab is hidden, neither request nor fill. Don't burn attempts.
+    if (!isPageVisible(document)) return;
+
     attempts++;
     const splits = detectSplitOtp(document);
     const regular = findOtpInputs(document);
@@ -211,9 +248,21 @@ if (otpPresentAtLoad) {
   setTimeout(() => observer.disconnect(), 120000);
 }
 
+// If the page was hidden when OTP fields appeared, start the flow once it
+// becomes visible.
+document.addEventListener('visibilitychange', () => {
+  if (hasOtpFields()) startOtpFlow();
+});
+
 // listen for OTPs sent from the daemon
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action !== "fill_otp") return;
+
+  // Only fill into a page the user is actually looking at.
+  if (!isPageVisible(document)) {
+    sendResponse({ filled: false });
+    return;
+  }
 
   lastSeenOtpId = request.otp_id || lastSeenOtpId;
   const result = handleFillOtp(document, request, {
@@ -221,7 +270,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (otpInterval) clearInterval(otpInterval);
     }
   });
-  if (result.filled) console.log("Autofilled OTP:", request.otp);
   sendResponse(result);
 });
 }

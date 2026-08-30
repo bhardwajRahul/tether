@@ -227,7 +227,7 @@ async function getEmailText(messageId) {
 }
 
 export async function processMessage(message) {
-  console.log("Processing message:", message.subject);
+  console.log("Processing message");
 
   const bodyText = await getEmailText(message.id);
 
@@ -264,7 +264,7 @@ export async function processMessage(message) {
     const best = candidates[0];
 
     if (best.score > 0) {
-      console.log("Found OTP candidate in email:", best.num, "with score:", best.score);
+      console.log("Found OTP candidate in email with score:", best.score);
       sendToNativeHost({
         command: "new_otp",
         otp: best.num.replace(/[-\s]/g, ''),

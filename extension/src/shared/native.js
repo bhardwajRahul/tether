@@ -1,6 +1,34 @@
 // Native messaging connection logic
 let port = null;
 
+// Tabs that have asked for an OTP. Delivery is scoped to these tabs only so a
+// code meant for the site the user is logging into can't be harvested by some
+// other tab the user happens to have open.
+// tabId -> { host, ts }
+const requestingTabs = new Map();
+const REQUEST_TTL_MS = 3 * 60 * 1000; // an OTP flow runs ~2 minutes
+
+export function registerOtpRequest(tabId, host) {
+  if (typeof tabId !== 'number') return;
+  requestingTabs.set(tabId, { host: String(host || ''), ts: Date.now() });
+}
+
+export function clearOtpRequest(tabId) {
+  requestingTabs.delete(tabId);
+}
+
+// Tests need to reset the module-level registry between runs.
+export function _resetOtpRequests() {
+  requestingTabs.clear();
+}
+
+function pruneOtpRequests() {
+  const cutoff = Date.now() - REQUEST_TTL_MS;
+  for (const [id, req] of requestingTabs) {
+    if (req.ts < cutoff) requestingTabs.delete(id);
+  }
+}
+
 export function connectToNativeHost() {
   const hostName = "com.tether.extension";
   if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.connectNative) {
@@ -13,7 +41,6 @@ export function connectToNativeHost() {
   }
 
   port.onMessage.addListener((message) => {
-    console.log("Received message from Tether daemon:", message);
     handleNativeMessage(message);
   });
 
@@ -46,18 +73,40 @@ export function sendToNativeHost(message) {
   }
 }
 
-// offer the code to tabs one at a time, most-recently-used first, and stop at the
-// first tab that reports it actually filled a field.
+function isValidOtp(value) {
+  return typeof value === 'string' && value.length > 0 && value.length <= 64;
+}
+
+// Deliver an OTP only to tabs that asked for one, most-relevant first, and stop
+// at the first tab that reports it actually filled a field. We never blast the
+// code to unrelated tabs: a page with an OTP-shaped input must not be handed a
+// code it did not request.
 export function deliverOtpToTabs(message) {
   if (typeof chrome === 'undefined' || !chrome.tabs) return;
+  if (!message || !isValidOtp(message.otp)) return;
+
+  pruneOtpRequests();
 
   chrome.tabs.query({}, function(tabs) {
-    const ordered = [...(tabs || [])].sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
+    const byId = new Map((tabs || []).map((t) => [t.id, t]));
+
+    const candidates = [...requestingTabs.entries()]
+      .filter(([id]) => byId.has(id))
+      .sort((a, b) => {
+        const ta = byId.get(a[0]);
+        const tb = byId.get(b[0]);
+        // Prefer the tab the user is actually looking at.
+        if (!!ta.active !== !!tb.active) return ta.active ? -1 : 1;
+        // Then the most recently requesting tab.
+        return (b[1].ts || 0) - (a[1].ts || 0);
+      })
+      .map(([id]) => id);
 
     (function next(i) {
-      if (i >= ordered.length) return;
+      if (i >= candidates.length) return;
+      const tabId = candidates[i];
       chrome.tabs.sendMessage(
-        ordered[i].id,
+        tabId,
         { action: "fill_otp", otp: message.otp, otp_id: message.otp_id },
         (response) => {
           // Tabs without a content script (about:, the web store, ...) set lastError.
@@ -74,8 +123,9 @@ export function deliverOtpToTabs(message) {
 }
 
 function handleNativeMessage(message) {
-  // Dispatch native messages to other parts of the extension
-  if (message.command === "otp_available" && message.otp) {
+  if (!message || typeof message !== 'object') return;
+  // Only react to the commands we understand; ignore anything else.
+  if (message.command === "otp_available") {
     deliverOtpToTabs(message);
   }
 }
