@@ -84,6 +84,73 @@ The extension communicates with `tetherd` via native messaging. This allows user
 yay -S tether
 ```
 
+### Nix
+
+#### Build from source
+
+Enter the development shell and run the test suite:
+
+```console
+nix develop
+make test
+```
+
+Build or run Tether directly from the flake:
+
+```console
+nix build
+nix run
+nix run .#tether -- --help
+nix run .#tetherd
+```
+
+Bare `nix run` launches `tether-gtk`. The named app outputs are `tether` (CLI),
+`tether-gtk` (GUI), `tetherd` (daemon), and `tether-dialog` (dialog helper).
+
+#### Use the package in NixOS
+
+After adding Tether as a flake input, install its package directly:
+
+```nix
+environment.systemPackages = [
+  inputs.tether.packages.${pkgs.system}.default
+];
+```
+
+Alternatively, apply the overlay and install `pkgs.tether`:
+
+```nix
+nixpkgs.overlays = [ inputs.tether.overlays.default ];
+environment.systemPackages = [ pkgs.tether ];
+```
+
+#### Use the NixOS module
+
+Import the module in your NixOS configuration:
+
+```nix
+imports = [ inputs.tether.nixosModules.default ];
+
+programs.tether = {
+  enable = true;
+
+  wifi = {
+    enable = true;
+    openFirewall = true;
+  };
+
+  bluetooth = {
+    enable = true;
+    adapters = [ "hci0" ];
+  };
+};
+```
+
+Base enablement installs Tether and registers its native messaging hosts; it
+does not start a daemon. Firewall opening is opt-in. Bluetooth experimental
+mode and adapter class changes are also opt-in. If your system uses another
+adapter or multiple adapters, change `bluetooth.adapters` accordingly.
+
 ### Build from Source
 
 On Debian/Ubuntu:
