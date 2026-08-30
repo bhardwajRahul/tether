@@ -25,7 +25,12 @@ namespace {
     class CleanupGuard {
     public:
         CleanupGuard(const std::string& path) : path_(path) {}
-        ~CleanupGuard() { std::filesystem::remove_all(path_); }
+        ~CleanupGuard() noexcept {
+            try {
+                std::filesystem::remove_all(path_);
+            } catch (...) {
+            }
+        }
 
     private:
         std::string path_;
