@@ -7,8 +7,12 @@
 // daemon then kept serving that code for the rest of its 5 minute TTL.
 //
 // The fix moves the consume into the background worker, driven by the tab's reply.
+//
+// A follow-up change also scoped delivery: an OTP is only offered to tabs that
+// requested one (registerOtpRequest), so a background tab with an OTP-shaped
+// input can no longer harvest a code meant for the site the user is logging into.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { JSDOM } from 'jsdom';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -48,22 +52,37 @@ function installChrome(tabs) {
   };
 }
 
+let nowSpy;
 beforeEach(() => {
   messageListener = null;
   sentToDaemon = [];
   messagedTabs = [];
   tabResponses = {};
   mockPort.postMessage.mockClear();
-  installChrome([{ id: 1, lastAccessed: 100 }]);
+
+  // Deterministic, monotonically increasing clock so the "most recently
+  // requested" ordering is stable in these tests.
+  let clock = 0;
+  nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => clock++);
+
+  installChrome([{ id: 1 }]);
 });
 
-const { connectToNativeHost } = await import('../src/shared/native.js');
+afterEach(() => {
+  nowSpy.mockRestore();
+});
+
+const { connectToNativeHost, registerOtpRequest, _resetOtpRequests } =
+  await import('../src/shared/native.js');
 const { handleFillOtp, _resetFilledOtps } = await import('../src/content/autofill.js');
 
 describe('background consumes the OTP on behalf of the filling tab', () => {
+  beforeEach(() => _resetOtpRequests());
+
   it('sends consume_otp with the otp_id when a tab reports it filled', () => {
     tabResponses[1] = { filled: true };
     connectToNativeHost();
+    registerOtpRequest(1, 'login.example.com');
 
     messageListener({ command: 'otp_available', otp: '123456', otp_id: 7 });
 
@@ -75,6 +94,7 @@ describe('background consumes the OTP on behalf of the filling tab', () => {
   it('does not consume when no tab could fill the code', () => {
     tabResponses[1] = { filled: false };
     connectToNativeHost();
+    registerOtpRequest(1, 'login.example.com');
 
     messageListener({ command: 'otp_available', otp: '123456', otp_id: 7 });
 
@@ -85,26 +105,35 @@ describe('background consumes the OTP on behalf of the filling tab', () => {
 
   it('stops offering the code once a tab takes it', () => {
     installChrome([
-      { id: 1, lastAccessed: 100 },
-      { id: 2, lastAccessed: 300 }, // most recently used
-      { id: 3, lastAccessed: 200 }
+      { id: 1, active: false },
+      { id: 2, active: false },
+      { id: 3, active: false }
     ]);
+    // Register 1, 3, 2 so tab 2 is the most recently requested.
+    registerOtpRequest(1, 'a.example.com');
+    registerOtpRequest(3, 'c.example.com');
+    registerOtpRequest(2, 'b.example.com');
     tabResponses[2] = { filled: true };
     connectToNativeHost();
 
     messageListener({ command: 'otp_available', otp: '123456', otp_id: 9 });
 
-    // Most-recently-used first, and nothing after the tab that filled it. The old
-    // code blasted every tab, so every open OTP page got the same code.
-    expect(messagedTabs.map(t => t.id)).toEqual([2]);
+    // Only the requesting tabs are considered, and nothing after the tab that
+    // filled it. The old code blasted every tab, so every open OTP page got the
+    // same code.
+    expect(messagedTabs.map((t) => t.id)).toEqual([2]);
   });
 
   it('falls through to the next tab when the first cannot fill', () => {
     installChrome([
-      { id: 1, lastAccessed: 300 },
-      { id: 2, lastAccessed: 200 },
-      { id: 3, lastAccessed: 100 }
+      { id: 1, active: false },
+      { id: 2, active: false },
+      { id: 3, active: false }
     ]);
+    // Register 3, 2, 1 so tab 1 is the most recently requested.
+    registerOtpRequest(3, 'c.example.com');
+    registerOtpRequest(2, 'b.example.com');
+    registerOtpRequest(1, 'a.example.com');
     tabResponses[1] = { filled: false }; // no OTP field here
     tabResponses[2] = { filled: true };
     connectToNativeHost();
@@ -113,13 +142,14 @@ describe('background consumes the OTP on behalf of the filling tab', () => {
 
     // Unfocused tabs are still reachable - this is what commit 5bad703 fixed and
     // it must keep working.
-    expect(messagedTabs.map(t => t.id)).toEqual([1, 2]);
+    expect(messagedTabs.map((t) => t.id)).toEqual([1, 2]);
     expect(sentToDaemon).toContainEqual({ command: 'consume_otp', otp_id: 11 });
   });
 
   it('forwards otp_id to the content script', () => {
     tabResponses[1] = { filled: true };
     connectToNativeHost();
+    registerOtpRequest(1, 'login.example.com');
 
     messageListener({ command: 'otp_available', otp: '123456', otp_id: 42 });
 
@@ -128,8 +158,24 @@ describe('background consumes the OTP on behalf of the filling tab', () => {
 
   it('still ignores an otp_available with an empty code', () => {
     connectToNativeHost();
+    registerOtpRequest(1, 'login.example.com');
     messageListener({ command: 'otp_available', otp: '', otp_id: 3 });
     expect(messagedTabs).toHaveLength(0);
+  });
+
+  it('does not deliver to tabs that never requested an OTP', () => {
+    installChrome([
+      { id: 1, active: false },
+      { id: 2, active: false },
+      { id: 3, active: false }
+    ]);
+    registerOtpRequest(1, 'a.example.com');
+    tabResponses[2] = { filled: true }; // a non-requester that would "accept"
+    connectToNativeHost();
+
+    messageListener({ command: 'otp_available', otp: '123456', otp_id: 5 });
+
+    expect(messagedTabs.map((t) => t.id)).toEqual([1]);
   });
 });
 
@@ -150,7 +196,7 @@ describe('handleFillOtp', () => {
 
     expect(result).toEqual({ filled: true });
     const inputs = [...doc.querySelectorAll('input')];
-    expect(inputs.slice(0, 6).map(i => i.value).join('')).toBe('123456');
+    expect(inputs.slice(0, 6).map((i) => i.value).join('')).toBe('123456');
   });
 
   it('refuses to fill the same otp_id twice', () => {
@@ -213,5 +259,21 @@ describe('handleFillOtp', () => {
     handleFillOtp(doc, { otp: '123456', otp_id: 8 }, { onFilled });
 
     expect(onFilled).toHaveBeenCalledWith(8);
+  });
+
+  it('does not fill a hidden OTP field', () => {
+    const doc = new JSDOM(
+      '<input type="text" autocomplete="one-time-code" style="display:none">'
+    ).window.document;
+    expect(handleFillOtp(doc, { otp: '123456', otp_id: 1 }).filled).toBe(false);
+    expect(doc.querySelector('input').value).toBe('');
+  });
+
+  it('does not fill when an ancestor is hidden', () => {
+    const doc = new JSDOM(
+      '<div hidden><input type="text" autocomplete="one-time-code"></div>'
+    ).window.document;
+    expect(handleFillOtp(doc, { otp: '123456', otp_id: 1 }).filled).toBe(false);
+    expect(doc.querySelector('input').value).toBe('');
   });
 });
