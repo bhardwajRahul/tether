@@ -69,7 +69,11 @@ namespace {
         ASSERT_GE(daemon, 0);
         if (daemon == 0) {
             close(pipefd[0]);
-            tether::ensure_single_instance();
+            try {
+                 tether::ensure_single_instance();
+             } catch (...) {
+                 _exit(1);
+             }
 
             const pid_t helper = fork();
             if (helper == 0) {
