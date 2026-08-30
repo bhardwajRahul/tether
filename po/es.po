@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-28 20:29-0700\n"
+"POT-Creation-Date: 2026-08-30 11:33-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Spanish\n"
@@ -29,6 +29,10 @@ msgstr "no"
 #: src/cli/main.cpp
 msgid "Show this help message."
 msgstr "Mostrar esta ayuda."
+
+#: src/cli/main.cpp
+msgid "Print the tether version."
+msgstr "Mostrar la versión de tether."
 
 #: src/cli/main.cpp
 msgid "Retrieve the current Wayland clipboard text."

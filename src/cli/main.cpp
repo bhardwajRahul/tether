@@ -10,6 +10,7 @@
 #include <string>
 #include <sys/ioctl.h>
 #include <tether/client.hpp>
+#include <tether/core.hpp>
 #include <tether/crypto.hpp>
 #include <tether/discovery.hpp>
 #include <tether/i18n.hpp>
@@ -170,6 +171,7 @@ struct Opt {
 
 static const Opt kOptions[] = {
     {"-h, --help", N_("Show this help message.")},
+    {"-v, --version", N_("Print the tether version.")},
     {"-g, --get-clipboard", N_("Retrieve the current Wayland clipboard text.")},
     {"-s, --set-clipboard", N_("Take string input and copy it to the local Wayland clipboard.")},
     {"-f, --send-file", N_("Send a file through tether.")},
@@ -684,6 +686,9 @@ int main(int argc, char* argv[]) {
         std::string arg = argv[i];
         if (arg == "-h" || arg == "--help") {
             print_help();
+            return 0;
+        } else if (arg == "-v" || arg == "--version") {
+            fprintf(stdout, "tether %s\n", tether::get_version().c_str());
             return 0;
         } else if (arg == "-g" || arg == "--get-clipboard") {
             action = "get";
