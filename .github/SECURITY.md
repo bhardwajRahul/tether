@@ -17,8 +17,7 @@ and a public report is a working exploit until they upgrade.
 
 A good report includes:
 
-- The Tether version — the release tag, or the package version from your
-  package manager — and how it was installed (AUR, `.deb`,
+- The version (`tether --version`) and how it was installed (AUR, `.deb`,
   `.rpm`, source).
 - Distro and Wayland compositor. For Bluetooth issues,
   `tether --bt-diagnostics` prints a redacted report that covers the
@@ -48,7 +47,7 @@ Tether is pre-1.0 and moves fast. Only the latest tagged release receives
 security fixes; there are no backports to older tags. Fixes ship as a new
 release, which the distro packages follow.
 
-Compare what you are running against the
+Check what you are running with `tether --version` and compare against the
 [latest release](https://github.com/zackb/tether/releases/latest).
 
 ## Scope

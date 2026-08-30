@@ -14,6 +14,9 @@ a Linux Wayland desktop and an iOS device.
 \fB\-h, \-\-help\fR
 Show help message and exit.
 .TP
+\fB\-v, \-\-version\fR
+Print the tether version and exit.
+.TP
 \fB\-g, \-\-get-clipboard\fR
 Retrieve the current Wayland clipboard text from the daemon.
 .TP
