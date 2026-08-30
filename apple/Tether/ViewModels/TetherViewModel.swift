@@ -197,10 +197,18 @@ final class TetherViewModel {
 
     // MARK: - Connection
 
+    // User-facing message when the TLS identity failed to bootstrap, including the
+    // failing Keychain step when one was recorded.
+    private var identityErrorMessage: String {
+        let base = "TLS identity not available. Please restart the app."
+        guard let detail = certificateManager.lastIdentityError else { return base }
+        return "\(base) (\(detail))"
+    }
+
     // Connect to a discovered host.
     func connectTo(host: DiscoveredHost) {
         guard let identity = certificateManager.getIdentity() else {
-            errorMessage = "TLS identity not available. Please restart the app."
+            errorMessage = identityErrorMessage
             return
         }
 
@@ -215,7 +223,7 @@ final class TetherViewModel {
     // Connect by IP address and port.
     func connectTo(host: String, port: UInt16) {
         guard let identity = certificateManager.getIdentity() else {
-            errorMessage = "TLS identity not available. Please restart the app."
+            errorMessage = identityErrorMessage
             return
         }
 
@@ -516,6 +524,10 @@ final class TetherViewModel {
         
         print("TetherViewModel: Found \(matchingHosts.count) matching hosts for auto-reconnect.")
         guard let targetHost = matchingHosts.first else { return }
+
+        // Stay silent when the identity is missing; the error belongs to a user-initiated
+        // connect, not to a background reconnect on every launch.
+        guard certificateManager.getIdentity() != nil else { return }
 
         print("TetherViewModel: Connecting to target host: \(targetHost.name)")
         autoConnectingFingerprint = targetHost.fingerprint
