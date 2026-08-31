@@ -124,9 +124,13 @@ For local Unix clients, `tetherd` returns `file_status` once the stream has been
 
 ---
 
-## 3. Device Pairing (mTLS)
+## 3. Device Pairing (TLS + fingerprint pinning)
 
-Because the `tetherd` daemon natively binds to `0.0.0.0:5134` over TCP, it explicitly employs OpenSSL **Mutually Authenticated TLS (mTLS)** to natively reject malicious local-network payloads. 
+The `tetherd` daemon binds `0.0.0.0:5134` and speaks TLS 1.2. Both sides present a self-signed X.509 certificate; there is no CA in this system, so certificates are **not** validated against any trust anchor.
+
+Access control is trust-on-first-use fingerprint pinning. After the handshake the daemon takes the SHA-256 fingerprint of the peer's certificate and looks it up in `known_hosts.json`. A client whose fingerprint is not pinned may only send `pair_request` — any other command is answered with `{"command":"error","message":"unauthorized"}`.
+
+TLS still verifies the peer's `CertificateVerify` signature, so a pinned fingerprint proves the peer holds the matching private key. An attacker on the same network cannot impersonate a paired device without that key, but they can open a connection and sit at the pairing prompt.
 
 ### `pair_request` (Untrusted Client -> Daemon)
 
@@ -151,7 +155,7 @@ Because the `tetherd` daemon natively binds to `0.0.0.0:5134` over TCP, it expli
 }
 ```
 
-Once explicitly paired (via `tether --accept <fingerprint>`), native mTLS fingerprint-matching activates permanently, unblocking future payload operations instantly!
+Once paired (via `tether --accept <fingerprint>`), the fingerprint is written to `known_hosts.json`. Later connections presenting that certificate are treated as paired and may issue any command.
 
 ---
 
@@ -165,7 +169,7 @@ Instructs the daemon to perform a synchronous mDNS scan (3 seconds) in a backgro
 **Response**: The daemon broadcasts a `discovery_result` payload asynchronously containing an array of active `devices`.
 
 ### `pair_request` (Local Client -> Daemon)
-Instructs the daemon to asynchronously reach out to a specific host to initiate an mTLS pairing request.
+Instructs the daemon to asynchronously reach out to a specific host to initiate a TLS pairing request.
 **Payload**: `{"command": "pair_request", "host": "192.168.1.5", "port": 5134}`
 
 ### `accept_device` (Local Client -> Daemon)

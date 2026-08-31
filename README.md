@@ -50,7 +50,7 @@ There are two ways tether communicates with the iPhone:
 
 You can use either or both, depending on your needs.
 
-Connections use Mutually Authenticated TLS (mTLS), restricting TCP traffic securely using X.509 RSA certificates.
+Connections run over TLS 1.2 and both sides present a self-signed X.509 certificate.
 
 ### OTP Handling
 Streamline two-factor authentication across your devices:
@@ -229,7 +229,7 @@ make install
 
 ## Components
 
-1. **`tetherd`**: A background process running on Linux manages Bluetooth, TCP+mTLS, and Wayland integration.
+1. **`tetherd`**: A background process running on Linux manages Bluetooth, TCP+TLS with pinned device certificates, and Wayland integration.
 
 2. **`tether`**: A CLI to communicate with the daemon. This also allows the WebExtension to interface with the daemon via native messaging.
 

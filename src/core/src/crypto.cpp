@@ -68,7 +68,9 @@ namespace tether {
         if (!SSL_CTX_check_private_key(server_ctx_))
             return false;
 
-        // Mutually Authenticate, but accept anything to allow pairing request processing
+        // Require a peer certificate but accept any chain: both peers are self-signed and there is
+        // no CA. Identity comes from pinning the peer's fingerprint against known_hosts.json in
+        // TcpServer::handle_client.
         SSL_CTX_set_verify(
             server_ctx_, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, [](int, X509_STORE_CTX*) { return 1; });
 
@@ -84,6 +86,7 @@ namespace tether {
         SSL_CTX_use_certificate_file(client_ctx_, cert_path_.c_str(), SSL_FILETYPE_PEM);
         SSL_CTX_use_PrivateKey_file(client_ctx_, key_path_.c_str(), SSL_FILETYPE_PEM);
 
+        // Same as the server context: the chain is not validated, the peer's pinned fingerprint is.
         SSL_CTX_set_verify(client_ctx_, SSL_VERIFY_PEER, [](int, X509_STORE_CTX*) { return 1; });
 
         // Derive my fingerprint
