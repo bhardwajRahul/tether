@@ -28,8 +28,7 @@ namespace {
 
     class ScopedEnvVar {
     public:
-        ScopedEnvVar(const std::string& key, const std::string& value)
-            : key_(key), had_original_(false) {
+        ScopedEnvVar(const std::string& key, const std::string& value) : key_(key), had_original_(false) {
             const char* current = std::getenv(key_.c_str());
             if (current != nullptr) {
                 original_value_ = current;
@@ -79,16 +78,9 @@ namespace {
             if (pid_ <= 0)
                 return;
 
+            kill(pid_, SIGKILL);
             int status = 0;
-            const pid_t waited = waitpid(pid_, &status, WNOHANG);
-            if (waited == pid_) {
-                pid_ = -1;
-                return;
-            }
-            if (waited == 0) {
-                kill(pid_, SIGKILL);
-                waitpid(pid_, &status, 0);
-            }
+            waitpid(pid_, &status, 0);
             pid_ = -1;
         }
 
@@ -115,10 +107,10 @@ namespace {
         if (daemon == 0) {
             close(pipefd[0]);
             try {
-                 tether::ensure_single_instance();
-             } catch (...) {
-                 _exit(1);
-             }
+                tether::ensure_single_instance();
+            } catch (...) {
+                _exit(1);
+            }
 
             const pid_t helper = fork();
             if (helper == 0) {
@@ -163,8 +155,14 @@ namespace {
         const std::string lock_path = tether::get_runtime_dir() + "/tetherd.lock";
         const int fd = open(lock_path.c_str(), O_RDWR | O_CREAT | O_CLOEXEC, 0600);
         ASSERT_GE(fd, 0);
-        EXPECT_EQ(flock(fd, LOCK_EX | LOCK_NB), 0)
-            << "the exec'd helper still holds the daemon lock (errno " << errno << ")";
+
+        int rc = -1;
+        for (int attempt = 0; attempt < 200 && rc != 0; ++attempt) {
+            rc = flock(fd, LOCK_EX | LOCK_NB);
+            if (rc != 0)
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        EXPECT_EQ(rc, 0) << "the exec'd helper still holds the daemon lock (errno " << errno << ")";
         close(fd);
     }
 
