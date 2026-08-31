@@ -31,6 +31,7 @@
 #include <fstream>
 #include <mutex>
 #include <nlohmann/json.hpp>
+#include <openssl/err.h>
 #include <optional>
 #include <set>
 #include <tether/log.hpp>
@@ -651,7 +652,7 @@ namespace tether {
 
     void ensure_single_instance() {
         std::string lock_file = get_runtime_dir() + "/tetherd.lock";
-        int fd = open(lock_file.c_str(), O_RDWR | O_CREAT, 0600);
+        int fd = open(lock_file.c_str(), O_RDWR | O_CREAT | O_CLOEXEC, 0600);
         if (fd < 0) {
             throw std::system_error(errno, std::system_category(), "Failed to open lock file");
         }
@@ -1288,6 +1289,10 @@ namespace tether {
         SSL* ssl = active_ssl_[client_fd];
 
         if (!ssl_handshake_complete_[client_fd]) {
+            // OpenSSL keeps a per-thread error queue. Clear it before each new
+            // handshake attempt so the diagnostics below reflect only this socket's
+            // failure, not stale errors from earlier operations.
+            ERR_clear_error();
             int ret = SSL_accept(ssl);
             if (ret == 1) {
                 ssl_handshake_complete_[client_fd] = true;
@@ -1322,12 +1327,38 @@ namespace tether {
                     broadcast_local_event(event.dump());
                 }
             } else {
+                const int ssl_err = errno;
                 int err = SSL_get_error(ssl, ret);
                 if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
                     return; // Wait for Epoll to re-trigger
                 }
 
                 // Handshake strictly failed
+                std::string reason;
+                while (unsigned long e = ERR_get_error()) {
+                    char ebuf[256];
+                    ERR_error_string_n(e, ebuf, sizeof(ebuf));
+                    if (!reason.empty())
+                        reason += "; ";
+                    reason += ebuf;
+                }
+                ERR_clear_error();
+                if (reason.empty()) {
+                    if (err == SSL_ERROR_ZERO_RETURN || (err == SSL_ERROR_SYSCALL && ret == 0)) {
+                        reason = "peer closed connection during handshake";
+                    } else if (err == SSL_ERROR_SYSCALL) {
+                        reason = (ssl_err != 0) ? std::string("syscall error: ") + std::strerror(ssl_err)
+                                               : "ssl syscall failed";
+                    } else {
+                        reason = "ssl error " + std::to_string(err);
+                    }
+                }
+                debug::log(ERR,
+                           "TcpServer: TLS handshake failed for {} (fd: {}): {}",
+                           client_info_[client_fd].address,
+                           client_fd,
+                           reason);
+
                 SSL_free(ssl);
                 active_ssl_.erase(client_fd);
                 client_buffers_.erase(client_fd);
@@ -1343,6 +1374,7 @@ namespace tether {
         }
 
         char buf[65536];
+        ERR_clear_error();
         int n = SSL_read(ssl, buf, sizeof(buf));
         if (n > 0) {
 
