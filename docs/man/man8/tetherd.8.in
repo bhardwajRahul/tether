@@ -7,7 +7,7 @@ tetherd \- Tether background daemon for iOS/Wayland integration
 .B tetherd
  is a background daemon that manages the connection between a Linux Wayland
 compositor and an iOS device running the Tether app. It handles clipboard
-synchronization, file transfers, and secure device pairing using mTLS.
+synchronization, file transfers, and device pairing using TLS with pinned certificates.
 
 The daemon advertises its presence on the local network using mDNS (Bonjour)
 and listens for incoming connections on TCP port 5134 by default. It also
@@ -21,8 +21,9 @@ The UNIX domain socket used for local communication.
 \fB$XDG_RUNTIME_DIR/tether/tetherd.lock\fR
 Advisory lock file to ensure only one instance of the daemon is running.
 .TP
-\fB$XDG_CONFIG_HOME/tether/certs/\fR
-Directory containing the mTLS certificates and keys.
+\fB~/.config/tether/\fR
+Directory containing the TLS certificate (\fBcert.pem\fR), private key (\fBkey.pem\fR),
+and pinned device fingerprints (\fBknown_hosts.json\fR).
 .SH SEE ALSO
 .BR tether (1),
 .BR tether-gtk (1)
