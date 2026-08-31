@@ -26,6 +26,36 @@ namespace {
         return (std::filesystem::temp_directory_path() / (prefix + "_" + std::to_string(getpid()))).string();
     }
 
+    class ScopedEnvVar {
+    public:
+        ScopedEnvVar(const std::string& key, const std::string& value)
+            : key_(key), had_original_(false) {
+            const char* current = std::getenv(key_.c_str());
+            if (current != nullptr) {
+                original_value_ = current;
+                had_original_ = true;
+            }
+            if (value.empty()) {
+                unsetenv(key_.c_str());
+            } else {
+                setenv(key_.c_str(), value.c_str(), 1);
+            }
+        }
+
+        ~ScopedEnvVar() {
+            if (had_original_) {
+                setenv(key_.c_str(), original_value_.c_str(), 1);
+            } else {
+                unsetenv(key_.c_str());
+            }
+        }
+
+    private:
+        std::string key_;
+        std::string original_value_;
+        bool had_original_;
+    };
+
     // Helper RAII class to ensure proper cleanup
     class CleanupGuard {
     public:
@@ -75,7 +105,7 @@ namespace {
         CleanupGuard cleanup_guard(runtime_dir);
         std::filesystem::remove_all(runtime_dir);
         std::filesystem::create_directories(runtime_dir);
-        setenv("XDG_RUNTIME_DIR", runtime_dir.c_str(), 1);
+        ScopedEnvVar xdg_runtime_dir("XDG_RUNTIME_DIR", runtime_dir);
 
         int pipefd[2];
         ASSERT_EQ(pipe(pipefd), 0);
@@ -171,7 +201,7 @@ namespace {
         CleanupGuard cleanup_guard(home);
         std::filesystem::remove_all(home);
         std::filesystem::create_directories(home);
-        setenv("HOME", home.c_str(), 1);
+        ScopedEnvVar home_env("HOME", home);
         ASSERT_TRUE(tether::Crypto::instance().init());
 
         constexpr int port = 45134;

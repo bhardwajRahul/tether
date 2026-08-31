@@ -1323,6 +1323,7 @@ namespace tether {
                     broadcast_local_event(event.dump());
                 }
             } else {
+                const int ssl_err = errno;
                 int err = SSL_get_error(ssl, ret);
                 if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
                     return; // Wait for Epoll to re-trigger
@@ -1342,8 +1343,8 @@ namespace tether {
                     if (err == SSL_ERROR_ZERO_RETURN || (err == SSL_ERROR_SYSCALL && ret == 0)) {
                         reason = "peer closed connection during handshake";
                     } else if (err == SSL_ERROR_SYSCALL) {
-                        reason = (errno != 0) ? std::string("syscall error: ") + std::strerror(errno)
-                                              : "ssl syscall failed";
+                        reason = (ssl_err != 0) ? std::string("syscall error: ") + std::strerror(ssl_err)
+                                               : "ssl syscall failed";
                     } else {
                         reason = "ssl error " + std::to_string(err);
                     }
