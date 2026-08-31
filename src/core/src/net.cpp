@@ -1011,9 +1011,7 @@ namespace tether {
                             continue;
                         }
                     } else if (j.contains("command") && j["command"] == "new_otp" && j.contains("otp")) {
-                        otp_publish(otp_from_json(j["otp"]),
-                                    j.value("sender_domain", std::string{}),
-                                    client_fd);
+                        otp_publish(otp_from_json(j["otp"]), j.value("sender_domain", std::string{}), client_fd);
                         std::string payload = "{\"status\":\"ok\"}\n";
                         write_plain_packet(client_fd, payload);
                         continue;
@@ -1348,7 +1346,7 @@ namespace tether {
                         reason = "peer closed connection during handshake";
                     } else if (err == SSL_ERROR_SYSCALL) {
                         reason = (ssl_err != 0) ? std::string("syscall error: ") + std::strerror(ssl_err)
-                                               : "ssl syscall failed";
+                                                : "ssl syscall failed";
                     } else {
                         reason = "ssl error " + std::to_string(err);
                     }
@@ -1478,8 +1476,7 @@ namespace tether {
                         }
                     } else if (j.contains("command") && j["command"] == "new_otp" && j.contains("otp")) {
                         // OTP sent from a mobile client (iPhone Share Extension) over mTLS.
-                        otp_publish(otp_from_json(j["otp"]),
-                                    j.value("sender_domain", std::string{}));
+                        otp_publish(otp_from_json(j["otp"]), j.value("sender_domain", std::string{}));
                         std::string payload = "{\"status\":\"ok\"}\n";
                         robust_ssl_write(ssl, payload.c_str(), payload.size());
                         continue;

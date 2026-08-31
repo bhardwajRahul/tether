@@ -29,13 +29,13 @@
     AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
     ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
     THIS SOFTWARE.
-  
+
 */
 
 #pragma once
 
-#include <functional>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <wayland-client.h>
 
@@ -50,7 +50,6 @@ enum extDataControlDeviceV1Error : uint32_t {
 enum extDataControlSourceV1Error : uint32_t {
     EXT_DATA_CONTROL_SOURCE_V1_ERROR_INVALID_OFFER = 1,
 };
-
 
 class CCExtDataControlManagerV1;
 class CCExtDataControlSourceV1;
@@ -73,40 +72,47 @@ extern const wl_interface ext_data_control_offer_v1_interface;
 
 #endif
 
-
 class CCExtDataControlManagerV1 {
-  public:
+public:
     CCExtDataControlManagerV1(wl_proxy*);
     ~CCExtDataControlManagerV1();
 
-
     // set the data for this resource
-    void setData(void* data) {{
-        pData = data;
-    }}
+    void setData(void* data) {
+        {
+            pData = data;
+        }
+    }
 
     // get the data for this resource
-    void* data() {{
-        return pData;
-    }}
+    void* data() {
+        {
+            return pData;
+        }
+    }
 
     // get the raw wl_resource (wl_proxy) ptr
-    wl_proxy* resource() {{
-        return pResource;
-    }}
+    wl_proxy* resource() {
+        {
+            return pResource;
+        }
+    }
 
     // get the raw wl_proxy ptr
-    wl_proxy* proxy() {{
-        return pResource;
-    }}
+    wl_proxy* proxy() {
+        {
+            return pResource;
+        }
+    }
 
     // get the resource version
-    int version() {{
-        return wl_proxy_get_version(pResource);
-    }}
-            
-    // --------------- Requests --------------- //
+    int version() {
+        {
+            return wl_proxy_get_version(pResource);
+        }
+    }
 
+    // --------------- Requests --------------- //
 
     // --------------- Events --------------- //
 
@@ -114,7 +120,7 @@ class CCExtDataControlManagerV1 {
     wl_proxy* sendGetDataDevice(wl_proxy*);
     void sendDestroy();
 
-  private:
+private:
     struct {
     } requests;
 
@@ -125,45 +131,52 @@ class CCExtDataControlManagerV1 {
     void* pData = nullptr;
 };
 
-
-
 class CCExtDataControlDeviceV1 {
-  public:
+public:
     CCExtDataControlDeviceV1(wl_proxy*);
     ~CCExtDataControlDeviceV1();
 
-
     // set the data for this resource
-    void setData(void* data) {{
-        pData = data;
-    }}
+    void setData(void* data) {
+        {
+            pData = data;
+        }
+    }
 
     // get the data for this resource
-    void* data() {{
-        return pData;
-    }}
+    void* data() {
+        {
+            return pData;
+        }
+    }
 
     // get the raw wl_resource (wl_proxy) ptr
-    wl_proxy* resource() {{
-        return pResource;
-    }}
+    wl_proxy* resource() {
+        {
+            return pResource;
+        }
+    }
 
     // get the raw wl_proxy ptr
-    wl_proxy* proxy() {{
-        return pResource;
-    }}
+    wl_proxy* proxy() {
+        {
+            return pResource;
+        }
+    }
 
     // get the resource version
-    int version() {{
-        return wl_proxy_get_version(pResource);
-    }}
-            
+    int version() {
+        {
+            return wl_proxy_get_version(pResource);
+        }
+    }
+
     // --------------- Requests --------------- //
 
-    void setDataOffer(F<void(CCExtDataControlDeviceV1*, wl_proxy*)> &&handler);
-    void setSelection(F<void(CCExtDataControlDeviceV1*, wl_proxy*)> &&handler);
-    void setFinished(F<void(CCExtDataControlDeviceV1*)> &&handler);
-    void setPrimarySelection(F<void(CCExtDataControlDeviceV1*, wl_proxy*)> &&handler);
+    void setDataOffer(F<void(CCExtDataControlDeviceV1*, wl_proxy*)>&& handler);
+    void setSelection(F<void(CCExtDataControlDeviceV1*, wl_proxy*)>&& handler);
+    void setFinished(F<void(CCExtDataControlDeviceV1*)>&& handler);
+    void setPrimarySelection(F<void(CCExtDataControlDeviceV1*, wl_proxy*)>&& handler);
 
     // --------------- Events --------------- //
 
@@ -171,7 +184,7 @@ class CCExtDataControlDeviceV1 {
     void sendDestroy();
     void sendSetPrimarySelection(CCExtDataControlSourceV1*);
 
-  private:
+private:
     struct {
         F<void(CCExtDataControlDeviceV1*, wl_proxy*)> dataOffer;
         F<void(CCExtDataControlDeviceV1*, wl_proxy*)> selection;
@@ -186,50 +199,57 @@ class CCExtDataControlDeviceV1 {
     void* pData = nullptr;
 };
 
-
-
 class CCExtDataControlSourceV1 {
-  public:
+public:
     CCExtDataControlSourceV1(wl_proxy*);
     ~CCExtDataControlSourceV1();
 
-
     // set the data for this resource
-    void setData(void* data) {{
-        pData = data;
-    }}
+    void setData(void* data) {
+        {
+            pData = data;
+        }
+    }
 
     // get the data for this resource
-    void* data() {{
-        return pData;
-    }}
+    void* data() {
+        {
+            return pData;
+        }
+    }
 
     // get the raw wl_resource (wl_proxy) ptr
-    wl_proxy* resource() {{
-        return pResource;
-    }}
+    wl_proxy* resource() {
+        {
+            return pResource;
+        }
+    }
 
     // get the raw wl_proxy ptr
-    wl_proxy* proxy() {{
-        return pResource;
-    }}
+    wl_proxy* proxy() {
+        {
+            return pResource;
+        }
+    }
 
     // get the resource version
-    int version() {{
-        return wl_proxy_get_version(pResource);
-    }}
-            
+    int version() {
+        {
+            return wl_proxy_get_version(pResource);
+        }
+    }
+
     // --------------- Requests --------------- //
 
-    void setSend(F<void(CCExtDataControlSourceV1*, const char*, int32_t)> &&handler);
-    void setCancelled(F<void(CCExtDataControlSourceV1*)> &&handler);
+    void setSend(F<void(CCExtDataControlSourceV1*, const char*, int32_t)>&& handler);
+    void setCancelled(F<void(CCExtDataControlSourceV1*)>&& handler);
 
     // --------------- Events --------------- //
 
     void sendOffer(const char*);
     void sendDestroy();
 
-  private:
+private:
     struct {
         F<void(CCExtDataControlSourceV1*, const char*, int32_t)> send;
         F<void(CCExtDataControlSourceV1*)> cancelled;
@@ -242,49 +262,56 @@ class CCExtDataControlSourceV1 {
     void* pData = nullptr;
 };
 
-
-
 class CCExtDataControlOfferV1 {
-  public:
+public:
     CCExtDataControlOfferV1(wl_proxy*);
     ~CCExtDataControlOfferV1();
 
-
     // set the data for this resource
-    void setData(void* data) {{
-        pData = data;
-    }}
+    void setData(void* data) {
+        {
+            pData = data;
+        }
+    }
 
     // get the data for this resource
-    void* data() {{
-        return pData;
-    }}
+    void* data() {
+        {
+            return pData;
+        }
+    }
 
     // get the raw wl_resource (wl_proxy) ptr
-    wl_proxy* resource() {{
-        return pResource;
-    }}
+    wl_proxy* resource() {
+        {
+            return pResource;
+        }
+    }
 
     // get the raw wl_proxy ptr
-    wl_proxy* proxy() {{
-        return pResource;
-    }}
+    wl_proxy* proxy() {
+        {
+            return pResource;
+        }
+    }
 
     // get the resource version
-    int version() {{
-        return wl_proxy_get_version(pResource);
-    }}
-            
+    int version() {
+        {
+            return wl_proxy_get_version(pResource);
+        }
+    }
+
     // --------------- Requests --------------- //
 
-    void setOffer(F<void(CCExtDataControlOfferV1*, const char*)> &&handler);
+    void setOffer(F<void(CCExtDataControlOfferV1*, const char*)>&& handler);
 
     // --------------- Events --------------- //
 
     void sendReceive(const char*, int32_t);
     void sendDestroy();
 
-  private:
+private:
     struct {
         F<void(CCExtDataControlOfferV1*, const char*)> offer;
     } requests;
@@ -295,7 +322,5 @@ class CCExtDataControlOfferV1 {
 
     void* pData = nullptr;
 };
-
-
 
 #undef F

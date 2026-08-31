@@ -29,7 +29,7 @@
     AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
     ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
     THIS SOFTWARE.
-  
+
 */
 
 #define private public
@@ -38,7 +38,7 @@
 #undef private
 #define F std::function
 
-static const wl_interface* extDataControlV1_dummyTypes[] = { nullptr };
+static const wl_interface* extDataControlV1_dummyTypes[] = {nullptr};
 
 // Reference all other interfaces.
 // The reason why this is in snake is to
@@ -58,7 +58,8 @@ wl_proxy* CCExtDataControlManagerV1::sendCreateDataSource() {
     if (!pResource)
         return nullptr;
 
-    auto proxy = wl_proxy_marshal_flags(pResource, 0, &ext_data_control_source_v1_interface, wl_proxy_get_version(pResource), 0, nullptr);
+    auto proxy = wl_proxy_marshal_flags(
+        pResource, 0, &ext_data_control_source_v1_interface, wl_proxy_get_version(pResource), 0, nullptr);
 
     return proxy;
 }
@@ -67,7 +68,8 @@ wl_proxy* CCExtDataControlManagerV1::sendGetDataDevice(wl_proxy* seat) {
     if (!pResource)
         return nullptr;
 
-    auto proxy = wl_proxy_marshal_flags(pResource, 1, &ext_data_control_device_v1_interface, wl_proxy_get_version(pResource), 0, nullptr, seat);
+    auto proxy = wl_proxy_marshal_flags(
+        pResource, 1, &ext_data_control_device_v1_interface, wl_proxy_get_version(pResource), 0, nullptr, seat);
 
     return proxy;
 }
@@ -89,15 +91,18 @@ static const wl_interface* _CExtDataControlManagerV1GetDataDeviceTypes[] = {
 };
 
 static const wl_message _CExtDataControlManagerV1Requests[] = {
-    { .name = "create_data_source", .signature = "n", .types = _CExtDataControlManagerV1CreateDataSourceTypes + 0},
-    { .name = "get_data_device", .signature = "no", .types = _CExtDataControlManagerV1GetDataDeviceTypes + 0},
-    { .name = "destroy", .signature = "", .types = extDataControlV1_dummyTypes + 0},
+    {.name = "create_data_source", .signature = "n", .types = _CExtDataControlManagerV1CreateDataSourceTypes + 0},
+    {.name = "get_data_device", .signature = "no", .types = _CExtDataControlManagerV1GetDataDeviceTypes + 0},
+    {.name = "destroy", .signature = "", .types = extDataControlV1_dummyTypes + 0},
 };
 
 const wl_interface ext_data_control_manager_v1_interface = {
-    .name = "ext_data_control_manager_v1", .version = 1,
-    .method_count = 3, .methods = _CExtDataControlManagerV1Requests,
-    .event_count = 0, .events = nullptr,
+    .name = "ext_data_control_manager_v1",
+    .version = 1,
+    .method_count = 3,
+    .methods = _CExtDataControlManagerV1Requests,
+    .event_count = 0,
+    .events = nullptr,
 };
 
 CCExtDataControlManagerV1::CCExtDataControlManagerV1(wl_proxy* resource) : pResource(resource) {
@@ -148,7 +153,8 @@ void CCExtDataControlDeviceV1::sendSetSelection(CCExtDataControlSourceV1* source
     if (!pResource)
         return;
 
-    auto proxy = wl_proxy_marshal_flags(pResource, 0, nullptr, wl_proxy_get_version(pResource), 0, source ? source->pResource : nullptr);
+    auto proxy = wl_proxy_marshal_flags(
+        pResource, 0, nullptr, wl_proxy_get_version(pResource), 0, source ? source->pResource : nullptr);
     proxy;
 }
 
@@ -165,7 +171,8 @@ void CCExtDataControlDeviceV1::sendSetPrimarySelection(CCExtDataControlSourceV1*
     if (!pResource)
         return;
 
-    auto proxy = wl_proxy_marshal_flags(pResource, 2, nullptr, wl_proxy_get_version(pResource), 0, source ? source->pResource : nullptr);
+    auto proxy = wl_proxy_marshal_flags(
+        pResource, 2, nullptr, wl_proxy_get_version(pResource), 0, source ? source->pResource : nullptr);
     proxy;
 }
 static const wl_interface* _CExtDataControlDeviceV1SetSelectionTypes[] = {
@@ -185,22 +192,25 @@ static const wl_interface* _CExtDataControlDeviceV1PrimarySelectionTypes[] = {
 };
 
 static const wl_message _CExtDataControlDeviceV1Requests[] = {
-    { .name = "set_selection", .signature = "?o", .types = _CExtDataControlDeviceV1SetSelectionTypes + 0},
-    { .name = "destroy", .signature = "", .types = extDataControlV1_dummyTypes + 0},
-    { .name = "set_primary_selection", .signature = "?o", .types = _CExtDataControlDeviceV1SetPrimarySelectionTypes + 0},
+    {.name = "set_selection", .signature = "?o", .types = _CExtDataControlDeviceV1SetSelectionTypes + 0},
+    {.name = "destroy", .signature = "", .types = extDataControlV1_dummyTypes + 0},
+    {.name = "set_primary_selection", .signature = "?o", .types = _CExtDataControlDeviceV1SetPrimarySelectionTypes + 0},
 };
 
 static const wl_message _CExtDataControlDeviceV1Events[] = {
-    { .name = "data_offer", .signature = "n", .types = _CExtDataControlDeviceV1DataOfferTypes + 0},
-    { .name = "selection", .signature = "?o", .types = _CExtDataControlDeviceV1SelectionTypes + 0},
-    { .name = "finished", .signature = "", .types = extDataControlV1_dummyTypes + 0},
-    { .name = "primary_selection", .signature = "?o", .types = _CExtDataControlDeviceV1PrimarySelectionTypes + 0},
+    {.name = "data_offer", .signature = "n", .types = _CExtDataControlDeviceV1DataOfferTypes + 0},
+    {.name = "selection", .signature = "?o", .types = _CExtDataControlDeviceV1SelectionTypes + 0},
+    {.name = "finished", .signature = "", .types = extDataControlV1_dummyTypes + 0},
+    {.name = "primary_selection", .signature = "?o", .types = _CExtDataControlDeviceV1PrimarySelectionTypes + 0},
 };
 
 const wl_interface ext_data_control_device_v1_interface = {
-    .name = "ext_data_control_device_v1", .version = 1,
-    .method_count = 3, .methods = _CExtDataControlDeviceV1Requests,
-    .event_count = 4, .events = _CExtDataControlDeviceV1Events,
+    .name = "ext_data_control_device_v1",
+    .version = 1,
+    .method_count = 3,
+    .methods = _CExtDataControlDeviceV1Requests,
+    .event_count = 4,
+    .events = _CExtDataControlDeviceV1Events,
 };
 
 CCExtDataControlDeviceV1::CCExtDataControlDeviceV1(wl_proxy* resource) : pResource(resource) {
@@ -216,19 +226,19 @@ CCExtDataControlDeviceV1::~CCExtDataControlDeviceV1() {
         sendDestroy();
 }
 
-void CCExtDataControlDeviceV1::setDataOffer(F<void(CCExtDataControlDeviceV1*, wl_proxy*)> &&handler) {
+void CCExtDataControlDeviceV1::setDataOffer(F<void(CCExtDataControlDeviceV1*, wl_proxy*)>&& handler) {
     requests.dataOffer = std::move(handler);
 }
 
-void CCExtDataControlDeviceV1::setSelection(F<void(CCExtDataControlDeviceV1*, wl_proxy*)> &&handler) {
+void CCExtDataControlDeviceV1::setSelection(F<void(CCExtDataControlDeviceV1*, wl_proxy*)>&& handler) {
     requests.selection = std::move(handler);
 }
 
-void CCExtDataControlDeviceV1::setFinished(F<void(CCExtDataControlDeviceV1*)> &&handler) {
+void CCExtDataControlDeviceV1::setFinished(F<void(CCExtDataControlDeviceV1*)>&& handler) {
     requests.finished = std::move(handler);
 }
 
-void CCExtDataControlDeviceV1::setPrimarySelection(F<void(CCExtDataControlDeviceV1*, wl_proxy*)> &&handler) {
+void CCExtDataControlDeviceV1::setPrimarySelection(F<void(CCExtDataControlDeviceV1*, wl_proxy*)>&& handler) {
     requests.primarySelection = std::move(handler);
 }
 
@@ -274,19 +284,22 @@ static const wl_interface* _CExtDataControlSourceV1SendTypes[] = {
 };
 
 static const wl_message _CExtDataControlSourceV1Requests[] = {
-    { .name = "offer", .signature = "s", .types = _CExtDataControlSourceV1OfferTypes + 0},
-    { .name = "destroy", .signature = "", .types = extDataControlV1_dummyTypes + 0},
+    {.name = "offer", .signature = "s", .types = _CExtDataControlSourceV1OfferTypes + 0},
+    {.name = "destroy", .signature = "", .types = extDataControlV1_dummyTypes + 0},
 };
 
 static const wl_message _CExtDataControlSourceV1Events[] = {
-    { .name = "send", .signature = "sh", .types = _CExtDataControlSourceV1SendTypes + 0},
-    { .name = "cancelled", .signature = "", .types = extDataControlV1_dummyTypes + 0},
+    {.name = "send", .signature = "sh", .types = _CExtDataControlSourceV1SendTypes + 0},
+    {.name = "cancelled", .signature = "", .types = extDataControlV1_dummyTypes + 0},
 };
 
 const wl_interface ext_data_control_source_v1_interface = {
-    .name = "ext_data_control_source_v1", .version = 1,
-    .method_count = 2, .methods = _CExtDataControlSourceV1Requests,
-    .event_count = 2, .events = _CExtDataControlSourceV1Events,
+    .name = "ext_data_control_source_v1",
+    .version = 1,
+    .method_count = 2,
+    .methods = _CExtDataControlSourceV1Requests,
+    .event_count = 2,
+    .events = _CExtDataControlSourceV1Events,
 };
 
 CCExtDataControlSourceV1::CCExtDataControlSourceV1(wl_proxy* resource) : pResource(resource) {
@@ -302,11 +315,11 @@ CCExtDataControlSourceV1::~CCExtDataControlSourceV1() {
         sendDestroy();
 }
 
-void CCExtDataControlSourceV1::setSend(F<void(CCExtDataControlSourceV1*, const char*, int32_t)> &&handler) {
+void CCExtDataControlSourceV1::setSend(F<void(CCExtDataControlSourceV1*, const char*, int32_t)>&& handler) {
     requests.send = std::move(handler);
 }
 
-void CCExtDataControlSourceV1::setCancelled(F<void(CCExtDataControlSourceV1*)> &&handler) {
+void CCExtDataControlSourceV1::setCancelled(F<void(CCExtDataControlSourceV1*)>&& handler) {
     requests.cancelled = std::move(handler);
 }
 
@@ -345,18 +358,21 @@ static const wl_interface* _CExtDataControlOfferV1OfferTypes[] = {
 };
 
 static const wl_message _CExtDataControlOfferV1Requests[] = {
-    { .name = "receive", .signature = "sh", .types = _CExtDataControlOfferV1ReceiveTypes + 0},
-    { .name = "destroy", .signature = "", .types = extDataControlV1_dummyTypes + 0},
+    {.name = "receive", .signature = "sh", .types = _CExtDataControlOfferV1ReceiveTypes + 0},
+    {.name = "destroy", .signature = "", .types = extDataControlV1_dummyTypes + 0},
 };
 
 static const wl_message _CExtDataControlOfferV1Events[] = {
-    { .name = "offer", .signature = "s", .types = _CExtDataControlOfferV1OfferTypes + 0},
+    {.name = "offer", .signature = "s", .types = _CExtDataControlOfferV1OfferTypes + 0},
 };
 
 const wl_interface ext_data_control_offer_v1_interface = {
-    .name = "ext_data_control_offer_v1", .version = 1,
-    .method_count = 2, .methods = _CExtDataControlOfferV1Requests,
-    .event_count = 1, .events = _CExtDataControlOfferV1Events,
+    .name = "ext_data_control_offer_v1",
+    .version = 1,
+    .method_count = 2,
+    .methods = _CExtDataControlOfferV1Requests,
+    .event_count = 1,
+    .events = _CExtDataControlOfferV1Events,
 };
 
 CCExtDataControlOfferV1::CCExtDataControlOfferV1(wl_proxy* resource) : pResource(resource) {
@@ -372,7 +388,7 @@ CCExtDataControlOfferV1::~CCExtDataControlOfferV1() {
         sendDestroy();
 }
 
-void CCExtDataControlOfferV1::setOffer(F<void(CCExtDataControlOfferV1*, const char*)> &&handler) {
+void CCExtDataControlOfferV1::setOffer(F<void(CCExtDataControlOfferV1*, const char*)>&& handler) {
     requests.offer = std::move(handler);
 }
 

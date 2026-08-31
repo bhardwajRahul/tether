@@ -7,7 +7,7 @@
 #include <string_view>
 
 namespace tether {
-inline constexpr std::string_view kPslData = R"PSL(
+    inline constexpr std::string_view kPslData = R"PSL(
 ac
 com.ac
 edu.ac

@@ -10,7 +10,7 @@ namespace tether {
     struct Otp {
         std::string code;
         std::string sender_domain; // registrable domain of the source; "" when unknown
-        uint64_t id = 0; // 0 == no code
+        uint64_t id = 0;           // 0 == no code
         explicit operator bool() const { return id != 0 && !code.empty(); }
     };
 

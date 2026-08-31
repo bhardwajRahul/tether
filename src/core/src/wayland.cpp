@@ -1,6 +1,6 @@
 #include "tether/wayland.hpp"
-#include "wayland_protocols/wayland.hpp"
 #include "wayland_protocols/ext-data-control-v1.hpp"
+#include "wayland_protocols/wayland.hpp"
 #include "wayland_protocols/wlr-data-control-unstable-v1.hpp"
 
 #include <cstring>
