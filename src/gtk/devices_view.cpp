@@ -65,6 +65,7 @@ namespace tether::ui {
             GtkWidget* lbl_bt_notifications = nullptr;
             GtkWidget* lbl_bt_reason = nullptr;
             GtkWidget* lbl_bt_progress = nullptr;
+            guint bt_progress_expiry_id = 0;
             GtkWidget* btn_bt_pair = nullptr;
             GtkWidget* btn_bt_solicit = nullptr;
             GtkWidget* chk_bt_enabled = nullptr;
@@ -87,6 +88,27 @@ namespace tether::ui {
         DevicesState g_devices;
 
         void set_status_action(const std::string& text) { set_text(g_devices.lbl_action_status, text); }
+
+        constexpr int BT_PROGRESS_TIMEOUT_SECONDS = 60;
+
+        // Progress text describes a moment, not a state, so it expires.
+        void set_bt_progress(const std::string& text) {
+            if (g_devices.bt_progress_expiry_id != 0) {
+                g_source_remove(g_devices.bt_progress_expiry_id);
+                g_devices.bt_progress_expiry_id = 0;
+            }
+            set_text(g_devices.lbl_bt_progress, text);
+            if (text.empty())
+                return;
+            g_devices.bt_progress_expiry_id = g_timeout_add_seconds(
+                BT_PROGRESS_TIMEOUT_SECONDS,
+                [](gpointer) -> gboolean {
+                    g_devices.bt_progress_expiry_id = 0;
+                    set_text(g_devices.lbl_bt_progress, "");
+                    return G_SOURCE_REMOVE;
+                },
+                nullptr);
+        }
 
         const nlohmann::json* find_bt_device(const std::string& address) {
             for (const auto& device : g_devices.bt_devices) {
@@ -161,6 +183,7 @@ namespace tether::ui {
             const bool supervised = is_supervised_bt_device(address);
             const bool available = g_devices.bt_status.value("available", false);
             const bool bt_on = g_devices.bt_status.value("enabled", true);
+            const bool ancs_on = g_devices.bt_status.value("ancs_enabled", true);
 
             set_markup(g_devices.lbl_bt_name, "<b>" + escape_markup(g_devices.selected_bt_name) + "</b>");
 
@@ -182,7 +205,6 @@ namespace tether::ui {
             g_devices.bt_setup_commands = commands;
             set_text(g_devices.lbl_bt_setup_what, what);
             set_text(g_devices.lbl_bt_setup_command, commands);
-            gtk_widget_set_visible(g_devices.bt_setup_box, !commands.empty());
 
             std::string mode;
             if (!g_devices.bt_status.empty()) {
@@ -216,6 +238,9 @@ namespace tether::ui {
             const bool map_open = supervised && connection.value("map_open", false);
             const bool pbap_open = supervised && connection.value("pbap_open", false);
             const bool ancs_ready = supervised && connection.value("ancs_ready", false);
+
+            const bool all_live = map_open && pbap_open && (ancs_ready || !ancs_on);
+            gtk_widget_set_visible(g_devices.bt_setup_box, !commands.empty() && !all_live);
 
             set_capability_row(g_devices.lbl_bt_link,
                                _("Link"),
@@ -258,8 +283,6 @@ namespace tether::ui {
             gtk_widget_set_visible(g_devices.btn_bt_solicit,
                                    available && supervised &&
                                        (map_error == "forbidden" || map_error == "no_record" || !ancs_ready));
-
-            const bool ancs_on = g_devices.bt_status.value("ancs_enabled", true);
 
             gtk_widget_set_visible(g_devices.chk_bt_enabled, available && supervised);
             gtk_widget_set_visible(g_devices.chk_bt_ancs, available && supervised);
@@ -341,6 +364,8 @@ namespace tether::ui {
             if (!row)
                 return;
 
+            set_bt_progress("");
+
             const char* bt_address = (const char*)g_object_get_data(G_OBJECT(row), "bt_address");
             g_devices.selected_bt_address = bt_address ? bt_address : "";
             if (!g_devices.selected_bt_address.empty()) {
@@ -386,11 +411,11 @@ namespace tether::ui {
             if (g_devices.selected_bt_address.empty())
                 return;
             if (!daemon_send({{"command", "bt_pair"}, {"address", g_devices.selected_bt_address}})) {
-                set_text(g_devices.lbl_bt_progress, _("Could not reach the Tether daemon."));
+                set_bt_progress(_("Could not reach the Tether daemon."));
                 return;
             }
             gtk_widget_set_sensitive(g_devices.btn_bt_pair, FALSE);
-            set_text(g_devices.lbl_bt_progress, _("Pairing\u2026 confirm the prompt on the iPhone."));
+            set_bt_progress(_("Pairing\u2026 confirm the prompt on the iPhone."));
         }
 
         void on_bt_unpair_click(GtkWidget*, gpointer) {
@@ -413,7 +438,7 @@ namespace tether::ui {
                 return;
 
             daemon_send({{"command", "bt_unpair"}, {"address", g_devices.selected_bt_address}});
-            set_text(g_devices.lbl_bt_progress, _("Removing the pairing\u2026"));
+            set_bt_progress(_("Removing the pairing\u2026"));
         }
 
         void on_bt_enabled_toggled(GtkWidget* widget, gpointer) {
@@ -441,10 +466,10 @@ namespace tether::ui {
 
         void on_bt_solicit_click(GtkWidget*, gpointer) {
             if (!daemon_send({{"command", "bt_solicit"}})) {
-                set_text(g_devices.lbl_bt_progress, _("Could not reach the Tether daemon."));
+                set_bt_progress(_("Could not reach the Tether daemon."));
                 return;
             }
-            set_text(g_devices.lbl_bt_progress, _("Asking the iPhone to show its Bluetooth permissions\u2026"));
+            set_bt_progress(_("Asking the iPhone to show its Bluetooth permissions\u2026"));
         }
 
         // The daemon opens a fresh connection per send_file, batch one file at a time
@@ -625,6 +650,7 @@ namespace tether::ui {
     } // namespace
 
     void devices_view_handle_disconnect() {
+        set_bt_progress("");
         g_devices.send_queue.clear();
         g_devices.send_batch_total = 0;
         g_devices.send_failed = 0;
@@ -1036,7 +1062,7 @@ namespace tether::ui {
         if (command == "bt_scan_result") {
             const std::string message = event.value("message", "");
             set_status_main(message);
-            set_text(g_devices.lbl_bt_progress, message);
+            set_bt_progress(message);
             // A failed scan already carries the reason; only a scan that really
             // ran and found nothing wants the "check the phone" advice.
             if (event.value("success", false) && (g_devices.bt_devices.empty() || g_devices.select_bt_after_scan)) {
@@ -1057,7 +1083,7 @@ namespace tether::ui {
             return true;
         }
         if (command == "bt_solicit_result") {
-            set_text(g_devices.lbl_bt_progress, event.value("message", ""));
+            set_bt_progress(event.value("message", ""));
             return false;
         }
         if (command == "bt_pair_confirm_request") {
@@ -1079,12 +1105,12 @@ namespace tether::ui {
             return true;
         }
         if (command == "bt_pair_progress") {
-            set_text(g_devices.lbl_bt_progress, event.value("step", "") + "  " + event.value("detail", ""));
+            set_bt_progress(event.value("step", "") + "  " + event.value("detail", ""));
             return true;
         }
         if (command == "bt_pair_result" || command == "bt_unpair_result") {
             gtk_widget_set_sensitive(g_devices.btn_bt_pair, TRUE);
-            set_text(g_devices.lbl_bt_progress, event.value("message", ""));
+            set_bt_progress(event.value("message", ""));
             // The bond and the supervised device both just changed.
             daemon_send({{"command", "bt_status"}});
             daemon_send({{"command", "bt_list_devices"}});
