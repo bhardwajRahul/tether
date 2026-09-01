@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-30 11:33-0700\n"
+"POT-Creation-Date: 2026-08-31 19:17-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Polish\n"
@@ -145,6 +145,16 @@ msgid "Print a redacted Bluetooth report for a bug report."
 msgstr "Wypisz oczyszczony raport Bluetooth do zgłoszenia błędu."
 
 #: src/cli/main.cpp
+msgid ""
+"Install the browser and mail extension's native messaging manifests for this "
+"user. Needed only for portable builds; the distro packages install them "
+"system-wide."
+msgstr ""
+"Instaluje manifesty natywnej komunikacji rozszerzenia przeglądarki i poczty "
+"dla tego użytkownika. Potrzebne tylko w wersjach przenośnych; pakiety "
+"dystrybucji instalują je systemowo."
+
+#: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
 msgstr "Zaakceptuj lokalnie oczekujące żądanie parowania."
 
@@ -163,6 +173,30 @@ msgstr "Opcje:"
 #: src/cli/main.cpp
 msgid "Examples:"
 msgstr "Przykłady:"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Installed %s\n"
+msgstr "Zainstalowano %s\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"No browser or mail client profile was found for this user, so nothing was "
+"installed. Start Firefox, Thunderbird, or Chromium once and run this again.\n"
+msgstr ""
+"Nie znaleziono profilu przeglądarki ani klienta poczty dla tego użytkownika, "
+"więc nic nie zainstalowano. Uruchom raz przeglądarkę Firefox, program "
+"Thunderbird lub Chromium i wykonaj to ponownie.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"Restart the browser or mail client to pick this up.\n"
+msgstr ""
+"\n"
+"Uruchom ponownie przeglądarkę lub klienta poczty, aby to zadziałało.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth status from the daemon.\n"

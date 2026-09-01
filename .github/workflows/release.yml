@@ -64,8 +64,38 @@ jobs:
             build/release/*.tar.gz
           if-no-files-found: error
 
+  appimage:
+    runs-on: ubuntu-latest
+    # oldest glibc tether supports
+    container: ubuntu:24.04
+    steps:
+      - name: bootstrap git
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git ca-certificates curl file
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: dependencies
+        run: |
+          ./scripts/ci-deps.sh
+          apt-get install -y --no-install-recommends bluez patchelf librsvg2-common desktop-file-utils
+
+      - name: build
+        run: ./packaging/appimage/build.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: build/appimage/*.AppImage
+          if-no-files-found: error
+
   release:
-    needs: package
+    needs: [package, appimage]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

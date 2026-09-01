@@ -1,0 +1,30 @@
+#!/bin/sh
+
+# One AppImage has all of the binaries: GTK app, CLI, daemon and the pairing dialog.
+
+HERE=$(dirname "$(readlink -f "$0")")
+export APPDIR="${APPDIR:-$HERE}"
+
+# linuxdeploy plugins environment here (GTK_PATH, pixbuf modules).
+for hook in "$APPDIR"/apprun-hooks/*.sh; do
+    if [ -r "$hook" ]; then
+        . "$hook"
+    fi
+done
+
+# tetherd and tether-dialog are found as siblings of the running binary
+export PATH="$APPDIR/usr/bin:$PATH"
+export TETHER_LOCALEDIR="$APPDIR/usr/share/locale"
+
+case "${1-}" in
+    --daemon)
+        shift
+        exec "$APPDIR/usr/bin/tetherd" "$@"
+        ;;
+    "" | --tray | --devices | --messages | --notifications | --thread | --thread=*)
+        exec "$APPDIR/usr/bin/tether-gtk" "$@"
+        ;;
+    *)
+        exec "$APPDIR/usr/bin/tether" "$@"
+        ;;
+esac

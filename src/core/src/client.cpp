@@ -58,6 +58,42 @@ namespace tether {
         return Crypto::get_peer_fingerprint(ssl_);
     }
 
+    void spawn_daemon() {
+        // everything the child needs is resolved before the fork
+        std::filesystem::path self_path = std::filesystem::read_symlink("/proc/self/exe");
+        const std::string sibling = (self_path.parent_path() / "tetherd").string();
+
+        // appimage binaries live on a mount that only lives for the life of the parent, so the daemon has to run from a
+        // mount of its own.
+        const char* appimage = std::getenv("APPIMAGE");
+
+        pid_t pid = fork();
+        if (pid < 0)
+            return;
+
+        if (pid == 0) {
+            if (fork() == 0) {
+                // tetherd reopens these onto its own log file.
+                if (freopen("/dev/null", "w", stdout) == nullptr) {
+                }
+                if (freopen("/dev/null", "w", stderr) == nullptr) {
+                }
+                if (freopen("/dev/null", "r", stdin) == nullptr) {
+                }
+
+                if (appimage && *appimage)
+                    execl(appimage, "tetherd", "--daemon", nullptr);
+                execl(sibling.c_str(), "tetherd", nullptr);
+                execlp("tetherd", "tetherd", nullptr);
+                _exit(1);
+            }
+            _exit(0);
+        }
+
+        int status;
+        waitpid(pid, &status, 0);
+    }
+
     int Client::connect_unix(bool retry) {
         int sock = socket(AF_UNIX, SOCK_STREAM, 0);
         if (sock < 0)
@@ -78,31 +114,9 @@ namespace tether {
             if (!retry)
                 return -1;
 
-            pid_t pid = fork();
-            if (pid == 0) {
-                std::filesystem::path self_path = std::filesystem::read_symlink("/proc/self/exe");
-                std::string daemon_path = (self_path.parent_path() / "tetherd").string();
-
-                if (fork() == 0) {
-                    if (freopen("/dev/null", "w", stdout) == nullptr) {
-                    }
-                    if (freopen("/dev/null", "w", stderr) == nullptr) {
-                    }
-                    if (freopen("/dev/null", "r", stdin) == nullptr) {
-                    }
-
-                    execl(daemon_path.c_str(), "tetherd", nullptr);
-                    execlp("tetherd", "tetherd", nullptr);
-                    exit(1);
-                }
-                exit(0);
-            } else if (pid > 0) {
-                int status;
-                waitpid(pid, &status, 0);
-                usleep(300000);
-                return connect_unix(false);
-            }
-            return -1;
+            spawn_daemon();
+            usleep(300000);
+            return connect_unix(false);
         }
         return sock;
     }

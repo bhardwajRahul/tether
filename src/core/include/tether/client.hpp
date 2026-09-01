@@ -5,6 +5,9 @@
 
 namespace tether {
 
+    // Starts tetherd detached, and returns once it has been launched
+    void spawn_daemon();
+
     class Client {
     public:
         Client();

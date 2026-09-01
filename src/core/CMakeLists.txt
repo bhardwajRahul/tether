@@ -8,6 +8,7 @@ add_library(tether STATIC
     src/file_transfer.cpp
     src/crypto.cpp
     src/client.cpp
+    src/extension_host.cpp
     src/discovery.cpp
     src/bluetooth/objects.cpp
     src/bluetooth/monitor.cpp

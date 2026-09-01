@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: tether 0.2.18\n"
+"Project-Id-Version: tether 0.2.19\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-30 11:33-0700\n"
+"POT-Creation-Date: 2026-08-31 19:17-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -139,6 +139,13 @@ msgid "Print a redacted Bluetooth report for a bug report."
 msgstr ""
 
 #: src/cli/main.cpp
+msgid ""
+"Install the browser and mail extension's native messaging manifests for this "
+"user. Needed only for portable builds; the distro packages install them "
+"system-wide."
+msgstr ""
+
+#: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
 msgstr ""
 
@@ -156,6 +163,25 @@ msgstr ""
 
 #: src/cli/main.cpp
 msgid "Examples:"
+msgstr ""
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Installed %s\n"
+msgstr ""
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"No browser or mail client profile was found for this user, so nothing was "
+"installed. Start Firefox, Thunderbird, or Chromium once and run this again.\n"
+msgstr ""
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"Restart the browser or mail client to pick this up.\n"
 msgstr ""
 
 #: src/cli/main.cpp

@@ -49,6 +49,12 @@ Accept a pending pairing request locally for the specified device fingerprint.
 .TP
 \fB\-\-pair\fR
 Send a pairing request over TCP to the daemon.
+.TP
+\fB\-\-install-extension-host\fR
+Install the browser and mail extension's native messaging manifests into this
+user's Firefox, Thunderbird, and Chromium directories, pointing at a wrapper in
+\fB~/.local/bin\fR. Needed only for a portable build such as the AppImage; the
+distro packages install the manifests system\-wide.
 .SH BLUETOOTH OPTIONS
 Bluetooth carries iPhone messages (MAP), contacts (PBAP), and notification
 mirroring (ANCS). It is independent of the Wi-Fi pairing above.
@@ -58,7 +64,8 @@ Show the one-time system setup Bluetooth still needs, with the command for each
 step. Nothing is applied: the steps change how the machine behaves over
 Bluetooth outside Tether, so running them is left to the user. One step enables
 \fBtether-btclass@\fR\fIADAPTER\fR\fB.service\fR, which is installed by the
-package but never enabled for you.
+package but never enabled for you. A portable build installs neither file, so
+the printed commands write them out instead.
 .TP
 \fB\-\-bt-status\fR
 Show Bluetooth adapter capability and delivery mode.

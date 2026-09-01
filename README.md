@@ -78,6 +78,22 @@ The extension communicates with `tetherd` via native messaging. This allows user
 ### Mail Extension
 - Thunderbird: [Tether Mail Extension](https://addons.thunderbird.net/en-US/thunderbird/addon/tether-mail-extension/)
 
+### AppImage
+
+One file, no install, for distros without a package and for immutable systems.
+Download `tether-<version>-x86_64.AppImage` from the
+[releases page](https://github.com/zackb/tether/releases), then:
+
+```bash
+chmod +x tether-*-x86_64.AppImage
+./tether-*-x86_64.AppImage                              # the GTK app
+./tether-*-x86_64.AppImage --bt-setup                   # the CLI, same binary
+./tether-*-x86_64.AppImage --install-extension-host     # if you use the browser or mail extension
+```
+
+Requires glibc 2.39 or newer (Fedora 40+, Ubuntu 24.04+, Arch, not Debian 12).
+`--install-extension-host` writes the native messaging manifests into your browser and mail client directories
+
 ### Arch Linux
 
 ```bash
