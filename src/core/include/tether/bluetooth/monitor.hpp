@@ -36,6 +36,10 @@ namespace tether::bluetooth {
         BluezObjects snapshot() const;
         Capability capability() const;
 
+        // Which controller to use: "hciN" or an address, empty for the first powered one.
+        void set_preferred_adapter(std::string id);
+        std::string preferred_adapter_id() const;
+
         // Shared system-bus connection. GDBusConnection is thread-safe for call.
         GDBusConnection* connection() const;
 

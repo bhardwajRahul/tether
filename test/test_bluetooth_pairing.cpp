@@ -50,6 +50,7 @@ TEST(BluetoothConfig, RoundTrips) {
     config.auth_strategy = AuthStrategy::ExplicitPair;
     config.ancs_enabled = false;
     config.enabled = false;
+    config.adapter = "hci1";
 
     EXPECT_EQ(deserialize_config(serialize_config(config)), config);
 }
@@ -61,6 +62,8 @@ TEST(BluetoothConfig, DefaultsToConnectFirstAndAncsEnabled) {
     EXPECT_TRUE(config.device_address.empty());
     // A config written before the toggle existed keeps connecting.
     EXPECT_TRUE(config.enabled);
+    // No controller pinned means the first powered one.
+    EXPECT_TRUE(config.adapter.empty());
 }
 
 // Switching Bluetooth off supervises no device, which is what stops the daemon

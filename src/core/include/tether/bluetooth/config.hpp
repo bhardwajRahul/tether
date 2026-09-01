@@ -20,8 +20,7 @@ namespace tether::bluetooth {
         // Address of the selected iPhone, e.g. "81:71:C8:30:6A:F3".
         std::string device_address;
         AuthStrategy auth_strategy = AuthStrategy::ConnectFirst;
-        // Cleared when pairing resolves to compatibility mode, so later runs do
-        // not keep trying to bring up an LE bearer the phone will not answer.
+        // Whether to mirror notifications. Dual bond turns it on; nothing else writes it but the user
         bool ancs_enabled = true;
         // Whether to request notification contents rather than only the app
         // they came from. The iPhone's own notification-access toggle is the
@@ -31,6 +30,9 @@ namespace tether::bluetooth {
         bool group_messages_enabled = false;
         // When off, supervision runs against no device, so the daemon stops re-dialling
         bool enabled = true;
+        // Controller to use, "hci1" or its address. Empty picks the first
+        // powered one, which is wrong on any machine with a second controller.
+        std::string adapter;
 
         bool operator==(const Config&) const = default;
     };

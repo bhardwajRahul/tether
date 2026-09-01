@@ -50,6 +50,7 @@ namespace tether::bluetooth {
         j["ancs_content_enabled"] = config.ancs_content_enabled;
         j["group_messages_enabled"] = config.group_messages_enabled;
         j["enabled"] = config.enabled;
+        j["adapter"] = config.adapter;
         return j.dump(2);
     }
 
@@ -66,6 +67,7 @@ namespace tether::bluetooth {
             config.ancs_content_enabled = version < 1 ? true : j.value("ancs_content_enabled", true);
             config.group_messages_enabled = j.value("group_messages_enabled", false);
             config.enabled = j.value("enabled", true);
+            config.adapter = j.value("adapter", "");
         } catch (const std::exception&) {
             // A corrupt file must not stop the daemon; defaults are safe.
         }

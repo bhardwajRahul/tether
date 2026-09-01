@@ -292,6 +292,7 @@ namespace tether {
         const auto config = bluetooth::load_config();
         status["device_address"] = config.device_address;
         status["ancs_enabled"] = config.ancs_enabled;
+        status["adapter"] = config.adapter;
         status["ancs_content_enabled"] = config.ancs_content_enabled;
         status["enabled"] = config.enabled;
         if (!bluetooth::g_bluez) {
@@ -422,14 +423,10 @@ namespace tether {
 
         if (result.success) {
             config.device_address = result.device_address;
-            // A BR/EDR-only bond can never have ANCS. Only a bond this transaction
-            // actually created settles that: an "already_paired" result, or a phone
-            // that merely wasn't exposing its LE bearer at this instant, must not
-            // latch mirroring off — nothing in the UI could turn it back on.
+            // A dual bond proves mirroring can work, so it turns the preference back on.
+            // A BR/EDR-only bond must not turn it off.
             if (result.dual_bond)
                 config.ancs_enabled = true;
-            else if (result.status == "paired")
-                config.ancs_enabled = false;
             // Remember the transaction that bonded only when it produced a bond worth repeating.
             if (result.status == "paired" && result.dual_bond)
                 config.auth_strategy = result.auth_strategy_used;
@@ -959,6 +956,13 @@ namespace tether {
                         bluetooth::set_group_replies_enabled(config.group_messages_enabled &&
                                                              config.ancs_content_enabled && config.ancs_enabled);
                         broadcast_local_event(build_bt_status().dump());
+                    } else if (j.contains("command") && j["command"] == "bt_set_adapter") {
+                        auto config = bluetooth::load_config();
+                        config.adapter = j.value("adapter", "");
+                        bluetooth::save_config(config);
+                        if (bluetooth::g_bluez)
+                            bluetooth::g_bluez->set_preferred_adapter(config.adapter);
+                        std::thread(restart_supervision, config).detach();
                     } else if (j.contains("command") && j["command"] == "bt_set_enabled") {
                         auto config = bluetooth::load_config();
                         config.enabled = j.value("enabled", true);

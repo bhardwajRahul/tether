@@ -491,6 +491,59 @@ TEST(Capability, PrefersAPoweredAdapter) {
     EXPECT_TRUE(cap.le_peripheral);
 }
 
+// Two controllers is the common case that broke #69: the first one is a clone
+// dongle whose LE half never works, and everything ran on it because it sorts
+// first. The configured id has to win.
+constexpr const char* TWO_ADAPTERS = R"({
+  '/org/bluez/hci0': {
+    'org.bluez.Adapter1': { 'Address': <'AA:AA:AA:AA:AA:AA'>, 'Powered': <true>, 'Roles': <['central']> }
+  },
+  '/org/bluez/hci1': {
+    'org.bluez.Adapter1': { 'Address': <'BB:BB:BB:BB:BB:BB'>, 'Powered': <true>, 'Roles': <['central', 'peripheral']> }
+  }
+})";
+
+TEST(PreferredAdapter, ConfiguredIdWinsOverTheFirstPowered) {
+    Payload p(TWO_ADAPTERS);
+    auto objects = parse_managed_objects(p.v);
+
+    ASSERT_TRUE(preferred_adapter(objects, "hci1"));
+    EXPECT_EQ(preferred_adapter(objects, "hci1")->path, "/org/bluez/hci1");
+    // The address is the other spelling a user has in front of them.
+    EXPECT_EQ(preferred_adapter(objects, "bb:bb:bb:bb:bb:bb")->path, "/org/bluez/hci1");
+    EXPECT_EQ(resolve_capability(objects, std::nullopt, "hci1").adapter_id, "hci1");
+    EXPECT_TRUE(resolve_capability(objects, std::nullopt, "hci1").le_peripheral);
+}
+
+// An unplugged controller must not leave the machine with no Bluetooth at all.
+TEST(PreferredAdapter, FallsBackWhenTheConfiguredOneIsAbsent) {
+    Payload p(TWO_ADAPTERS);
+    auto objects = parse_managed_objects(p.v);
+
+    ASSERT_TRUE(preferred_adapter(objects, "hci7"));
+    EXPECT_EQ(preferred_adapter(objects, "hci7")->path, "/org/bluez/hci0");
+    EXPECT_EQ(preferred_adapter(objects, "")->path, "/org/bluez/hci0");
+}
+
+TEST(PreferredAdapter, PrefersPoweredThenFirst) {
+    Payload p(R"({
+      '/org/bluez/hci0': {
+        'org.bluez.Adapter1': { 'Powered': <false>, 'Roles': <['central']> }
+      },
+      '/org/bluez/hci1': {
+        'org.bluez.Adapter1': { 'Powered': <true>, 'Roles': <['central']> }
+      }
+    })");
+    auto objects = parse_managed_objects(p.v);
+    EXPECT_EQ(preferred_adapter(objects, "")->path, "/org/bluez/hci1");
+    // An unpowered adapter named outright is still the one to describe, so the
+    // capability reasons can say it is off rather than reporting nothing.
+    EXPECT_EQ(preferred_adapter(objects, "hci0")->path, "/org/bluez/hci0");
+
+    BluezObjects empty;
+    EXPECT_EQ(preferred_adapter(empty, "hci0"), nullptr);
+}
+
 // Device1.Connected is an aggregate across bearers. A phone holding an LE link
 // with no BR/EDR link reports Connected=true while MAP and PBAP — which both
 // ride BR/EDR — are unreachable, so obexd answers every session attempt with

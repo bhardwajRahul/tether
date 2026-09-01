@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 22:04-0700\n"
+"POT-Creation-Date: 2026-09-01 13:57-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Ukrainian\n"
@@ -136,6 +136,10 @@ msgstr "Увімкнути або вимкнути дублювання спов
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "Дублювати заголовки та текст сповіщень, а не лише програму."
+
+#: src/cli/main.cpp
+msgid "Choose which Bluetooth controller to use."
+msgstr "Вибирає, який адаптер Bluetooth використовувати."
 
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
@@ -278,6 +282,18 @@ msgstr "Secure Connections={}"
 msgid "Bond"
 msgstr "Зв'язок"
 
+#: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
+msgid "Notifications"
+msgstr "Сповіщення"
+
+#: src/cli/main.cpp
+msgid "mirroring on"
+msgstr "дублювання увімкнено"
+
+#: src/cli/main.cpp
+msgid "mirroring off (tether --bt-ancs on)"
+msgstr "дублювання вимкнено (tether --bt-ancs on)"
+
 #: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
 #: src/gtk/tether-gtk.desktop.in
 msgid "Tether"
@@ -290,6 +306,15 @@ msgstr "з'єднання"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "вимкнено (--bt-enable on)"
+
+#: src/cli/main.cpp
+msgid "in use"
+msgstr "використовується"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Controller {} is not present; using the first powered one instead."
+msgstr "Адаптера {} немає; використовується перший увімкнений."
 
 #: src/cli/main.cpp
 #, c-format
@@ -373,10 +398,6 @@ msgstr "Повідомлення (MAP)"
 #: src/cli/main.cpp
 msgid "Contacts (PBAP)"
 msgstr "Контакти (PBAP)"
-
-#: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
-msgid "Notifications"
-msgstr "Сповіщення"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
@@ -538,6 +559,25 @@ msgstr "Дублювання сповіщень увімкнено."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "Дублювання сповіщень вимкнено."
+
+#: src/cli/main.cpp
+msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
+msgstr "Очікувався адаптер, наприклад --bt-adapter hci1, або --bt-adapter auto\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "No Bluetooth controller matches '{}'. Available:\n"
+msgstr "Жоден адаптер Bluetooth не відповідає «{}». Доступні:\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Controller selection is automatic: the first powered one.\n"
+msgstr "Вибір адаптера автоматичний: перший увімкнений.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Using controller {}."
+msgstr "Використовується адаптер {}."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -1455,3 +1495,7 @@ msgstr "Синхронізація пристроїв"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Створюйте пари пристроїв і синхронізуйте буфер обміну через мережу"
+
+#, fuzzy
+#~ msgid "on"
+#~ msgstr "Зв'язок"

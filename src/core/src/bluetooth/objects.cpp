@@ -321,22 +321,34 @@ namespace tether::bluetooth {
                    enable;
         }
 
+        // /org/bluez/hci0 -> hci0
+        std::string adapter_id_of(const std::string& path) {
+            const auto slash = path.find_last_of('/');
+            return slash == std::string::npos ? path : path.substr(slash + 1);
+        }
+
     } // namespace
 
-    Capability resolve_capability(const BluezObjects& objects, std::optional<bool> secure_connections) {
-        Capability cap;
-
-        // prefer powered adapter, fall back to the first so the reasons below
-        // can explain an unpowered one rather than reporting nothing at all.
-        const Adapter* adapter = nullptr;
-        for (const auto& a : objects.adapters) {
-            if (a.powered) {
-                adapter = &a;
-                break;
+    const Adapter* preferred_adapter(const BluezObjects& objects, const std::string& id) {
+        if (!id.empty()) {
+            for (const auto& a : objects.adapters) {
+                if (iequals(adapter_id_of(a.path), id) || iequals(a.address, id))
+                    return &a;
             }
         }
-        if (!adapter && !objects.adapters.empty())
-            adapter = &objects.adapters.front();
+        for (const auto& a : objects.adapters) {
+            if (a.powered)
+                return &a;
+        }
+        return objects.adapters.empty() ? nullptr : &objects.adapters.front();
+    }
+
+    Capability resolve_capability(const BluezObjects& objects,
+                                  std::optional<bool> secure_connections,
+                                  const std::string& preferred_id) {
+        Capability cap;
+
+        const Adapter* adapter = preferred_adapter(objects, preferred_id);
 
         // ponytail: tetherd is per-user, so its locale is the user's and these
         // strings can be translated here. A system-wide daemon serving several
@@ -347,7 +359,7 @@ namespace tether::bluetooth {
         }
 
         cap.adapter_present = true;
-        cap.adapter_id = adapter->path.substr(adapter->path.find_last_of('/') + 1);
+        cap.adapter_id = adapter_id_of(adapter->path);
         cap.powered = adapter->powered;
         cap.le_central = adapter->has_role("central");
         cap.le_peripheral = adapter->has_role("peripheral");
