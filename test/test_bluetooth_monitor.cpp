@@ -3,9 +3,9 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <fcntl.h>
 #include <filesystem>
 #include <fstream>
-#include <fcntl.h>
 #include <string>
 #include <sys/types.h>
 #include <unistd.h>
@@ -20,8 +20,7 @@ namespace {
         explicit FakeBtmgmt(const std::string& body) {
             const char* path = std::getenv("PATH");
             old_path_ = path ? path : "";
-            dir_ = std::filesystem::path("/var/tmp") /
-                   ("tether-monitor-test-" + std::to_string(getpid()));
+            dir_ = std::filesystem::path("/var/tmp") / ("tether-monitor-test-" + std::to_string(getpid()));
             std::filesystem::remove_all(dir_);
             std::filesystem::create_directories(dir_);
 
@@ -30,8 +29,7 @@ namespace {
             script << "#!/bin/sh\n" << body;
             script.close();
             std::filesystem::permissions(executable,
-                                         std::filesystem::perms::owner_read |
-                                             std::filesystem::perms::owner_write |
+                                         std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
                                              std::filesystem::perms::owner_exec,
                                          std::filesystem::perm_options::replace);
             setenv("PATH", dir_.c_str(), 1);

@@ -51,8 +51,7 @@ namespace tether::bluetooth {
     // BlueZ exposes Secure Connections only through the management interface.
     // Runs btmgmt without a shell and returns no value if it fails or exceeds the
     // deadline. Public so the process boundary and timeout can be tested directly.
-    std::optional<bool> probe_secure_connections(
-        const std::string& adapter_id,
-        std::chrono::milliseconds timeout = std::chrono::seconds(1));
+    std::optional<bool> probe_secure_connections(const std::string& adapter_id,
+                                                 std::chrono::milliseconds timeout = std::chrono::seconds(1));
 
 } // namespace tether::bluetooth

@@ -696,9 +696,9 @@ namespace tether::ui {
             const std::string name = device.value("name", "").empty() ? address : device.value("name", "");
             const bool paired = device.value("paired", false);
             const bool connected = device.value("connected", false);
-            const bool route_ready = is_supervised_bt_device(address) &&
-                                     (g_devices.bt_connection.value("map_open", false) ||
-                                      g_devices.bt_connection.value("ancs_ready", false));
+            const bool route_ready =
+                is_supervised_bt_device(address) && (g_devices.bt_connection.value("map_open", false) ||
+                                                     g_devices.bt_connection.value("ancs_ready", false));
 
             GtkWidget* row = gtk_list_box_row_new();
             g_object_set_data_full(G_OBJECT(row), "bt_address", g_strdup(address.c_str()), g_free);
@@ -717,10 +717,10 @@ namespace tether::ui {
             gtk_label_set_xalign(GTK_LABEL(title), 0.0);
             gtk_box_pack_start(GTK_BOX(labels), title, FALSE, FALSE, 0);
 
-            const char* subtitle_text = route_ready          ? _("Connected")
-                                        : connected          ? _("Partially connected")
-                                        : paired             ? _("Paired")
-                                                             : _("Nearby (Tap to Pair)");
+            const char* subtitle_text = route_ready ? _("Connected")
+                                        : connected ? _("Partially connected")
+                                        : paired    ? _("Paired")
+                                                    : _("Nearby (Tap to Pair)");
             GtkWidget* subtitle = gtk_label_new(subtitle_text);
             gtk_label_set_xalign(GTK_LABEL(subtitle), 0.0);
             gtk_style_context_add_class(gtk_widget_get_style_context(subtitle), "muted");
@@ -997,11 +997,10 @@ namespace tether::ui {
             }
 
             if (g_devices.select_bt_after_scan) {
-                const auto iphone = std::find_if(g_devices.bt_devices.begin(),
-                                                 g_devices.bt_devices.end(),
-                                                 [](const nlohmann::json& device) {
-                                                     return device.value("iphone", false);
-                                                 });
+                const auto iphone =
+                    std::find_if(g_devices.bt_devices.begin(),
+                                 g_devices.bt_devices.end(),
+                                 [](const nlohmann::json& device) { return device.value("iphone", false); });
                 if (iphone != g_devices.bt_devices.end()) {
                     g_devices.selected_bt_address = iphone->value("address", "");
                     g_devices.selected_bt_name = iphone->value("name", "iPhone");
@@ -1031,11 +1030,12 @@ namespace tether::ui {
             set_text(g_devices.lbl_bt_progress, message);
             // A failed scan already carries the reason; only a scan that really
             // ran and found nothing wants the "check the phone" advice.
-            if (event.value("success", false) && g_devices.select_bt_after_scan) {
+            if (event.value("success", false) && (g_devices.bt_devices.empty() || g_devices.select_bt_after_scan)) {
                 const char* advice = _("No iPhone found. Unlock the phone and open Settings > Bluetooth so it "
                                        "advertises, then scan again.");
                 set_text(g_devices.lbl_welcome_bt, advice);
-                set_status_action(advice);
+                if (g_devices.select_bt_after_scan)
+                    set_status_action(advice);
                 g_devices.select_bt_after_scan = false;
                 update_action_bt_scan_controls();
             } else if (!event.value("success", false)) {

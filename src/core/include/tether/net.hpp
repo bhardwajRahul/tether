@@ -105,6 +105,9 @@ namespace tether {
             int client_fd;
             std::string fingerprint;
             std::string device_name;
+            // The device was accepted elsewhere and the dialog killed, so its
+            // non-zero exit is not a refusal.
+            bool superseded = false;
         };
         // keyed by the pipe read-fd we monitor in epoll
         std::map<int, PendingPairDialog> pending_dialogs_;

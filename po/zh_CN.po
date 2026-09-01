@@ -1062,9 +1062,8 @@ msgid "Nearby (Tap to Pair)"
 msgstr "附近（轻点以配对）"
 
 #: src/gtk/devices_view.cpp
-#, fuzzy
 msgid "Partially connected"
-msgstr "未连接"
+msgstr "部分连接"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
@@ -1274,9 +1273,8 @@ msgid "Today"
 msgstr "今天"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Bluetooth connection needed to sync messages."
-msgstr "信息发送前守护进程已关闭连接。\n"
+msgstr "需要蓝牙连接才能同步消息。"
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"

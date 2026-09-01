@@ -2,6 +2,7 @@
 #include <tether/i18n.hpp>
 
 #include <arpa/inet.h>
+#include <csignal>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/file.h>
@@ -1104,6 +1105,7 @@ namespace tether {
                                         event["command"] = "pair_accepted";
                                         event["fingerprint"] = print;
                                         event["device_name"] = target_host;
+                                        event["connected"] = false;
                                         broadcast_local_event(event.dump());
                                     }
                                 }
@@ -1565,10 +1567,10 @@ namespace tether {
             promoted = true;
 
             nlohmann::json connected_event{{"command", "client_connected"},
-                                            {"fingerprint", fingerprint},
-                                            {"device_name", device_name},
-                                            {"address", remote.address},
-                                            {"paired", true}};
+                                           {"fingerprint", fingerprint},
+                                           {"device_name", device_name},
+                                           {"address", remote.address},
+                                           {"paired", true}};
             broadcast_local_event(connected_event.dump());
 
             nlohmann::json response{{"command", "pair_accepted"}};
@@ -1586,10 +1588,12 @@ namespace tether {
         // An external acceptance supersedes any dialog for the same request.
         // Its exit callback observes the promoted session and ignores the stale
         // non-zero result rather than sending pair_rejected to the phone.
-        for (const auto& [read_fd, dialog] : pending_dialogs_) {
+        for (auto& [read_fd, dialog] : pending_dialogs_) {
             (void)read_fd;
-            if (dialog.fingerprint == fingerprint)
-                kill(dialog.pid, SIGTERM);
+            if (dialog.fingerprint != fingerprint)
+                continue;
+            dialog.superseded = true;
+            kill(dialog.pid, SIGTERM);
         }
 
         debug::log(INFO,
@@ -1709,7 +1713,7 @@ namespace tether {
 
             if (exit_code == 0) {
                 accept_device(info.fingerprint, info.device_name);
-            } else if (client_paired_.contains(info.client_fd) && client_paired_[info.client_fd]) {
+            } else if (info.superseded) {
                 debug::log(INFO, "Pairing dialog dismissed after {} was accepted elsewhere", info.device_name);
             } else {
 

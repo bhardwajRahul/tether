@@ -1086,9 +1086,8 @@ msgid "Nearby (Tap to Pair)"
 msgstr "근처 (탭하여 페어링)"
 
 #: src/gtk/devices_view.cpp
-#, fuzzy
 msgid "Partially connected"
-msgstr "연결 안 됨"
+msgstr "부분적으로 연결됨"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
@@ -1300,9 +1299,8 @@ msgid "Today"
 msgstr "오늘"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Bluetooth connection needed to sync messages."
-msgstr "메시지가 전송되기 전에 데몬이 연결을 닫았습니다.\n"
+msgstr "메시지를 동기화하려면 Bluetooth 연결이 필요합니다."
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"

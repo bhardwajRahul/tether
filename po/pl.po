@@ -1122,9 +1122,8 @@ msgid "Nearby (Tap to Pair)"
 msgstr "W pobliżu (dotknij, aby sparować)"
 
 #: src/gtk/devices_view.cpp
-#, fuzzy
 msgid "Partially connected"
-msgstr "nie połączono"
+msgstr "Częściowo połączono"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
@@ -1343,9 +1342,8 @@ msgid "Today"
 msgstr "Dzisiaj"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Bluetooth connection needed to sync messages."
-msgstr "Demon zamknął połączenie, zanim wiadomość została wysłana.\n"
+msgstr "Do synchronizacji wiadomości wymagane jest połączenie Bluetooth."
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"

@@ -1105,9 +1105,8 @@ msgid "Nearby (Tap to Pair)"
 msgstr "I närheten (tryck för att parkoppla)"
 
 #: src/gtk/devices_view.cpp
-#, fuzzy
 msgid "Partially connected"
-msgstr "inte ansluten"
+msgstr "Delvis ansluten"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
@@ -1325,9 +1324,8 @@ msgid "Today"
 msgstr "Idag"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Bluetooth connection needed to sync messages."
-msgstr "Demonen stängde anslutningen innan meddelandet skickades.\n"
+msgstr "En Bluetooth-anslutning krävs för att synkronisera meddelanden."
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"

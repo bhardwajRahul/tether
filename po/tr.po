@@ -1103,9 +1103,8 @@ msgid "Nearby (Tap to Pair)"
 msgstr "Yakında (eşleşmek için dokunun)"
 
 #: src/gtk/devices_view.cpp
-#, fuzzy
 msgid "Partially connected"
-msgstr "bağlı değil"
+msgstr "Kısmen bağlı"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
@@ -1322,9 +1321,8 @@ msgid "Today"
 msgstr "Bugün"
 
 #: src/gtk/messages_view.cpp
-#, fuzzy
 msgid "Bluetooth connection needed to sync messages."
-msgstr "Arka plan hizmeti, mesaj gönderilmeden bağlantıyı kapattı.\n"
+msgstr "Mesajları eşitlemek için Bluetooth bağlantısı gerekli."
 
 #: src/gtk/messages_view.cpp
 msgid "Select a conversation"

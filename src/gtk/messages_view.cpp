@@ -1161,8 +1161,7 @@ namespace tether::ui {
         GtkWidget* placeholder = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
         gtk_widget_set_valign(placeholder, GTK_ALIGN_CENTER);
         gtk_widget_set_halign(placeholder, GTK_ALIGN_CENTER);
-        g_messages.placeholder_icon =
-            gtk_image_new_from_icon_name("mail-unread-symbolic", GTK_ICON_SIZE_DIALOG);
+        g_messages.placeholder_icon = gtk_image_new_from_icon_name("mail-unread-symbolic", GTK_ICON_SIZE_DIALOG);
         gtk_box_pack_start(GTK_BOX(placeholder), g_messages.placeholder_icon, FALSE, FALSE, 0);
         g_messages.placeholder_label = gtk_label_new(_("Select a conversation"));
         gtk_style_context_add_class(gtk_widget_get_style_context(g_messages.placeholder_label), "muted");
