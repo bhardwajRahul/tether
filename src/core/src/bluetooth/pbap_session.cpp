@@ -28,10 +28,7 @@ namespace tether::bluetooth {
         // directory. Falling back to a shared /tmp would leave it readable and its
         // predictable name a symlink target; refuse instead.
         std::filesystem::path staging_file() {
-            const char* runtime = getenv("XDG_RUNTIME_DIR");
-            if (!runtime || !*runtime)
-                return {};
-            return std::filesystem::path(runtime) / ("tether-pbap-" + std::to_string(getpid()) + ".vcf");
+            return obex_staging_path("tether-pbap-" + std::to_string(getpid()) + ".vcf");
         }
 
         std::string read_file(const std::filesystem::path& path) {

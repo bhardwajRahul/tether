@@ -165,13 +165,23 @@ namespace tether::bluetooth {
     bool MapSession::fetch_bmessage(const std::string& message_path, BMessage& out, std::string& err) {
         // Message1.Get writes the bMessage to a file and returns the transfer
         // object plus its properties.
+        static std::atomic<uint64_t> serial{0};
+        const std::filesystem::path target =
+            obex_staging_path("tether-msg-" + std::to_string(getpid()) + "-" + std::to_string(serial++) + ".bmsg");
+        if (target.empty()) {
+            err = "XDG_RUNTIME_DIR is not set, and a message cannot be staged anywhere else.";
+            return false;
+        }
+        std::error_code target_ec;
+        std::filesystem::remove(target, target_ec);
+
         GError* error = nullptr;
         GVariant* reply = g_dbus_connection_call_sync(state_->bus,
                                                       OBEX_NAME,
                                                       message_path.c_str(),
                                                       IFACE_MESSAGE,
                                                       "Get",
-                                                      g_variant_new("(sb)", "", TRUE),
+                                                      g_variant_new("(sb)", target.c_str(), TRUE),
                                                       G_VARIANT_TYPE("(oa{sv})"),
                                                       G_DBUS_CALL_FLAGS_NONE,
                                                       MAP_CALL_TIMEOUT_MS,
@@ -185,17 +195,15 @@ namespace tether::bluetooth {
         g_variant_get(reply, "(&o@a{sv})", &transfer_path, &props);
         const std::string transfer = transfer_path ? transfer_path : "";
         GVariant* filename = props ? g_variant_lookup_value(props, "Filename", G_VARIANT_TYPE_STRING) : nullptr;
-        const std::string path = filename ? g_variant_get_string(filename, nullptr) : "";
+        std::string path = filename ? g_variant_get_string(filename, nullptr) : "";
+        if (path.empty())
+            path = target.string();
         if (filename)
             g_variant_unref(filename);
         if (props)
             g_variant_unref(props);
         g_variant_unref(reply);
 
-        if (path.empty()) {
-            err = "transfer returned no filename";
-            return false;
-        }
         if (transfer.empty()) {
             err = "obexd returned no transfer object";
             return false;
@@ -262,13 +270,12 @@ namespace tether::bluetooth {
         }
 
         static std::atomic<uint64_t> serial{0};
-        const char* runtime = getenv("XDG_RUNTIME_DIR");
-        if (!runtime || !*runtime) {
+        std::filesystem::path source =
+            obex_staging_path("tether-send-" + std::to_string(getpid()) + "-" + std::to_string(serial++) + ".bmsg");
+        if (source.empty()) {
             err = "XDG_RUNTIME_DIR is not set, and a message cannot be staged anywhere else.";
             return false;
         }
-        std::filesystem::path source = std::filesystem::path(runtime) / ("tether-send-" + std::to_string(getpid()) +
-                                                                         "-" + std::to_string(serial++) + ".bmsg");
 
         std::error_code ec;
         {

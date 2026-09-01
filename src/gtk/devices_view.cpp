@@ -25,6 +25,9 @@ namespace tether::ui {
             // false when avahi-daemon is down
             bool mdns_ok = true;
 
+            // false when the compositor withholds data-control (flatpak)
+            bool clipboard_ok = true;
+
             // The Bluetooth route
             std::vector<nlohmann::json> bt_devices;
             nlohmann::json bt_status = nlohmann::json::object();
@@ -569,7 +572,12 @@ namespace tether::ui {
         void update_wifi_indicator() {
             const bool connected = !g_devices.connected_fps.empty();
             if (connected) {
-                set_route_status(Route::WiFi, true, _("Clipboard, files, and OTP are connected."));
+                set_route_status(Route::WiFi,
+                                 true,
+                                 g_devices.clipboard_ok
+                                     ? _("Clipboard, files, and OTP are connected.")
+                                     : _("Files and OTP are connected. This compositor does not give Tether "
+                                         "clipboard access, so clipboard sync is off."));
                 return;
             }
 
@@ -586,6 +594,7 @@ namespace tether::ui {
         void apply_state_snapshot(const nlohmann::json& j) {
 
             g_devices.mdns_ok = j.value("mdns_available", true);
+            g_devices.clipboard_ok = j.value("clipboard_available", true);
             g_devices.connected_fps.clear();
             if (j.contains("connected_clients") && j["connected_clients"].is_array()) {
                 for (auto& c : j["connected_clients"]) {

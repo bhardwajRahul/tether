@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 20:10-0700\n"
+"POT-Creation-Date: 2026-08-31 22:04-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -1032,6 +1032,14 @@ msgstr "无法发送文件夹 —— 请改为拖放文件。"
 #: src/gtk/devices_view.cpp
 msgid "Clipboard, files, and OTP are connected."
 msgstr "剪贴板、文件和 OTP 已连接。"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Files and OTP are connected. This compositor does not give Tether clipboard "
+"access, so clipboard sync is off."
+msgstr ""
+"文件和 OTP 已连接。此合成器不向 Tether 提供剪贴板访问权限，因此剪贴板同步已关"
+"闭。"
 
 #: src/gtk/devices_view.cpp
 msgid ""

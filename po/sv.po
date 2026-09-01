@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 20:10-0700\n"
+"POT-Creation-Date: 2026-08-31 22:04-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Swedish\n"
@@ -1075,6 +1075,14 @@ msgstr "Mappar kan inte skickas — släpp filer i stället."
 #: src/gtk/devices_view.cpp
 msgid "Clipboard, files, and OTP are connected."
 msgstr "Urklipp, filer och OTP är anslutna."
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Files and OTP are connected. This compositor does not give Tether clipboard "
+"access, so clipboard sync is off."
+msgstr ""
+"Filer och OTP är anslutna. Den här kompositorn ger inte Tether åtkomst till "
+"urklipp, så urklippssynkronisering är av."
 
 #: src/gtk/devices_view.cpp
 msgid ""

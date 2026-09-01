@@ -48,3 +48,23 @@ TEST(ExtensionHost, WritesManifestsOnlyWhereTheBrowserIs) {
 
     fs::remove_all(home);
 }
+
+// Inside a Flatpak the manifests have to go in the real home, not the app's
+// private one, or no browser on the host ever reads them.
+TEST(ExtensionHost, WritesOutsideTheFlatpakPrivateHome) {
+    const fs::path real = fs::temp_directory_path() / "tether-extension-host-flatpak";
+    fs::remove_all(real);
+    fs::create_directories(real / ".mozilla");
+
+    const fs::path sandboxed = real / ".var/app/com.tether.desktop";
+    fs::create_directories(sandboxed);
+
+    const auto result = tether::install_extension_host(sandboxed);
+    ASSERT_TRUE(result.errors.empty()) << result.errors.front();
+
+    EXPECT_TRUE(fs::exists(real / ".mozilla/native-messaging-hosts/com.tether.extension.json"));
+    EXPECT_FALSE(fs::exists(sandboxed / ".mozilla"));
+    EXPECT_EQ(result.wrapper, (real / ".local/bin/tether-native-host").string());
+
+    fs::remove_all(real);
+}

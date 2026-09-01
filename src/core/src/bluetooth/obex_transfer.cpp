@@ -1,4 +1,5 @@
 #include "tether/bluetooth/obex_transfer.hpp"
+#include "tether/net.hpp"
 
 #include <chrono>
 #include <thread>
@@ -68,6 +69,14 @@ namespace tether::bluetooth {
             std::this_thread::sleep_for(std::chrono::milliseconds(POLL_INTERVAL_MS));
         }
         return state;
+    }
+
+    std::filesystem::path obex_staging_path(const std::string& name) {
+        try {
+            return std::filesystem::path(get_runtime_dir()) / name;
+        } catch (const std::exception&) {
+            return {};
+        }
     }
 
 } // namespace tether::bluetooth

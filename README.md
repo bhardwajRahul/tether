@@ -78,6 +78,12 @@ The extension communicates with `tetherd` via native messaging. This allows user
 ### Mail Extension
 - Thunderbird: [Tether Mail Extension](https://addons.thunderbird.net/en-US/thunderbird/addon/tether-mail-extension/)
 
+### Arch Linux
+
+```bash
+yay -S tether
+```
+
 ### AppImage
 
 One file, no install, for distros without a package and for immutable systems.
@@ -91,14 +97,22 @@ chmod +x tether-*-x86_64.AppImage
 ./tether-*-x86_64.AppImage --install-extension-host     # if you use the browser or mail extension
 ```
 
-Requires glibc 2.38 and libstdc++ from GCC 13 (Fedora 39+, Ubuntu 23.10+, Debian 13+, Arch, not Debian 12).
-`--install-extension-host` writes the native messaging manifests into your browser and mail client directories
+Requires glibc 2.38 and libstdc++ from GCC 13 (Fedora 39+, Ubuntu 23.10+, Debian 13+, Arch).
 
-### Arch Linux
+### Flatpak
+
+Download `tether-<version>.flatpak` from the
+[releases page](https://github.com/zackb/tether/releases) if you're into that, then:
 
 ```bash
-yay -S tether
+flatpak install ./tether-*.flatpak
+flatpak run com.tether.desktop                                          # the GTK app
+flatpak run --command=tether com.tether.desktop --bt-setup              # the CLI
+flatpak run --command=tether com.tether.desktop --install-extension-host
 ```
+
+Clipboard sync will most likely not work as it is a privileged protocol (`data-control`).
+Use the AppImage instead if you want clipboard sync.
 
 ### Nix
 

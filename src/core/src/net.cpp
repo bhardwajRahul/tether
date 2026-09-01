@@ -585,6 +585,7 @@ namespace tether {
         }
 
         snapshot["mdns_available"] = g_mdns_available.load();
+        snapshot["clipboard_available"] = g_wayland && g_wayland->clipboard_available();
 
         return snapshot;
     }

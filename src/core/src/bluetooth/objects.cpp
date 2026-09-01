@@ -274,31 +274,45 @@ namespace tether::bluetooth {
 
     namespace {
 
-        // Arch = /usr/lib, Debian and Fedora = /usr/libexec.
+        // Arch = /usr/lib, Debian and Fedora = /usr/libexec. Empty when neither is
+        // visible (sandbox): its /usr is the runtime's.
         std::string bluetoothd_path() {
             for (const char* candidate : {"/usr/lib/bluetooth/bluetoothd", "/usr/libexec/bluetooth/bluetoothd"}) {
                 std::error_code ec;
                 if (std::filesystem::exists(candidate, ec))
                     return candidate;
             }
-            return "/usr/lib/bluetooth/bluetoothd";
+            return {};
+        }
+
+        // Are we flatpak sandboxed?
+        bool sandboxed() {
+            std::error_code ec;
+            return std::filesystem::exists("/.flatpak-info", ec);
         }
 
         // The package ships the drop-in for the user to copy.
         std::string enable_experimental_command() {
             const std::string shipped = std::string(TETHER_DATADIR) + "/bluetooth-experimental.conf";
             std::error_code ec;
-            if (std::filesystem::exists(shipped, ec))
+            if (!sandboxed() && std::filesystem::exists(shipped, ec))
                 return "sudo mkdir -p /etc/systemd/system/bluetooth.service.d\n"
                        "sudo cp " +
                        shipped +
                        " /etc/systemd/system/bluetooth.service.d/\n"
                        "sudo systemctl daemon-reload && sudo systemctl restart bluetooth";
 
+            const std::string found = bluetoothd_path();
+            const std::string binary = found.empty()
+                                           ? "$(ls /usr/lib/bluetooth/bluetoothd /usr/libexec/bluetooth/bluetoothd "
+                                             "2>/dev/null | head -1)"
+                                           : found;
+
             return "sudo mkdir -p /etc/systemd/system/bluetooth.service.d\n"
-                   "printf '[Service]\\nExecStart=\\nExecStart=" +
-                   bluetoothd_path() +
-                   " --experimental\\n' \\\n"
+                   "printf '[Service]\\nExecStart=\\nExecStart=%s --experimental\\n' \\\n"
+                   "  \"" +
+                   binary +
+                   "\" \\\n"
                    "  | sudo tee /etc/systemd/system/bluetooth.service.d/experimental.conf\n"
                    "sudo systemctl daemon-reload && sudo systemctl restart bluetooth";
         }

@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <string_view>
 
 namespace tether {
 
@@ -39,15 +40,38 @@ namespace tether {
              true},
         };
 
-        // AppImage's binaries live on a mount that dies with the process, so the wrapper has to name the AppImage file
-        // itself.
-        std::string self_command() {
+        // In flatpak $HOME is the app's own private directory, but the
+        // browsers that have to read these manifests live outside it.
+        fs::path host_home(const fs::path& home) {
+            static constexpr std::string_view MARKER = "/.var/app/";
+            const std::string text = home.string();
+            const auto at = text.find(MARKER);
+            return at == std::string::npos ? home : fs::path(text.substr(0, at));
+        }
+
+        // The application id flatpak uses in the running sandbox.
+        std::string flatpak_app_id() {
+            std::ifstream in("/.flatpak-info");
+            if (!in.is_open())
+                return {};
+            for (std::string line; std::getline(in, line);) {
+                if (line.rfind("name=", 0) == 0)
+                    return line.substr(5);
+            }
+            return {};
+        }
+
+        // The shell frag the wrapper execs, quoted.
+        std::string launch_command() {
             if (const char* appimage = std::getenv("APPIMAGE"); appimage && *appimage)
-                return appimage;
+                return "\"" + std::string(appimage) + "\"";
+
+            if (const std::string app_id = flatpak_app_id(); !app_id.empty())
+                return "flatpak run --command=tether " + app_id;
 
             std::error_code ec;
             const fs::path self = fs::read_symlink("/proc/self/exe", ec);
-            return ec ? "tether" : self.string();
+            return "\"" + (ec ? std::string("tether") : self.string()) + "\"";
         }
 
         bool write_file(const fs::path& path, const std::string& content, std::string& err) {
@@ -57,6 +81,9 @@ namespace tether {
                 err = path.parent_path().string() + ": " + ec.message();
                 return false;
             }
+
+            if (fs::is_symlink(path, ec))
+                fs::remove(path, ec);
 
             std::ofstream out(path, std::ios::trunc);
             if (!out.is_open()) {
@@ -87,15 +114,16 @@ namespace tether {
 
     } // namespace
 
-    ExtensionHostInstall install_extension_host(const fs::path& home) {
+    ExtensionHostInstall install_extension_host(const fs::path& requested_home) {
         ExtensionHostInstall result;
+        const fs::path home = host_home(requested_home);
 
         const fs::path wrapper = home / ".local/bin/tether-native-host";
         result.wrapper = wrapper.string();
 
         const std::string script = "#!/bin/sh\n"
-                                   "exec \"" +
-                                   self_command() + "\" --native-host 2>> /tmp/tether-native.log\n";
+                                   "exec " +
+                                   launch_command() + " --native-host 2>> /tmp/tether-native.log\n";
 
         std::string err;
         if (!write_file(wrapper, script, err)) {
