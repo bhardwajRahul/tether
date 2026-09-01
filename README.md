@@ -91,7 +91,7 @@ chmod +x tether-*-x86_64.AppImage
 ./tether-*-x86_64.AppImage --install-extension-host     # if you use the browser or mail extension
 ```
 
-Requires glibc 2.39 or newer (Fedora 40+, Ubuntu 24.04+, Arch, not Debian 12).
+Requires glibc 2.38 and libstdc++ from GCC 13 (Fedora 39+, Ubuntu 23.10+, Debian 13+, Arch, not Debian 12).
 `--install-extension-host` writes the native messaging manifests into your browser and mail client directories
 
 ### Arch Linux

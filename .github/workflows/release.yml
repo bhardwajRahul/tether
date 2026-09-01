@@ -83,7 +83,7 @@ jobs:
       - name: dependencies
         run: |
           ./scripts/ci-deps.sh
-          apt-get install -y --no-install-recommends bluez patchelf librsvg2-common desktop-file-utils
+          apt-get install -y --no-install-recommends bluez patchelf librsvg2-common desktop-file-utils dpkg-dev
 
       - name: build
         run: ./packaging/appimage/build.sh
