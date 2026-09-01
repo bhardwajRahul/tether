@@ -136,7 +136,13 @@ namespace tether::bluetooth {
     // setting read by BluezMonitor. Keeping the external btmgmt probe out of
     // this function makes capability resolution deterministic and prevents a
     // stalled controller query from blocking unrelated callers.
-    Capability resolve_capability(const BluezObjects& objects, std::optional<bool> secure_connections = std::nullopt);
+    // The adapter tether uses: by `id` ("hciN" or an address),
+    // Null only when there is no adapter at all.
+    const Adapter* preferred_adapter(const BluezObjects& objects, const std::string& id = {});
+
+    Capability resolve_capability(const BluezObjects& objects,
+                                  std::optional<bool> secure_connections = std::nullopt,
+                                  const std::string& preferred_id = {});
 
     nlohmann::json to_json(const Adapter& adapter);
     nlohmann::json to_json(const Device& device);

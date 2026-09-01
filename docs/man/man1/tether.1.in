@@ -103,6 +103,11 @@ Turn notification mirroring on or off.
 \fB\-\-bt-ancs-content\fR \fIon\fR|\fIoff\fR
 Mirror notification titles and bodies, not just the app.
 .TP
+\fB\-\-bt-adapter\fR \fIhciN\fR|\fIauto\fR
+Choose which Bluetooth controller to use, by \fIhciN\fR or by address. Defaults to
+\fIauto\fR, the first powered controller, which is the wrong one on a machine with
+more than one. \fB\-\-bt-status\fR marks the controller in use.
+.TP
 \fB\-\-bt-diagnostics\fR
 Print a redacted Bluetooth report for a bug report.
 .SH EXAMPLES

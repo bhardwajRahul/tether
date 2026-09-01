@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 22:04-0700\n"
+"POT-Creation-Date: 2026-09-01 13:57-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Spanish\n"
@@ -135,6 +135,10 @@ msgstr "Activar o desactivar la duplicación de notificaciones."
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "Duplicar títulos y contenido de las notificaciones, no solo la app."
+
+#: src/cli/main.cpp
+msgid "Choose which Bluetooth controller to use."
+msgstr "Elige qué adaptador Bluetooth usar."
 
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
@@ -276,6 +280,18 @@ msgstr "Secure Connections={}"
 msgid "Bond"
 msgstr "Vínculo"
 
+#: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
+msgid "Notifications"
+msgstr "Notificaciones"
+
+#: src/cli/main.cpp
+msgid "mirroring on"
+msgstr "duplicación activada"
+
+#: src/cli/main.cpp
+msgid "mirroring off (tether --bt-ancs on)"
+msgstr "duplicación desactivada (tether --bt-ancs on)"
+
 #: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
 #: src/gtk/tether-gtk.desktop.in
 msgid "Tether"
@@ -288,6 +304,15 @@ msgstr "conectando"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "desactivado (--bt-enable on)"
+
+#: src/cli/main.cpp
+msgid "in use"
+msgstr "en uso"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Controller {} is not present; using the first powered one instead."
+msgstr "El adaptador {} no está presente; se usa el primero encendido."
 
 #: src/cli/main.cpp
 #, c-format
@@ -369,10 +394,6 @@ msgstr "Mensajes (MAP)"
 #: src/cli/main.cpp
 msgid "Contacts (PBAP)"
 msgstr "Contactos (PBAP)"
-
-#: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
-msgid "Notifications"
-msgstr "Notificaciones"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
@@ -536,6 +557,25 @@ msgstr "Duplicación de notificaciones activada."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "Duplicación de notificaciones desactivada."
+
+#: src/cli/main.cpp
+msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
+msgstr "Se esperaba un adaptador, p. ej. --bt-adapter hci1, o --bt-adapter auto\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "No Bluetooth controller matches '{}'. Available:\n"
+msgstr "Ningún adaptador Bluetooth coincide con «{}». Disponibles:\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Controller selection is automatic: the first powered one.\n"
+msgstr "La selección de adaptador es automática: el primero encendido.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Using controller {}."
+msgstr "Usando el adaptador {}."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -1463,6 +1503,10 @@ msgstr "Sincronización de dispositivos"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Empareje dispositivos y sincronice el portapapeles a través de la red"
+
+#, fuzzy
+#~ msgid "on"
+#~ msgstr "Vínculo"
 
 #~ msgid ""
 #~ "tether - Wayland companion CLI\n"

@@ -8,6 +8,7 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
+#include <strings.h>
 #include <sys/ioctl.h>
 #include <tether/client.hpp>
 #include <tether/core.hpp>
@@ -200,6 +201,7 @@ static const Opt kOptions[] = {
     {"--bt-enable <on|off>", N_("Connect to the iPhone over Bluetooth, or stop.")},
     {"--bt-ancs <on|off>", N_("Turn notification mirroring on or off.")},
     {"--bt-ancs-content <on|off>", N_("Mirror notification titles and bodies, not just the app.")},
+    {"--bt-adapter <hciN|auto>", N_("Choose which Bluetooth controller to use.")},
     {"--bt-notifications", N_("List mirrored iPhone notifications.")},
     {"--bt-diagnostics", N_("Print a redacted Bluetooth report for a bug report.")},
     {"--install-extension-host",
@@ -305,6 +307,23 @@ static int print_bt_setup(tether::Client& client) {
     return 0;
 }
 
+// /org/bluez/hci0 -> hci0
+static std::string adapter_id(const std::string& path) {
+    const auto slash = path.find_last_of('/');
+    return slash == std::string::npos ? path : path.substr(slash + 1);
+}
+
+// Accepts either spelling: hciN or the address.
+static bool adapter_known(const nlohmann::json& status, const std::string& id) {
+    for (const auto& adapter : status.value("adapters", nlohmann::json::array())) {
+        const std::string path = adapter.value("path", "");
+        const std::string address = adapter.value("address", "");
+        if (strcasecmp(adapter_id(path).c_str(), id.c_str()) == 0 || strcasecmp(address.c_str(), id.c_str()) == 0)
+            return true;
+    }
+    return false;
+}
+
 static int print_bt_status(tether::Client& client) {
     nlohmann::json resp;
     try {
@@ -327,23 +346,44 @@ static int print_bt_status(tether::Client& client) {
     const std::string secure = cap.contains("secure_connections") && cap["secure_connections"].is_boolean()
                                    ? (cap["secure_connections"].get<bool>() ? "on" : "OFF")
                                    : _("unknown");
+    const std::string in_use = cap.value("adapter_id", "");
     fields.emplace_back(_("Adapter"),
-                        tether::tr_format(_("powered={0} central={1} peripheral={2} advertising={3} class={4}"),
-                                          yn(cap.value("powered", false)),
-                                          yn(cap.value("le_central", false)),
-                                          yn(cap.value("le_peripheral", false)),
-                                          yn(cap.value("advertising", false)),
-                                          cap.value("class_ok", false) ? _("ok") : _("wrong")) +
+                        (in_use.empty() ? std::string{} : in_use + "  ") +
+                            tether::tr_format(_("powered={0} central={1} peripheral={2} advertising={3} class={4}"),
+                                              yn(cap.value("powered", false)),
+                                              yn(cap.value("le_central", false)),
+                                              yn(cap.value("le_peripheral", false)),
+                                              yn(cap.value("advertising", false)),
+                                              cap.value("class_ok", false) ? _("ok") : _("wrong")) +
                             "\n" + tether::tr_format(_("secure-connections={}"), secure));
 
     if (cap.value("bonded_device_present", false))
         fields.emplace_back(_("Bond"), cap.value("bond_has_le", false) ? "BR/EDR + LE" : "BR/EDR only");
+    // Mirroring off is otherwise invisible here, and it takes the ANCS
+    // solicitation off air, so the iPhone never offers notification access.
+    fields.emplace_back(_("Notifications"),
+                        resp.value("ancs_enabled", true) ? _("mirroring on")
+                                                         : _("mirroring off (tether --bt-ancs on)"));
     fields.emplace_back(_("Tether"), resp.value("enabled", true) ? _("connecting") : _("off (--bt-enable on)"));
     print_fields(fields);
 
     for (const auto& adapter : resp["adapters"]) {
-        fprintf(stdout, "  %s  %s\n", adapter.value("address", "").c_str(), adapter.value("name", "").c_str());
+        const std::string id = adapter_id(adapter.value("path", ""));
+        const std::string marker = id == in_use ? std::string("  <- ") + _("in use") : std::string{};
+        fprintf(stdout,
+                "  %-5s  %s  %s%s\n",
+                id.c_str(),
+                adapter.value("address", "").c_str(),
+                adapter.value("name", "").c_str(),
+                marker.c_str());
     }
+
+    const std::string pinned = resp.value("adapter", "");
+    if (!pinned.empty() && !adapter_known(resp, pinned))
+        fprintf(
+            stdout,
+            "\n  %s\n",
+            tether::tr_format(_("Controller {} is not present; using the first powered one instead."), pinned).c_str());
 
     if (cap.contains("reasons") && !cap["reasons"].empty()) {
         fprintf(stdout, "\n");
@@ -761,6 +801,10 @@ int main(int argc, char* argv[]) {
             action = "bt_ancs_content";
             if (i + 1 < argc && argv[i + 1][0] != '-')
                 arg_val = argv[++i];
+        } else if (arg == "--bt-adapter") {
+            action = "bt_adapter";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
         } else if (arg == "--bt-notifications") {
             action = "bt_notifications";
         } else if (arg == "--bt-pair") {
@@ -978,6 +1022,43 @@ int main(int argc, char* argv[]) {
                 "%s\n",
                 content ? (on ? _("Notification contents enabled.") : _("Notification contents disabled."))
                         : (on ? _("Notification mirroring enabled.") : _("Notification mirroring disabled.")));
+    } else if (action == "bt_adapter") {
+        if (arg_val.empty()) {
+            debug::log(ERR, _("Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"));
+            return 1;
+        }
+        const bool automatic = arg_val == "auto";
+
+        nlohmann::json status;
+        try {
+            status = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_status\"}\n"));
+        } catch (const std::exception&) {
+            debug::log(ERR, _("Could not read Bluetooth status from the daemon.\n"));
+            return 1;
+        }
+
+        if (!automatic && !adapter_known(status, arg_val)) {
+            debug::log(ERR, _("No Bluetooth controller matches '{}'. Available:\n"), arg_val);
+            for (const auto& adapter : status.value("adapters", nlohmann::json::array()))
+                fprintf(stderr,
+                        "  %s  %s  %s\n",
+                        adapter_id(adapter.value("path", "")).c_str(),
+                        adapter.value("address", "").c_str(),
+                        adapter.value("name", "").c_str());
+            return 1;
+        }
+
+        nlohmann::json request;
+        request["command"] = "bt_set_adapter";
+        request["adapter"] = automatic ? "" : arg_val;
+        if (!client.send(request.dump() + "\n")) {
+            debug::log(ERR, _("Could not reach the daemon.\n"));
+            return 1;
+        }
+        if (automatic)
+            fprintf(stdout, _("Controller selection is automatic: the first powered one.\n"));
+        else
+            fprintf(stdout, "%s\n", tether::tr_format(_("Using controller {}."), arg_val).c_str());
     }
 
     return 0;

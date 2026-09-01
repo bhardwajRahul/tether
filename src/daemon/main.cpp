@@ -218,6 +218,9 @@ int main(int argc, char** argv) {
                              repliable ? message.thread_key : std::string{},
                              otp});
         });
+
+    // Pick the controller before the first capability, a second adapter never comes up bound to the wrong one.
+    bluez.set_preferred_adapter(tether::bluetooth::load_config().adapter);
     if (bluez.start()) {
         tether::bluetooth::g_bluez = &bluez;
         loop.addFd(bluez.event_fd(), [&bluez](int) {

@@ -172,14 +172,21 @@ namespace tether::bluetooth {
             return value;
         }
 
+        // The controller every transaction runs on: the configured one, or else first powered. Empty when BlueZ reports
+        // no adapter at all.
+        std::string adapter_path(BluezMonitor& monitor) {
+            auto objects = monitor.snapshot();
+            const Adapter* adapter = preferred_adapter(objects, monitor.preferred_adapter_id());
+            return adapter ? adapter->path : std::string{};
+        }
+
         // Scans until the device shows up. Needed because an unpair makes BlueZ
         // forget the device entirely, which would otherwise leave no way to pair
         // again from inside the app.
         bool discover(BluezMonitor& monitor, GDBusConnection* conn, const std::string& address, Device& out) {
-            auto objects = monitor.snapshot();
-            if (objects.adapters.empty())
+            const std::string adapter = adapter_path(monitor);
+            if (adapter.empty())
                 return false;
-            const std::string adapter = objects.adapters.front().path;
 
             if (!call_adapter(conn, adapter, "StartDiscovery"))
                 return false;
@@ -268,8 +275,7 @@ namespace tether::bluetooth {
         std::string adapter_for(BluezMonitor& monitor, const Device& device) {
             if (!device.adapter_path.empty())
                 return device.adapter_path;
-            auto objects = monitor.snapshot();
-            return objects.adapters.empty() ? std::string{} : objects.adapters.front().path;
+            return adapter_path(monitor);
         }
 
         std::mutex g_advert_mutex;
@@ -386,9 +392,7 @@ namespace tether::bluetooth {
         // free instances while one of our own adverts is registered, which is
         // precisely the state a user retrying this is likely to be in. Try, and
         // report what BlueZ actually says.
-        auto objects = monitor.snapshot();
-        const std::string adapter = objects.adapters.empty() ? std::string{} : objects.adapters.front().path;
-        if (!start_advert(monitor, adapter, err))
+        if (!start_advert(monitor, adapter_path(monitor), err))
             return false;
         hold_advert_for(ANCS_ADVERT_TIMEOUT_SECONDS);
         return true;
@@ -402,9 +406,7 @@ namespace tether::bluetooth {
                 err = "Bluetooth is unavailable.";
                 return false;
             }
-            auto objects = monitor.snapshot();
-            const std::string adapter = objects.adapters.empty() ? std::string{} : objects.adapters.front().path;
-            return start_advert(monitor, adapter, err);
+            return start_advert(monitor, adapter_path(monitor), err);
         }
     } // namespace
 
@@ -558,10 +560,7 @@ namespace tether::bluetooth {
         }
 
         AdvertOwnership advert_owned;
-        PairableWindow pairable(conn, [&] {
-            auto objects = monitor.snapshot();
-            return objects.adapters.empty() ? std::string{} : objects.adapters.front().path;
-        }());
+        PairableWindow pairable(conn, adapter_path(monitor));
 
         Device device;
         if (!lookup(monitor, result.device_address, device)) {
@@ -786,12 +785,11 @@ namespace tether::bluetooth {
             return false;
         }
 
-        auto objects = monitor.snapshot();
-        if (objects.adapters.empty()) {
+        const std::string adapter = adapter_path(monitor);
+        if (adapter.empty()) {
             err = "No Bluetooth adapter is present.";
             return false;
         }
-        const std::string adapter = objects.adapters.front().path;
 
         // InProgress means BlueZ believes a discovery is already running.
         std::string start_err;

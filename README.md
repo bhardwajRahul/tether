@@ -239,6 +239,12 @@ make install
    Bluetooth outside of Tether, so running them is your call. The same steps
    appear in the GTK app's Devices page, with a "Copy commands" button.
 
+   *If* you have more than one Bluetooth controller, pick the one to use. Default is the first powered one.
+
+   ```bash
+   tether --bt-adapter hci1     # or the controller's address, or "auto"
+   ```
+
    Then pair. In the GTK app, pick your iPhone under BLUETOOTH on the Devices
    page and press "Pair over Bluetooth". Confirm the code on both the iPhone and
    Linux.

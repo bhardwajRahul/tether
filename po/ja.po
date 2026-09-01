@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 22:04-0700\n"
+"POT-Creation-Date: 2026-09-01 13:57-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -134,6 +134,10 @@ msgstr "通知のミラーリングをオンまたはオフにします。"
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "アプリ名だけでなく、通知のタイトルと本文もミラーリングします。"
+
+#: src/cli/main.cpp
+msgid "Choose which Bluetooth controller to use."
+msgstr "使用する Bluetooth アダプタを選択します。"
 
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
@@ -270,6 +274,18 @@ msgstr "Secure Connections={}"
 msgid "Bond"
 msgstr "ボンド"
 
+#: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
+msgid "Notifications"
+msgstr "通知"
+
+#: src/cli/main.cpp
+msgid "mirroring on"
+msgstr "ミラーリング有効"
+
+#: src/cli/main.cpp
+msgid "mirroring off (tether --bt-ancs on)"
+msgstr "ミラーリング無効 (tether --bt-ancs on)"
+
 #: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
 #: src/gtk/tether-gtk.desktop.in
 msgid "Tether"
@@ -282,6 +298,15 @@ msgstr "接続中"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "オフ (--bt-enable on)"
+
+#: src/cli/main.cpp
+msgid "in use"
+msgstr "使用中"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Controller {} is not present; using the first powered one instead."
+msgstr "アダプタ {} がありません。電源の入っている最初のアダプタを使用します。"
 
 #: src/cli/main.cpp
 #, c-format
@@ -359,10 +384,6 @@ msgstr "メッセージ (MAP)"
 #: src/cli/main.cpp
 msgid "Contacts (PBAP)"
 msgstr "連絡先 (PBAP)"
-
-#: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
-msgid "Notifications"
-msgstr "通知"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
@@ -518,6 +539,25 @@ msgstr "通知のミラーリングを有効にしました。"
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "通知のミラーリングを無効にしました。"
+
+#: src/cli/main.cpp
+msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
+msgstr "アダプタを指定してください。例: --bt-adapter hci1 または --bt-adapter auto\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "No Bluetooth controller matches '{}'. Available:\n"
+msgstr "「{}」に一致する Bluetooth アダプタがありません。利用可能:\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Controller selection is automatic: the first powered one.\n"
+msgstr "アダプタの選択は自動です。電源の入っている最初のアダプタを使用します。\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Using controller {}."
+msgstr "アダプタ {} を使用します。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -1427,3 +1467,7 @@ msgstr "デバイスの同期"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "デバイスをペアリングし、ネットワーク越しにクリップボードを同期します"
+
+#, fuzzy
+#~ msgid "on"
+#~ msgstr "ボンド"

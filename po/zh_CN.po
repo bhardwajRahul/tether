@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 22:04-0700\n"
+"POT-Creation-Date: 2026-09-01 13:57-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -131,6 +131,10 @@ msgstr "开启或关闭通知镜像。"
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "镜像通知的标题和正文，而不只是所属 App。"
+
+#: src/cli/main.cpp
+msgid "Choose which Bluetooth controller to use."
+msgstr "选择要使用的蓝牙适配器。"
 
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
@@ -265,6 +269,18 @@ msgstr "Secure Connections={}"
 msgid "Bond"
 msgstr "绑定"
 
+#: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
+msgid "Notifications"
+msgstr "通知"
+
+#: src/cli/main.cpp
+msgid "mirroring on"
+msgstr "镜像已启用"
+
+#: src/cli/main.cpp
+msgid "mirroring off (tether --bt-ancs on)"
+msgstr "镜像已停用 (tether --bt-ancs on)"
+
 #: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
 #: src/gtk/tether-gtk.desktop.in
 msgid "Tether"
@@ -277,6 +293,15 @@ msgstr "正在连接"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "已关闭（--bt-enable on）"
+
+#: src/cli/main.cpp
+msgid "in use"
+msgstr "使用中"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Controller {} is not present; using the first powered one instead."
+msgstr "适配器 {} 不存在；改用第一个已开启的适配器。"
 
 #: src/cli/main.cpp
 #, c-format
@@ -354,10 +379,6 @@ msgstr "信息（MAP）"
 #: src/cli/main.cpp
 msgid "Contacts (PBAP)"
 msgstr "通讯录（PBAP）"
-
-#: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
-msgid "Notifications"
-msgstr "通知"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
@@ -511,6 +532,25 @@ msgstr "通知镜像已启用。"
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "通知镜像已停用。"
+
+#: src/cli/main.cpp
+msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
+msgstr "需要指定适配器，例如 --bt-adapter hci1 或 --bt-adapter auto\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "No Bluetooth controller matches '{}'. Available:\n"
+msgstr "没有与“{}”匹配的蓝牙适配器。可用：\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Controller selection is automatic: the first powered one.\n"
+msgstr "适配器选择为自动：第一个已开启的适配器。\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Using controller {}."
+msgstr "正在使用适配器 {}。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -1387,3 +1427,7 @@ msgstr "设备同步"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "配对设备并通过网络同步剪贴板"
+
+#, fuzzy
+#~ msgid "on"
+#~ msgstr "绑定"

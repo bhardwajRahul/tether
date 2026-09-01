@@ -48,6 +48,7 @@ namespace tether::bluetooth {
         mutable std::mutex mutex;
         BluezObjects objects;
         Capability cap;
+        std::string preferred_adapter_id;
         std::string secure_adapter;
         std::optional<bool> secure_connections;
         std::chrono::steady_clock::time_point secure_checked_at{};
@@ -292,8 +293,13 @@ namespace tether::bluetooth {
         BluezObjects parsed = parse_managed_objects(reply);
         g_variant_unref(reply);
         parsed.experimental_api = bluetoothd_has_experimental();
-        Capability resolved = resolve_capability(parsed);
-        resolved = resolve_capability(parsed, read_secure_connections(resolved.adapter_id));
+        std::string preferred;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            preferred = preferred_adapter_id;
+        }
+        Capability resolved = resolve_capability(parsed, std::nullopt, preferred);
+        resolved = resolve_capability(parsed, read_secure_connections(resolved.adapter_id), preferred);
 
         {
             std::lock_guard<std::mutex> lock(mutex);
@@ -483,6 +489,23 @@ namespace tether::bluetooth {
     Capability BluezMonitor::capability() const {
         std::lock_guard<std::mutex> lock(impl_->mutex);
         return impl_->cap;
+    }
+
+    void BluezMonitor::set_preferred_adapter(std::string id) {
+        {
+            std::lock_guard<std::mutex> lock(impl_->mutex);
+            if (impl_->preferred_adapter_id == id)
+                return;
+            impl_->preferred_adapter_id = std::move(id);
+        }
+
+        if (impl_->running)
+            invoke_sync([this] { impl_->refresh(); });
+    }
+
+    std::string BluezMonitor::preferred_adapter_id() const {
+        std::lock_guard<std::mutex> lock(impl_->mutex);
+        return impl_->preferred_adapter_id;
     }
 
 } // namespace tether::bluetooth

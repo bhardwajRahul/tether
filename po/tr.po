@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 22:04-0700\n"
+"POT-Creation-Date: 2026-09-01 13:57-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Turkish\n"
@@ -134,6 +134,10 @@ msgstr "Bildirim yansıtmayı aç ya da kapat."
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr ""
 "Yalnızca uygulamayı değil, bildirimlerin başlığını ve metnini de yansıt."
+
+#: src/cli/main.cpp
+msgid "Choose which Bluetooth controller to use."
+msgstr "Hangi Bluetooth bağdaştırıcısının kullanılacağını seçer."
 
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
@@ -273,6 +277,18 @@ msgstr "Secure Connections={}"
 msgid "Bond"
 msgstr "Bağ"
 
+#: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
+msgid "Notifications"
+msgstr "Bildirimler"
+
+#: src/cli/main.cpp
+msgid "mirroring on"
+msgstr "yansıtma açık"
+
+#: src/cli/main.cpp
+msgid "mirroring off (tether --bt-ancs on)"
+msgstr "yansıtma kapalı (tether --bt-ancs on)"
+
 #: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
 #: src/gtk/tether-gtk.desktop.in
 msgid "Tether"
@@ -285,6 +301,15 @@ msgstr "bağlanıyor"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "kapalı (--bt-enable on)"
+
+#: src/cli/main.cpp
+msgid "in use"
+msgstr "kullanımda"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Controller {} is not present; using the first powered one instead."
+msgstr "{} bağdaştırıcısı yok; bunun yerine açık olan ilk bağdaştırıcı kullanılıyor."
 
 #: src/cli/main.cpp
 #, c-format
@@ -365,10 +390,6 @@ msgstr "Mesajlar (MAP)"
 #: src/cli/main.cpp
 msgid "Contacts (PBAP)"
 msgstr "Kişiler (PBAP)"
-
-#: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
-msgid "Notifications"
-msgstr "Bildirimler"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
@@ -529,6 +550,25 @@ msgstr "Bildirim yansıtma etkinleştirildi."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "Bildirim yansıtma devre dışı bırakıldı."
+
+#: src/cli/main.cpp
+msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
+msgstr "Bir bağdaştırıcı bekleniyordu, ör. --bt-adapter hci1 veya --bt-adapter auto\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "No Bluetooth controller matches '{}'. Available:\n"
+msgstr "'{}' ile eşleşen Bluetooth bağdaştırıcısı yok. Kullanılabilir:\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Controller selection is automatic: the first powered one.\n"
+msgstr "Bağdaştırıcı seçimi otomatik: açık olan ilk bağdaştırıcı.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Using controller {}."
+msgstr "{} bağdaştırıcısı kullanılıyor."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -1436,3 +1476,7 @@ msgstr "Aygıt eşzamanlaması"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Aygıtları eşleştirin ve panoyu ağ üzerinden eşzamanlayın"
+
+#, fuzzy
+#~ msgid "on"
+#~ msgstr "Bağ"

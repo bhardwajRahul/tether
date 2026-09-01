@@ -187,6 +187,8 @@ checks the daemon does not make.
 | The status says the iPhone is not answering on LE, and its permission is on | The phone's Bluetooth stack is wedged, which the granted permission does not prevent | Turn Bluetooth off and back on **on the iPhone**. Re-pairing and re-toggling the permission do not clear this |
 | Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
 | A group conversation cannot be replied to | Working as designed until the route is unambiguous | The thread's `reply_reason` says which condition failed |
+| The iPhone never offers the "Show Notifications" toggle, and messages and contacts work | Fixed. A BR/EDR-only bond used to latch notification mirroring off in the config, which takes the ANCS solicitation off air -- so the phone is never asked for the service | Nothing. On an older build, `tether --bt-ancs on` then `tether --bt-solicit`; `tether --bt-status` now shows mirroring under `Notifications:` -- see 2026-09-01 |
+| Pairing bonds but the LE half never derives, on a machine with a USB dongle plugged in | Tether used the first powered controller, which is the dongle, not the built-in one | `tether --bt-status` marks the controller in use; `tether --bt-adapter <hciN>` picks another -- see 2026-09-01 |
 | The link reads down forever with `br-connection-unknown`, while messages, contacts and notifications all work | This computer offers the iPhone no BR/EDR profile to connect to, and BlueZ only reports a link up while some local profile is connected | Nothing. Tether no longer waits on that link -- see 2026-08-23 below. Restoring the `a2dp_sink` and `hfp_hf` roles makes it read up again, at the cost of the phone's audio moving here |
 | The iPhone's audio moves to the computer when Tether connects | The machine advertises itself as a Bluetooth speaker/headset, and iOS routes to it. Not caused by Tether beyond bringing the link up | See "Keeping the phone's audio on the phone" below |
 
@@ -1381,3 +1383,44 @@ Fixed:
   every tick, so `refresh_capability()` had nothing left to do and is gone.
 - Group replies follow `ancs_enabled`, not only `ancs_content_enabled`. With mirroring off the
   correlator is never fed, so a group thread that still advertised a reply route could only fail.
+
+### 2026-09-01 - Mirroring latched itself off, and pairing ran on the wrong controller
+
+Reported as #69 by two people, two unrelated causes, one symptom each.
+
+**A BR/EDR-only bond turned notification mirroring off, permanently and invisibly.**
+`run_bt_pair()` persisted `ancs_enabled = false` whenever a transaction it ran produced a bond
+without an LE half. `should_solicit_ancs()` is gated on that flag, so the solicitation advert
+never went on air again -- and iOS reveals the "Show Notifications" toggle only while a bonded
+peer is soliciting ANCS. The reporter's words were that the toggle never appeared. It could not:
+the phone was never asked.
+
+Nothing surfaced the state either. `--bt-status` had no row for it, `--bt-devices` no flag; only
+the GTK checkbox read it. The recovery a second reporter found by hand -- `tether --bt-ancs on`
+then `tether --bt-solicit` -- is the only one that existed.
+
+This is the same trap the 2026-08-25 entry records for `auth_strategy`: a failed attempt writing
+its own failure into the config, with nothing in the CLI to undo it. The `ancs_enabled` copy of
+it was missed at the time.
+
+Fixed by deleting the latch. A dual bond still turns the preference on; nothing turns it off but
+the user. The runtime already gates ANCS on `ancs_available()` and on `bearer.le_available`, so a
+BR/EDR-only bond costs one advert that the iPhone ignores, not a permanent silence. `--bt-status`
+grew a `Notifications:` row that names `tether --bt-ancs on` when it is off.
+
+**Everything ran on `hci0`, which was a Cambridge Silicon Radio clone dongle.** The reporter had
+that dongle and an Intel 9460/9560; `resolve_capability()` took the first *powered* adapter from a
+path-sorted list, and `pairing.cpp` took `adapters.front()` at six sites with no powered check at
+all -- so the two could also disagree about which controller they were describing. There was no
+setting, no flag, and `--bt-status` printed adapter addresses without saying which one was in use.
+He found it by accident, unplugged the dongle, and pairing worked on the first attempt.
+
+Fixed with `preferred_adapter(objects, id)`, one picker for both: the configured controller when
+present, else the first powered, else the first. `Config::adapter` holds an `hciN` or an address,
+`tether --bt-adapter <hciN|auto>` sets it, and `--bt-status` marks the controller in use and says
+when a pinned one is absent. `pairing.cpp` routes all six sites through it.
+
+Not captured: whether the CSR dongle can derive the LE keys at all. It reported `class=ok`,
+`secure-connections=on` and both LE roles, and still produced only BR/EDR bonds across several
+attempts -- consistent with the clone firmware these dongles are known for, but no `btmon` capture
+was taken.

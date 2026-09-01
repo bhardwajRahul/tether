@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 22:04-0700\n"
+"POT-Creation-Date: 2026-09-01 13:57-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -133,6 +133,10 @@ msgstr "알림 미러링을 켜거나 끕니다."
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "앱뿐 아니라 알림의 제목과 본문도 미러링합니다."
+
+#: src/cli/main.cpp
+msgid "Choose which Bluetooth controller to use."
+msgstr "사용할 Bluetooth 어댑터를 선택합니다."
 
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
@@ -269,6 +273,18 @@ msgstr "Secure Connections={}"
 msgid "Bond"
 msgstr "본드"
 
+#: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
+msgid "Notifications"
+msgstr "알림"
+
+#: src/cli/main.cpp
+msgid "mirroring on"
+msgstr "미러링 켬"
+
+#: src/cli/main.cpp
+msgid "mirroring off (tether --bt-ancs on)"
+msgstr "미러링 끔 (tether --bt-ancs on)"
+
 #: src/cli/main.cpp src/daemon/main.cpp src/gtk/main.cpp
 #: src/gtk/tether-gtk.desktop.in
 msgid "Tether"
@@ -281,6 +297,15 @@ msgstr "연결 중"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "꺼짐 (--bt-enable on)"
+
+#: src/cli/main.cpp
+msgid "in use"
+msgstr "사용 중"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Controller {} is not present; using the first powered one instead."
+msgstr "어댑터 {}이(가) 없습니다. 전원이 켜진 첫 번째 어댑터를 사용합니다."
 
 #: src/cli/main.cpp
 #, c-format
@@ -358,10 +383,6 @@ msgstr "메시지 (MAP)"
 #: src/cli/main.cpp
 msgid "Contacts (PBAP)"
 msgstr "연락처 (PBAP)"
-
-#: src/cli/main.cpp src/gtk/devices_view.cpp src/gtk/main.cpp
-msgid "Notifications"
-msgstr "알림"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
@@ -516,6 +537,25 @@ msgstr "알림 미러링을 켰습니다."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "알림 미러링을 껐습니다."
+
+#: src/cli/main.cpp
+msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
+msgstr "어댑터를 지정하세요. 예: --bt-adapter hci1 또는 --bt-adapter auto\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "No Bluetooth controller matches '{}'. Available:\n"
+msgstr "'{}'와(과) 일치하는 Bluetooth 어댑터가 없습니다. 사용 가능:\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Controller selection is automatic: the first powered one.\n"
+msgstr "어댑터 선택은 자동입니다. 전원이 켜진 첫 번째 어댑터를 사용합니다.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Using controller {}."
+msgstr "어댑터 {}을(를) 사용합니다."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -1413,3 +1453,7 @@ msgstr "기기 동기화"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "기기를 페어링하고 네트워크를 통해 클립보드를 동기화합니다"
+
+#, fuzzy
+#~ msgid "on"
+#~ msgstr "본드"
