@@ -22,6 +22,8 @@ namespace tether {
         ~WaylandContext();
 
         bool init();
+
+        bool clipboard_available() const { return clipboard_ != nullptr; }
         void set_clipboard_callback(std::function<void(const std::string&)> cb);
         void copy_to_clipboard(const std::string& text);
         std::string get_clipboard();

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 20:10-0700\n"
+"POT-Creation-Date: 2026-08-31 22:04-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -1056,6 +1056,14 @@ msgstr "폴더는 보낼 수 없습니다. 대신 파일을 놓으십시오."
 #: src/gtk/devices_view.cpp
 msgid "Clipboard, files, and OTP are connected."
 msgstr "클립보드, 파일, OTP가 연결되었습니다."
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Files and OTP are connected. This compositor does not give Tether clipboard "
+"access, so clipboard sync is off."
+msgstr ""
+"파일과 OTP는 연결되어 있습니다. 이 컴포지터는 Tether에 클립보드 접근을 허용하"
+"지 않으므로 클립보드 동기화가 꺼져 있습니다."
 
 #: src/gtk/devices_view.cpp
 msgid ""

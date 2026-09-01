@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 20:10-0700\n"
+"POT-Creation-Date: 2026-08-31 22:04-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Spanish\n"
@@ -1096,6 +1096,15 @@ msgstr "No se pueden enviar carpetas — suelte archivos en su lugar."
 #: src/gtk/devices_view.cpp
 msgid "Clipboard, files, and OTP are connected."
 msgstr "El portapapeles, los archivos y los OTP están conectados."
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Files and OTP are connected. This compositor does not give Tether clipboard "
+"access, so clipboard sync is off."
+msgstr ""
+"Los archivos y el OTP están conectados. Este compositor no da a Tether "
+"acceso al portapapeles, así que la sincronización del portapapeles está "
+"desactivada."
 
 #: src/gtk/devices_view.cpp
 msgid ""

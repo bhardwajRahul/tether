@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <gio/gio.h>
 #include <string>
 
@@ -12,5 +13,8 @@ namespace tether::bluetooth {
     // Polls a transfer to completion. Returns Active only when the timeout ran
     // out with the transfer still in progress.
     TransferState wait_for_transfer(GDBusConnection* bus, const std::string& path, int timeout_seconds);
+
+    // Where to stage a file obexd reads or writes.
+    std::filesystem::path obex_staging_path(const std::string& name);
 
 } // namespace tether::bluetooth

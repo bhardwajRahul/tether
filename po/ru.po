@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 20:10-0700\n"
+"POT-Creation-Date: 2026-08-31 22:04-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Russian\n"
@@ -1090,6 +1090,14 @@ msgstr "Папки отправить нельзя — перетащите вм
 #: src/gtk/devices_view.cpp
 msgid "Clipboard, files, and OTP are connected."
 msgstr "Буфер обмена, файлы и OTP подключены."
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Files and OTP are connected. This compositor does not give Tether clipboard "
+"access, so clipboard sync is off."
+msgstr ""
+"Файлы и OTP подключены. Этот композитор не даёт Tether доступ к буферу "
+"обмена, поэтому синхронизация буфера обмена отключена."
 
 #: src/gtk/devices_view.cpp
 msgid ""
