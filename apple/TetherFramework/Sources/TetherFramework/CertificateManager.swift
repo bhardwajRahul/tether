@@ -360,6 +360,8 @@ public final class CertificateManager {
         var serialBytes = [UInt8](repeating: 0, count: 8)
         _ = SecRandomCopyBytes(kSecRandomDefault, serialBytes.count, &serialBytes)
         serialBytes[0] &= 0x7F // Ensure positive
+        // A zero leading byte would make asn1Integer emit a non-minimal DER INTEGER.
+        if serialBytes[0] == 0 { serialBytes[0] = 1 }
 
         // TBSCertificate
         let version = asn1ExplicitTag(0, asn1Integer([0x02])) // v3
@@ -439,11 +441,19 @@ public final class CertificateManager {
     }
 
     private func asn1UTCTime(_ date: Date) -> [UInt8] {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyMMddHHmmss'Z'"
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        let bytes = Array(formatter.string(from: date).utf8)
+        let bytes = Array(Self.utcTimeString(date).utf8)
         return [0x17, UInt8(bytes.count)] + bytes
+    }
+
+    // YYMMDDHHMMSSZ, always Gregorian/UTC/ASCII digits.
+    static func utcTimeString(_ date: Date) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let c = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+        return String(
+            format: "%02d%02d%02d%02d%02d%02dZ",
+            c.year! % 100, c.month!, c.day!, c.hour!, c.minute!, c.second!
+        )
     }
 
     private func asn1ExplicitTag(_ tag: UInt8, _ contents: [UInt8]) -> [UInt8] {

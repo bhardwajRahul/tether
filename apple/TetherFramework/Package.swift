@@ -26,5 +26,10 @@ let package = Package(
             name: "TetherFramework",
             path: "Sources/TetherFramework"
         ),
+        .testTarget(
+            name: "TetherFrameworkTests",
+            dependencies: ["TetherFramework"],
+            path: "Tests/TetherFrameworkTests"
+        ),
     ]
 )
