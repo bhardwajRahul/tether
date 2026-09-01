@@ -209,7 +209,7 @@ make install
    or
 
    ```bash
-   tether pair
+   tether --accept <fingerprint>   # fingerprint is printed by the daemon log
    ```
 
 3. Bluetooth (for Messages and Notifications):
