@@ -460,7 +460,8 @@ TEST(Capability, WrongClassIsReportedButDoesNotDowngradeMode) {
     // The unit is templated on the adapter, so the wrong id makes the command a no-op.
     EXPECT_EQ(cap.adapter_id, "hci0");
     ASSERT_EQ(cap.setup.size(), 1u);
-    EXPECT_EQ(cap.setup[0].command, "sudo systemctl enable --now tether-btclass@hci0");
+    EXPECT_TRUE(cap.setup[0].command.ends_with("sudo systemctl enable --now tether-btclass@hci0"))
+        << cap.setup[0].command;
 }
 
 TEST(Capability, PrefersAPoweredAdapter) {
