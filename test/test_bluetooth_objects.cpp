@@ -219,10 +219,10 @@ TEST(Capability, CompatibilityWhenExperimentalIsOff) {
     EXPECT_EQ(cap.mode, DeliveryMode::Compatibility);
     EXPECT_EQ(cap.bearer_api, BearerApi::Absent);
     ASSERT_EQ(cap.setup.size(), 1u);
-    // Either form of the step -- copying the shipped drop-in or writing one --
-    // lands in the same place, so that is what is asserted rather than a literal
-    // flag that only one of the two branches contains.
     EXPECT_NE(cap.setup[0].command.find("bluetooth.service.d"), std::string::npos);
+    // ExecStart must resolve bluetoothd on the machine running the command
+    EXPECT_EQ(cap.setup[0].command.find("/usr/share/tether"), std::string::npos) << cap.setup[0].command;
+    EXPECT_NE(cap.setup[0].command.find("bluetoothd"), std::string::npos) << cap.setup[0].command;
 }
 
 // Without --experimental bluetoothd registers Bearer.LE1 as an empty marker: no
@@ -246,9 +246,6 @@ TEST(Capability, AnEmptyBearerInterfaceIsNotProofOfTheApi) {
     EXPECT_FALSE(objects.devices[0].has_le_bearer);
     EXPECT_EQ(cap.bearer_api, BearerApi::Absent);
     ASSERT_EQ(cap.setup.size(), 1u);
-    // Either form of the step -- copying the shipped drop-in or writing one --
-    // lands in the same place, so that is what is asserted rather than a literal
-    // flag that only one of the two branches contains.
     EXPECT_NE(cap.setup[0].command.find("bluetooth.service.d"), std::string::npos);
 }
 

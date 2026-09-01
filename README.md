@@ -287,9 +287,8 @@ make install
 - `bluez`, `bluez-utils`, and `bluez-obex` (for messages and notifications)
 
 #### Bluetooth (for Messages and Notifications)
-- BlueZ 5.86+ must be running with experimental bearer API. Tether ships the
-  systemd drop-in; `tether --bt-setup` prints the one command that applies it.
-  Do this **before** pairing.
+- BlueZ 5.86+ must be running with experimental bearer API. `tether --bt-setup`
+  prints the systemd drop-in command that enables it. Do this **before** pairing.
 - A controller with BR/EDR, LE, and advertising support.
 - Notification mirroring does not work on iOS 18 and earlier.
 
