@@ -7,12 +7,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <filesystem>
 #include <gtk/gtk.h>
 #include <string_view>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <sys/wait.h>
+#include <tether/client.hpp>
 #include <tether/core.hpp>
 #include <tether/log.hpp>
 #include <tether/net.hpp>
@@ -130,27 +129,7 @@ namespace tether::ui {
                 static bool autostart_attempted = false;
                 if (!autostart_attempted) {
                     autostart_attempted = true;
-                    pid_t pid = fork();
-                    if (pid == 0) {
-                        std::filesystem::path self_path = std::filesystem::read_symlink("/proc/self/exe");
-                        std::string daemon_path = (self_path.parent_path() / "tetherd").string();
-                        if (fork() == 0) {
-                            // tetherd reopens these onto its own log file.
-                            if (freopen("/dev/null", "w", stdout) == nullptr) {
-                            }
-                            if (freopen("/dev/null", "w", stderr) == nullptr) {
-                            }
-                            if (freopen("/dev/null", "r", stdin) == nullptr) {
-                            }
-                            execl(daemon_path.c_str(), "tetherd", nullptr);
-                            execlp("tetherd", "tetherd", nullptr);
-                            exit(1);
-                        }
-                        exit(0);
-                    } else if (pid > 0) {
-                        int status;
-                        waitpid(pid, &status, 0);
-                    }
+                    tether::spawn_daemon();
                 }
                 schedule_event_retry();
                 set_status_main(_("Daemon Offline"));

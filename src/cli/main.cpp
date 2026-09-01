@@ -13,6 +13,7 @@
 #include <tether/core.hpp>
 #include <tether/crypto.hpp>
 #include <tether/discovery.hpp>
+#include <tether/extension_host.hpp>
 #include <tether/i18n.hpp>
 #include <tether/log.hpp>
 #include <thread>
@@ -201,6 +202,9 @@ static const Opt kOptions[] = {
     {"--bt-ancs-content <on|off>", N_("Mirror notification titles and bodies, not just the app.")},
     {"--bt-notifications", N_("List mirrored iPhone notifications.")},
     {"--bt-diagnostics", N_("Print a redacted Bluetooth report for a bug report.")},
+    {"--install-extension-host",
+     N_("Install the browser and mail extension's native messaging manifests for this user. Needed only for "
+        "portable builds; the distro packages install them system-wide.")},
     {"--accept <fingerprint>", N_("Accept a pending pairing request locally.")},
     {"--pair", N_("Send a pair_request over TCP to the daemon.")},
 };
@@ -234,6 +238,29 @@ void print_help() {
             "  tether -f ./report.pdf\n"
             "  tether --accept 9a4f21...\n",
             _("Examples:"));
+}
+
+static int print_extension_host_install() {
+    const auto result = tether::install_extension_host();
+
+    for (const auto& path : result.written)
+        fprintf(stdout, _("Installed %s\n"), path.c_str());
+
+    for (const auto& err : result.errors)
+        debug::log(ERR, "{}\n", err);
+
+    if (!result.errors.empty())
+        return 1;
+
+    if (result.written.empty()) {
+        fprintf(stdout,
+                _("No browser or mail client profile was found for this user, so nothing was installed. Start "
+                  "Firefox, Thunderbird, or Chromium once and run this again.\n"));
+        return 1;
+    }
+
+    fprintf(stdout, _("\nRestart the browser or mail client to pick this up.\n"));
+    return 0;
 }
 
 // The two known gaps (adapter class, experimental API) change the machine
@@ -696,6 +723,8 @@ int main(int argc, char* argv[]) {
             action = "discover";
         } else if (arg == "--list-devices") {
             action = "list";
+        } else if (arg == "--install-extension-host") {
+            action = "install_extension_host";
         } else if (arg == "--bt-setup") {
             action = "bt_setup";
         } else if (arg == "--bt-status") {
@@ -780,6 +809,9 @@ int main(int argc, char* argv[]) {
         debug::log(ERR, _("Unknown action. Run tether --help for options\n"));
         return 1;
     }
+
+    if (action == "install_extension_host")
+        return print_extension_host_install();
 
     tether::Client client;
 

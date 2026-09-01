@@ -97,6 +97,16 @@ configure_file(
 install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/tether-native-host"
         DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+# embed files only the distro packages can install, so portable build can write them out at runtime.
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/packaging/systemd/tether-btclass@.service" BTCLASS_UNIT)
+file(READ "${CMAKE_CURRENT_BINARY_DIR}/com.tether.extension.chrome.json" CHROME_MANIFEST)
+file(READ "${CMAKE_CURRENT_BINARY_DIR}/com.tether.extension.mozilla.json" MOZILLA_MANIFEST)
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/core/include/tether/packaging.hpp.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/tether/packaging.hpp"
+    @ONLY
+)
+
 # native messaging manifests
 set(CHROME_MESSAGING_DIR "/etc/chromium/native-messaging-hosts" CACHE PATH "Chrome native messaging hosts directory")
 set(GOOGLE_CHROME_MESSAGING_DIR "/etc/opt/chrome/native-messaging-hosts" CACHE PATH "Google Chrome native messaging hosts directory")

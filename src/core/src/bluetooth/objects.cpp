@@ -1,5 +1,6 @@
 #include "tether/bluetooth/objects.hpp"
 #include <tether/i18n.hpp>
+#include <tether/packaging.hpp>
 
 #include <algorithm>
 #include <cstdio>
@@ -332,6 +333,25 @@ namespace tether::bluetooth {
                    "sudo systemctl daemon-reload && sudo systemctl restart bluetooth";
         }
 
+        // Distro packages install the unit. A portable build writes it out.
+        std::string set_class_command(const std::string& adapter_id) {
+            const std::string enable = "sudo systemctl enable --now tether-btclass@" + adapter_id;
+            std::error_code ec;
+            for (const char* dir : {"/etc/systemd/system",
+                                    "/usr/lib/systemd/system",
+                                    "/lib/systemd/system",
+                                    "/usr/local/lib/systemd/system"}) {
+                if (std::filesystem::exists(std::string(dir) + "/tether-btclass@.service", ec))
+                    return enable;
+            }
+
+            return "sudo tee /etc/systemd/system/tether-btclass@.service >/dev/null <<'EOF'\n" +
+                   std::string(packaging::BTCLASS_UNIT) +
+                   "EOF\n"
+                   "sudo systemctl daemon-reload\n" +
+                   enable;
+        }
+
     } // namespace
 
     Capability resolve_capability(const BluezObjects& objects) {
@@ -429,7 +449,7 @@ namespace tether::bluetooth {
         if (!cap.class_ok) {
             cap.setup.push_back({_("The iPhone will not offer its Messages and Contacts permissions until this "
                                    "adapter presents itself as A/V Hands-Free (major 4, minor 8)."),
-                                 "sudo systemctl enable --now tether-btclass@" + cap.adapter_id});
+                                 set_class_command(cap.adapter_id)});
         }
 
         return cap;

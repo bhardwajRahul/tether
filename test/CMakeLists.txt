@@ -16,6 +16,7 @@ add_executable(tether_test
     test_discovery.cpp
     test_event_loop.cpp
     test_display_width.cpp
+    test_extension_host.cpp
     test_file_transfer.cpp
     test_log.cpp
     test_net.cpp

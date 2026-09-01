@@ -68,6 +68,10 @@ It is shipped to `/usr/share` rather than installed into
 the package lands, and changing how `bluetoothd` runs for the whole machine is
 the user's decision.
 
+A portable build (the AppImage) installs neither the drop-in nor the unit, since
+its files live on a mount that goes away with the process. `--bt-setup` prints
+commands that write both out inline instead.
+
 Without it `bluetoothd` still registers `org.bluez.Bearer.LE1`, but as an empty
 marker: no properties, no `Connect()`. So the interface being present is not
 evidence the API is available, and code that reads it that way sees an LE bearer
