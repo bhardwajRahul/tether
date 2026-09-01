@@ -299,6 +299,7 @@ not a public issue. See [SECURITY.md](.github/SECURITY.md).
 ## Acknowledgements
 * [ancs4linux](https://github.com/pzmarzly/ancs4linux) for pioneering the ANCS notifications technique.
 * [iphonebridge](https://github.com/gabrielmeir53/iphonebridge) for the research on MAP Messages.
+* [BlueFerry](https://github.com/erikwb/blueferry) for the [gold mine](https://github.com/erikwb/blueferry/blob/main/PROTOCOL.md).
 * [@orychalk](https://github.com/orychalk) for many many feature ideas, bug reports, beta testing.
 
 
