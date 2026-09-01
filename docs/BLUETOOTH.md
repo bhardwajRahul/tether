@@ -54,23 +54,27 @@ sudo systemctl enable --now tether-btclass@hci0
 class, reads it back, and retries for ten seconds.
 
 **BlueZ needs the experimental bearer API** for ANCS, and it must be active
-*before* pairing: a bond made without it has no LE half. The package ships the
-drop-in, already pointing at this distro's `bluetoothd`:
+*before* pairing: a bond made without it has no LE half. `--bt-setup` prints the
+drop-in command:
 
 ```bash
 sudo mkdir -p /etc/systemd/system/bluetooth.service.d
-sudo cp /usr/share/tether/bluetooth-experimental.conf /etc/systemd/system/bluetooth.service.d/
+printf '[Service]\nExecStart=\nExecStart=%s --experimental\n' \
+  "$(ls /usr/lib/bluetooth/bluetoothd /usr/libexec/bluetooth/bluetoothd 2>/dev/null | head -1)" \
+  | sudo tee /etc/systemd/system/bluetooth.service.d/experimental.conf
 sudo systemctl daemon-reload && sudo systemctl restart bluetooth
 ```
 
-It is shipped to `/usr/share` rather than installed into
-`bluetooth.service.d` directly, because a drop-in there takes effect the moment
-the package lands, and changing how `bluetoothd` runs for the whole machine is
-the user's decision.
+`ExecStart` must name the `bluetoothd` binary and its path differs by distro
+(Arch `/usr/lib`, Debian and Fedora `/usr/libexec`), so the command resolves it
+in the user's own shell. A path chosen anywhere else — a drop-in shipped in the
+package, baked at build time — is wrong on every distro but the builder's, and
+a wrong `ExecStart` leaves `bluetooth.service` failing with `status=203/EXEC`.
 
-A portable build (the AppImage) installs neither the drop-in nor the unit, since
-its files live on a mount that goes away with the process. `--bt-setup` prints
-commands that write both out inline instead.
+Nothing is installed into `bluetooth.service.d` by the package: a drop-in there
+takes effect the moment the package lands, and changing how `bluetoothd` runs
+for the whole machine is the user's decision. The class unit ships but stays
+disabled for the same reason.
 
 Without it `bluetoothd` still registers `org.bluez.Bearer.LE1`, but as an empty
 marker: no properties, no `Connect()`. So the interface being present is not

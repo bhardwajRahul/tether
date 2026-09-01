@@ -141,23 +141,6 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/man/tether.1" "${CMAKE_CURRENT_BINARY
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/man/tetherd.8"
         DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
 
-# bluetoothd's path is distro-specific and the drop-in has to name it. Detected
-# for this machine; packagers cross-building for another layout override it.
-if(NOT DEFINED BLUETOOTHD_PATH)
-    if(EXISTS "/usr/libexec/bluetooth/bluetoothd")
-        set(BLUETOOTHD_PATH "/usr/libexec/bluetooth/bluetoothd")
-    else()
-        set(BLUETOOTHD_PATH "/usr/lib/bluetooth/bluetoothd")
-    endif()
-endif()
-set(BLUETOOTHD_PATH "${BLUETOOTHD_PATH}" CACHE FILEPATH "Path to the bluetoothd binary named by the drop-in")
-
-configure_file(packaging/systemd/bluetooth-experimental.conf.in
-               "${CMAKE_CURRENT_BINARY_DIR}/bluetooth-experimental.conf" @ONLY)
-
-# shipped for the user to copy, not ours to decide!
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/bluetooth-experimental.conf"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/tether")
 set(SYSTEMD_UNIT_DIR "lib/systemd/system" CACHE PATH "systemd system unit directory")
 install(FILES packaging/systemd/tether-btclass@.service
         DESTINATION "${SYSTEMD_UNIT_DIR}")

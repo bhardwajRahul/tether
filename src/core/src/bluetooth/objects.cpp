@@ -285,23 +285,8 @@ namespace tether::bluetooth {
             return {};
         }
 
-        // Are we flatpak sandboxed?
-        bool sandboxed() {
-            std::error_code ec;
-            return std::filesystem::exists("/.flatpak-info", ec);
-        }
-
-        // The package ships the drop-in for the user to copy.
+        // bluetoothd's path is distro-specific, this command resolves it in the user's shell instead of hardcoding.
         std::string enable_experimental_command() {
-            const std::string shipped = std::string(TETHER_DATADIR) + "/bluetooth-experimental.conf";
-            std::error_code ec;
-            if (!sandboxed() && std::filesystem::exists(shipped, ec))
-                return "sudo mkdir -p /etc/systemd/system/bluetooth.service.d\n"
-                       "sudo cp " +
-                       shipped +
-                       " /etc/systemd/system/bluetooth.service.d/\n"
-                       "sudo systemctl daemon-reload && sudo systemctl restart bluetooth";
-
             const std::string found = bluetoothd_path();
             const std::string binary = found.empty()
                                            ? "$(ls /usr/lib/bluetooth/bluetoothd /usr/libexec/bluetooth/bluetoothd "
