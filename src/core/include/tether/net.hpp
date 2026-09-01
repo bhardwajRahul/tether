@@ -48,7 +48,7 @@ namespace tether {
 
     class UnixServer {
     public:
-        UnixServer(EpollEventLoop& loop);
+        UnixServer(EpollEventLoop& loop, TcpServer& tcp_server);
         ~UnixServer();
 
         bool start();
@@ -59,6 +59,7 @@ namespace tether {
         void handle_client(int client_fd);
 
         EpollEventLoop& loop_;
+        TcpServer& tcp_server_;
         int server_fd_ = -1;
         std::string socket_path_;
         std::map<int, std::string> client_buffers_;
@@ -72,6 +73,10 @@ namespace tether {
 
         bool start();
         void stop();
+
+        // Trusts a fingerprint and promotes every matching live TLS session.
+        // Returns true when at least one connected client was promoted.
+        bool accept_device(const std::string& fingerprint, const std::string& fallback_name = "Paired Device");
 
     private:
         struct ConnectedClientInfo {
@@ -100,6 +105,9 @@ namespace tether {
             int client_fd;
             std::string fingerprint;
             std::string device_name;
+            // The device was accepted elsewhere and the dialog killed, so its
+            // non-zero exit is not a refusal.
+            bool superseded = false;
         };
         // keyed by the pipe read-fd we monitor in epoll
         std::map<int, PendingPairDialog> pending_dialogs_;

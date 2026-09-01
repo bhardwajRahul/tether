@@ -819,10 +819,6 @@ int main(int argc, char* argv[]) {
     if (action == "list") {
         debug::log(INFO, "{}", client.list_devices());
         return 0;
-    } else if (action == "accept") {
-        client.accept_device(arg_val);
-        debug::log(INFO, "Successfully paired device: {}", arg_val);
-        return 0;
     } else if (action == "discover") {
         debug::log(INFO, "Scanning for tetherd instances on the local network...\n\n");
 
@@ -872,7 +868,13 @@ int main(int argc, char* argv[]) {
     }
 
     std::string err;
-    if (action == "pair") {
+    if (action == "accept") {
+        if (arg_val.empty() || !client.accept_device(arg_val)) {
+            debug::log(ERR, _("Could not reach the daemon.\n"));
+            return 1;
+        }
+        debug::log(INFO, "Successfully paired device: {}", arg_val);
+    } else if (action == "pair") {
         char hostname[256] = {};
         gethostname(hostname, sizeof(hostname) - 1);
         std::string resp = client.pair(hostname, err);

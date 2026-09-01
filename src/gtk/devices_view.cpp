@@ -41,6 +41,8 @@ namespace tether::ui {
             GtkWidget* lbl_action_name = nullptr;
             GtkWidget* lbl_action_status = nullptr;
             GtkWidget* btn_grid = nullptr;
+            GtkWidget* btn_action_bt_pair = nullptr;
+            bool select_bt_after_scan = false;
 
             GtkWidget* lbl_unpaired_name = nullptr;
             GtkWidget* lbl_unpaired_ip = nullptr;
@@ -134,6 +136,20 @@ namespace tether::ui {
         void on_bt_enabled_toggled(GtkWidget* widget, gpointer);
         void on_bt_ancs_toggled(GtkWidget* widget, gpointer);
         void on_bt_content_toggled(GtkWidget* widget, gpointer);
+
+        void update_action_bt_scan_controls() {
+            if (g_devices.btn_action_bt_pair)
+                gtk_widget_set_sensitive(g_devices.btn_action_bt_pair, !g_devices.select_bt_after_scan);
+        }
+
+        void on_action_bt_pair_clicked(GtkWidget*, gpointer) {
+            g_devices.select_bt_after_scan = true;
+            update_action_bt_scan_controls();
+            set_status_action(_("Scanning for nearby devices..."));
+            set_status_main(_("Scanning for nearby devices..."));
+            daemon_send({{"command", "bt_status"}});
+            daemon_send({{"command", "bt_scan"}});
+        }
 
         void update_bt_pane() {
             const std::string address = g_devices.selected_bt_address;
@@ -293,12 +309,20 @@ namespace tether::ui {
                 bool online = std::find(g_devices.connected_fps.begin(),
                                         g_devices.connected_fps.end(),
                                         g_devices.selected_device_fp) != g_devices.connected_fps.end();
-                set_status_action(
-                    online ? _("Connected and ready.")
-                           : _("Device is offline. Open the Tether app on iPhone while on the same network."));
+                if (g_devices.select_bt_after_scan)
+                    set_status_action(_("Scanning for nearby devices..."));
+                else
+                    set_status_action(
+                        online ? _("Connected and ready.")
+                               : _("Device is offline. Open the Tether app on iPhone while on the same network."));
                 if (g_devices.btn_grid) {
                     gtk_widget_set_visible(g_devices.btn_grid, online);
                 }
+                if (g_devices.btn_action_bt_pair) {
+                    const std::string supervised = g_devices.bt_status.value("device_address", "");
+                    gtk_widget_set_visible(g_devices.btn_action_bt_pair, supervised.empty());
+                }
+                update_action_bt_scan_controls();
             } else {
                 gtk_stack_set_visible_child_name(GTK_STACK(g_devices.right_pane_stack), "pair");
                 set_markup(g_devices.lbl_unpaired_name,
@@ -672,6 +696,9 @@ namespace tether::ui {
             const std::string name = device.value("name", "").empty() ? address : device.value("name", "");
             const bool paired = device.value("paired", false);
             const bool connected = device.value("connected", false);
+            const bool route_ready =
+                is_supervised_bt_device(address) && (g_devices.bt_connection.value("map_open", false) ||
+                                                     g_devices.bt_connection.value("ancs_ready", false));
 
             GtkWidget* row = gtk_list_box_row_new();
             g_object_set_data_full(G_OBJECT(row), "bt_address", g_strdup(address.c_str()), g_free);
@@ -690,8 +717,11 @@ namespace tether::ui {
             gtk_label_set_xalign(GTK_LABEL(title), 0.0);
             gtk_box_pack_start(GTK_BOX(labels), title, FALSE, FALSE, 0);
 
-            GtkWidget* subtitle =
-                gtk_label_new(connected ? _("Connected") : (paired ? _("Paired") : _("Nearby (Tap to Pair)")));
+            const char* subtitle_text = route_ready ? _("Connected")
+                                        : connected ? _("Partially connected")
+                                        : paired    ? _("Paired")
+                                                    : _("Nearby (Tap to Pair)");
+            GtkWidget* subtitle = gtk_label_new(subtitle_text);
             gtk_label_set_xalign(GTK_LABEL(subtitle), 0.0);
             gtk_style_context_add_class(gtk_widget_get_style_context(subtitle), "muted");
             gtk_box_pack_start(GTK_BOX(labels), subtitle, FALSE, FALSE, 0);
@@ -866,7 +896,10 @@ namespace tether::ui {
             std::string fp = event.value("fingerprint", "");
             std::string name = event.value("device_name", "");
             if (!fp.empty()) {
-                g_devices.connected_fps.push_back(fp);
+                if (event.value("connected", false) &&
+                    std::find(g_devices.connected_fps.begin(), g_devices.connected_fps.end(), fp) ==
+                        g_devices.connected_fps.end())
+                    g_devices.connected_fps.push_back(fp);
 
                 // Ensure it's in the paired devices list so the UI transitions
                 bool already_paired = false;
@@ -962,6 +995,19 @@ namespace tether::ui {
                 for (const auto& device : event["devices"])
                     g_devices.bt_devices.push_back(device);
             }
+
+            if (g_devices.select_bt_after_scan) {
+                const auto iphone =
+                    std::find_if(g_devices.bt_devices.begin(),
+                                 g_devices.bt_devices.end(),
+                                 [](const nlohmann::json& device) { return device.value("iphone", false); });
+                if (iphone != g_devices.bt_devices.end()) {
+                    g_devices.selected_bt_address = iphone->value("address", "");
+                    g_devices.selected_bt_name = iphone->value("name", "iPhone");
+                    g_devices.selected_device_fp.clear();
+                    g_devices.select_bt_after_scan = false;
+                }
+            }
             devices_view_refresh();
             update_right_pane();
             return true;
@@ -984,12 +1030,21 @@ namespace tether::ui {
             set_text(g_devices.lbl_bt_progress, message);
             // A failed scan already carries the reason; only a scan that really
             // ran and found nothing wants the "check the phone" advice.
-            if (event.value("success", false) && g_devices.bt_devices.empty())
-                set_text(g_devices.lbl_welcome_bt,
-                         _("No iPhone found. Unlock the phone and open Settings > Bluetooth so it advertises, "
-                           "then scan again."));
-            else if (!event.value("success", false))
+            if (event.value("success", false) && (g_devices.bt_devices.empty() || g_devices.select_bt_after_scan)) {
+                const char* advice = _("No iPhone found. Unlock the phone and open Settings > Bluetooth so it "
+                                       "advertises, then scan again.");
+                set_text(g_devices.lbl_welcome_bt, advice);
+                if (g_devices.select_bt_after_scan)
+                    set_status_action(advice);
+                g_devices.select_bt_after_scan = false;
+                update_action_bt_scan_controls();
+            } else if (!event.value("success", false)) {
                 set_text(g_devices.lbl_welcome_bt, message);
+                if (g_devices.select_bt_after_scan)
+                    set_status_action(message);
+                g_devices.select_bt_after_scan = false;
+                update_action_bt_scan_controls();
+            }
             return true;
         }
         if (command == "bt_solicit_result") {
@@ -1305,6 +1360,19 @@ namespace tether::ui {
         gtk_box_pack_start(GTK_BOX(btn_grid), btn_send_clip, FALSE, FALSE, 0);
 
         gtk_box_pack_start(GTK_BOX(action_box), btn_grid, FALSE, FALSE, 0);
+
+        g_devices.btn_action_bt_pair = gtk_button_new_with_label(_("Pair over Bluetooth"));
+        gtk_button_set_image(GTK_BUTTON(g_devices.btn_action_bt_pair),
+                             gtk_image_new_from_icon_name("bluetooth-symbolic", GTK_ICON_SIZE_BUTTON));
+        gtk_button_set_always_show_image(GTK_BUTTON(g_devices.btn_action_bt_pair), TRUE);
+        gtk_widget_set_halign(g_devices.btn_action_bt_pair, GTK_ALIGN_CENTER);
+        g_signal_connect(g_devices.btn_action_bt_pair, "clicked", G_CALLBACK(on_action_bt_pair_clicked), nullptr);
+        gtk_box_pack_start(GTK_BOX(action_box), g_devices.btn_action_bt_pair, FALSE, FALSE, 0);
+
+        GtkSizeGroup* action_button_sizes = gtk_size_group_new(GTK_SIZE_GROUP_BOTH);
+        gtk_size_group_add_widget(action_button_sizes, btn_send_clip);
+        gtk_size_group_add_widget(action_button_sizes, g_devices.btn_action_bt_pair);
+        g_object_unref(action_button_sizes);
 
         g_devices.lbl_action_status = gtk_label_new(_("Ready"));
         gtk_widget_set_halign(g_devices.lbl_action_status, GTK_ALIGN_CENTER);

@@ -33,6 +33,8 @@ namespace tether::ui {
             GtkWidget* composer = nullptr;
             GtkWidget* send_button = nullptr;
             GtkWidget* placeholder_stack = nullptr;
+            GtkWidget* placeholder_icon = nullptr;
+            GtkWidget* placeholder_label = nullptr;
             GtkWidget* paned = nullptr;
             GtkWidget* thread_scroll = nullptr;
             GtkWidget* search_entry = nullptr;
@@ -43,6 +45,8 @@ namespace tether::ui {
             std::string selected_name;
             bool visible = false;
             bool map_open = false;
+            bool threads_known = false;
+            size_t thread_count = 0;
             bool sending = false;
             GtkWidget* composer_notice = nullptr;
             // Rebuilding the thread list destroys and recreates the selected row.
@@ -108,6 +112,7 @@ namespace tether::ui {
         enum ComposeColumn { COMPOSE_COL_DISPLAY, COMPOSE_COL_ADDRESS, COMPOSE_COL_SEARCH, COMPOSE_COL_COUNT };
 
         void update_composer_sensitivity();
+        void update_placeholder();
         void apply_row_selection(GtkWidget* row);
         void clear_selection();
         void switch_thread(const std::string& key);
@@ -413,6 +418,10 @@ namespace tether::ui {
 
             clear_list_box(g_messages.thread_list);
 
+            g_messages.threads_known = true;
+            g_messages.thread_count = event["threads"].size();
+            update_placeholder();
+
             GtkWidget* reselect = nullptr;
             for (const auto& thread : event["threads"]) {
                 GtkWidget* row = build_thread_row(thread);
@@ -556,6 +565,7 @@ namespace tether::ui {
         void update_connection(const nlohmann::json& event) {
             const bool map_open = event.value("map_open", false);
             g_messages.map_open = map_open;
+            update_placeholder();
             update_composer_sensitivity();
             if (map_open) {
                 set_banner("");
@@ -576,6 +586,20 @@ namespace tether::ui {
             // not when the link itself is down.
             const std::string map_error = event.value("map_error", "none");
             set_banner(reason, map_error == "forbidden" || map_error == "no_record");
+        }
+
+        void update_placeholder() {
+            if (!g_messages.placeholder_icon || !g_messages.placeholder_label)
+                return;
+
+            const bool bluetooth_needed =
+                g_messages.threads_known && g_messages.thread_count == 0 && !g_messages.map_open;
+            gtk_image_set_from_icon_name(GTK_IMAGE(g_messages.placeholder_icon),
+                                         bluetooth_needed ? "bluetooth-disabled-symbolic" : "mail-unread-symbolic",
+                                         GTK_ICON_SIZE_DIALOG);
+            set_text(g_messages.placeholder_label,
+                     bluetooth_needed ? _("Bluetooth connection needed to sync messages.")
+                                      : _("Select a conversation"));
         }
 
         // Replying needs an open conversation and a live MAP session. A group
@@ -1137,11 +1161,11 @@ namespace tether::ui {
         GtkWidget* placeholder = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
         gtk_widget_set_valign(placeholder, GTK_ALIGN_CENTER);
         gtk_widget_set_halign(placeholder, GTK_ALIGN_CENTER);
-        GtkWidget* placeholder_icon = gtk_image_new_from_icon_name("mail-unread-symbolic", GTK_ICON_SIZE_DIALOG);
-        gtk_box_pack_start(GTK_BOX(placeholder), placeholder_icon, FALSE, FALSE, 0);
-        GtkWidget* placeholder_label = gtk_label_new(_("Select a conversation"));
-        gtk_style_context_add_class(gtk_widget_get_style_context(placeholder_label), "muted");
-        gtk_box_pack_start(GTK_BOX(placeholder), placeholder_label, FALSE, FALSE, 0);
+        g_messages.placeholder_icon = gtk_image_new_from_icon_name("mail-unread-symbolic", GTK_ICON_SIZE_DIALOG);
+        gtk_box_pack_start(GTK_BOX(placeholder), g_messages.placeholder_icon, FALSE, FALSE, 0);
+        g_messages.placeholder_label = gtk_label_new(_("Select a conversation"));
+        gtk_style_context_add_class(gtk_widget_get_style_context(g_messages.placeholder_label), "muted");
+        gtk_box_pack_start(GTK_BOX(placeholder), g_messages.placeholder_label, FALSE, FALSE, 0);
         gtk_stack_add_named(GTK_STACK(g_messages.placeholder_stack), placeholder, "placeholder");
 
         GtkWidget* conversation_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);

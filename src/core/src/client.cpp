@@ -254,32 +254,17 @@ namespace tether {
     }
 
     bool Client::accept_device(const std::string& fingerprint, const std::string& name) {
-        tether::Crypto::instance().init();
+        if (!is_connected() || ssl_ || fingerprint.empty())
+            return false;
 
-        // Check if the daemon stored a name from the pair_request
-        std::string resolved_name = name;
-        std::string pending_path = tether::get_runtime_dir() + "/pending_pairs.json";
-        nlohmann::json pending;
-
-        std::ifstream ifs(pending_path);
-        if (ifs.is_open()) {
-            try {
-                pending = nlohmann::json::parse(ifs);
-            } catch (...) {
-            }
-            ifs.close();
+        nlohmann::json request{{"command", "accept_device"}, {"fingerprint", fingerprint}, {"device_name", name}};
+        const std::string response = send_and_wait(request.dump() + "\n");
+        try {
+            const auto parsed = nlohmann::json::parse(response);
+            return parsed.value("command", "") == "accept_device_result" && parsed.value("accepted", false);
+        } catch (...) {
+            return false;
         }
-
-        if (pending.contains(fingerprint) && pending[fingerprint].is_string()) {
-            resolved_name = pending[fingerprint].get<std::string>();
-            // Remove the accepted entry
-            pending.erase(fingerprint);
-            std::ofstream ofs(pending_path);
-            ofs << pending.dump(4);
-        }
-
-        tether::Crypto::instance().add_known_host(resolved_name, fingerprint);
-        return true;
     }
 
     std::string Client::pair(const std::string& device_name, std::string& err_out) {

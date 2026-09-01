@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 19:17-0700\n"
+"POT-Creation-Date: 2026-08-31 20:10-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Turkish\n"
@@ -959,6 +959,10 @@ msgid "Bluetooth is unavailable on this machine."
 msgstr "Bu makinede Bluetooth kullanılamıyor."
 
 #: src/gtk/devices_view.cpp
+msgid "Scanning for nearby devices..."
+msgstr "Yakındaki aygıtlar taranıyor..."
+
+#: src/gtk/devices_view.cpp
 msgid "Full mode — messages, contacts, and notifications."
 msgstr "Tam kip — mesajlar, kişiler ve bildirimler."
 
@@ -1087,10 +1091,6 @@ msgid "Unknown Device"
 msgstr "Bilinmeyen aygıt"
 
 #: src/gtk/devices_view.cpp
-msgid "Scanning for nearby devices..."
-msgstr "Yakındaki aygıtlar taranıyor..."
-
-#: src/gtk/devices_view.cpp
 msgid "Connected"
 msgstr "Bağlandı"
 
@@ -1101,6 +1101,10 @@ msgstr "Çevrimdışı"
 #: src/gtk/devices_view.cpp
 msgid "Nearby (Tap to Pair)"
 msgstr "Yakında (eşleşmek için dokunun)"
+
+#: src/gtk/devices_view.cpp
+msgid "Partially connected"
+msgstr "Kısmen bağlı"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
@@ -1317,6 +1321,14 @@ msgid "Today"
 msgstr "Bugün"
 
 #: src/gtk/messages_view.cpp
+msgid "Bluetooth connection needed to sync messages."
+msgstr "Mesajları eşitlemek için Bluetooth bağlantısı gerekli."
+
+#: src/gtk/messages_view.cpp
+msgid "Select a conversation"
+msgstr "Bir konuşma seçin"
+
+#: src/gtk/messages_view.cpp
 msgid "Sending…"
 msgstr "Gönderiliyor…"
 
@@ -1351,10 +1363,6 @@ msgstr "Yeni mesaj"
 #: src/gtk/messages_view.cpp
 msgid "Search conversations"
 msgstr "Konuşmalarda ara"
-
-#: src/gtk/messages_view.cpp
-msgid "Select a conversation"
-msgstr "Bir konuşma seçin"
 
 #: src/gtk/messages_view.cpp
 msgid "To:"

@@ -23,7 +23,7 @@ namespace tether::bluetooth {
 
         // Registration is two-phase, and the phases must run on different threads.
         bool export_object();
-        bool register_with_bluez();
+        bool register_with_bluez(std::string* error = nullptr);
         void unregister_with_bluez();
         void unexport_object();
 

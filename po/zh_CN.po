@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 19:17-0700\n"
+"POT-Creation-Date: 2026-08-31 20:10-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -919,6 +919,10 @@ msgid "Bluetooth is unavailable on this machine."
 msgstr "这台机器上蓝牙不可用。"
 
 #: src/gtk/devices_view.cpp
+msgid "Scanning for nearby devices..."
+msgstr "正在搜索附近的设备……"
+
+#: src/gtk/devices_view.cpp
 msgid "Full mode — messages, contacts, and notifications."
 msgstr "完整模式 —— 信息、通讯录和通知。"
 
@@ -1046,10 +1050,6 @@ msgid "Unknown Device"
 msgstr "未知设备"
 
 #: src/gtk/devices_view.cpp
-msgid "Scanning for nearby devices..."
-msgstr "正在搜索附近的设备……"
-
-#: src/gtk/devices_view.cpp
 msgid "Connected"
 msgstr "已连接"
 
@@ -1060,6 +1060,10 @@ msgstr "离线"
 #: src/gtk/devices_view.cpp
 msgid "Nearby (Tap to Pair)"
 msgstr "附近（轻点以配对）"
+
+#: src/gtk/devices_view.cpp
+msgid "Partially connected"
+msgstr "部分连接"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
@@ -1269,6 +1273,14 @@ msgid "Today"
 msgstr "今天"
 
 #: src/gtk/messages_view.cpp
+msgid "Bluetooth connection needed to sync messages."
+msgstr "需要蓝牙连接才能同步消息。"
+
+#: src/gtk/messages_view.cpp
+msgid "Select a conversation"
+msgstr "选择一个会话"
+
+#: src/gtk/messages_view.cpp
 msgid "Sending…"
 msgstr "正在发送……"
 
@@ -1303,10 +1315,6 @@ msgstr "新信息"
 #: src/gtk/messages_view.cpp
 msgid "Search conversations"
 msgstr "搜索会话"
-
-#: src/gtk/messages_view.cpp
-msgid "Select a conversation"
-msgstr "选择一个会话"
 
 #: src/gtk/messages_view.cpp
 msgid "To:"

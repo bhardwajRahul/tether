@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <glib.h>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -131,7 +132,11 @@ namespace tether::bluetooth {
     // result for null or unexpected input rather than throwing.
     BluezObjects parse_managed_objects(GVariant* reply);
 
-    Capability resolve_capability(const BluezObjects& objects);
+    // Resolves the pure ObjectManager snapshot plus the optional controller
+    // setting read by BluezMonitor. Keeping the external btmgmt probe out of
+    // this function makes capability resolution deterministic and prevents a
+    // stalled controller query from blocking unrelated callers.
+    Capability resolve_capability(const BluezObjects& objects, std::optional<bool> secure_connections = std::nullopt);
 
     nlohmann::json to_json(const Adapter& adapter);
     nlohmann::json to_json(const Device& device);

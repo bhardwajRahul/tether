@@ -330,14 +330,16 @@ namespace tether::bluetooth {
             monitor.invoke_sync([&] { exported = advert->export_object(); });
             // BlueZ reads the advertisement's properties back before returning, so
             // this call must stay off the thread that answers those reads.
-            if (exported && advert->register_with_bluez()) {
+            std::string registration_error;
+            if (exported && advert->register_with_bluez(&registration_error)) {
                 g_advert = advert;
                 return true;
             }
 
             monitor.invoke_sync([&] { advert->unexport_object(); });
             delete advert;
-            err = "Could not advertise for ANCS. The controller may have no free LE advertising instance.";
+            err = registration_error.empty() ? "Could not prepare the ANCS advertisement."
+                                             : "Could not advertise for ANCS: " + registration_error;
             return false;
         }
 
