@@ -187,6 +187,22 @@ TEST(Capability, FullModeWhenBearerConfirmed) {
     EXPECT_TRUE(cap.setup.empty());
 }
 
+TEST(Capability, SecureConnectionsStateIsInjectedRatherThanReadDuringResolution) {
+    Payload p(join(ADAPTER_FULL, IPHONE_BONDED).c_str());
+    const auto objects = parse_managed_objects(p.v);
+
+    const auto unknown = resolve_capability(objects);
+    EXPECT_FALSE(unknown.secure_connections_known);
+
+    const auto enabled = resolve_capability(objects, true);
+    EXPECT_TRUE(enabled.secure_connections_known);
+    EXPECT_TRUE(enabled.secure_connections);
+
+    const auto disabled = resolve_capability(objects, false);
+    EXPECT_TRUE(disabled.secure_connections_known);
+    EXPECT_FALSE(disabled.secure_connections);
+}
+
 // Without --experimental the bearer interface can never appear, so its absence
 // is conclusive.
 TEST(Capability, CompatibilityWhenExperimentalIsOff) {

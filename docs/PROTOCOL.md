@@ -175,7 +175,9 @@ Instructs the daemon to asynchronously reach out to a specific host to initiate 
 ### `accept_device` (Local Client -> Daemon)
 Trusts a pending pair request by moving the target fingerprint into the daemon's internal secure `known_hosts.json`.
 **Payload**: `{"command": "accept_device", "fingerprint": "12:aa:bb:cc..."}`
-**Response**: The daemon synchronously broadcasts `pair_accepted` with the `fingerprint` and resolved `device_name`.
+**Response**: The daemon promotes any matching live TLS session, notifies the phone and local subscribers,
+then replies with `{"command":"accept_device_result","accepted":true,"connected":true}`. `connected` is false
+when the trust record was saved for a device that is no longer connected.
 
 ### `send_file` (Local Client -> Daemon)
 Offloads an entire file transfer to the daemon. The daemon spawns a thread to read the local filesystem and pushes the chunks sequence securely.

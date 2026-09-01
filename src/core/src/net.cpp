@@ -258,6 +258,11 @@ namespace tether {
         return pending;
     }
 
+    static void save_pending_pairs(const nlohmann::json& pending) {
+        std::ofstream ofs(get_runtime_dir() + "/pending_pairs.json");
+        ofs << pending.dump(4);
+    }
+
     static std::string lookup_known_host_name(const std::string& fingerprint) {
         try {
             auto known = nlohmann::json::parse(Crypto::instance().get_known_hosts_dump());
@@ -671,7 +676,9 @@ namespace tether {
 
     // --- UnixServer ---
 
-    UnixServer::UnixServer(EpollEventLoop& loop) : loop_(loop) { socket_path_ = get_runtime_dir() + "/tetherd.sock"; }
+    UnixServer::UnixServer(EpollEventLoop& loop, TcpServer& tcp_server) : loop_(loop), tcp_server_(tcp_server) {
+        socket_path_ = get_runtime_dir() + "/tetherd.sock";
+    }
 
     UnixServer::~UnixServer() { stop(); }
 
@@ -1066,31 +1073,14 @@ namespace tether {
                         write_plain_packet(client_fd, payload);
                         continue;
                     } else if (j.contains("command") && j["command"] == "accept_device" && j.contains("fingerprint")) {
-                        std::string print = j["fingerprint"];
-                        std::string resolved_name = "Unknown Device";
-                        std::string pending_path = get_runtime_dir() + "/pending_pairs.json";
-                        nlohmann::json pending;
-                        std::ifstream ifs(pending_path);
-                        if (ifs.is_open()) {
-                            try {
-                                pending = nlohmann::json::parse(ifs);
-                            } catch (...) {
-                            }
-                            ifs.close();
-                        }
-                        if (pending.contains(print) && pending[print].is_string()) {
-                            resolved_name = pending[print].get<std::string>();
-                            pending.erase(print);
-                            std::ofstream ofs(pending_path);
-                            ofs << pending.dump(4);
-                        }
-                        Crypto::instance().add_known_host(resolved_name, print);
-
-                        nlohmann::json event;
-                        event["command"] = "pair_accepted";
-                        event["fingerprint"] = print;
-                        event["device_name"] = resolved_name;
-                        broadcast_local_event(event.dump());
+                        const std::string print = j.value("fingerprint", "");
+                        const std::string fallback_name = j.value("device_name", "Paired Device");
+                        const bool connected = !print.empty() && tcp_server_.accept_device(print, fallback_name);
+                        nlohmann::json response{{"command", "accept_device_result"},
+                                                {"accepted", !print.empty()},
+                                                {"connected", connected}};
+                        write_plain_packet(client_fd, response.dump() + "\n");
+                        continue;
                     } else if (j.contains("command") && j["command"] == "pair_request" && j.contains("host")) {
                         std::string target_host = j["host"];
                         int target_port = j.value("port", 5134);
@@ -1537,6 +1527,79 @@ namespace tether {
         }
     }
 
+    bool TcpServer::accept_device(const std::string& fingerprint, const std::string& fallback_name) {
+        if (fingerprint.empty())
+            return false;
+
+        auto pending = load_pending_pairs();
+        std::string device_name = lookup_known_host_name(fingerprint);
+        if (device_name.empty())
+            device_name = fallback_name.empty() ? "Paired Device" : fallback_name;
+        if (pending.contains(fingerprint) && pending[fingerprint].is_string()) {
+            device_name = pending[fingerprint].get<std::string>();
+            pending.erase(fingerprint);
+            save_pending_pairs(pending);
+        }
+
+        Crypto::instance().add_known_host(device_name, fingerprint);
+
+        bool promoted = false;
+        std::string address;
+        for (auto& [client_fd, remote] : connected_remote_clients) {
+            if (remote.fingerprint != fingerprint)
+                continue;
+
+            auto ssl_it = active_ssl_.find(client_fd);
+            auto paired_it = client_paired_.find(client_fd);
+            auto info_it = client_info_.find(client_fd);
+            if (ssl_it == active_ssl_.end() || paired_it == client_paired_.end() || info_it == client_info_.end())
+                continue;
+
+            paired_it->second = true;
+            info_it->second.paired = true;
+            info_it->second.device_name = device_name;
+            remote.paired = true;
+            remote.device_name = device_name;
+            address = remote.address;
+            register_client_ssl(client_fd, ssl_it->second);
+            promoted = true;
+
+            nlohmann::json connected_event{{"command", "client_connected"},
+                                            {"fingerprint", fingerprint},
+                                            {"device_name", device_name},
+                                            {"address", remote.address},
+                                            {"paired", true}};
+            broadcast_local_event(connected_event.dump());
+
+            nlohmann::json response{{"command", "pair_accepted"}};
+            const std::string payload = response.dump() + "\n";
+            robust_ssl_write(ssl_it->second, payload.c_str(), payload.size());
+        }
+
+        nlohmann::json event{{"command", "pair_accepted"},
+                             {"fingerprint", fingerprint},
+                             {"device_name", device_name},
+                             {"address", address},
+                             {"connected", promoted}};
+        broadcast_local_event(event.dump());
+
+        // An external acceptance supersedes any dialog for the same request.
+        // Its exit callback observes the promoted session and ignores the stale
+        // non-zero result rather than sending pair_rejected to the phone.
+        for (const auto& [read_fd, dialog] : pending_dialogs_) {
+            (void)read_fd;
+            if (dialog.fingerprint == fingerprint)
+                kill(dialog.pid, SIGTERM);
+        }
+
+        debug::log(INFO,
+                   promoted ? "[Pairing Accepted] {} ({}) and live session promoted"
+                            : "[Pairing Accepted] {} ({}) for the next connection",
+                   device_name,
+                   fingerprint);
+        return promoted;
+    }
+
     void TcpServer::spawn_pair_dialog(int client_fd,
                                       SSL* ssl,
                                       const std::string& fingerprint,
@@ -1645,70 +1708,9 @@ namespace tether {
             int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : 3;
 
             if (exit_code == 0) {
-                Crypto::instance().add_known_host(info.device_name, info.fingerprint);
-                debug::log(INFO, "[Pairing Accepted] {} ({})", info.device_name, info.fingerprint);
-
-                auto remote_it = connected_remote_clients.find(info.client_fd);
-                auto ssl_it = active_ssl_.find(info.client_fd);
-
-                if (client_paired_.find(info.client_fd) != client_paired_.end()) {
-                    client_paired_[info.client_fd] = true;
-                }
-                auto info_it = client_info_.find(info.client_fd);
-                if (info_it != client_info_.end()) {
-                    info_it->second.paired = true;
-                    info_it->second.device_name = info.device_name;
-                }
-                if (remote_it != connected_remote_clients.end()) {
-                    remote_it->second.paired = true;
-                    remote_it->second.device_name = info.device_name;
-                }
-
-                if (ssl_it != active_ssl_.end()) {
-                    register_client_ssl(info.client_fd, ssl_it->second);
-                }
-
-                nlohmann::json event;
-                event["command"] = "pair_accepted";
-                event["fingerprint"] = info.fingerprint;
-                event["device_name"] = info.device_name;
-                if (remote_it != connected_remote_clients.end()) {
-                    event["address"] = remote_it->second.address;
-                }
-                broadcast_local_event(event.dump());
-
-                nlohmann::json connected_event;
-                connected_event["command"] = "client_connected";
-                connected_event["fingerprint"] = info.fingerprint;
-                connected_event["device_name"] = info.device_name;
-                connected_event["paired"] = true;
-                if (remote_it != connected_remote_clients.end()) {
-                    connected_event["address"] = remote_it->second.address;
-                }
-                broadcast_local_event(connected_event.dump());
-
-                if (ssl_it != active_ssl_.end()) {
-                    nlohmann::json resp;
-                    resp["command"] = "pair_accepted";
-                    std::string payload = resp.dump() + "\n";
-                    robust_ssl_write(ssl_it->second, payload.c_str(), payload.size());
-                }
-
-                std::string pending_path = get_runtime_dir() + "/pending_pairs.json";
-                nlohmann::json pending;
-                std::ifstream ifs(pending_path);
-                if (ifs.is_open()) {
-                    try {
-                        pending = nlohmann::json::parse(ifs);
-                    } catch (...) {
-                    }
-                    ifs.close();
-                }
-                if (pending.contains(info.fingerprint)) {
-                    pending.erase(info.fingerprint);
-                    std::ofstream ofs(pending_path);
-                    ofs << pending.dump(4);
-                }
+                accept_device(info.fingerprint, info.device_name);
+            } else if (client_paired_.contains(info.client_fd) && client_paired_[info.client_fd]) {
+                debug::log(INFO, "Pairing dialog dismissed after {} was accepted elsewhere", info.device_name);
             } else {
 
                 if (!bluetooth::dialog_answered(status))

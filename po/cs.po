@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-08-31 19:17-0700\n"
+"POT-Creation-Date: 2026-08-31 20:10-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Czech\n"
@@ -965,6 +965,10 @@ msgid "Bluetooth is unavailable on this machine."
 msgstr "Bluetooth není na tomto stroji dostupné."
 
 #: src/gtk/devices_view.cpp
+msgid "Scanning for nearby devices..."
+msgstr "Hledání zařízení v okolí..."
+
+#: src/gtk/devices_view.cpp
 msgid "Full mode — messages, contacts, and notifications."
 msgstr "Plný režim — zprávy, kontakty a oznámení."
 
@@ -1094,10 +1098,6 @@ msgid "Unknown Device"
 msgstr "Neznámé zařízení"
 
 #: src/gtk/devices_view.cpp
-msgid "Scanning for nearby devices..."
-msgstr "Hledání zařízení v okolí..."
-
-#: src/gtk/devices_view.cpp
 msgid "Connected"
 msgstr "Připojeno"
 
@@ -1108,6 +1108,11 @@ msgstr "Offline"
 #: src/gtk/devices_view.cpp
 msgid "Nearby (Tap to Pair)"
 msgstr "V okolí (klepnutím spárujete)"
+
+#: src/gtk/devices_view.cpp
+#, fuzzy
+msgid "Partially connected"
+msgstr "nepřipojeno"
 
 #: src/gtk/devices_view.cpp
 msgid "Paired"
@@ -1325,6 +1330,15 @@ msgid "Today"
 msgstr "Dnes"
 
 #: src/gtk/messages_view.cpp
+#, fuzzy
+msgid "Bluetooth connection needed to sync messages."
+msgstr "Démon uzavřel spojení dříve, než byla zpráva odeslána.\n"
+
+#: src/gtk/messages_view.cpp
+msgid "Select a conversation"
+msgstr "Vyberte konverzaci"
+
+#: src/gtk/messages_view.cpp
 msgid "Sending…"
 msgstr "Odesílání…"
 
@@ -1359,10 +1373,6 @@ msgstr "Nová zpráva"
 #: src/gtk/messages_view.cpp
 msgid "Search conversations"
 msgstr "Hledat konverzace"
-
-#: src/gtk/messages_view.cpp
-msgid "Select a conversation"
-msgstr "Vyberte konverzaci"
 
 #: src/gtk/messages_view.cpp
 msgid "To:"
