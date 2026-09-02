@@ -1090,39 +1090,15 @@ namespace tether {
                         write_plain_packet(client_fd, response.dump() + "\n");
                         continue;
                     } else if (j.contains("command") && j["command"] == "pair_request" && j.contains("host")) {
-                        std::string target_host = j["host"];
-                        int target_port = j.value("port", 5134);
-                        std::thread([target_host, target_port]() {
-                            Client remote;
-                            if (remote.connect(target_host, target_port)) {
-                                char hostname[256] = {};
-                                gethostname(hostname, sizeof(hostname) - 1);
-                                std::string err;
-                                std::string response = remote.pair(hostname, err);
-
-                                if (response.find("\"pair_accepted\"") != std::string::npos) {
-                                    std::string print = remote.get_peer_fingerprint();
-                                    if (!print.empty()) {
-                                        // The remote device accepted! Let's save its fingerprint.
-                                        // Since we dialed outbound, we don't necessarily know its mDNS name here
-                                        // But GTK can resolve it. For now let's just use the host IP/name.
-                                        Crypto::instance().add_known_host(target_host, print);
-
-                                        nlohmann::json event;
-                                        event["command"] = "pair_accepted";
-                                        event["fingerprint"] = print;
-                                        event["device_name"] = target_host;
-                                        event["connected"] = false;
-                                        broadcast_local_event(event.dump());
-                                    }
-                                }
-                            }
-                        }).detach();
+                        const std::string target_host = j["host"];
+                        const int target_port = j.value("port", 5134);
+                        const std::string peer_name = j.value("device_name", "");
+                        tcp_server_.connect_peer(target_host, target_port, peer_name);
                     } else if (j.contains("command") && j["command"] == "discover") {
                         std::thread([]() {
                             Discovery discovery;
                             auto hosts = discovery.discover(3000);
-                            auto grouped = group_discovered_hosts(hosts);
+                            auto grouped = group_discovered_hosts(hosts, Crypto::instance().get_my_fingerprint());
 
                             nlohmann::json payload;
                             payload["command"] = "discovery_result";
@@ -1265,21 +1241,28 @@ namespace tether {
             client_fds.push_back(fd);
         }
         for (int fd : client_fds) {
-            SSL* ssl = active_ssl_[fd];
-            if (ssl)
-                SSL_free(ssl);
-
-            loop_.removeFd(fd);
-            close(fd);
-            unregister_client_fd(fd);
-
-            active_ssl_.erase(fd);
-            client_buffers_.erase(fd);
-            ssl_handshake_complete_.erase(fd);
-            client_paired_.erase(fd);
-            client_info_.erase(fd);
-            connected_remote_clients.erase(fd);
+            drop_client(fd);
         }
+    }
+
+    void TcpServer::drop_client(int fd) {
+        auto ssl_it = active_ssl_.find(fd);
+        if (ssl_it != active_ssl_.end()) {
+            if (ssl_it->second)
+                SSL_free(ssl_it->second);
+            active_ssl_.erase(ssl_it);
+        }
+
+        client_buffers_.erase(fd);
+        ssl_handshake_complete_.erase(fd);
+        client_paired_.erase(fd);
+        client_info_.erase(fd);
+        client_initiated_.erase(fd);
+        connected_remote_clients.erase(fd);
+
+        unregister_client_fd(fd);
+        loop_.removeFd(fd);
+        close(fd);
     }
 
     // Text form of an accepted peer.
@@ -1330,6 +1313,81 @@ namespace tether {
         loop_.addFd(client_fd, [this](int cfd) { handle_client(cfd); });
     }
 
+    bool TcpServer::connect_peer(const std::string& host, int port, const std::string& peer_name) {
+        if (host.empty())
+            return false;
+
+        for (auto const& [fd, remote] : connected_remote_clients) {
+            (void)fd;
+            if (remote.address == host) {
+                debug::log(INFO, "TcpServer: Already holding a session with {}", host);
+                return true;
+            }
+        }
+
+        // connect() blocks, and the loop watches EPOLLIN only
+        std::thread([this, host, port, peer_name]() {
+            addrinfo hints{};
+            hints.ai_family = AF_UNSPEC;
+            hints.ai_socktype = SOCK_STREAM;
+            hints.ai_flags = AI_NUMERICSERV;
+
+            addrinfo* results = nullptr;
+            const std::string service = std::to_string(port);
+            if (int err = getaddrinfo(host.c_str(), service.c_str(), &hints, &results); err != 0 || !results) {
+                debug::log(ERR, "TcpServer: Cannot resolve {}: {}", host, gai_strerror(err));
+                return;
+            }
+
+            int sock = -1;
+            for (addrinfo* ai = results; ai; ai = ai->ai_next) {
+                sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+                if (sock < 0)
+                    continue;
+                if (::connect(sock, ai->ai_addr, ai->ai_addrlen) == 0)
+                    break;
+                close(sock);
+                sock = -1;
+            }
+            const int connect_errno = errno;
+            freeaddrinfo(results);
+
+            if (sock < 0) {
+                debug::log(ERR, "TcpServer: Failed to dial {}:{}: {}", host, port, std::strerror(connect_errno));
+                return;
+            }
+
+            loop_.post([this, sock, host, peer_name]() { adopt_peer(sock, host, peer_name); });
+        }).detach();
+
+        return true;
+    }
+
+    void TcpServer::adopt_peer(int fd, const std::string& host, const std::string& peer_name) {
+        int flags = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
+        debug::log(INFO, "TcpServer: Dialled {} (fd: {})", host, fd);
+
+        SSL* ssl = SSL_new(tether::Crypto::instance().get_client_context());
+        SSL_set_fd(ssl, fd);
+        SSL_set_connect_state(ssl);
+
+        active_ssl_[fd] = ssl;
+        ssl_handshake_complete_[fd] = false;
+        client_paired_[fd] = false;
+        client_initiated_[fd] = true;
+        client_info_[fd].address = host;
+        client_info_[fd].device_name = peer_name;
+        connected_remote_clients[fd].address = host;
+        connected_remote_clients[fd].device_name = peer_name;
+
+        loop_.addFd(fd, [this](int cfd) { handle_client(cfd); });
+
+        // Drive the ClientHello out; the peer's reply then arrives as EPOLLIN.
+        handle_client(fd);
+    }
+
     void TcpServer::handle_client(int client_fd) {
         SSL* ssl = active_ssl_[client_fd];
 
@@ -1338,30 +1396,29 @@ namespace tether {
             // handshake attempt so the diagnostics below reflect only this socket's
             // failure, not stale errors from earlier operations.
             ERR_clear_error();
-            int ret = SSL_accept(ssl);
+            const bool initiated = client_initiated_[client_fd];
+            int ret = initiated ? SSL_connect(ssl) : SSL_accept(ssl);
             if (ret == 1) {
                 ssl_handshake_complete_[client_fd] = true;
                 std::string print = Crypto::get_peer_fingerprint(ssl);
                 client_info_[client_fd].fingerprint = print;
                 connected_remote_clients[client_fd].fingerprint = print;
                 if (Crypto::instance().is_host_known(print)) {
-                    client_paired_[client_fd] = true;
-                    client_info_[client_fd].paired = true;
-                    connected_remote_clients[client_fd].paired = true;
                     std::string device_name = lookup_known_host_name(print);
-                    if (!device_name.empty()) {
-                        client_info_[client_fd].device_name = device_name;
-                        connected_remote_clients[client_fd].device_name = client_info_[client_fd].device_name;
-                    }
-                    register_client_ssl(client_fd, ssl);
+                    if (device_name.empty())
+                        device_name = client_info_[client_fd].device_name;
+                    promote_session(client_fd, print, device_name);
+                } else if (initiated) {
+                    // We dialled, so we are the one asking. The peer prompts its user
+                    // and answers pair_accepted; we pin nothing until it does.
+                    char hostname[256] = {};
+                    gethostname(hostname, sizeof(hostname) - 1);
 
-                    nlohmann::json event;
-                    event["command"] = "client_connected";
-                    event["address"] = client_info_[client_fd].address;
-                    event["fingerprint"] = print;
-                    event["device_name"] = client_info_[client_fd].device_name;
-                    event["paired"] = true;
-                    broadcast_local_event(event.dump());
+                    nlohmann::json request{{"command", "pair_request"}, {"device_name", hostname}};
+                    const std::string payload = request.dump() + "\n";
+                    robust_ssl_write(ssl, payload.c_str(), payload.size());
+
+                    debug::log(INFO, "TcpServer: Pair request sent to {} ({})", client_info_[client_fd].address, print);
                 } else {
                     debug::log(INFO, "TcpServer: Untrusted client connected. Fingerprint: {}", print);
                     nlohmann::json event;
@@ -1404,16 +1461,7 @@ namespace tether {
                            client_fd,
                            reason);
 
-                SSL_free(ssl);
-                active_ssl_.erase(client_fd);
-                client_buffers_.erase(client_fd);
-                ssl_handshake_complete_.erase(client_fd);
-                client_paired_.erase(client_fd);
-                client_info_.erase(client_fd);
-                connected_remote_clients.erase(client_fd);
-                unregister_client_fd(client_fd);
-                loop_.removeFd(client_fd);
-                close(client_fd);
+                drop_client(client_fd);
                 return;
             }
         }
@@ -1428,16 +1476,7 @@ namespace tether {
             buffer.append(buf, n);
             if (buffer.size() > MAX_CLIENT_BUFFER_BYTES) {
                 debug::log(ERR, "TcpServer: client {} sent an unframed stream; dropping it", client_fd);
-                SSL_free(ssl);
-                active_ssl_.erase(client_fd);
-                client_buffers_.erase(client_fd);
-                ssl_handshake_complete_.erase(client_fd);
-                client_paired_.erase(client_fd);
-                client_info_.erase(client_fd);
-                connected_remote_clients.erase(client_fd);
-                unregister_client_fd(client_fd);
-                loop_.removeFd(client_fd);
-                close(client_fd);
+                drop_client(client_fd);
                 return;
             }
 
@@ -1449,6 +1488,54 @@ namespace tether {
 
                 try {
                     nlohmann::json j = nlohmann::json::parse(msg);
+
+                    if (!client_paired_[client_fd] && client_initiated_[client_fd]) {
+                        // Our own pair_request is outstanding. The peer's user is the
+                        // approver, so only the peer's verdict pins anything here.
+                        const std::string command = j.value("command", "");
+                        const std::string print = Crypto::get_peer_fingerprint(ssl);
+
+                        if (command == "pair_accepted") {
+                            std::string dev_name = client_info_[client_fd].device_name;
+                            if (dev_name.empty())
+                                dev_name = client_info_[client_fd].address;
+
+                            Crypto::instance().add_known_host(dev_name, print);
+                            promote_session(client_fd, print, dev_name);
+
+                            debug::log(INFO, "[Pairing Accepted] by {} ({})", dev_name, print);
+
+                            nlohmann::json event{{"command", "pair_accepted"},
+                                                 {"fingerprint", print},
+                                                 {"device_name", dev_name},
+                                                 {"address", client_info_[client_fd].address},
+                                                 {"connected", true}};
+                            broadcast_local_event(event.dump());
+                        } else if (command == "pair_pending") {
+                            const std::string peer = j.value("device_name", client_info_[client_fd].address);
+                            client_info_[client_fd].device_name = peer;
+                            connected_remote_clients[client_fd].device_name = peer;
+
+                            nlohmann::json event{{"command", "pair_outbound_pending"},
+                                                 {"fingerprint", print},
+                                                 {"device_name", peer},
+                                                 {"address", client_info_[client_fd].address}};
+                            broadcast_local_event(event.dump());
+                        } else {
+                            debug::log(INFO,
+                                       "TcpServer: {} refused the pair request ({})",
+                                       client_info_[client_fd].address,
+                                       command.empty() ? "no command" : command);
+                            nlohmann::json event{{"command", "pair_rejected"},
+                                                 {"fingerprint", print},
+                                                 {"device_name", client_info_[client_fd].device_name},
+                                                 {"address", client_info_[client_fd].address}};
+                            broadcast_local_event(event.dump());
+                            drop_client(client_fd);
+                            return;
+                        }
+                        continue;
+                    }
 
                     if (!client_paired_[client_fd]) {
                         if (j.contains("command") && j["command"] == "pair_request") {
@@ -1571,17 +1658,35 @@ namespace tether {
                 event["paired"] = it->second.paired;
                 broadcast_local_event(event.dump());
             }
-            SSL_free(ssl);
-            active_ssl_.erase(client_fd);
-            client_buffers_.erase(client_fd);
-            ssl_handshake_complete_.erase(client_fd);
-            client_paired_.erase(client_fd);
-            client_info_.erase(client_fd);
-            connected_remote_clients.erase(client_fd);
-            unregister_client_fd(client_fd);
-            loop_.removeFd(client_fd);
-            close(client_fd);
+            drop_client(client_fd);
         }
+    }
+
+    void TcpServer::promote_session(int client_fd, const std::string& fingerprint, const std::string& device_name) {
+        auto ssl_it = active_ssl_.find(client_fd);
+        auto paired_it = client_paired_.find(client_fd);
+        auto info_it = client_info_.find(client_fd);
+        auto remote_it = connected_remote_clients.find(client_fd);
+        if (ssl_it == active_ssl_.end() || paired_it == client_paired_.end() || info_it == client_info_.end() ||
+            remote_it == connected_remote_clients.end())
+            return;
+
+        paired_it->second = true;
+        info_it->second.paired = true;
+        info_it->second.device_name = device_name;
+        remote_it->second.paired = true;
+        remote_it->second.device_name = device_name;
+        remote_it->second.fingerprint = fingerprint;
+
+        // Only a trusted session joins the broadcast registry.
+        register_client_ssl(client_fd, ssl_it->second);
+
+        nlohmann::json connected_event{{"command", "client_connected"},
+                                       {"fingerprint", fingerprint},
+                                       {"device_name", device_name},
+                                       {"address", remote_it->second.address},
+                                       {"paired", true}};
+        broadcast_local_event(connected_event.dump());
     }
 
     bool TcpServer::accept_device(const std::string& fingerprint, const std::string& fallback_name) {
@@ -1602,32 +1707,22 @@ namespace tether {
 
         bool promoted = false;
         std::string address;
-        for (auto& [client_fd, remote] : connected_remote_clients) {
-            if (remote.fingerprint != fingerprint)
-                continue;
+        std::vector<int> matching_fds;
+        for (auto const& [client_fd, remote] : connected_remote_clients) {
+            if (remote.fingerprint == fingerprint)
+                matching_fds.push_back(client_fd);
+        }
 
+        for (int client_fd : matching_fds) {
             auto ssl_it = active_ssl_.find(client_fd);
-            auto paired_it = client_paired_.find(client_fd);
-            auto info_it = client_info_.find(client_fd);
-            if (ssl_it == active_ssl_.end() || paired_it == client_paired_.end() || info_it == client_info_.end())
+            if (ssl_it == active_ssl_.end())
                 continue;
 
-            paired_it->second = true;
-            info_it->second.paired = true;
-            info_it->second.device_name = device_name;
-            remote.paired = true;
-            remote.device_name = device_name;
-            address = remote.address;
-            register_client_ssl(client_fd, ssl_it->second);
+            promote_session(client_fd, fingerprint, device_name);
+            address = connected_remote_clients[client_fd].address;
             promoted = true;
 
-            nlohmann::json connected_event{{"command", "client_connected"},
-                                           {"fingerprint", fingerprint},
-                                           {"device_name", device_name},
-                                           {"address", remote.address},
-                                           {"paired", true}};
-            broadcast_local_event(connected_event.dump());
-
+            // We are the approver here, so the peer is told its request went through.
             nlohmann::json response{{"command", "pair_accepted"}};
             const std::string payload = response.dump() + "\n";
             robust_ssl_write(ssl_it->second, payload.c_str(), payload.size());

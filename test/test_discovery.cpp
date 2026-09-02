@@ -87,6 +87,23 @@ TEST(DiscoveryTest, GroupDiscoveredHosts_MixedFingerprintsAndNames) {
     ASSERT_EQ(result.size(), 2);
 }
 
+// A node advertises itself on the same LAN it browses, so without this filter it
+// lists itself as a pairable peer.
+TEST(DiscoveryTest, GroupDiscoveredHosts_ExcludesOwnFingerprint) {
+    std::vector<tether::DiscoveredHost> hosts = {
+        {"self", "192.168.1.10", 5134, "mine"},
+        {"peer", "192.168.1.20", 5134, "theirs"},
+        {"self", "10.0.0.5", 5134, "mine"}
+    };
+
+    auto result = tether::group_discovered_hosts(hosts, "mine");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(result[0].fingerprint, "theirs");
+
+    // An empty exclusion keeps every device, so non-daemon callers are unaffected.
+    EXPECT_EQ(tether::group_discovered_hosts(hosts, "").size(), 2);
+}
+
 // Publishing and continuous browse both watch the same daemon and each walks
 // the same client states, so the availability report must collapse repeats:
 // consecutive identical values would flap the UI indicator.

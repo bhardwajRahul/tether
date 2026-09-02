@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-01 13:57-0700\n"
+"POT-Creation-Date: 2026-09-02 10:09-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Brazilian Portuguese\n"
@@ -557,7 +557,8 @@ msgstr "Espelhamento de notificações desativado."
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
-msgstr "Esperado um adaptador, p. ex. --bt-adapter hci1, ou --bt-adapter auto\n"
+msgstr ""
+"Esperado um adaptador, p. ex. --bt-adapter hci1, ou --bt-adapter auto\n"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1174,6 +1175,15 @@ msgstr "Parcialmente conectado"
 #: src/gtk/devices_view.cpp
 msgid "Paired"
 msgstr "Pareado"
+
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Waiting for approval on {0}..."
+msgstr "Aguardando a aprovação em {0}…"
+
+#: src/gtk/devices_view.cpp
+msgid "Pair request was rejected."
+msgstr "A solicitação de pareamento foi recusada."
 
 #: src/gtk/devices_view.cpp
 msgid "Ready"

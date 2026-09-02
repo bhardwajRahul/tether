@@ -58,43 +58,55 @@ struct PairingView: View {
                 }
 
                 // Fingerprint Display
-                VStack(spacing: 8) {
-                    Text("Your Device Fingerprint")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .textCase(.uppercase)
+                if !viewModel.pairingIsInbound {
+                    VStack(spacing: 8) {
+                        Text("Your Device Fingerprint")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                            .textCase(.uppercase)
 
-                    Text(formatFingerprint(viewModel.certificateManager.myFingerprint))
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
-                        .textSelection(.enabled)
+                        Text(formatFingerprint(viewModel.certificateManager.myFingerprint))
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                            .textSelection(.enabled)
+                    }
                 }
 
                 Spacer()
 
                 // Actions
                 VStack(spacing: 12) {
-                    Button {
-                        viewModel.confirmPairing()
-                    } label: {
-                        Text("I've Approved on Desktop")
-                            .font(.body.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.teal)
+                    if viewModel.pairingIsInbound {
+                        Button {
+                            viewModel.acceptIncomingPairing()
+                        } label: {
+                            Text("Accept")
+                                .font(.body.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.teal)
 
-                    Button {
-                        viewModel.disconnect()
-                        viewModel.showPairingSheet = false
-                    } label: {
-                        Text("Cancel")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                        Button {
+                            viewModel.rejectIncomingPairing()
+                        } label: {
+                            Text("Reject")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Button {
+                            viewModel.disconnect()
+                            viewModel.showPairingSheet = false
+                        } label: {
+                            Text("Cancel")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .padding(.horizontal, 24)

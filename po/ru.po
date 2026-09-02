@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-01 13:57-0700\n"
+"POT-Creation-Date: 2026-09-02 10:09-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Russian\n"
@@ -1176,6 +1176,15 @@ msgstr "Подключено частично"
 #: src/gtk/devices_view.cpp
 msgid "Paired"
 msgstr "Сопряжено"
+
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Waiting for approval on {0}..."
+msgstr "Ожидание подтверждения на {0}…"
+
+#: src/gtk/devices_view.cpp
+msgid "Pair request was rejected."
+msgstr "Запрос на сопряжение отклонён."
 
 #: src/gtk/devices_view.cpp
 msgid "Ready"

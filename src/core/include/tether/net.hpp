@@ -78,6 +78,9 @@ namespace tether {
         // Returns true when at least one connected client was promoted.
         bool accept_device(const std::string& fingerprint, const std::string& fallback_name = "Paired Device");
 
+        // Dial a peer and add the session into this server's client tables
+        bool connect_peer(const std::string& host, int port, const std::string& peer_name = "");
+
     private:
         struct ConnectedClientInfo {
             std::string address;
@@ -88,7 +91,12 @@ namespace tether {
 
         void handle_accept(int fd);
         void handle_client(int client_fd);
+        void adopt_peer(int fd, const std::string& host, const std::string& peer_name);
         void spawn_pair_dialog(int client_fd, SSL* ssl, const std::string& fingerprint, const std::string& device_name);
+        // Marks a session trusted and wires it into the broadcast registry.
+        void promote_session(int client_fd, const std::string& fingerprint, const std::string& device_name);
+        // Frees the SSL session, forgets every per-client table, and closes the fd.
+        void drop_client(int fd);
 
         EpollEventLoop& loop_;
         int server_fd_ = -1;
@@ -98,6 +106,8 @@ namespace tether {
         std::map<int, bool> ssl_handshake_complete_;
         std::map<int, bool> client_paired_;
         std::map<int, ConnectedClientInfo> client_info_;
+        // fds we dialled
+        std::map<int, bool> client_initiated_;
 
         // Track spawned dialog child processes
         struct PendingPairDialog {

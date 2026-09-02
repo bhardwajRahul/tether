@@ -5,6 +5,7 @@
 #include <tether/event_loop.hpp>
 #include <tether/log.hpp>
 #include <tether/net.hpp>
+#include <nlohmann/json.hpp>
 
 #include <arpa/inet.h>
 #include <cerrno>
@@ -325,6 +326,121 @@ namespace {
 
         if (!connected)
             GTEST_SKIP() << "no IPv6 loopback on this host";
+    }
+
+    size_t open_fd_count() {
+        size_t count = 0;
+        for (const auto& entry : std::filesystem::directory_iterator("/proc/self/fd"))
+            (void)entry, ++count;
+        return count;
+    }
+
+    // A dial that never lands must not strand a socket or a client-table entry;
+    // every teardown path funnels through drop_client().
+    TEST(TcpServerTest, DialToAClosedPortLeaksNothing) {
+        const std::string home = unique_test_dir("tether_dial_fail_test");
+        CleanupGuard cleanup_guard(home);
+        std::filesystem::remove_all(home);
+        std::filesystem::create_directories(home);
+        ScopedEnvVar home_env("HOME", home);
+        ASSERT_TRUE(tether::Crypto::instance().init());
+
+        constexpr int port = 45137;
+        constexpr int dead_port = 45138;
+        tether::EpollEventLoop loop;
+        tether::TcpServer server(loop, port);
+        if (!server.start())
+            GTEST_SKIP() << "port " << port << " is unavailable";
+
+        CerrCapture captured;
+        std::thread loop_thread([&loop] { loop.run(); });
+
+        const size_t before = open_fd_count();
+        EXPECT_TRUE(server.connect_peer("127.0.0.1", dead_port, "ghost"));
+
+        std::string log;
+        for (int attempt = 0; attempt < 200; ++attempt) {
+            log = captured.str();
+            if (log.find("Failed to dial") != std::string::npos)
+                break;
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
+        loop.post([&loop] { loop.stop(); });
+        loop_thread.join();
+        captured.restore();
+
+        EXPECT_NE(log.find("Failed to dial"), std::string::npos) << "captured log:\n" << log;
+        EXPECT_LE(open_fd_count(), before);
+    }
+
+    // The dialling side owns the pair request: it sends one unprompted once TLS is up,
+    // which is what makes a desktop-initiated pair reach the peer's approval prompt.
+    // The peer here is a bare TLS socket, not a second TcpServer, so nothing forks a
+    // real approval dialog onto the machine running the suite.
+    TEST(TcpServerTest, DiallingPeerSendsPairRequest) {
+        const std::string home = unique_test_dir("tether_dial_pair_test");
+        CleanupGuard cleanup_guard(home);
+        std::filesystem::remove_all(home);
+        std::filesystem::create_directories(home);
+        ScopedEnvVar home_env("HOME", home);
+        ASSERT_TRUE(tether::Crypto::instance().init());
+
+        const int peer_fd = socket(AF_INET, SOCK_STREAM, 0);
+        ASSERT_GE(peer_fd, 0);
+        int reuse = 1;
+        setsockopt(peer_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+
+        sockaddr_in peer_addr{};
+        peer_addr.sin_family = AF_INET;
+        peer_addr.sin_port = 0; // let the kernel pick
+        peer_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        ASSERT_EQ(bind(peer_fd, reinterpret_cast<sockaddr*>(&peer_addr), sizeof(peer_addr)), 0);
+        ASSERT_EQ(listen(peer_fd, 1), 0);
+
+        socklen_t addrlen = sizeof(peer_addr);
+        ASSERT_EQ(getsockname(peer_fd, reinterpret_cast<sockaddr*>(&peer_addr), &addrlen), 0);
+        const int peer_port = ntohs(peer_addr.sin_port);
+
+        std::string received;
+        std::thread peer_thread([peer_fd, &received] {
+            const int conn = accept(peer_fd, nullptr, nullptr);
+            if (conn < 0)
+                return;
+
+            SSL* ssl = SSL_new(tether::Crypto::instance().get_server_context());
+            SSL_set_fd(ssl, conn);
+            if (SSL_accept(ssl) == 1) {
+                char buf[4096];
+                const int n = SSL_read(ssl, buf, sizeof(buf));
+                if (n > 0)
+                    received.assign(buf, n);
+            }
+            SSL_free(ssl);
+            close(conn);
+        });
+
+        constexpr int dialler_port = 45139;
+        tether::EpollEventLoop loop;
+        tether::TcpServer dialler(loop, dialler_port);
+        if (!dialler.start()) {
+            close(peer_fd);
+            peer_thread.join();
+            GTEST_SKIP() << "port " << dialler_port << " is unavailable";
+        }
+
+        std::thread loop_thread([&loop] { loop.run(); });
+        EXPECT_TRUE(dialler.connect_peer("127.0.0.1", peer_port, "peer"));
+
+        peer_thread.join();
+        loop.post([&loop] { loop.stop(); });
+        loop_thread.join();
+        close(peer_fd);
+
+        ASSERT_FALSE(received.empty()) << "the dialler sent nothing after the handshake";
+        const auto parsed = nlohmann::json::parse(received);
+        EXPECT_EQ(parsed.value("command", ""), "pair_request");
+        EXPECT_FALSE(parsed.value("device_name", "").empty());
     }
 
 } // namespace

@@ -132,6 +132,14 @@ Access control is trust-on-first-use fingerprint pinning. After the handshake th
 
 TLS still verifies the peer's `CertificateVerify` signature, so a pinned fingerprint proves the peer holds the matching private key. An attacker on the same network cannot impersonate a paired device without that key, but they can open a connection and sit at the pairing prompt.
 
+Every node is a peer. A PC, iPhone or iPad all listen and all dial, and one certificate serves both roles, so a node's fingerprint is the same whether it opened the connection or accepted it. Pairing is therefore direction-agnostic but never symmetric in authority:
+
+- The **dialling** node sends `pair_request` as soon as its handshake completes. Dialling is its own consent, so it prompts nobody locally.
+- The **receiving** node prompts its user (the desktop dialog, or `tether --accept <fingerprint>`).
+- Only the receiver's approval settles it. It replies `pair_accepted`, and **both** sides then write the other's fingerprint to their own `known_hosts.json`.
+
+A node must never pin a peer on local assertion alone — a UI must not report a device paired or connected until `pair_accepted` has crossed the wire and the trust record exists.
+
 ### `pair_request` (Untrusted Client -> Daemon)
 
 **Description**: Emitted natively by a new client over standard TLS to gracefully present its identity and X.509 fingerprint. The Daemon immediately intercepts the payload, extracts the fingerprint natively from the `SSL*` pipe, and flags it locally as "Pending Authentication". Anything other than `pair_request` results in the TLS socket securely disconnecting.
@@ -155,7 +163,18 @@ TLS still verifies the peer's `CertificateVerify` signature, so a pinned fingerp
 }
 ```
 
-Once paired (via `tether --accept <fingerprint>`), the fingerprint is written to `known_hosts.json`. Later connections presenting that certificate are treated as paired and may issue any command.
+### `pair_accepted` (Approving Node -> Requesting Node)
+
+**Description**: The approver's verdict, sent on the same TLS session once its user accepts. The requesting node pins the approver's fingerprint on receipt and the session is promoted in place — no reconnect.
+
+**Payload**:
+```json
+{
+  "command": "pair_accepted"
+}
+```
+
+Once paired (via `tether --accept <fingerprint>`, the desktop dialog, or the peer's `pair_accepted`), the fingerprint is written to `known_hosts.json`. Later connections presenting that certificate are treated as paired and may issue any command.
 
 ---
 
@@ -169,8 +188,9 @@ Instructs the daemon to perform a synchronous mDNS scan (3 seconds) in a backgro
 **Response**: The daemon broadcasts a `discovery_result` payload asynchronously containing an array of active `devices`.
 
 ### `pair_request` (Local Client -> Daemon)
-Instructs the daemon to asynchronously reach out to a specific host to initiate a TLS pairing request.
-**Payload**: `{"command": "pair_request", "host": "192.168.1.5", "port": 5134}`
+Instructs the daemon to dial a peer and hold the resulting TLS session itself, sending `pair_request` on it as described in §3. `device_name` is the peer's advertised mDNS name, used to label the trust record; it is optional and falls back to the address.
+**Payload**: `{"command": "pair_request", "host": "192.168.1.5", "port": 5134, "device_name": "workstation"}`
+**Response**: The daemon broadcasts `pair_outbound_pending` while the peer's user decides, then either `pair_accepted` (with `connected: true`) or `pair_rejected`. A dial to a peer the daemon already has a session with is a no-op.
 
 ### `accept_device` (Local Client -> Daemon)
 Trusts a pending pair request by moving the target fingerprint into the daemon's internal secure `known_hosts.json`.
