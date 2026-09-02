@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-01 13:57-0700\n"
+"POT-Creation-Date: 2026-09-02 10:09-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -542,7 +542,8 @@ msgstr "通知のミラーリングを無効にしました。"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
-msgstr "アダプタを指定してください。例: --bt-adapter hci1 または --bt-adapter auto\n"
+msgstr ""
+"アダプタを指定してください。例: --bt-adapter hci1 または --bt-adapter auto\n"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -552,7 +553,8 @@ msgstr "「{}」に一致する Bluetooth アダプタがありません。利�
 #: src/cli/main.cpp
 #, c-format
 msgid "Controller selection is automatic: the first powered one.\n"
-msgstr "アダプタの選択は自動です。電源の入っている最初のアダプタを使用します。\n"
+msgstr ""
+"アダプタの選択は自動です。電源の入っている最初のアダプタを使用します。\n"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1150,6 +1152,15 @@ msgstr "部分的に接続"
 #: src/gtk/devices_view.cpp
 msgid "Paired"
 msgstr "ペアリング済み"
+
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Waiting for approval on {0}..."
+msgstr "{0} での承認を待っています…"
+
+#: src/gtk/devices_view.cpp
+msgid "Pair request was rejected."
+msgstr "ペアリング要求は拒否されました。"
 
 #: src/gtk/devices_view.cpp
 msgid "Ready"

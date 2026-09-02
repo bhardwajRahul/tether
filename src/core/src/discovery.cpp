@@ -283,7 +283,7 @@ namespace tether {
 
                 if (ctx->impl->browse_callback) {
                     cb = ctx->impl->browse_callback;
-                    grouped = group_discovered_hosts(ctx->impl->results);
+                    grouped = group_discovered_hosts(ctx->impl->results, ctx->impl->pub_fingerprint);
                 }
             }
 
@@ -329,7 +329,7 @@ namespace tether {
 
                 if (ctx->impl->browse_callback) {
                     cb = ctx->impl->browse_callback;
-                    grouped = group_discovered_hosts(ctx->impl->results);
+                    grouped = group_discovered_hosts(ctx->impl->results, ctx->impl->pub_fingerprint);
                 }
             }
             if (cb)
@@ -629,12 +629,16 @@ namespace tether {
 
     // ─── Grouping helper ────────────────────────────────────────────
 
-    std::vector<DiscoveredDevice> group_discovered_hosts(const std::vector<DiscoveredHost>& hosts) {
+    std::vector<DiscoveredDevice> group_discovered_hosts(const std::vector<DiscoveredHost>& hosts,
+                                                         const std::string& exclude_fingerprint) {
         // Use fingerprint as the grouping key.  Maintain insertion order.
         std::vector<DiscoveredDevice> devices;
         std::map<std::string, size_t> fp_index; // fingerprint -> index into devices
 
         for (const auto& h : hosts) {
+            if (!exclude_fingerprint.empty() && h.fingerprint == exclude_fingerprint)
+                continue;
+
             std::string key = h.fingerprint.empty() ? ("__nokey__" + h.name) : h.fingerprint;
 
             auto it = fp_index.find(key);

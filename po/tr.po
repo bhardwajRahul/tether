@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-01 13:57-0700\n"
+"POT-Creation-Date: 2026-09-02 10:09-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Turkish\n"
@@ -309,7 +309,8 @@ msgstr "kullanımda"
 #: src/cli/main.cpp
 #, c++-format
 msgid "Controller {} is not present; using the first powered one instead."
-msgstr "{} bağdaştırıcısı yok; bunun yerine açık olan ilk bağdaştırıcı kullanılıyor."
+msgstr ""
+"{} bağdaştırıcısı yok; bunun yerine açık olan ilk bağdaştırıcı kullanılıyor."
 
 #: src/cli/main.cpp
 #, c-format
@@ -553,7 +554,8 @@ msgstr "Bildirim yansıtma devre dışı bırakıldı."
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
-msgstr "Bir bağdaştırıcı bekleniyordu, ör. --bt-adapter hci1 veya --bt-adapter auto\n"
+msgstr ""
+"Bir bağdaştırıcı bekleniyordu, ör. --bt-adapter hci1 veya --bt-adapter auto\n"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1157,6 +1159,15 @@ msgstr "Kısmen bağlı"
 #: src/gtk/devices_view.cpp
 msgid "Paired"
 msgstr "Eşleşti"
+
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Waiting for approval on {0}..."
+msgstr "{0} aygıtında onay bekleniyor…"
+
+#: src/gtk/devices_view.cpp
+msgid "Pair request was rejected."
+msgstr "Eşleşme isteği reddedildi."
 
 #: src/gtk/devices_view.cpp
 msgid "Ready"

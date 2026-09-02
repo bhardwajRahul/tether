@@ -113,6 +113,10 @@ final class TetherViewModel {
     // Status message for the pairing flow.
     private(set) var pairingStatus: String = ""
 
+    // Which side asked. Inbound means a peer dialled us and this device is the
+    // approver. Outbound means we asked and the peer's user decides.
+    private(set) var pairingIsInbound = false
+
     // Error message to display, if any.
     var errorMessage: String?
 
@@ -397,7 +401,7 @@ final class TetherViewModel {
         connection.onStateChange = { [weak self] state in
             guard let self else { return }
             switch state {
-            case .connected:
+            case .connected(let isInbound):
                 self.pendingReconnectTask?.cancel()
                 self.pendingReconnectTask = nil
                 self.autoConnectingFingerprint = nil
@@ -405,7 +409,7 @@ final class TetherViewModel {
                 if let endpoint = self.connection.resolvedEndpoint {
                     ShareSender.persistLastEndpoint(host: endpoint.host, port: endpoint.port)
                 }
-                self.handleConnected() // TODO: isInbound
+                self.handleConnected(isInbound: isInbound)
             case .disconnected:
                 self.autoConnectingFingerprint = nil
                 self.appState = .disconnected
@@ -463,11 +467,12 @@ final class TetherViewModel {
             connectedDeviceName = certificateManager.knownHosts[serverFP] ?? connectedDeviceName
         } else {
             // Need to pair
+            pairingIsInbound = isInbound
             if isInbound {
                 // If it's an inbound connection, we wait for the client to send us a pair_request.
                 // We don't send one ourselves over their established tunnel.
                 appState = .pairing
-                // The UI will update when we actually receive the .pairRequest command 
+                // The UI will update when we actually receive the .pairRequest command
             } else {
                 appState = .pairing
                 showPairingSheet = true
@@ -585,9 +590,14 @@ final class TetherViewModel {
             if let targetName = message.deviceName {
                 connectedDeviceName = targetName
                 appState = .pairing
-                pairingStatus = "Pairing request received from \(targetName)"
+                pairingIsInbound = true
+                pairingStatus = "\(targetName) wants to pair with this device."
                 showPairingSheet = true
             }
+
+        case .pairAccepted:
+            // The peer's user approved. This, not our own tap, is what makes us paired.
+            finishPairing()
 
         case .fileStatus:
             if let transferId = message.transferId, message.status == "success" {
@@ -640,8 +650,11 @@ final class TetherViewModel {
 
         case .error:
             if message.message == "unauthorized" {
-                // The daemon rejected us — we're not paired yet.
-                // This can happen if the user hasn't accepted the pairing request.
+                // The daemon rejects every command until it has pinned us, so we are
+                // not connected no matter what the last state said.
+                appState = .pairing
+                pairingIsInbound = false
+                showPairingSheet = true
                 pairingStatus = "Pairing request sent. Waiting for approval...\n\nRun: tether --accept \(certificateManager.myFingerprint)"
             } else {
                 errorMessage = message.message ?? "Unknown error from daemon"
@@ -652,18 +665,31 @@ final class TetherViewModel {
         }
     }
 
-    // Call after the daemon accepts the pairing request.
-    // The daemon will start accepting our commands, so we just need to
-    // save the server fingerprint and transition to connected state.
-    func confirmPairing() {
+    // Approve a request from a peer that dialled us. This device is the approver
+    // here, so the tap is the real decision and the peer is told about it.
+    func acceptIncomingPairing() {
+        connection.send(.pairAccepted)
+        finishPairing()
+    }
+
+    // Reject a request from a peer that dialled us.
+    func rejectIncomingPairing() {
+        showPairingSheet = false
+        pairingStatus = ""
+        disconnect()
+    }
+
+    // Pin the peer and go live. Reached only once the pairing is real: either the
+    // peer sent pair_accepted, or this device approved an inbound request.
+    private func finishPairing() {
         let serverFP = connection.serverFingerprint
+        guard !serverFP.isEmpty else { return }
+
         let name = connectedDeviceName ?? "Desktop"
         certificateManager.addKnownHost(fingerprint: serverFP, name: name)
-        
-        // Let's send pair_accepted to tell the daemon we successfully paired!
-        connection.send(.pairAccepted)
-        
+
         showPairingSheet = false
+        pairingStatus = ""
         appState = .connected
     }
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-01 13:57-0700\n"
+"POT-Creation-Date: 2026-09-02 10:09-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Ukrainian\n"
@@ -562,7 +562,8 @@ msgstr "Дублювання сповіщень вимкнено."
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
-msgstr "Очікувався адаптер, наприклад --bt-adapter hci1, або --bt-adapter auto\n"
+msgstr ""
+"Очікувався адаптер, наприклад --bt-adapter hci1, або --bt-adapter auto\n"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1172,6 +1173,15 @@ msgstr "Під'єднано частково"
 #: src/gtk/devices_view.cpp
 msgid "Paired"
 msgstr "Спарено"
+
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Waiting for approval on {0}..."
+msgstr "Очікування підтвердження на {0}…"
+
+#: src/gtk/devices_view.cpp
+msgid "Pair request was rejected."
+msgstr "Запит на створення пари відхилено."
 
 #: src/gtk/devices_view.cpp
 msgid "Ready"

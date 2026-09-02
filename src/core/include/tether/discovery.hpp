@@ -31,7 +31,8 @@ namespace tether {
     };
 
     // Group raw per-interface results into logical devices by fingerprint.
-    std::vector<DiscoveredDevice> group_discovered_hosts(const std::vector<DiscoveredHost>& hosts);
+    std::vector<DiscoveredDevice> group_discovered_hosts(const std::vector<DiscoveredHost>& hosts,
+                                                         const std::string& exclude_fingerprint = "");
 
     // mDNS service discovery using Avahi.
     //

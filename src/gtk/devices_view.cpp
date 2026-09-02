@@ -394,6 +394,7 @@ namespace tether::ui {
             j["command"] = "pair_request";
             j["host"] = g_devices.selected_device_ip;
             j["port"] = g_devices.selected_device_port;
+            j["device_name"] = g_devices.selected_device_name;
             daemon_send(j);
             set_status_main(_("Pair request sent. Approve on remote device!"));
         }
@@ -899,6 +900,19 @@ namespace tether::ui {
             update_wifi_indicator();
             return true;
         }
+        if (command == "pair_outbound_pending") {
+            // TRANSLATORS: {0} is the name of the device being paired with.
+            const std::string waiting =
+                tether::tr_format(_("Waiting for approval on {0}..."), event.value("device_name", ""));
+            set_text(g_devices.lbl_unpaired_ip, waiting);
+            set_status_main(waiting);
+            return true;
+        }
+        if (command == "pair_rejected") {
+            set_text(g_devices.lbl_unpaired_ip, _("Pair request was rejected."));
+            set_status_main(_("Pair request was rejected."));
+            return true;
+        }
         if (command == "pair_request_received" || command == "untrusted_client_connected") {
             tether::DiscoveredDevice req;
             req.fingerprint = event.value("fingerprint", "");
@@ -929,24 +943,14 @@ namespace tether::ui {
         }
         if (command == "pair_accepted") {
             std::string fp = event.value("fingerprint", "");
-            std::string name = event.value("device_name", "");
             if (!fp.empty()) {
                 if (event.value("connected", false) &&
                     std::find(g_devices.connected_fps.begin(), g_devices.connected_fps.end(), fp) ==
                         g_devices.connected_fps.end())
                     g_devices.connected_fps.push_back(fp);
 
-                // Ensure it's in the paired devices list so the UI transitions
-                bool already_paired = false;
-                for (const auto& p : g_devices.paired_devices) {
-                    if (p.first == fp) {
-                        already_paired = true;
-                        break;
-                    }
-                }
-                if (!already_paired)
-                    g_devices.paired_devices.push_back({fp, name});
-
+                // paired_devices is rebuilt from known_hosts.json on every refresh, and
+                // the daemon only emits this after writing that file.
                 g_devices.pending_pairing_requests.erase(
                     std::remove_if(g_devices.pending_pairing_requests.begin(),
                                    g_devices.pending_pairing_requests.end(),

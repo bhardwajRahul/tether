@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-01 13:57-0700\n"
+"POT-Creation-Date: 2026-09-02 10:09-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Spanish\n"
@@ -560,7 +560,8 @@ msgstr "Duplicación de notificaciones desactivada."
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
-msgstr "Se esperaba un adaptador, p. ej. --bt-adapter hci1, o --bt-adapter auto\n"
+msgstr ""
+"Se esperaba un adaptador, p. ej. --bt-adapter hci1, o --bt-adapter auto\n"
 
 #: src/cli/main.cpp
 #, c++-format
@@ -1182,6 +1183,15 @@ msgstr "Parcialmente conectado"
 #: src/gtk/devices_view.cpp
 msgid "Paired"
 msgstr "Emparejado"
+
+#: src/gtk/devices_view.cpp
+#, c++-format
+msgid "Waiting for approval on {0}..."
+msgstr "Esperando la aprobación en {0}…"
+
+#: src/gtk/devices_view.cpp
+msgid "Pair request was rejected."
+msgstr "La solicitud de emparejamiento fue rechazada."
 
 #: src/gtk/devices_view.cpp
 msgid "Ready"

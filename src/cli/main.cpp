@@ -866,14 +866,15 @@ int main(int argc, char* argv[]) {
     } else if (action == "discover") {
         debug::log(INFO, "Scanning for tetherd instances on the local network...\n\n");
 
+        tether::Crypto::instance().init();
+
         tether::Discovery discovery;
         auto hosts = discovery.discover(timeout_ms);
-        auto devices = tether::group_discovered_hosts(hosts);
+        auto devices = tether::group_discovered_hosts(hosts, tether::Crypto::instance().get_my_fingerprint());
 
         if (devices.empty()) {
             debug::log(INFO, _("  No tetherd instances found.\n"));
         } else {
-            tether::Crypto::instance().init();
             for (const auto& dev : devices) {
                 std::string status = _("[new]");
                 if (!dev.fingerprint.empty() && tether::Crypto::instance().is_host_known(dev.fingerprint)) {
