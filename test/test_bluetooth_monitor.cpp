@@ -20,7 +20,7 @@ namespace {
         explicit FakeBtmgmt(const std::string& body) {
             const char* path = std::getenv("PATH");
             old_path_ = path ? path : "";
-            dir_ = std::filesystem::path("/var/tmp") / ("tether-monitor-test-" + std::to_string(getpid()));
+            dir_ = std::filesystem::temp_directory_path() / ("tether-monitor-test-" + std::to_string(getpid()));
             std::filesystem::remove_all(dir_);
             std::filesystem::create_directories(dir_);
 
@@ -32,7 +32,7 @@ namespace {
                                          std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
                                              std::filesystem::perms::owner_exec,
                                          std::filesystem::perm_options::replace);
-            setenv("PATH", dir_.c_str(), 1);
+            setenv("PATH", (dir_.string() + ":" + old_path_).c_str(), 1);
         }
 
         ~FakeBtmgmt() {
@@ -66,7 +66,7 @@ TEST(SecureConnectionsProbe, ParsesEnabledAndDisabledSettings) {
 }
 
 TEST(SecureConnectionsProbe, TimesOutAndTerminatesTheExactChild) {
-    FakeBtmgmt fake("exec /bin/sleep 5\n");
+    FakeBtmgmt fake("exec sleep 5\n");
     const auto started = std::chrono::steady_clock::now();
     const auto result = probe_secure_connections("hci0", 50ms);
     const auto elapsed = std::chrono::steady_clock::now() - started;

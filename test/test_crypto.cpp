@@ -4,26 +4,30 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <unistd.h>
 
 class CryptoTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        setenv("HOME", "/tmp/tether_tests", 1);
-        std::filesystem::remove_all("/tmp/tether_tests");
-        std::filesystem::create_directories("/tmp/tether_tests");
+        setenv("HOME", home_.c_str(), 1);
+        std::filesystem::remove_all(home_);
+        std::filesystem::create_directories(home_);
     }
 
     void TearDown() override {
-        std::filesystem::remove_all("/tmp/tether_tests");
+        std::filesystem::remove_all(home_);
     }
+
+    const std::filesystem::path home_ =
+        std::filesystem::temp_directory_path() / ("tether-tests-" + std::to_string(getpid()));
 };
 
 TEST_F(CryptoTest, CompleteCryptographicLifecycle) {
     EXPECT_TRUE(tether::Crypto::instance().init());
 
-    EXPECT_TRUE(std::filesystem::exists("/tmp/tether_tests/.config/tether/key.pem"));
-    EXPECT_TRUE(std::filesystem::exists("/tmp/tether_tests/.config/tether/cert.pem"));
-    EXPECT_TRUE(std::filesystem::exists("/tmp/tether_tests/.config/tether/known_hosts.json"));
+    EXPECT_TRUE(std::filesystem::exists(home_ / ".config/tether/key.pem"));
+    EXPECT_TRUE(std::filesystem::exists(home_ / ".config/tether/cert.pem"));
+    EXPECT_TRUE(std::filesystem::exists(home_ / ".config/tether/known_hosts.json"));
 
     EXPECT_NE(tether::Crypto::instance().get_server_context(), nullptr);
     EXPECT_NE(tether::Crypto::instance().get_client_context(), nullptr);

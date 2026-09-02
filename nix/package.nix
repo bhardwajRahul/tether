@@ -117,8 +117,6 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   doCheck = true;
-  # Crypto tests share a temporary HOME and must not run concurrently.
-  enableParallelChecking = false;
 
   postCheck = ''
     (cd .. && npm test --prefix extension)
