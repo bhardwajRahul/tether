@@ -1,6 +1,5 @@
 #include "tether/client.hpp"
 #include "tether/base64.hpp"
-#include "tether/core.hpp"
 #include "tether/crypto.hpp"
 #include "tether/net.hpp"
 
@@ -10,6 +9,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <netdb.h>
 #include <nlohmann/json.hpp>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -125,21 +125,32 @@ namespace tether {
         disconnect();
 
         if (!host.empty()) {
-            sockaddr_in addr{};
-            addr.sin_family = AF_INET;
-            addr.sin_port = htons(port);
-            if (inet_pton(AF_INET, host.c_str(), &addr.sin_addr) != 1) {
-                debug::log(ERR, "Invalid IPv4 address: {}", host);
+            addrinfo hints{};
+            hints.ai_family = AF_UNSPEC;
+            hints.ai_socktype = SOCK_STREAM;
+            hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
+
+            addrinfo* results = nullptr;
+            const std::string service = std::to_string(port);
+            if (int err = getaddrinfo(host.c_str(), service.c_str(), &hints, &results); err != 0 || !results) {
+                debug::log(ERR, "Invalid address {}: {}", host, gai_strerror(err));
                 return false;
             }
 
-            sock_ = socket(AF_INET, SOCK_STREAM, 0);
+            for (addrinfo* ai = results; ai; ai = ai->ai_next) {
+                sock_ = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+                if (sock_ < 0)
+                    continue;
+                if (::connect(sock_, ai->ai_addr, ai->ai_addrlen) == 0)
+                    break;
+                close(sock_);
+                sock_ = -1;
+            }
+            const int connect_errno = errno;
+            freeaddrinfo(results);
+
             if (sock_ < 0) {
-                debug::log(ERR, "Failed to create socket: {}", std::strerror(errno));
-                return false;
-            }
-
-            if (::connect(sock_, (sockaddr*)&addr, sizeof(addr)) < 0) {
+                debug::log(ERR, "Failed to connect to {}:{}: {}", host, port, std::strerror(connect_errno));
                 return false;
             }
 

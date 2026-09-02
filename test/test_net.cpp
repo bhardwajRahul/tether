@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <tether/client.hpp>
 #include <tether/crypto.hpp>
 #include <tether/event_loop.hpp>
 #include <tether/log.hpp>
@@ -13,6 +14,7 @@
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
+#include <netinet/in.h>
 #include <sstream>
 #include <sys/file.h>
 #include <sys/socket.h>
@@ -238,6 +240,91 @@ namespace {
 
         EXPECT_NE(log.find("TLS handshake failed"), std::string::npos) << "captured log:\n" << log;
         EXPECT_NE(log.find("127.0.0.1"), std::string::npos) << "captured log:\n" << log;
+    }
+
+    // The daemon advertises AAAA records over mDNS, so it has to accept on IPv6.
+    TEST(TcpServerTest, AcceptsIpv6Clients) {
+        const std::string home = unique_test_dir("tether_net_v6_test");
+        CleanupGuard cleanup_guard(home);
+        std::filesystem::remove_all(home);
+        std::filesystem::create_directories(home);
+        ScopedEnvVar home_env("HOME", home);
+        ASSERT_TRUE(tether::Crypto::instance().init());
+
+        constexpr int port = 45135;
+        tether::EpollEventLoop loop;
+        tether::TcpServer server(loop, port);
+        if (!server.start())
+            GTEST_SKIP() << "port " << port << " is unavailable";
+
+        CerrCapture captured;
+        std::thread loop_thread([&loop] { loop.run(); });
+
+        const int client = socket(AF_INET6, SOCK_STREAM, 0);
+        bool connected = false;
+        if (client >= 0) {
+            sockaddr_in6 addr{};
+            addr.sin6_family = AF_INET6;
+            addr.sin6_port = htons(port);
+            addr.sin6_addr = in6addr_loopback;
+            connected = connect(client, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == 0;
+        }
+
+        std::string log;
+        if (connected) {
+            const char garbage[] = "this is not a tls client hello\n";
+            EXPECT_GT(write(client, garbage, sizeof(garbage) - 1), 0);
+            shutdown(client, SHUT_RDWR);
+
+            for (int attempt = 0; attempt < 200; ++attempt) {
+                log = captured.str();
+                if (log.find("TLS handshake failed") != std::string::npos)
+                    break;
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        }
+        if (client >= 0)
+            close(client);
+
+        loop.post([&loop] { loop.stop(); });
+        loop_thread.join();
+        captured.restore();
+
+        if (!connected)
+            GTEST_SKIP() << "no IPv6 loopback on this host";
+
+        EXPECT_NE(log.find("TLS handshake failed"), std::string::npos) << "captured log:\n" << log;
+        EXPECT_NE(log.find("::1"), std::string::npos) << "captured log:\n" << log;
+    }
+
+    TEST(ClientTest, ConnectsToAnIpv6Literal) {
+        const std::string home = unique_test_dir("tether_client_v6_test");
+        CleanupGuard cleanup_guard(home);
+        std::filesystem::remove_all(home);
+        std::filesystem::create_directories(home);
+        ScopedEnvVar home_env("HOME", home);
+        ASSERT_TRUE(tether::Crypto::instance().init());
+
+        constexpr int port = 45136;
+        tether::EpollEventLoop loop;
+        tether::TcpServer server(loop, port);
+        if (!server.start())
+            GTEST_SKIP() << "port " << port << " is unavailable";
+
+        std::thread loop_thread([&loop] { loop.run(); });
+
+        tether::Client client;
+        const bool connected = client.connect("::1", port);
+        client.disconnect();
+
+        tether::Client bogus;
+        EXPECT_FALSE(bogus.connect("not-an-address", port));
+
+        loop.post([&loop] { loop.stop(); });
+        loop_thread.join();
+
+        if (!connected)
+            GTEST_SKIP() << "no IPv6 loopback on this host";
     }
 
 } // namespace

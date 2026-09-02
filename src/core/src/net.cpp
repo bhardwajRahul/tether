@@ -5,6 +5,8 @@
 #include <csignal>
 #include <errno.h>
 #include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <sys/file.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -1184,39 +1186,69 @@ namespace tether {
 
     TcpServer::~TcpServer() { stop(); }
 
-    bool TcpServer::start() {
-        server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
-        if (server_fd_ < 0) {
-            debug::log(ERR, "Failed to create tcp socket");
-            return false;
-        }
+    // Binds and listens on the wildcard address of `family`. AF_INET6 socket dual-stack.
+    static int bind_listen_socket(int family, int port) {
+        int fd = socket(family, SOCK_STREAM, 0);
+        if (fd < 0)
+            return -1;
 
         int opt = 1;
-        if (setsockopt(server_fd_, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0) {
+        if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0) {
             debug::log(ERR, "TcpServer setsockopt reuse failed");
         }
 
         // Set non-blocking
-        int flags = fcntl(server_fd_, F_GETFL, 0);
-        fcntl(server_fd_, F_SETFL, flags | O_NONBLOCK);
+        int flags = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
-        sockaddr_in addr{};
-        addr.sin_family = AF_INET;
-        addr.sin_addr.s_addr = INADDR_ANY;
-        addr.sin_port = htons(bind_port_);
-
-        if (bind(server_fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-            debug::log(ERR, "Failed to bind tcp socket on port {}: {}", bind_port_, std::strerror(errno));
-            return false;
+        sockaddr_storage ss{};
+        socklen_t len = 0;
+        if (family == AF_INET6) {
+            int off = 0;
+            if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &off, sizeof(off)) < 0) {
+                int err = errno;
+                close(fd);
+                errno = err;
+                return -1;
+            }
+            auto* a6 = reinterpret_cast<sockaddr_in6*>(&ss);
+            a6->sin6_family = AF_INET6;
+            a6->sin6_addr = in6addr_any;
+            a6->sin6_port = htons(port);
+            len = sizeof(*a6);
+        } else {
+            auto* a4 = reinterpret_cast<sockaddr_in*>(&ss);
+            a4->sin_family = AF_INET;
+            a4->sin_addr.s_addr = INADDR_ANY;
+            a4->sin_port = htons(port);
+            len = sizeof(*a4);
         }
 
-        if (listen(server_fd_, SOMAXCONN) < 0) {
-            debug::log(ERR, "Failed to listen on tcp socket");
+        if (bind(fd, reinterpret_cast<sockaddr*>(&ss), len) < 0 || listen(fd, SOMAXCONN) < 0) {
+            int err = errno;
+            close(fd);
+            errno = err;
+            return -1;
+        }
+
+        return fd;
+    }
+
+    bool TcpServer::start() {
+        bool dual_stack = true;
+        server_fd_ = bind_listen_socket(AF_INET6, bind_port_);
+        if (server_fd_ < 0) {
+            dual_stack = false;
+            server_fd_ = bind_listen_socket(AF_INET, bind_port_);
+        }
+
+        if (server_fd_ < 0) {
+            debug::log(ERR, "Failed to listen on tcp port {}: {}", bind_port_, std::strerror(errno));
             return false;
         }
 
         loop_.addFd(server_fd_, [this](int fd) { handle_accept(fd); });
-        debug::log(INFO, "TcpServer listening on 0.0.0.0:{}", bind_port_);
+        debug::log(INFO, "TcpServer listening on {}:{}", dual_stack ? "[::]" : "0.0.0.0", bind_port_);
         return true;
     }
 
@@ -1250,8 +1282,27 @@ namespace tether {
         }
     }
 
+    // Text form of an accepted peer.
+    static std::string peer_ip(const sockaddr_storage& ss, socklen_t len) {
+        if (ss.ss_family == AF_INET6) {
+            const auto* a6 = reinterpret_cast<const sockaddr_in6*>(&ss);
+            if (IN6_IS_ADDR_V4MAPPED(&a6->sin6_addr)) {
+                char ip[INET_ADDRSTRLEN] = {};
+                if (inet_ntop(AF_INET, &a6->sin6_addr.s6_addr[12], ip, sizeof(ip)))
+                    return ip;
+                return "unknown";
+            }
+        }
+
+        char host[NI_MAXHOST] = {};
+        if (getnameinfo(reinterpret_cast<const sockaddr*>(&ss), len, host, sizeof(host), nullptr, 0, NI_NUMERICHOST) !=
+            0)
+            return "unknown";
+        return host;
+    }
+
     void TcpServer::handle_accept(int fd) {
-        sockaddr_in client_addr{};
+        sockaddr_storage client_addr{};
         socklen_t addrlen = sizeof(client_addr);
         int client_fd = accept(fd, reinterpret_cast<sockaddr*>(&client_addr), &addrlen);
         if (client_fd < 0)
@@ -1261,8 +1312,7 @@ namespace tether {
         int flags = fcntl(client_fd, F_GETFL, 0);
         fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
 
-        char ip[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(client_addr.sin_addr), ip, INET_ADDRSTRLEN);
+        const std::string ip = peer_ip(client_addr, addrlen);
         debug::log(INFO, "TcpServer: New connection from {} (fd: {})", ip, client_fd);
 
         // SSL Wrapping

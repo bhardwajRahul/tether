@@ -126,7 +126,7 @@ For local Unix clients, `tetherd` returns `file_status` once the stream has been
 
 ## 3. Device Pairing (TLS + fingerprint pinning)
 
-The `tetherd` daemon binds `0.0.0.0:5134` and speaks TLS 1.2. Both sides present a self-signed X.509 certificate; there is no CA in this system, so certificates are **not** validated against any trust anchor.
+The `tetherd` daemon binds `[::]:5134` dual-stack (falling back to `0.0.0.0:5134` where IPv6 is unavailable) and speaks TLS 1.2. Both sides present a self-signed X.509 certificate; there is no CA in this system, so certificates are **not** validated against any trust anchor.
 
 Access control is trust-on-first-use fingerprint pinning. After the handshake the daemon takes the SHA-256 fingerprint of the peer's certificate and looks it up in `known_hosts.json`. A client whose fingerprint is not pinned may only send `pair_request` — any other command is answered with `{"command":"error","message":"unauthorized"}`.
 
