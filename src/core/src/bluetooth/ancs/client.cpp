@@ -1,5 +1,6 @@
 #include "tether/bluetooth/ancs/client.hpp"
 #include "tether/bluetooth/ancs/sequencer.hpp"
+#include "tether/bluetooth/bmessage.hpp"
 #include "tether/bluetooth/monitor.hpp"
 #include "tether/log.hpp"
 
@@ -416,7 +417,8 @@ namespace tether::bluetooth::ancs {
             break;
         }
 
-        std::vector<NotificationAttributeId> attributes{NotificationAttributeId::AppIdentifier};
+        std::vector<NotificationAttributeId> attributes{NotificationAttributeId::AppIdentifier,
+                                                        NotificationAttributeId::Date};
         if (content_enabled) {
             attributes.push_back(NotificationAttributeId::Title);
             attributes.push_back(NotificationAttributeId::Subtitle);
@@ -486,7 +488,10 @@ namespace tether::bluetooth::ancs {
         notification.silent = event.silent();
         notification.has_positive_action = event.has_positive_action();
         notification.has_negative_action = event.has_negative_action();
-        notification.received = now;
+        // ANCS dates are the phone's wall clock with no zone, some apps send none at all.
+        const int64_t delivered =
+            parse_map_timestamp(response.attribute(static_cast<uint8_t>(NotificationAttributeId::Date)));
+        notification.received = delivered ? delivered : now;
 
         {
             std::lock_guard<std::mutex> lock(registry_mutex);

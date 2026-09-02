@@ -1,5 +1,6 @@
 #include "notifications_view.hpp"
 #include "daemon_client.hpp"
+#include "message_format.hpp"
 #include "ui_util.hpp"
 #include <tether/i18n.hpp>
 
@@ -20,17 +21,6 @@ namespace tether::ui {
         };
 
         NotificationsState g_notifications;
-
-        std::string format_timestamp(int64_t epoch) {
-            if (epoch <= 0)
-                return "";
-            std::time_t t = static_cast<std::time_t>(epoch);
-            std::tm tm{};
-            localtime_r(&t, &tm);
-            char buffer[32];
-            std::strftime(buffer, sizeof(buffer), "%H:%M", &tm);
-            return buffer;
-        }
 
         void request_notifications() {
             nlohmann::json j;
@@ -59,7 +49,8 @@ namespace tether::ui {
             const std::string title = notification.value("title", "");
             const std::string subtitle = notification.value("subtitle", "");
             const std::string body = notification.value("body", "");
-            const std::string stamp = format_timestamp(notification.value("timestamp", static_cast<int64_t>(0)));
+            const std::string stamp =
+                format_thread_time(notification.value("timestamp", static_cast<int64_t>(0)), std::time(nullptr));
 
             GtkWidget* row = gtk_list_box_row_new();
             gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW(row), FALSE);

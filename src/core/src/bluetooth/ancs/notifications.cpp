@@ -88,12 +88,19 @@ namespace tether::bluetooth::ancs {
     }
 
     std::vector<Notification> NotificationRegistry::recent(size_t limit) const {
+        // sorted by the delivery time, not arrival: backlog replay is not ordered.
         std::vector<Notification> out;
-        for (auto it = order_.rbegin(); it != order_.rend() && out.size() < limit; ++it) {
+        out.reserve(notifications_.size());
+        for (auto it = order_.rbegin(); it != order_.rend(); ++it) {
             auto found = notifications_.find(*it);
             if (found != notifications_.end())
                 out.push_back(found->second);
         }
+        std::stable_sort(out.begin(), out.end(), [](const Notification& a, const Notification& b) {
+            return a.received > b.received;
+        });
+        if (out.size() > limit)
+            out.resize(limit);
         return out;
     }
 

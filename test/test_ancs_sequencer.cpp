@@ -66,6 +66,18 @@ TEST(AncsSequencer, EncodesANotificationRequest) {
     EXPECT_EQ(request.attribute_ids, (std::vector<uint8_t>{0, 3}));
 }
 
+TEST(AncsSequencer, EncodesDateWithoutALength) {
+    Request request = build_notification_request(
+        1, {NotificationAttributeId::AppIdentifier, NotificationAttributeId::Date, NotificationAttributeId::Title});
+
+    // 0x00 command, four UID bytes, then the attribute ids.
+    EXPECT_EQ(request.payload[5], 0x00) << "AppIdentifier takes no length";
+    EXPECT_EQ(request.payload[6], 0x05) << "Date follows immediately";
+    EXPECT_EQ(request.payload[7], 0x01) << "Date takes no length either";
+    EXPECT_EQ(request.payload[8] | (request.payload[9] << 8), MAX_TITLE_LENGTH);
+    EXPECT_EQ(request.attribute_ids, (std::vector<uint8_t>{0, 5, 1}));
+}
+
 TEST(AncsSequencer, EncodesAnAppRequest) {
     Request request = build_app_request("com.apple.MobileSMS");
 

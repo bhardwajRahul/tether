@@ -398,6 +398,13 @@ responses carry no total length (?!?) and come back fragmented, so the only way 
 response has ended is to know exactly which attributes were requested. Those two facts
 are why the sequencer exists.
 
+`NotificationAttributeIDDate` (5) is requested for every notification, content
+mirroring on or off -- a delivery time is metadata, not content. It is the phone's
+local wall clock as `yyyyMMddTHHmmSS` with no zone, parsed by `parse_map_timestamp`
+like a MAP timestamp. Some apps send none, and those fall back to the time the
+attributes were fetched. Without it every notification carried the fetch time, so a
+replayed backlog arrived stamped all alike -- see issue #48.
+
 ### Group messages
 
 Off by default, `group_messages_enabled` in `~/.config/tether/bluetooth.json`. It also

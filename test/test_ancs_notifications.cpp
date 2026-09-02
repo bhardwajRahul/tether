@@ -75,6 +75,26 @@ TEST(AncsRegistry, RenameAppIgnoresEmptyArguments) {
     EXPECT_EQ(registry.find(1)->app_name, "Instagram");
 }
 
+TEST(AncsRegistry, RecentIsOrderedByDeliveryTime) {
+    NotificationRegistry registry;
+    // Stored in the order iOS replayed them, which bears no relation to when the
+    // phone delivered them.
+    for (auto [uid, received] : {std::pair<uint32_t, int64_t>{1, 300}, {2, 100}, {3, 200}}) {
+        Notification n = make(uid, "com.example.app");
+        n.received = received;
+        registry.store(n);
+    }
+
+    std::vector<Notification> recent = registry.recent();
+    ASSERT_EQ(recent.size(), 3u);
+    EXPECT_EQ(recent[0].uid, 1u);
+    EXPECT_EQ(recent[1].uid, 3u);
+    EXPECT_EQ(recent[2].uid, 2u);
+
+    EXPECT_EQ(registry.recent(2).size(), 2u) << "the limit applies after sorting";
+    EXPECT_EQ(registry.recent(2)[0].uid, 1u);
+}
+
 // Content mirroring was off with no way to turn it on, so a stored false from
 // before the toggle existed must not pin the new default.
 TEST(BluetoothConfig, UnversionedFileTakesTheContentDefault) {
