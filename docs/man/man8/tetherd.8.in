@@ -13,7 +13,22 @@ The daemon advertises its presence on the local network using mDNS (Bonjour)
 and listens for incoming connections on TCP port 5134 by default. It also
 provides a UNIX domain socket at \fB$XDG_RUNTIME_DIR/tether/tetherd.sock\fR
 for local communication with the \fBtether\fR(1) CLI and \fBtether-gtk\fR(1) GUI.
+.SH FIREWALL
+Inbound \fB5134/tcp\fR must be reachable for the iPhone to connect, and
+\fB5353/udp\fR for mDNS discovery, which \fBavahi-daemon\fR(8) owns. A
+default-deny firewall commonly passes mDNS while dropping 5134, so the phone
+discovers this machine and then cannot reach it.
+
+Profiles for \fBufw\fR(8) and \fBfirewalld\fR(1) are installed but never
+applied; run \fBufw allow Tether\fR or
+\fBfirewall-cmd --permanent --add-service=tether\fR to use them.
 .SH FILES
+.TP
+\fB/etc/ufw/applications.d/tether\fR
+ufw application profile. Inert until allowed.
+.TP
+\fB/usr/lib/firewalld/services/tether.xml\fR
+firewalld service definition. Inert until added to a zone.
 .TP
 \fB$XDG_RUNTIME_DIR/tether/tetherd.sock\fR
 The UNIX domain socket used for local communication.

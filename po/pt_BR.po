@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 10:09-0700\n"
+"POT-Creation-Date: 2026-09-02 11:40-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Brazilian Portuguese\n"
@@ -1149,6 +1149,15 @@ msgstr ""
 "daemon"
 
 #: src/gtk/devices_view.cpp
+msgid ""
+"An iPhone is on the network but cannot reach this PC. A firewall is running; "
+"Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
+msgstr ""
+"Há um iPhone na rede, mas ele não consegue alcançar este PC. Há um firewall "
+"ativo; o Tether precisa de TCP 5134 de entrada. Libere com: sudo ufw allow "
+"5134/tcp"
+
+#: src/gtk/devices_view.cpp
 msgid "No paired iPhone is connected. Open the Tether app on the phone."
 msgstr "Nenhum iPhone pareado está conectado. Abra o app Tether no telefone."
 
@@ -1180,6 +1189,26 @@ msgstr "Pareado"
 #, c++-format
 msgid "Waiting for approval on {0}..."
 msgstr "Aguardando a aprovação em {0}…"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Could not reach that device. If a firewall is running, Tether needs inbound "
+"TCP 5134 on the other machine."
+msgstr ""
+"Não foi possível alcançar esse dispositivo. Se houver um firewall ativo, o "
+"Tether precisa de TCP 5134 de entrada na outra máquina."
+
+#: src/gtk/devices_view.cpp
+msgid "That device refused the connection. Is Tether running on it?"
+msgstr "Esse dispositivo recusou a conexão. O Tether está em execução nele?"
+
+#: src/gtk/devices_view.cpp
+msgid "That address could not be resolved."
+msgstr "Não foi possível resolver esse endereço."
+
+#: src/gtk/devices_view.cpp
+msgid "Could not connect to that device."
+msgstr "Não foi possível conectar a esse dispositivo."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair request was rejected."

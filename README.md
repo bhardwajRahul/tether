@@ -298,16 +298,52 @@ make install
 - A controller with BR/EDR, LE, and advertising support.
 - Notification mirroring does not work on iOS 18 and earlier.
 
-## Roadmap
+#### Network ports
 
-- [x] Complete iOS app development
-- [x] Add end-to-end encryption for file transfers
-- [x] Release browser extension for Firefox
-- [x] Release mail extension for Thunderbird
-- [x] Read and reply to iPhone messages over Bluetooth
-- [x] Bluetooth for messages and notifications
-- [ ] Implement TOTP/OTP vault with Safari autofill
-- [ ] Explore macOS support
+WiFi features need two inbound ports on the Linux machine:
+
+| Port | Why |
+|------|-----|
+| 5134/tcp | The `tetherd` mTLS listener the iPhone connects to |
+| 5353/udp | mDNS service discovery `avahi-daemon` |
+
+## Troubleshooting
+
+### The iPhone finds this PC but never connects
+
+Probably firewall. Most firewalls allow mDNS through, so discovery works, but then the iPhone can't get through on it's port (5134/tcp). Open the ports in your firewall.
+
+```bash
+sudo ufw allow Tether                                  # ufw
+sudo firewall-cmd --permanent --add-service=tether     # firewalld
+sudo firewall-cmd --reload
+```
+
+AppImage or the Flatpak, open the ports directly:
+
+```bash
+sudo ufw allow 5134/tcp && sudo ufw allow 5353/udp
+sudo firewall-cmd --permanent --add-port=5134/tcp --add-port=5353/udp
+sudo firewall-cmd --reload
+```
+
+On NixOS, set `programs.tether.wifi.openFirewall = true;` instead (see the [NixOS module](#use-the-nixos-module) above.
+
+### The iPhone does not appear at all
+
+`avahi-daemon` is not running, so nothing can discover this machine:
+
+```bash
+sudo systemctl enable --now avahi-daemon
+```
+
+### Bluetooth
+
+Messages and notifications need one-time system setup. See [docs/BLUETOOTH.md](docs/BLUETOOTH.md), or run:
+
+```bash
+tether --bt-setup
+```
 
 ## Security
 

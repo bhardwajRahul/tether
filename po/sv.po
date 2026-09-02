@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 10:09-0700\n"
+"POT-Creation-Date: 2026-09-02 11:40-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Swedish\n"
@@ -1134,6 +1134,15 @@ msgstr ""
 "med: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
+msgid ""
+"An iPhone is on the network but cannot reach this PC. A firewall is running; "
+"Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
+msgstr ""
+"En iPhone finns i nätverket men når inte den här datorn. En brandvägg är "
+"aktiv; Tether behöver inkommande TCP 5134. Tillåt det med: sudo ufw allow "
+"5134/tcp"
+
+#: src/gtk/devices_view.cpp
 msgid "No paired iPhone is connected. Open the Tether app on the phone."
 msgstr "Ingen parkopplad iPhone är ansluten. Öppna Tether-appen på telefonen."
 
@@ -1165,6 +1174,26 @@ msgstr "Parkopplad"
 #, c++-format
 msgid "Waiting for approval on {0}..."
 msgstr "Väntar på godkännande på {0}…"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Could not reach that device. If a firewall is running, Tether needs inbound "
+"TCP 5134 on the other machine."
+msgstr ""
+"Kunde inte nå den enheten. Om en brandvägg är aktiv behöver Tether "
+"inkommande TCP 5134 på den andra maskinen."
+
+#: src/gtk/devices_view.cpp
+msgid "That device refused the connection. Is Tether running on it?"
+msgstr "Enheten nekade anslutningen. Körs Tether på den?"
+
+#: src/gtk/devices_view.cpp
+msgid "That address could not be resolved."
+msgstr "Adressen kunde inte slås upp."
+
+#: src/gtk/devices_view.cpp
+msgid "Could not connect to that device."
+msgstr "Kunde inte ansluta till den enheten."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair request was rejected."

@@ -5,6 +5,7 @@
 #include <csignal>
 #include <errno.h>
 #include <fcntl.h>
+#include <gio/gio.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/file.h>
@@ -26,7 +27,9 @@
 #include "tether/file_transfer.hpp"
 #include "tether/otp.hpp"
 #include "tether/wayland.hpp"
+#include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <chrono>
 #include <condition_variable>
 #include <cstring>
@@ -37,6 +40,7 @@
 #include <openssl/err.h>
 #include <optional>
 #include <set>
+#include <sstream>
 #include <tether/log.hpp>
 #include <thread>
 #include <vector>
@@ -329,6 +333,90 @@ namespace tether {
         broadcast_local_event(build_mdns_status().dump());
     }
 
+    bool ufw_enabled(std::string_view ufw_conf) {
+        std::istringstream lines{std::string(ufw_conf)};
+        for (std::string line; std::getline(lines, line);) {
+            const auto begin = line.find_first_not_of(" \t");
+            if (begin == std::string::npos || line[begin] == '#')
+                continue;
+            const auto eq = line.find('=', begin);
+            if (eq == std::string::npos)
+                continue;
+
+            auto trim = [](std::string_view v) {
+                const auto first = v.find_first_not_of(" \t\r");
+                if (first == std::string_view::npos)
+                    return std::string_view{};
+                return v.substr(first, v.find_last_not_of(" \t\r") - first + 1);
+            };
+            const std::string_view key = trim(std::string_view(line).substr(begin, eq - begin));
+            if (key != "ENABLED")
+                continue;
+
+            std::string value(trim(std::string_view(line).substr(eq + 1)));
+            std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
+                return static_cast<char>(std::tolower(c));
+            });
+            return value == "yes";
+        }
+        return false;
+    }
+
+    // True when firewalld owns its well-known name on the system bus.
+    static bool firewalld_running() {
+        GError* error = nullptr;
+        GDBusConnection* bus = g_bus_get_sync(G_BUS_TYPE_SYSTEM, nullptr, &error);
+        if (!bus) {
+            g_clear_error(&error);
+            return false;
+        }
+
+        GVariant* reply = g_dbus_connection_call_sync(bus,
+                                                      "org.freedesktop.DBus",
+                                                      "/org/freedesktop/DBus",
+                                                      "org.freedesktop.DBus",
+                                                      "NameHasOwner",
+                                                      g_variant_new("(s)", "org.fedoraproject.FirewallD1"),
+                                                      G_VARIANT_TYPE("(b)"),
+                                                      G_DBUS_CALL_FLAGS_NONE,
+                                                      1000,
+                                                      nullptr,
+                                                      &error);
+        g_object_unref(bus);
+        if (!reply) {
+            g_clear_error(&error);
+            return false;
+        }
+
+        gboolean owned = FALSE;
+        g_variant_get(reply, "(b)", &owned);
+        g_variant_unref(reply);
+        return owned == TRUE;
+    }
+
+    bool firewall_active() {
+        constexpr auto TTL = std::chrono::seconds(30);
+        static std::mutex mutex;
+        static std::chrono::steady_clock::time_point checked_at;
+        static bool cached = false;
+
+        std::lock_guard<std::mutex> lock(mutex);
+        const auto now = std::chrono::steady_clock::now();
+        if (checked_at != std::chrono::steady_clock::time_point{} && now - checked_at < TTL)
+            return cached;
+
+        cached = false;
+        std::ifstream conf("/etc/ufw/ufw.conf");
+        if (conf) {
+            std::string contents((std::istreambuf_iterator<char>(conf)), std::istreambuf_iterator<char>());
+            cached = ufw_enabled(contents);
+        }
+        if (!cached)
+            cached = firewalld_running();
+        checked_at = now;
+        return cached;
+    }
+
     // Guards against two pairing transactions racing for the same agent and
     // advertisement object paths.
     static std::atomic<bool> g_bt_pair_busy{false};
@@ -585,6 +673,7 @@ namespace tether {
 
         snapshot["mdns_available"] = g_mdns_available.load();
         snapshot["clipboard_available"] = g_wayland && g_wayland->clipboard_available();
+        snapshot["firewall_active"] = firewall_active();
 
         return snapshot;
     }
@@ -1313,6 +1402,9 @@ namespace tether {
         loop_.addFd(client_fd, [this](int cfd) { handle_client(cfd); });
     }
 
+    // How long a dial waits before calling the peer unreachable.
+    constexpr int DIAL_TIMEOUT_SECONDS = 5;
+
     bool TcpServer::connect_peer(const std::string& host, int port, const std::string& peer_name) {
         if (host.empty())
             return false;
@@ -1327,6 +1419,15 @@ namespace tether {
 
         // connect() blocks, and the loop watches EPOLLIN only
         std::thread([this, host, port, peer_name]() {
+            auto fail = [&](const char* reason) {
+                nlohmann::json event{{"command", "pair_rejected"},
+                                     {"fingerprint", ""},
+                                     {"device_name", peer_name},
+                                     {"address", host},
+                                     {"reason", reason}};
+                broadcast_local_event(event.dump());
+            };
+
             addrinfo hints{};
             hints.ai_family = AF_UNSPEC;
             hints.ai_socktype = SOCK_STREAM;
@@ -1336,26 +1437,51 @@ namespace tether {
             const std::string service = std::to_string(port);
             if (int err = getaddrinfo(host.c_str(), service.c_str(), &hints, &results); err != 0 || !results) {
                 debug::log(ERR, "TcpServer: Cannot resolve {}: {}", host, gai_strerror(err));
+                fail("unresolved");
                 return;
             }
 
             int sock = -1;
+            int connect_errno = 0;
             for (addrinfo* ai = results; ai; ai = ai->ai_next) {
                 sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-                if (sock < 0)
+                if (sock < 0) {
+                    connect_errno = errno;
                     continue;
+                }
+
+                timeval timeout{DIAL_TIMEOUT_SECONDS, 0};
+                setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
                 if (::connect(sock, ai->ai_addr, ai->ai_addrlen) == 0)
                     break;
+                connect_errno = errno;
                 close(sock);
                 sock = -1;
             }
-            const int connect_errno = errno;
             freeaddrinfo(results);
 
             if (sock < 0) {
                 debug::log(ERR, "TcpServer: Failed to dial {}:{}: {}", host, port, std::strerror(connect_errno));
+                switch (connect_errno) {
+                case ECONNREFUSED:
+                    fail("refused");
+                    break;
+                case EINPROGRESS:
+                case EAGAIN:
+                case ETIMEDOUT:
+                case EHOSTUNREACH:
+                case ENETUNREACH:
+                    fail("unreachable");
+                    break;
+                default:
+                    fail("failed");
+                    break;
+                }
                 return;
             }
+
+            timeval none{0, 0};
+            setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &none, sizeof(none));
 
             loop_.post([this, sock, host, peer_name]() { adopt_peer(sock, host, peer_name); });
         }).detach();

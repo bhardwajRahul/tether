@@ -27,6 +27,7 @@ namespace tether::ui {
 
             // false when the compositor withholds data-control (flatpak)
             bool clipboard_ok = true;
+            bool firewall_active = false;
 
             // The Bluetooth route
             std::vector<nlohmann::json> bt_devices;
@@ -614,6 +615,15 @@ namespace tether::ui {
                                    "with: sudo systemctl enable --now avahi-daemon"));
                 return;
             }
+
+            if (g_devices.firewall_active && !g_devices.discovered_devices.empty()) {
+                set_route_status(Route::WiFi,
+                                 false,
+                                 _("An iPhone is on the network but cannot reach this PC. A firewall is "
+                                   "running; Tether needs inbound TCP 5134. Allow it with: sudo ufw allow "
+                                   "5134/tcp"));
+                return;
+            }
             set_route_status(Route::WiFi, false, _("No paired iPhone is connected. Open the Tether app on the phone."));
         }
 
@@ -621,6 +631,7 @@ namespace tether::ui {
 
             g_devices.mdns_ok = j.value("mdns_available", true);
             g_devices.clipboard_ok = j.value("clipboard_available", true);
+            g_devices.firewall_active = j.value("firewall_active", false);
             g_devices.connected_fps.clear();
             if (j.contains("connected_clients") && j["connected_clients"].is_array()) {
                 for (auto& c : j["connected_clients"]) {
@@ -909,8 +920,22 @@ namespace tether::ui {
             return true;
         }
         if (command == "pair_rejected") {
-            set_text(g_devices.lbl_unpaired_ip, _("Pair request was rejected."));
-            set_status_main(_("Pair request was rejected."));
+
+            const std::string reason = event.value("reason", "");
+            std::string message;
+            if (reason == "unreachable")
+                message = _("Could not reach that device. If a firewall is running, Tether needs inbound TCP "
+                            "5134 on the other machine.");
+            else if (reason == "refused")
+                message = _("That device refused the connection. Is Tether running on it?");
+            else if (reason == "unresolved")
+                message = _("That address could not be resolved.");
+            else if (reason == "failed")
+                message = _("Could not connect to that device.");
+            else
+                message = _("Pair request was rejected.");
+            set_text(g_devices.lbl_unpaired_ip, message);
+            set_status_main(message);
             return true;
         }
         if (command == "pair_request_received" || command == "untrusted_client_connected") {

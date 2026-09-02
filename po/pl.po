@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 10:09-0700\n"
+"POT-Creation-Date: 2026-09-02 11:40-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Polish\n"
@@ -1148,6 +1148,15 @@ msgstr ""
 "Uruchom go poleceniem: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
+msgid ""
+"An iPhone is on the network but cannot reach this PC. A firewall is running; "
+"Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
+msgstr ""
+"iPhone jest w sieci, ale nie może połączyć się z tym komputerem. Działa "
+"zapora; Tether wymaga przychodzącego TCP 5134. Zezwól poleceniem: sudo ufw "
+"allow 5134/tcp"
+
+#: src/gtk/devices_view.cpp
 msgid "No paired iPhone is connected. Open the Tether app on the phone."
 msgstr ""
 "Nie jest połączony żaden sparowany iPhone. Otwórz aplikację Tether na "
@@ -1181,6 +1190,26 @@ msgstr "Sparowano"
 #, c++-format
 msgid "Waiting for approval on {0}..."
 msgstr "Oczekiwanie na zatwierdzenie na {0}…"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Could not reach that device. If a firewall is running, Tether needs inbound "
+"TCP 5134 on the other machine."
+msgstr ""
+"Nie można było połączyć się z tym urządzeniem. Jeśli działa zapora, Tether "
+"wymaga przychodzącego TCP 5134 na drugim komputerze."
+
+#: src/gtk/devices_view.cpp
+msgid "That device refused the connection. Is Tether running on it?"
+msgstr "To urządzenie odrzuciło połączenie. Czy działa na nim Tether?"
+
+#: src/gtk/devices_view.cpp
+msgid "That address could not be resolved."
+msgstr "Nie udało się rozwiązać tego adresu."
+
+#: src/gtk/devices_view.cpp
+msgid "Could not connect to that device."
+msgstr "Nie udało się połączyć z tym urządzeniem."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair request was rejected."

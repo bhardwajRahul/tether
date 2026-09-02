@@ -374,6 +374,99 @@ namespace {
         EXPECT_LE(open_fd_count(), before);
     }
 
+    // A dial that lands nowhere must still reach the UI. Without a verdict the
+    // GTK pair spinner runs forever, which is what a firewalled peer looks like.
+    TEST(TcpServerTest, DialFailureReportsAReason) {
+        const std::string home = unique_test_dir("tether_dial_reason_test");
+        CleanupGuard cleanup_guard(home);
+        std::filesystem::remove_all(home);
+        std::filesystem::create_directories(home);
+        ScopedEnvVar home_env("HOME", home);
+        ASSERT_TRUE(tether::Crypto::instance().init());
+
+        constexpr int port = 45139;
+        constexpr int dead_port = 45140;
+        tether::EpollEventLoop loop;
+        tether::TcpServer server(loop, port);
+        if (!server.start())
+            GTEST_SKIP() << "port " << port << " is unavailable";
+
+        int pair[2];
+        ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, pair), 0);
+        tether::register_local_subscriber(pair[1]);
+
+        std::thread loop_thread([&loop] { loop.run(); });
+        EXPECT_TRUE(server.connect_peer("127.0.0.1", dead_port, "ghost"));
+
+        // Nothing listens on dead_port, so the kernel answers RST: "refused",
+        // which is the case a firewall is NOT responsible for.
+        std::string event;
+        char buf[4096];
+        timeval read_timeout{10, 0};
+        setsockopt(pair[0], SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout));
+        const ssize_t n = read(pair[0], buf, sizeof(buf));
+        if (n > 0)
+            event.assign(buf, static_cast<size_t>(n));
+
+        loop.post([&loop] { loop.stop(); });
+        loop_thread.join();
+        tether::unregister_local_subscriber(pair[1]);
+        close(pair[0]);
+        close(pair[1]);
+
+        ASSERT_FALSE(event.empty()) << "no pair_rejected reached local subscribers";
+        const auto parsed = nlohmann::json::parse(event);
+        EXPECT_EQ(parsed.value("command", ""), "pair_rejected");
+        EXPECT_EQ(parsed.value("reason", ""), "refused");
+        EXPECT_EQ(parsed.value("address", ""), "127.0.0.1");
+    }
+
+    // A firewall that DROPs the SYN gives no answer at all. connect() must give
+    // up on Tether's schedule, not the kernel's multi-minute retry budget.
+    TEST(TcpServerTest, DialToABlackHoleGivesUpQuickly) {
+        const std::string home = unique_test_dir("tether_dial_blackhole_test");
+        CleanupGuard cleanup_guard(home);
+        std::filesystem::remove_all(home);
+        std::filesystem::create_directories(home);
+        ScopedEnvVar home_env("HOME", home);
+        ASSERT_TRUE(tether::Crypto::instance().init());
+
+        constexpr int port = 45141;
+        tether::EpollEventLoop loop;
+        tether::TcpServer server(loop, port);
+        if (!server.start())
+            GTEST_SKIP() << "port " << port << " is unavailable";
+
+        int pair[2];
+        ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, pair), 0);
+        tether::register_local_subscriber(pair[1]);
+
+        std::thread loop_thread([&loop] { loop.run(); });
+        const auto started = std::chrono::steady_clock::now();
+        // Reserved for documentation (RFC 5737); routers drop it rather than reply.
+        EXPECT_TRUE(server.connect_peer("192.0.2.1", 5134, "black hole"));
+
+        std::string event;
+        char buf[4096];
+        timeval read_timeout{60, 0};
+        setsockopt(pair[0], SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout));
+        const ssize_t n = read(pair[0], buf, sizeof(buf));
+        if (n > 0)
+            event.assign(buf, static_cast<size_t>(n));
+        const auto elapsed = std::chrono::steady_clock::now() - started;
+
+        loop.post([&loop] { loop.stop(); });
+        loop_thread.join();
+        tether::unregister_local_subscriber(pair[1]);
+        close(pair[0]);
+        close(pair[1]);
+
+        ASSERT_FALSE(event.empty()) << "no verdict reached local subscribers";
+        EXPECT_EQ(nlohmann::json::parse(event).value("command", ""), "pair_rejected");
+        // Upper bound only: a network that answers immediately is still a pass.
+        EXPECT_LT(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count(), 30);
+    }
+
     // The dialling side owns the pair request: it sends one unprompted once TLS is up,
     // which is what makes a desktop-initiated pair reach the peer's approval prompt.
     // The peer here is a bare TLS socket, not a second TcpServer, so nothing forks a
@@ -444,3 +537,26 @@ namespace {
     }
 
 } // namespace
+
+TEST(FirewallTest, UfwEnabledReadsTheEnabledKey) {
+    EXPECT_TRUE(tether::ufw_enabled("ENABLED=yes\n"));
+    EXPECT_FALSE(tether::ufw_enabled("ENABLED=no\n"));
+}
+
+TEST(FirewallTest, UfwEnabledIgnoresCommentsAndWhitespace) {
+    EXPECT_FALSE(tether::ufw_enabled("# ENABLED=yes\n"));
+    EXPECT_TRUE(tether::ufw_enabled("  ENABLED = yes  \n"));
+    EXPECT_TRUE(tether::ufw_enabled("ENABLED=YES\r\n"));
+}
+
+TEST(FirewallTest, UfwEnabledIgnoresOtherKeysAndTakesTheFirstMatch) {
+    EXPECT_FALSE(tether::ufw_enabled("LOGLEVEL=low\nIPV6=yes\n"));
+    EXPECT_TRUE(tether::ufw_enabled("LOGLEVEL=low\nENABLED=yes\nIPV6=no\n"));
+    EXPECT_FALSE(tether::ufw_enabled("ENABLED=no\nENABLED=yes\n"));
+}
+
+TEST(FirewallTest, UfwEnabledIsFalseWhenTheKeyIsAbsent) {
+    EXPECT_FALSE(tether::ufw_enabled(""));
+    EXPECT_FALSE(tether::ufw_enabled("ENABLED\n"));
+    EXPECT_FALSE(tether::ufw_enabled("ENABLEDX=yes\n"));
+}
