@@ -165,6 +165,7 @@ checks the daemon does not make.
 
 | Symptom | Cause | What to do |
 |---|---|---|
+| `systemctl enable --now tether-btclass@hci0` hangs in `activating (start)` forever | `btmgmt` epolls its stdin before running the command, and epoll rejects the `/dev/null` systemd hands it, so it waits having done nothing | Update the unit -- it pipes into `btmgmt` now. On an older build, `sudo btmgmt class 4 8` by hand sets the class until `bluetoothd` restarts, see 2026-09-01 below |
 | Messages and contacts worked, then stopped, and the error mentions a service record | `bluetoothd` restarted and reset the Class of Device | `sudo systemctl enable --now tether-btclass@hci0`, then re-pair if the phone dropped the bond |
 | The phone never offers notifications / Sync Contacts | The class is wrong, or the ANCS advertisement is not running | Check for `class=ok` in `tether --bt-status`, can take minutes |
 | MAP or PBAP reports `forbidden` | The matching toggle on the phone is off | Turn it on. This is not a pairing failure |
@@ -1424,3 +1425,48 @@ Not captured: whether the CSR dongle can derive the LE keys at all. It reported 
 `secure-connections=on` and both LE roles, and still produced only BR/EDR bonds across several
 attempts -- consistent with the clone firmware these dongles are known for, but no `btmon` capture
 was taken.
+
+### 2026-09-01 - `btmgmt` never runs its command when stdin is `/dev/null`
+
+Reported as #93 by several people: `sudo systemctl enable --now tether-btclass@hci0` hangs. The
+unit sits in `activating (start)` indefinitely with `btmgmt --index hci0 class 4 8` alive on 4ms of
+CPU, while `sudo btmgmt class 4 8` typed by hand succeeds instantly.
+
+`bt_shell_attach()` in BlueZ's `src/shared/shell.c` registers stdin with the mainloop *before* it
+looks at whether the shell is interactive:
+
+```c
+input = input_new(fd);        /* -> io_new(fd) -> mainloop_add_fd(fd, 0, ...) */
+if (!input)
+        return false;         /* returns here; shell_exec() never runs */
+
+if (data.mode == MODE_INTERACTIVE) {
+        ...
+} else {
+        if (shell_exec(data.argc, data.argv) < 0)
+```
+
+`mainloop_add_fd()` ends in `epoll_ctl(EPOLL_CTL_ADD, fd)`. `/dev/null` has no `.poll` in its file
+operations, so the kernel answers `EPERM` -- an event mask of `0` does not help, the rejection is
+about the file, not the events. `io_new()` returns NULL, the attach bails out one line before the
+branch that would have run the command, and the mainloop then runs forever with nothing registered
+to wake it. The process is not slow or blocked on the controller; it never issued the command.
+
+systemd gives every service `StandardInput=null`, so both `btmgmt` calls in the unit inherited
+`/dev/null` on fd 0. Terminals, pipes and sockets are all pollable, which is why running it by hand
+works, and why `RLovelett` found that `printf "\n" | btmgmt ...` works around it.
+
+It only bites where BlueZ is built against `src/shared/mainloop.c`. The `mainloop-glib.c` build goes
+through `g_io_add_watch`, which accepts `/dev/null` -- so it reproduces on the reporters' Ubuntu
+26.04 and not on Arch's bluez 5.87.
+
+`probe_secure_connections()` had the quiet version of the same bug: it passed `nullptr` for
+`standard_input` to `g_spawn_async_with_pipes`, so `btmgmt info` inherited whatever fd 0 `tetherd`
+had. Launched from a `.desktop` entry that is `/dev/null`, the child hung, the 1s deadline killed
+it, and `--bt-status` printed `secure-connections=unknown`. The reporter's paste shows exactly that
+line.
+
+Fixed by giving `btmgmt` a pipe everywhere it is spawned: `echo |` in the unit, in the NixOS module
+and in `bt-probe.sh`, and a real stdin pipe closed immediately for EOF in `probe_secure_connections()`.
+The unit also grew `TimeoutStartSec=60`, because `Type=oneshot` defaults to no start timeout -- that
+is why a stall wedged `bluetooth.service` and everything ordered after it instead of failing.

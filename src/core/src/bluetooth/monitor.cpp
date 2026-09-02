@@ -155,12 +155,23 @@ namespace tether::bluetooth {
         };
 
         GPid child = 0;
+        gint input_fd = -1;
         gint output_fd = -1;
         GError* error = nullptr;
         const auto flags = static_cast<GSpawnFlags>(G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD |
                                                     G_SPAWN_STDERR_TO_DEV_NULL | G_SPAWN_CLOEXEC_PIPES);
-        if (!g_spawn_async_with_pipes(
-                nullptr, argv.data(), nullptr, flags, nullptr, nullptr, &child, nullptr, &output_fd, nullptr, &error)) {
+        // btmgmt epolls its stdin before it runs the command, rejects /dev/null with EPERM.
+        if (!g_spawn_async_with_pipes(nullptr,
+                                      argv.data(),
+                                      nullptr,
+                                      flags,
+                                      nullptr,
+                                      nullptr,
+                                      &child,
+                                      &input_fd,
+                                      &output_fd,
+                                      nullptr,
+                                      &error)) {
             debug::log(WARN,
                        "bluetooth: cannot start btmgmt for {}: {}",
                        adapter_id,
@@ -168,6 +179,8 @@ namespace tether::bluetooth {
             g_clear_error(&error);
             return std::nullopt;
         }
+        if (input_fd >= 0)
+            close(input_fd);
 
         const int old_flags = fcntl(output_fd, F_GETFL, 0);
         if (old_flags >= 0)

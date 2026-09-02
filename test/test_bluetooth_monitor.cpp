@@ -90,3 +90,24 @@ TEST(SecureConnectionsProbe, DoesNotLeakParentDescriptorsIntoBtmgmt) {
     ASSERT_TRUE(result.has_value());
     EXPECT_TRUE(*result);
 }
+
+// btmgmt epolls its stdin before running the command and epoll rejects
+// /dev/null with EPERM, so an inherited /dev/null fd 0 makes it hang.
+TEST(SecureConnectionsProbe, GivesBtmgmtAPollableStdin) {
+    const int devnull = open("/dev/null", O_RDONLY);
+    ASSERT_GE(devnull, 0);
+    const int saved_stdin = dup(STDIN_FILENO);
+    ASSERT_GE(saved_stdin, 0);
+    ASSERT_EQ(dup2(devnull, STDIN_FILENO), STDIN_FILENO);
+    close(devnull);
+
+    FakeBtmgmt fake("[ -p /proc/self/fd/0 ] || exit 9\n"
+                    "printf 'current settings: secure-conn\\n'\n");
+    const auto result = probe_secure_connections("hci0", 250ms);
+
+    dup2(saved_stdin, STDIN_FILENO);
+    close(saved_stdin);
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_TRUE(*result);
+}
