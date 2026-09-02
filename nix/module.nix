@@ -33,20 +33,21 @@ let
     };
   };
 in
+with lib;
 {
   options.programs.tether = {
-    enable = lib.mkEnableOption "Tether, an iPhone integration bridge for Linux";
-    package = lib.mkOption {
-      type = lib.types.package;
+    enable = mkEnableOption "Tether, an iPhone integration bridge for Linux";
+    package = mkOption {
+      type = with types; package;
       default = pkgs.callPackage ./package.nix { };
-      defaultText = lib.literalExpression "pkgs.callPackage ./nix/package.nix { }";
+      defaultText = literalExpression "pkgs.callPackage ./nix/package.nix { }";
       description = "The Tether package to install and integrate.";
     };
-    wifi.enable = lib.mkEnableOption "Tether Wi-Fi discovery through Avahi";
-    wifi.openFirewall = lib.mkEnableOption "the mDNS and TCP firewall ports required by Tether";
-    bluetooth.enable = lib.mkEnableOption "Tether Bluetooth integration";
-    bluetooth.adapters = lib.mkOption {
-      type = lib.types.listOf (lib.types.strMatching "hci[0-9]+");
+    wifi.enable = mkEnableOption "Tether Wi-Fi discovery through Avahi";
+    wifi.openFirewall = mkEnableOption "the mDNS and TCP firewall ports required by Tether";
+    bluetooth.enable = mkEnableOption "Tether Bluetooth integration";
+    bluetooth.adapters = mkOption {
+      type = with types; listOf (strMatching "hci[0-9]+");
       default = [ "hci0" ];
       example = [
         "hci0"
@@ -54,17 +55,30 @@ in
       ];
       description = "Bluetooth HCI adapters whose class Tether should configure.";
     };
+    extensions = mkOption {
+      type =
+        with types;
+        listOf (enum [
+          "firefox"
+          "chromium"
+          "thunderbird"
+        ]);
+      default = [ ];
+      defaultText = literalExpression "[ ]";
+      description = "The Tether Browser/Mail extensions to retrieve OTP codes";
+    };
   };
 
-  config = lib.mkMerge [
-    (lib.mkIf cfg.enable {
+  config = mkMerge [
+    (mkIf cfg.enable {
       environment.systemPackages = [ cfg.package ];
+    })
+
+    (mkIf (cfg.enable && (builtins.elem "firefox" cfg.extensions)) {
       programs.firefox.nativeMessagingHosts.packages = [ cfg.package ];
-      programs.thunderbird.package = lib.mkDefault (
-        pkgs.thunderbird.override {
-          nativeMessagingHosts = [ cfg.package ];
-        }
-      );
+    })
+
+    (mkIf (cfg.enable && (builtins.elem "chromium" cfg.extensions)) {
       environment.etc = {
         "chromium/native-messaging-hosts/com.tether.extension.json".source =
           "${cfg.package}/etc/chromium/native-messaging-hosts/com.tether.extension.json";
@@ -73,17 +87,25 @@ in
       };
     })
 
-    (lib.mkIf (cfg.enable && cfg.wifi.enable) {
-      services.avahi.enable = true;
-      services.avahi.openFirewall = lib.mkDefault false;
+    (mkIf (cfg.enable && (builtins.elem "thunderbird" cfg.extensions)) {
+      programs.thunderbird.package = mkDefault (
+        pkgs.thunderbird.override {
+          nativeMessagingHosts = [ cfg.package ];
+        }
+      );
     })
 
-    (lib.mkIf (cfg.enable && cfg.wifi.openFirewall) {
+    (mkIf (cfg.enable && cfg.wifi.enable) {
+      services.avahi.enable = true;
+      services.avahi.openFirewall = mkDefault false;
+    })
+
+    (mkIf (cfg.enable && cfg.wifi.openFirewall) {
       services.avahi.openFirewall = true;
       networking.firewall.allowedTCPPorts = [ 5134 ];
     })
 
-    (lib.mkIf (cfg.enable && cfg.bluetooth.enable) {
+    (mkIf (cfg.enable && cfg.bluetooth.enable) {
       hardware.bluetooth.enable = true;
       hardware.bluetooth.settings.General.Experimental = true;
       systemd.services = builtins.listToAttrs (map bluetoothService cfg.bluetooth.adapters);
