@@ -145,6 +145,15 @@ set(SYSTEMD_UNIT_DIR "lib/systemd/system" CACHE PATH "systemd system unit direct
 install(FILES packaging/systemd/tether-btclass@.service
         DESTINATION "${SYSTEMD_UNIT_DIR}")
 
+# firewall profiles for the mTLS listener (5134/tcp) and mDNS (5353/udp) installed but not applied (user's call).
+set(UFW_APPLICATIONS_DIR "/etc/ufw/applications.d" CACHE PATH "ufw application profile directory")
+set(FIREWALLD_SERVICE_DIR "lib/firewalld/services" CACHE PATH "firewalld service directory")
+install(FILES packaging/firewall/tether.ufw
+        DESTINATION "${UFW_APPLICATIONS_DIR}"
+        RENAME tether)
+install(FILES packaging/firewall/tether.xml
+        DESTINATION "${FIREWALLD_SERVICE_DIR}")
+
 
 # Extension Building only if npm is available
 option(TETHER_BUILD_EXTENSIONS "Build browser and mail extensions automatically" ON)

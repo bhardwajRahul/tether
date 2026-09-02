@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <openssl/ssl.h>
 #include <string>
+#include <string_view>
 #include <sys/types.h>
 
 namespace tether {
@@ -45,6 +46,10 @@ namespace tether {
     void set_mdns_available(bool available);
     bool mdns_available();
     nlohmann::json build_mdns_status();
+
+    // Whether a host firewall is running.
+    bool ufw_enabled(std::string_view ufw_conf);
+    bool firewall_active();
 
     class UnixServer {
     public:
