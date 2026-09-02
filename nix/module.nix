@@ -16,10 +16,11 @@ let
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        # btmgmt epolls its stdin before it runs the command,
         ExecStart = pkgs.writeShellScript "tether-btclass-${adapter}" ''
           for attempt in 1 2 3 4 5 6 7 8 9 10; do
-            ${pkgs.bluez}/bin/btmgmt --index ${adapter} class 4 8 >/dev/null 2>&1
-            if ${pkgs.bluez}/bin/btmgmt --index ${adapter} info 2>/dev/null \
+            echo | ${pkgs.bluez}/bin/btmgmt --index ${adapter} class 4 8 >/dev/null 2>&1
+            if echo | ${pkgs.bluez}/bin/btmgmt --index ${adapter} info 2>/dev/null \
               | ${pkgs.gnugrep}/bin/grep -q "class 0x..0408"; then
               exit 0
             fi
@@ -27,6 +28,7 @@ let
           done
           exit 1
         '';
+        TimeoutStartSec = 60;
       };
     };
   };

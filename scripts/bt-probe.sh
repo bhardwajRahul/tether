@@ -130,7 +130,7 @@ else
         if (( set_class )); then
             echo
             note "running: btmgmt class 4 8"
-            if sudo btmgmt --index "${ADAPTER#hci}" class 4 8; then
+            if echo | sudo btmgmt --index "${ADAPTER#hci}" class 4 8; then
                 note "class set; re-run this probe to confirm"
                 note "Make it stick: sudo systemctl enable --now tether-btclass@$ADAPTER"
             else
