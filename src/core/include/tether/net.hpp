@@ -5,6 +5,7 @@
 #include <map>
 #include <nlohmann/json.hpp>
 #include <openssl/ssl.h>
+#include <set>
 #include <string>
 #include <string_view>
 #include <sys/types.h>
@@ -55,6 +56,9 @@ namespace tether {
     bool ufw_enabled(std::string_view ufw_conf);
     bool firewall_active();
 
+    // Whether this node should dial a peer it just saw over mDNS.
+    bool should_dial_peer(const std::string& my_fingerprint, const std::string& peer_fingerprint, bool peer_is_known);
+
     class UnixServer {
     public:
         UnixServer(EpollEventLoop& loop, TcpServer& tcp_server);
@@ -90,6 +94,10 @@ namespace tether {
         // Dial a peer and add the session into this server's client tables
         bool connect_peer(const std::string& host, int port, const std::string& peer_name = "");
 
+        // Drops a pairing: unpins the fingerprint and closes any live session with it.
+        // Returns true when the fingerprint was pinned.
+        bool forget_device(const std::string& fingerprint);
+
     private:
         struct ConnectedClientInfo {
             std::string address;
@@ -117,6 +125,7 @@ namespace tether {
         std::map<int, ConnectedClientInfo> client_info_;
         // fds we dialled
         std::map<int, bool> client_initiated_;
+        std::set<std::string> dialing_;
 
         // Track spawned dialog child processes
         struct PendingPairDialog {

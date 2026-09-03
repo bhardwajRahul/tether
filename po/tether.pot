@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether 0.2.23\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 11:19-0700\n"
+"POT-Creation-Date: 2026-09-03 13:02-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -161,6 +161,10 @@ msgstr ""
 
 #: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Remove a Wi-Fi pairing and drop its session."
 msgstr ""
 
 #: src/cli/main.cpp
@@ -493,6 +497,14 @@ msgstr[1] ""
 msgid ""
 "Explicit framework connection locally rejected! Did you target explicitly "
 "invalid TLS or is daemon broken?\n"
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "--forget expects a fingerprint.\n"
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "No paired device with that fingerprint.\n"
 msgstr ""
 
 #: src/cli/main.cpp
@@ -999,8 +1011,7 @@ msgid "Connected and ready."
 msgstr ""
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Device is offline. Open the Tether app on iPhone while on the same network."
+msgid "Device is offline. Make sure it is switched on and on the same network."
 msgstr ""
 
 #: src/gtk/devices_view.cpp
@@ -1037,6 +1048,17 @@ msgstr ""
 
 #: src/gtk/devices_view.cpp
 msgid "Removing the pairing…"
+msgstr ""
+
+#: src/gtk/devices_view.cpp
+#, c-format
+msgid "Forget %s?"
+msgstr ""
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Tether will stop connecting to it. Forget this computer on the other device "
+"too, then pair again to reconnect."
 msgstr ""
 
 #: src/gtk/devices_view.cpp
@@ -1083,18 +1105,18 @@ msgstr ""
 
 #: src/gtk/devices_view.cpp
 msgid ""
-"avahi-daemon isn't running, so the iPhone can't find this PC. Start it with: "
-"sudo systemctl enable --now avahi-daemon"
+"avahi-daemon isn't running, so other devices can't find this PC. Start it "
+"with: sudo systemctl enable --now avahi-daemon"
 msgstr ""
 
 #: src/gtk/devices_view.cpp
 msgid ""
-"An iPhone is on the network but cannot reach this PC. A firewall is running; "
+"A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
 msgstr ""
 
 #: src/gtk/devices_view.cpp
-msgid "No paired iPhone is connected. Open the Tether app on the phone."
+msgid "No paired device is connected. Switch it on and join the same network."
 msgstr ""
 
 #: src/gtk/devices_view.cpp
@@ -1323,6 +1345,10 @@ msgstr ""
 
 #: src/gtk/devices_view.cpp
 msgid "Clipboard sync requested..."
+msgstr ""
+
+#: src/gtk/devices_view.cpp
+msgid "Forget"
 msgstr ""
 
 #: src/gtk/main.cpp

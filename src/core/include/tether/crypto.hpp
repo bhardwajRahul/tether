@@ -21,6 +21,7 @@ namespace tether {
         std::string get_my_fingerprint();
         bool is_host_known(const std::string& fingerprint);
         void add_known_host(const std::string& name, const std::string& fingerprint);
+        bool remove_known_host(const std::string& fingerprint);
         std::string get_known_hosts_dump() const;
 
         static std::string get_peer_fingerprint(SSL* ssl);

@@ -50,6 +50,11 @@ Accept a pending pairing request locally for the specified device fingerprint.
 \fB\-\-pair\fR
 Send a pairing request over TCP to the daemon.
 .TP
+\fB\-\-forget\fR \fIFINGERPRINT\fR
+Remove a Wi-Fi pairing and close any session it holds. The daemon reconnects to
+paired peers on its own, so a peer stays unwanted only once both ends have
+forgotten it.
+.TP
 \fB\-\-install-extension-host\fR
 Install the browser and mail extension's native messaging manifests into this
 user's Firefox, Thunderbird, and Chromium directories, pointing at a wrapper in

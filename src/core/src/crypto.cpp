@@ -166,9 +166,15 @@ namespace tether {
         known_hosts_.clear();
         hosts_loaded_ = true;
 
+        std::error_code exists_ec;
+        if (!std::filesystem::exists(hosts_path_, exists_ec)) {
+            save_known_hosts(); // materialise an empty file on first run
+            return;
+        }
+
         std::ifstream iff(hosts_path_);
         if (!iff.is_open()) {
-            save_known_hosts(); // materialise an empty file on first run
+            debug::log(ERR, "Crypto: cannot read {}; treating as empty without rewriting it", hosts_path_);
             return;
         }
 
@@ -242,6 +248,15 @@ namespace tether {
         refresh_known_hosts_if_stale(); // don't clobber a pairing another process added
         known_hosts_[fingerprint] = name;
         save_known_hosts();
+    }
+
+    bool Crypto::remove_known_host(const std::string& fingerprint) {
+        std::lock_guard<std::mutex> lock(hosts_mutex_);
+        refresh_known_hosts_if_stale();
+        if (known_hosts_.erase(fingerprint) == 0)
+            return false;
+        save_known_hosts();
+        return true;
     }
 
     std::string Crypto::get_known_hosts_dump() const {

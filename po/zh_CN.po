@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 11:19-0700\n"
+"POT-Creation-Date: 2026-09-03 13:02-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -168,6 +168,10 @@ msgstr ""
 #: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
 msgstr "在本地接受待处理的配对请求。"
+
+#: src/cli/main.cpp
+msgid "Remove a Wi-Fi pairing and drop its session."
+msgstr "移除 Wi-Fi 配对并断开其会话。"
 
 #: src/cli/main.cpp
 msgid "Send a pair_request over TCP to the daemon."
@@ -516,6 +520,14 @@ msgstr ""
 "显式框架连接在本地被拒绝！是指定了明显无效的 TLS，还是守护进程已损坏？\n"
 
 #: src/cli/main.cpp
+msgid "--forget expects a fingerprint.\n"
+msgstr "--forget 需要一个指纹。\n"
+
+#: src/cli/main.cpp
+msgid "No paired device with that fingerprint.\n"
+msgstr "没有使用该指纹的已配对设备。\n"
+
+#: src/cli/main.cpp
 #, c++-format
 msgid "Transfer Failed: {}"
 msgstr "传输失败：{}"
@@ -786,13 +798,16 @@ msgstr "在与设备建立绑定之前，bearer API 的支持情况无法确认�
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
 "derived, so notification mirroring cannot work on it."
-msgstr "已与设备建立绑定，但绑定仅覆盖 BR/EDR —— 没有派生出 LE 密钥，因此通知镜像无法工作。"
+msgstr ""
+"已与设备建立绑定，但绑定仅覆盖 BR/EDR —— 没有派生出 LE 密钥，因此通知镜像无法"
+"工作。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "This adapter cannot solicit ANCS, so notification mirroring is unavailable "
 "on it and re-pairing will not change that."
-msgstr "此适配器无法请求 ANCS，因此其上无法使用通知镜像，重新配对也不会改变这一点。"
+msgstr ""
+"此适配器无法请求 ANCS，因此其上无法使用通知镜像，重新配对也不会改变这一点。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1056,9 +1071,8 @@ msgid "Connected and ready."
 msgstr "已连接并就绪。"
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Device is offline. Open the Tether app on iPhone while on the same network."
-msgstr "设备离线。请在同一网络下打开 iPhone 上的 Tether App。"
+msgid "Device is offline. Make sure it is switched on and on the same network."
+msgstr "设备离线。请确认设备已开机并处于同一网络。"
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -1097,6 +1111,17 @@ msgstr ""
 #: src/gtk/devices_view.cpp
 msgid "Removing the pairing…"
 msgstr "正在移除配对……"
+
+#: src/gtk/devices_view.cpp
+#, c-format
+msgid "Forget %s?"
+msgstr "忘记 %s？"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Tether will stop connecting to it. Forget this computer on the other device "
+"too, then pair again to reconnect."
+msgstr "Tether 将不再连接该设备。请同时在对方设备上忘记这台电脑，然后重新配对以恢复连接。"
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
@@ -1144,23 +1169,19 @@ msgstr ""
 
 #: src/gtk/devices_view.cpp
 msgid ""
-"avahi-daemon isn't running, so the iPhone can't find this PC. Start it with: "
-"sudo systemctl enable --now avahi-daemon"
-msgstr ""
-"avahi-daemon 未运行，因此 iPhone 无法找到此电脑。请使用以下命令启动：sudo "
-"systemctl enable --now avahi-daemon"
+"avahi-daemon isn't running, so other devices can't find this PC. Start it "
+"with: sudo systemctl enable --now avahi-daemon"
+msgstr "avahi-daemon 未运行，因此其他设备无法找到此电脑。请使用以下命令启动：sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid ""
-"An iPhone is on the network but cannot reach this PC. A firewall is running; "
+"A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
-msgstr ""
-"网络中有一部 iPhone，但无法连接到这台电脑。防火墙正在运行；Tether 需要入站 "
-"TCP 5134。请使用以下命令放行：sudo ufw allow 5134/tcp"
+msgstr "网络中有一台设备，但无法连接到这台电脑。防火墙正在运行；Tether 需要入站 TCP 5134。请使用以下命令放行：sudo ufw allow 5134/tcp"
 
 #: src/gtk/devices_view.cpp
-msgid "No paired iPhone is connected. Open the Tether app on the phone."
-msgstr "没有已配对的 iPhone 处于连接状态。请在 iPhone 上打开 Tether App。"
+msgid "No paired device is connected. Switch it on and join the same network."
+msgstr "没有已配对的设备处于连接状态。请开机并连接到同一网络。"
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
@@ -1409,6 +1430,10 @@ msgstr "发送剪贴板"
 #: src/gtk/devices_view.cpp
 msgid "Clipboard sync requested..."
 msgstr "已请求剪贴板同步……"
+
+#: src/gtk/devices_view.cpp
+msgid "Forget"
+msgstr "忘记"
 
 #: src/gtk/main.cpp
 msgid "Keep running in tray when closed"

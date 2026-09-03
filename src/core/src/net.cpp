@@ -1241,6 +1241,14 @@ namespace tether {
                                                 {"connected", connected}};
                         write_plain_packet(client_fd, response.dump() + "\n");
                         continue;
+                    } else if (j.contains("command") && j["command"] == "forget_device" && j.contains("fingerprint")) {
+                        const std::string print = j.value("fingerprint", "");
+                        const bool forgotten = tcp_server_.forget_device(print);
+                        nlohmann::json response{
+                            {"command", "forget_device_result"}, {"fingerprint", print}, {"forgotten", forgotten}};
+                        write_plain_packet(client_fd, response.dump() + "\n");
+                        broadcast_local_event(response.dump());
+                        continue;
                     } else if (j.contains("command") && j["command"] == "pair_request" && j.contains("host")) {
                         const std::string target_host = j["host"];
                         const int target_port = j.value("port", 5134);
@@ -1468,6 +1476,14 @@ namespace tether {
     // How long a dial waits before calling the peer unreachable.
     constexpr int DIAL_TIMEOUT_SECONDS = 5;
 
+    bool should_dial_peer(const std::string& my_fingerprint, const std::string& peer_fingerprint, bool peer_is_known) {
+        if (my_fingerprint.empty() || peer_fingerprint.empty())
+            return false;
+        if (!peer_is_known)
+            return false;
+        return my_fingerprint < peer_fingerprint;
+    }
+
     bool TcpServer::connect_peer(const std::string& host, int port, const std::string& peer_name) {
         if (host.empty())
             return false;
@@ -1480,9 +1496,18 @@ namespace tether {
             }
         }
 
+        if (!dialing_.insert(host).second) {
+            debug::log(INFO, "TcpServer: Dial to {} already in flight", host);
+            return true;
+        }
+
         // connect() blocks, and the loop watches EPOLLIN only
         std::thread([this, host, port, peer_name]() {
+            // adopt_peer clears it on the success path, once the fd is in the client tables.
+            auto give_up = [&] { loop_.post([this, host]() { dialing_.erase(host); }); };
+
             auto fail = [&](const char* reason) {
+                give_up();
                 nlohmann::json event{{"command", "pair_rejected"},
                                      {"fingerprint", ""},
                                      {"device_name", peer_name},
@@ -1553,6 +1578,8 @@ namespace tether {
     }
 
     void TcpServer::adopt_peer(int fd, const std::string& host, const std::string& peer_name) {
+        dialing_.erase(host);
+
         int flags = fcntl(fd, F_GETFL, 0);
         fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
@@ -1876,6 +1903,32 @@ namespace tether {
                                        {"address", remote_it->second.address},
                                        {"paired", true}};
         broadcast_local_event(connected_event.dump());
+    }
+
+    bool TcpServer::forget_device(const std::string& fingerprint) {
+        if (fingerprint.empty())
+            return false;
+
+        const bool removed = Crypto::instance().remove_known_host(fingerprint);
+
+        std::vector<int> matching_fds;
+        for (auto const& [client_fd, remote] : connected_remote_clients) {
+            if (remote.fingerprint == fingerprint)
+                matching_fds.push_back(client_fd);
+        }
+
+        for (int client_fd : matching_fds) {
+            auto it = connected_remote_clients.find(client_fd);
+            nlohmann::json event{{"command", "client_disconnected"},
+                                 {"address", it->second.address},
+                                 {"fingerprint", it->second.fingerprint},
+                                 {"device_name", it->second.device_name},
+                                 {"paired", it->second.paired}};
+            broadcast_local_event(event.dump());
+            drop_client(client_fd);
+        }
+
+        return removed;
     }
 
     bool TcpServer::accept_device(const std::string& fingerprint, const std::string& fallback_name) {

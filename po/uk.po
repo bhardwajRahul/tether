@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 11:19-0700\n"
+"POT-Creation-Date: 2026-09-03 13:02-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Ukrainian\n"
@@ -175,6 +175,10 @@ msgstr ""
 #: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
 msgstr "Прийняти локально запит на створення пари, що очікує."
+
+#: src/cli/main.cpp
+msgid "Remove a Wi-Fi pairing and drop its session."
+msgstr "Вилучити пару Wi-Fi та закрити її сеанс."
 
 #: src/cli/main.cpp
 msgid "Send a pair_request over TCP to the daemon."
@@ -542,6 +546,14 @@ msgstr ""
 "TLS чи демон зламано?\n"
 
 #: src/cli/main.cpp
+msgid "--forget expects a fingerprint.\n"
+msgstr "--forget очікує відбиток.\n"
+
+#: src/cli/main.cpp
+msgid "No paired device with that fingerprint.\n"
+msgstr "Немає спареного пристрою з таким відбитком.\n"
+
+#: src/cli/main.cpp
 #, c++-format
 msgid "Transfer Failed: {}"
 msgstr "Передавання не вдалося: {}"
@@ -837,13 +849,17 @@ msgstr ""
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
 "derived, so notification mirroring cannot work on it."
-msgstr "Зв'язок із пристроєм створено, але він охоплює лише BR/EDR -- ключі LE не було отримано, тож дублювання сповіщень на ньому працювати не може."
+msgstr ""
+"Зв'язок із пристроєм створено, але він охоплює лише BR/EDR -- ключі LE не "
+"було отримано, тож дублювання сповіщень на ньому працювати не може."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "This adapter cannot solicit ANCS, so notification mirroring is unavailable "
 "on it and re-pairing will not change that."
-msgstr "Цей адаптер не може запитати ANCS, тож дублювання сповіщень на ньому недоступне, і повторне створення пари цього не змінить."
+msgstr ""
+"Цей адаптер не може запитати ANCS, тож дублювання сповіщень на ньому "
+"недоступне, і повторне створення пари цього не змінить."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -855,7 +871,9 @@ msgstr ""
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
-msgstr "Вилучіть цей комп'ютер на iPhone («Забути цей пристрій») і створіть пару знову."
+msgstr ""
+"Вилучіть цей комп'ютер на iPhone («Забути цей пристрій») і створіть пару "
+"знову."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1112,10 +1130,8 @@ msgid "Connected and ready."
 msgstr "Під'єднано і готово."
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Device is offline. Open the Tether app on iPhone while on the same network."
-msgstr ""
-"Пристрій не в мережі. Відкрийте програму Tether на iPhone у тій самій мережі."
+msgid "Device is offline. Make sure it is switched on and on the same network."
+msgstr "Пристрій не в мережі. Переконайтеся, що він увімкнений і в тій самій мережі."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -1155,6 +1171,17 @@ msgstr ""
 #: src/gtk/devices_view.cpp
 msgid "Removing the pairing…"
 msgstr "Вилучення пари…"
+
+#: src/gtk/devices_view.cpp
+#, c-format
+msgid "Forget %s?"
+msgstr "Забути %s?"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Tether will stop connecting to it. Forget this computer on the other device "
+"too, then pair again to reconnect."
+msgstr "Tether більше не з'єднуватиметься з ним. Забудьте цей комп'ютер і на іншому пристрої, потім створіть пару знову, щоб відновити з'єднання."
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
@@ -1202,26 +1229,19 @@ msgstr ""
 
 #: src/gtk/devices_view.cpp
 msgid ""
-"avahi-daemon isn't running, so the iPhone can't find this PC. Start it with: "
-"sudo systemctl enable --now avahi-daemon"
-msgstr ""
-"avahi-daemon не запущено, тому iPhone не може знайти цей комп'ютер. "
-"Запустіть його командою: sudo systemctl enable --now avahi-daemon"
+"avahi-daemon isn't running, so other devices can't find this PC. Start it "
+"with: sudo systemctl enable --now avahi-daemon"
+msgstr "avahi-daemon не запущено, тому інші пристрої не можуть знайти цей комп'ютер. Запустіть його командою: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid ""
-"An iPhone is on the network but cannot reach this PC. A firewall is running; "
+"A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
-msgstr ""
-"iPhone є в мережі, але не може під'єднатися до цього ПК. Працює брандмауер; "
-"Tether потребує вхідного TCP 5134. Дозвольте його командою: sudo ufw allow "
-"5134/tcp"
+msgstr "Пристрій є в мережі, але не може під'єднатися до цього ПК. Працює брандмауер; Tether потребує вхідного TCP 5134. Дозвольте його командою: sudo ufw allow 5134/tcp"
 
 #: src/gtk/devices_view.cpp
-msgid "No paired iPhone is connected. Open the Tether app on the phone."
-msgstr ""
-"Жодного спареного iPhone не під'єднано. Відкрийте програму Tether на "
-"телефоні."
+msgid "No paired device is connected. Switch it on and join the same network."
+msgstr "Жодного спареного пристрою не під'єднано. Увімкніть його та під'єднайте до тієї самої мережі."
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
@@ -1481,6 +1501,10 @@ msgstr "Надіслати буфер обміну"
 #: src/gtk/devices_view.cpp
 msgid "Clipboard sync requested..."
 msgstr "Запитано синхронізацію буфера обміну..."
+
+#: src/gtk/devices_view.cpp
+msgid "Forget"
+msgstr "Забути"
 
 #: src/gtk/main.cpp
 msgid "Keep running in tray when closed"

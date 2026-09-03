@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 11:19-0700\n"
+"POT-Creation-Date: 2026-09-03 13:02-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Swedish\n"
@@ -174,6 +174,10 @@ msgstr ""
 #: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
 msgstr "Godkänn en väntande parkopplingsförfrågan lokalt."
+
+#: src/cli/main.cpp
+msgid "Remove a Wi-Fi pairing and drop its session."
+msgstr "Ta bort en Wi-Fi-parkoppling och avsluta dess session."
 
 #: src/cli/main.cpp
 msgid "Send a pair_request over TCP to the daemon."
@@ -533,6 +537,14 @@ msgstr ""
 "TLS eller är demonen trasig?\n"
 
 #: src/cli/main.cpp
+msgid "--forget expects a fingerprint.\n"
+msgstr "--forget förväntar sig ett fingeravtryck.\n"
+
+#: src/cli/main.cpp
+msgid "No paired device with that fingerprint.\n"
+msgstr "Ingen parkopplad enhet med det fingeravtrycket.\n"
+
+#: src/cli/main.cpp
 #, c++-format
 msgid "Transfer Failed: {}"
 msgstr "Överföringen misslyckades: {}"
@@ -827,13 +839,17 @@ msgstr "Stödet för bearer-API:et är obekräftat tills en enhet är bunden."
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
 "derived, so notification mirroring cannot work on it."
-msgstr "En enhet är bunden, men bindningen omfattar bara BR/EDR -- inga LE-nycklar härleddes, så spegling av aviseringar kan inte fungera på den."
+msgstr ""
+"En enhet är bunden, men bindningen omfattar bara BR/EDR -- inga LE-nycklar "
+"härleddes, så spegling av aviseringar kan inte fungera på den."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "This adapter cannot solicit ANCS, so notification mirroring is unavailable "
 "on it and re-pairing will not change that."
-msgstr "Den här adaptern kan inte begära ANCS, så spegling av aviseringar är inte tillgänglig på den och att parkoppla igen ändrar inte det."
+msgstr ""
+"Den här adaptern kan inte begära ANCS, så spegling av aviseringar är inte "
+"tillgänglig på den och att parkoppla igen ändrar inte det."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -845,7 +861,8 @@ msgstr ""
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
-msgstr "Radera den här datorn på iPhonen (Glöm denna enhet) och parkoppla igen."
+msgstr ""
+"Radera den här datorn på iPhonen (Glöm denna enhet) och parkoppla igen."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1102,9 +1119,8 @@ msgid "Connected and ready."
 msgstr "Ansluten och redo."
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Device is offline. Open the Tether app on iPhone while on the same network."
-msgstr "Enheten är offline. Öppna Tether-appen på iPhonen i samma nätverk."
+msgid "Device is offline. Make sure it is switched on and on the same network."
+msgstr "Enheten är offline. Kontrollera att den är påslagen och i samma nätverk."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -1143,6 +1159,17 @@ msgstr ""
 #: src/gtk/devices_view.cpp
 msgid "Removing the pairing…"
 msgstr "Tar bort parkopplingen…"
+
+#: src/gtk/devices_view.cpp
+#, c-format
+msgid "Forget %s?"
+msgstr "Glöm %s?"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Tether will stop connecting to it. Forget this computer on the other device "
+"too, then pair again to reconnect."
+msgstr "Tether slutar ansluta till den. Glöm den här datorn på den andra enheten också och parkoppla sedan igen för att ansluta."
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
@@ -1190,24 +1217,19 @@ msgstr ""
 
 #: src/gtk/devices_view.cpp
 msgid ""
-"avahi-daemon isn't running, so the iPhone can't find this PC. Start it with: "
-"sudo systemctl enable --now avahi-daemon"
-msgstr ""
-"avahi-daemon körs inte, så iPhone kan inte hitta den här datorn. Starta den "
-"med: sudo systemctl enable --now avahi-daemon"
+"avahi-daemon isn't running, so other devices can't find this PC. Start it "
+"with: sudo systemctl enable --now avahi-daemon"
+msgstr "avahi-daemon körs inte, så andra enheter kan inte hitta den här datorn. Starta den med: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid ""
-"An iPhone is on the network but cannot reach this PC. A firewall is running; "
+"A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
-msgstr ""
-"En iPhone finns i nätverket men når inte den här datorn. En brandvägg är "
-"aktiv; Tether behöver inkommande TCP 5134. Tillåt det med: sudo ufw allow "
-"5134/tcp"
+msgstr "En enhet finns i nätverket men når inte den här datorn. En brandvägg är aktiv; Tether behöver inkommande TCP 5134. Tillåt det med: sudo ufw allow 5134/tcp"
 
 #: src/gtk/devices_view.cpp
-msgid "No paired iPhone is connected. Open the Tether app on the phone."
-msgstr "Ingen parkopplad iPhone är ansluten. Öppna Tether-appen på telefonen."
+msgid "No paired device is connected. Switch it on and join the same network."
+msgstr "Ingen parkopplad enhet är ansluten. Slå på den och anslut den till samma nätverk."
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
@@ -1466,6 +1488,10 @@ msgstr "Skicka urklipp"
 #: src/gtk/devices_view.cpp
 msgid "Clipboard sync requested..."
 msgstr "Urklippssynkronisering begärd..."
+
+#: src/gtk/devices_view.cpp
+msgid "Forget"
+msgstr "Glöm"
 
 #: src/gtk/main.cpp
 msgid "Keep running in tray when closed"
