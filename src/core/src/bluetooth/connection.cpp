@@ -710,7 +710,11 @@ namespace tether::bluetooth {
             std::lock_guard<std::mutex> lock(g_messages_mutex);
             if (!g_journal.is_open() && secret::retention() != Retention::None && secret::have_key()) {
                 if (g_journal.open()) {
-                    contact_store() = load_contacts();
+                    // PBAP pull while locked lives only in memory
+                    if (contact_store().size() == 0)
+                        contact_store() = load_contacts();
+                    else
+                        save_contacts(contact_store());
                     auto history = g_journal.load(now);
                     for (const auto& message : history)
                         g_messages.add(message);

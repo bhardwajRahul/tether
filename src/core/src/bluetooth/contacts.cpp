@@ -251,8 +251,17 @@ namespace tether::bluetooth {
         const std::string destination = contacts_path(to);
         if (source.empty() || destination.empty() || source == destination)
             return false;
-        if (!std::filesystem::exists(source) || std::filesystem::exists(destination))
+        if (!std::filesystem::exists(source))
             return false;
+
+        // A destination already there means an earlier migration was interrupted between
+        // the rename and the unlink.
+        if (std::filesystem::exists(destination)) {
+            std::error_code ec;
+            std::filesystem::remove(source, ec);
+            debug::log(INFO, "bluetooth: removed {}, left over from an interrupted migration", source);
+            return !ec;
+        }
 
         std::ifstream in(source);
         if (!in.is_open())

@@ -437,9 +437,10 @@ msgstr[1] "({} non letti)"
 #: src/cli/main.cpp
 #, c++-format
 msgid ""
-"The running tetherd is {}, but this is tether {}. Restart it with:\n"
-"    systemctl --user restart tetherd\n"
-msgstr "Il tetherd in esecuzione è {}, ma questo è tether {}. Riavvialo con:\n    systemctl --user restart tetherd\n"
+"The running tetherd is {}, but this is tether {}. Stop it and it\n"
+"restarts on demand:\n"
+"    pkill tetherd\n"
+msgstr "Il tetherd in esecuzione è {}, ma questo è tether {}. Fermalo; si riavvia su richiesta:\n    pkill tetherd\n"
 
 #: src/cli/main.cpp
 msgid "an older build"

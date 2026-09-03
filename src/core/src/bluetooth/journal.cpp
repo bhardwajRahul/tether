@@ -123,7 +123,7 @@ namespace tether::bluetooth {
         const std::string destination = journal_path(to);
         if (source.empty() || destination.empty() || source == destination)
             return false;
-        if (!std::filesystem::exists(source) || std::filesystem::exists(destination))
+        if (!std::filesystem::exists(source))
             return false;
 
         std::ifstream in(source);
@@ -152,11 +152,15 @@ namespace tether::bluetooth {
         std::error_code ec;
         std::filesystem::create_directories(std::filesystem::path(destination).parent_path(), ec);
 
+        // A destination already in place means an earlier migration was interrupted between
+        // the rename and the unlink.
+        const bool merging = std::filesystem::exists(destination);
         const std::string tmp = destination + ".tmp";
+        const std::string target = merging ? destination : tmp;
         {
-            std::ofstream out(tmp, std::ios::trunc);
+            std::ofstream out(target, merging ? std::ios::app : std::ios::trunc);
             if (!out.is_open()) {
-                debug::log(ERR, "bluetooth: cannot write {}", tmp);
+                debug::log(ERR, "bluetooth: cannot write {}", target);
                 return false;
             }
             for (const auto& record : records) {
@@ -166,11 +170,19 @@ namespace tether::bluetooth {
                 out << sealed << "\n";
             }
             if (!out) {
-                debug::log(ERR, "bluetooth: failed writing {}", tmp);
+                debug::log(ERR, "bluetooth: failed writing {}", target);
                 return false;
             }
         }
-        restrict_permissions(tmp);
+        restrict_permissions(target);
+
+        if (merging) {
+            sync_path(destination);
+            std::filesystem::remove(source, ec);
+            debug::log(
+                INFO, "bluetooth: folded {} message(s) from {} into the existing journal", records.size(), source);
+            return true;
+        }
 
         // The source is deleted immediately after, so the replacement has to be on disk first.
         sync_path(tmp);

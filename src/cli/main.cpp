@@ -674,8 +674,9 @@ static void warn_if_daemon_is_older(tether::Client& client) {
 
     // No version field at all means a daemon older than the field itself.
     debug::log(ERR,
-               _("The running tetherd is {}, but this is tether {}. Restart it with:\n"
-                 "    systemctl --user restart tetherd\n"),
+               _("The running tetherd is {}, but this is tether {}. Stop it and it\n"
+                 "restarts on demand:\n"
+                 "    pkill tetherd\n"),
                running.empty() ? _("an older build") : running.c_str(),
                TETHER_VERSION);
 }
@@ -690,7 +691,6 @@ static int print_bt_contacts(tether::Client& client, const std::string& query) {
         resp = nlohmann::json::parse(client.send_and_wait(request.dump() + "\n"));
     } catch (const std::exception&) {
         debug::log(ERR, _("Could not read contacts from the daemon.\n"));
-        warn_if_daemon_is_older(client);
         return 1;
     }
 
@@ -1017,7 +1017,13 @@ int main(int argc, char* argv[]) {
         debug::log(INFO, "File transfer delivered.\n");
     } else if (action == "native") {
         run_native_messaging_host(client);
-    } else if (action == "bt_setup") {
+    }
+
+    // The Bluetooth commands are what we're checking for version conflicts
+    if (action.rfind("bt_", 0) == 0)
+        warn_if_daemon_is_older(client);
+
+    if (action == "bt_setup") {
         return print_bt_setup(client);
     } else if (action == "bt_status") {
         return print_bt_status(client);

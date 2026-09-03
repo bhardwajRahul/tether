@@ -10,6 +10,7 @@
 #include <string>
 #include <tether/crypto.hpp>
 #include <tether/discovery.hpp>
+#include <tether/version.hpp>
 #include <vector>
 
 namespace tether::ui {
@@ -227,6 +228,21 @@ namespace tether::ui {
                         if (reason.is_string())
                             mode += "\n" + reason.get<std::string>();
                     }
+                }
+            }
+
+            // A package upgrade replaces the binaries but leaves the old tetherd running.
+            if (!g_devices.bt_status.empty()) {
+                const std::string running = g_devices.bt_status.value("version", "");
+                if (running != TETHER_VERSION) {
+                    if (!mode.empty())
+                        mode += "\n";
+                    // No version field at all means a daemon older than the field itself.
+                    mode += tr_format(_("The running tetherd is {}, but this is tether {}. Stop it and it\n"
+                                        "restarts on demand:\n"
+                                        "    pkill tetherd\n"),
+                                      running.empty() ? _("an older build") : running.c_str(),
+                                      TETHER_VERSION);
                 }
             }
             set_text(g_devices.lbl_bt_mode, mode);

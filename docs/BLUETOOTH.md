@@ -847,6 +847,16 @@ service on the bus at all the key falls back to `~/.config/tether/store.key`,
 mode 0600 — that stops a backup or a synced home, not another process running as
 you, and it is never written when a wallet is merely locked.
 
+A key is generated and stored only when the search returns **zero** items and
+the default collection is unlocked. `secret_password_store_sync` updates an
+existing item whose attributes match rather than failing, so treating a locked
+item as a first run would replace the key the sealed store was written with and
+lose the history for good. The search therefore distinguishes four answers: a
+readable secret, an item whose secret is null (locked — wait), no item at all
+with the collection locked or missing (wait), and no item with the collection
+unlocked (first run — generate). A failed search counts as locked. Waiting takes
+the same one-a-minute retry as everything else here.
+
 Three retention modes, `retention` in `bluetooth.json`, also `tether
 --bt-retention`:
 
@@ -868,14 +878,23 @@ journal with zero records, which closes the same hole for the next format change
 
 Changing modes migrates the data: read under the old mode, write under the new,
 fsync, rename, then unlink the source — never the other way round, so a crash
-mid-migration leaves both copies rather than neither. A store written by a
-pre-0.2.24 daemon migrates on the first start after the upgrade.
+mid-migration leaves both copies rather than neither. The next start finishes
+the job: the journal folds any leftover source records into the destination and
+unlinks it (duplicate handles collapse on replay, and `compact()` rewrites them
+out), and the contact cache, being a whole-file snapshot, keeps the destination
+and drops the source. Without that, a plaintext file stranded by a crash would
+survive every later start. A store written by a pre-0.2.24 daemon migrates on
+the first start after the upgrade.
 
 A locked wallet keeps MAP and PBAP up and messages flowing to the UI, and only
 pauses what is retained: the journal does not open, nothing is replayed, and
 contact names go unresolved. The key is retried on each message poll, rate
 limited to one wallet round trip a minute, so history starts persisting within a
-minute of the user unlocking.
+minute of the user unlocking. A PBAP pull that happens while the wallet is
+locked lives only in memory, since `save_contacts` will not write without a key.
+Unlocking flushes that phonebook to disk instead of reading an empty cache over
+it — the pull is once per PBAP session, so overwriting it would cost every
+display name until the phone reconnects.
 
 > **Losing the keyring entry loses the retained history.** There is no escrow and
 > no plaintext copy left behind. The phone can refill part of it over MAP; sent

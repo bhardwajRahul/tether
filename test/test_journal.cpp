@@ -276,6 +276,59 @@ TEST(Journal, MigratesBackToPlaintextOnOptOut) {
     std::filesystem::remove_all(home);
 }
 
+// A crash between the rename and the unlink leaves both files. The plaintext one
+// used to survive every later start, which defeats the point of sealing it.
+TEST(Journal, FoldsInASourceLeftBehindByAnInterruptedMigration) {
+    const auto home = scratch("migrate-interrupted");
+    const auto store = home / ".local" / "share" / "tether";
+    const auto plain = store / "messages.ndjson";
+    const auto sealed = store / "messages.ndjson.enc";
+    const auto one = home / "one.ndjson";
+    const auto both = home / "both.ndjson";
+
+    // Two plaintext journals: what the migration read, and what an old daemon
+    // left behind by appending to the source afterwards.
+    {
+        ScopedHome scoped(home, Retention::Plaintext);
+        MessageJournal journal;
+        ASSERT_TRUE(journal.open());
+        journal.append(make("/msg/1", NOW, "one"));
+        journal.close();
+        std::filesystem::copy_file(plain, one);
+        ASSERT_TRUE(journal.open());
+        journal.append(make("/msg/2", NOW + 1, "two"));
+        journal.close();
+        std::filesystem::copy_file(plain, both);
+    }
+
+    // Migrate the first one for real, then put the source back as a crash
+    // between the rename and the unlink would have left it.
+    std::filesystem::remove(plain);
+    std::filesystem::copy_file(one, plain);
+    {
+        ScopedHome scoped(home);
+        MessageJournal journal;
+        ASSERT_TRUE(journal.open());
+    }
+    ASSERT_TRUE(std::filesystem::exists(sealed));
+    std::filesystem::copy_file(both, plain);
+
+    {
+        ScopedHome scoped(home);
+        MessageJournal journal;
+        ASSERT_TRUE(journal.open());
+
+        EXPECT_FALSE(std::filesystem::exists(plain)) << "the plaintext copy outlived the fold";
+
+        auto loaded = journal.load(NOW + 1);
+        ASSERT_EQ(loaded.size(), 2u) << "the duplicate handle was kept, or the extra message was lost";
+        EXPECT_EQ(loaded[0].body, "one");
+        EXPECT_EQ(loaded[1].body, "two");
+    }
+
+    std::filesystem::remove_all(home);
+}
+
 // The regression that matters most. A locked wallet used to mean an empty read,
 // and the compact that follows a read would then write that emptiness back over
 // every message the user had.

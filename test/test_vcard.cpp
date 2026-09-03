@@ -299,6 +299,25 @@ TEST(ContactStore, MigratesAPlaintextCacheOnLoad) {
     EXPECT_TRUE(std::filesystem::exists(scoped.store() / "contacts.json.enc"));
 }
 
+// A crash between the rename and the unlink leaves both files, and the plaintext
+// phonebook used to stay on disk from then on.
+TEST(ContactStore, RemovesASourceLeftBehindByAnInterruptedMigration) {
+    ScopedStore scoped("migrate-interrupted");
+    ASSERT_TRUE(save_contacts(three_contacts()));
+    ASSERT_TRUE(std::filesystem::exists(scoped.store() / "contacts.json.enc"));
+
+    // The plaintext cache the interrupted migration never unlinked.
+    {
+        secret::set_retention(Retention::Plaintext);
+        ASSERT_TRUE(save_contacts(three_contacts()));
+        ASSERT_TRUE(std::filesystem::exists(scoped.store() / "contacts.json"));
+    }
+
+    secret::set_retention(Retention::Encrypted);
+    EXPECT_EQ(load_contacts().name_for("tel:+15551234567"), "Ada Lovelace") << "the sealed cache was disturbed";
+    EXPECT_FALSE(std::filesystem::exists(scoped.store() / "contacts.json")) << "the plaintext copy is still on disk";
+}
+
 TEST(ContactStore, RetentionNoneWritesNothing) {
     ScopedStore scoped("none", Retention::None);
     EXPECT_FALSE(save_contacts(three_contacts()));

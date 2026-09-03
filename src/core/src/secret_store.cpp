@@ -90,10 +90,17 @@ namespace tether {
             int64_t g_last_failure = 0;
             bool g_failed_once = false;
 
-            // Reads the key out of the desktop secret service without unlocking it.
-            bool key_from_service(std::vector<unsigned char>& out, bool& service_present) {
-                service_present = false;
+            // What the wallet can say about the store key without being unlocked.
+            enum class KeyLookup {
+                Found,       // the secret was readable
+                Locked,      // an item exists but its secret is not readable
+                LockedNoKey, // no item, and the default collection is locked or missing
+                Absent,      // no item and the collection is unlocked: first run
+                NoService,   // nothing on the bus
+            };
 
+            // Reads the key out of the desktop secret service without unlocking it.
+            KeyLookup key_from_service(std::vector<unsigned char>& out) {
                 GError* err = nullptr;
                 SecretService* service = secret_service_get_sync(SECRET_SERVICE_OPEN_SESSION, nullptr, &err);
                 if (!service) {
@@ -101,21 +108,27 @@ namespace tether {
                         debug::log(DEBUG, "secret: no secret service on the bus: {}", err->message);
                         g_error_free(err);
                     }
-                    return false;
+                    return KeyLookup::NoService;
                 }
-                service_present = true;
 
                 GHashTable* attributes = g_hash_table_new(g_str_hash, g_str_equal);
                 g_hash_table_insert(attributes, const_cast<char*>("application"), const_cast<char*>("tether"));
+                // SEARCH_ALL, so an absent item is really absent rather than just past the first hit.
                 GList* items = secret_service_search_sync(
-                    service, store_schema(), attributes, SECRET_SEARCH_LOAD_SECRETS, nullptr, &err);
+                    service,
+                    store_schema(),
+                    attributes,
+                    static_cast<SecretSearchFlags>(SECRET_SEARCH_ALL | SECRET_SEARCH_LOAD_SECRETS),
+                    nullptr,
+                    &err);
                 g_hash_table_unref(attributes);
-                g_object_unref(service);
 
                 if (err) {
                     debug::log(WARN, "secret: search failed: {}", err->message);
                     g_error_free(err);
-                    return false;
+                    g_object_unref(service);
+                    // An item may well exist, so this must not fall through to generating one.
+                    return KeyLookup::Locked;
                 }
 
                 bool found = false;
@@ -136,8 +149,27 @@ namespace tether {
                     }
                     secret_value_unref(value);
                 }
+                const bool any_item = items != nullptr;
                 g_list_free_full(items, g_object_unref);
-                return found;
+
+                // An item that cannot be read is locked. Do not overwrite it.
+                if (found || any_item) {
+                    g_object_unref(service);
+                    return found ? KeyLookup::Found : KeyLookup::Locked;
+                }
+
+                SecretCollection* collection = secret_collection_for_alias_sync(
+                    service, SECRET_COLLECTION_DEFAULT, SECRET_COLLECTION_NONE, nullptr, &err);
+                if (err) {
+                    debug::log(DEBUG, "secret: cannot reach the default collection: {}", err->message);
+                    g_error_free(err);
+                }
+                // Storing into a locked or missing collection would unlock prompt.
+                const bool unlocked = collection && !secret_collection_get_locked(collection);
+                if (collection)
+                    g_object_unref(collection);
+                g_object_unref(service);
+                return unlocked ? KeyLookup::Absent : KeyLookup::LockedNoKey;
             }
 
             bool key_to_service(const std::vector<unsigned char>& key) {
@@ -215,46 +247,55 @@ namespace tether {
                 if (g_failed_once && now_seconds() - g_last_failure < KEY_RETRY_SECONDS)
                     return false;
 
-                bool service_present = false;
+                auto wait_and_retry = [](const char* why) {
+                    debug::log(WARN, "{}", why);
+                    g_failed_once = true;
+                    g_last_failure = now_seconds();
+                    return false;
+                };
+                auto generate = [](std::vector<unsigned char>& key) {
+                    key.assign(KEY_BYTES, 0);
+                    return RAND_bytes(key.data(), static_cast<int>(key.size())) == 1;
+                };
+
                 std::vector<unsigned char> key;
-                if (key_from_service(key, service_present)) {
+                switch (key_from_service(key)) {
+                case KeyLookup::Found:
                     g_key = std::move(key);
                     g_failed_once = false;
                     return true;
-                }
 
-                if (!service_present && key_from_file(key)) {
-                    g_key = std::move(key);
-                    g_failed_once = false;
-                    return true;
-                }
+                case KeyLookup::Locked:
+                    return wait_and_retry("secret: wallet is locked; retained history is paused until it unlocks");
 
-                if (service_present) {
-                    // wallet is locked, or this is first run
-                    std::vector<unsigned char> fresh(KEY_BYTES);
-                    if (RAND_bytes(fresh.data(), static_cast<int>(fresh.size())) != 1)
+                case KeyLookup::LockedNoKey:
+                    return wait_and_retry(
+                        "secret: wallet is locked and holds no store key; history starts once it unlocks");
+
+                case KeyLookup::Absent:
+                    if (!generate(key))
                         return false;
-                    if (key_to_service(fresh)) {
-                        g_key = std::move(fresh);
-                        g_failed_once = false;
-                        debug::log(INFO, "secret: generated a new store key in the wallet");
-                        return true;
-                    }
-                    debug::log(WARN, "secret: wallet is locked; retained history is paused until it unlocks");
-                    g_failed_once = true;
-                    g_last_failure = now_seconds();
-                    return false;
+                    if (!key_to_service(key))
+                        return wait_and_retry("secret: cannot store a new key in the wallet");
+                    g_key = std::move(key);
+                    g_failed_once = false;
+                    debug::log(INFO, "secret: generated a new store key in the wallet");
+                    return true;
+
+                case KeyLookup::NoService:
+                    break;
                 }
 
-                std::vector<unsigned char> fresh(KEY_BYTES);
-                if (RAND_bytes(fresh.data(), static_cast<int>(fresh.size())) != 1)
-                    return false;
-                if (!key_to_file(fresh)) {
-                    g_failed_once = true;
-                    g_last_failure = now_seconds();
-                    return false;
+                if (key_from_file(key)) {
+                    g_key = std::move(key);
+                    g_failed_once = false;
+                    return true;
                 }
-                g_key = std::move(fresh);
+                if (!generate(key))
+                    return false;
+                if (!key_to_file(key))
+                    return wait_and_retry("secret: cannot write the store key file");
+                g_key = std::move(key);
                 g_failed_once = false;
                 debug::log(INFO, "secret: no secret service; store key kept in a 0600 file");
                 return true;
