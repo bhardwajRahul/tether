@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 20:38-0700\n"
+"POT-Creation-Date: 2026-09-03 11:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -142,7 +142,10 @@ msgstr "앱뿐 아니라 알림의 제목과 본문도 미러링합니다."
 msgid ""
 "How message history and contacts are kept on disk. Encrypted uses a key from "
 "the desktop keyring; none deletes what is stored and keeps nothing further."
-msgstr "메시지 기록과 연락처를 디스크에 보관하는 방식입니다. encrypted는 데스크톱 키링의 키를 사용하고, none은 저장된 내용을 삭제하며 이후 아무것도 보관하지 않습니다."
+msgstr ""
+"메시지 기록과 연락처를 디스크에 보관하는 방식입니다. encrypted는 데스크톱 키"
+"링의 키를 사용하고, none은 저장된 내용을 삭제하며 이후 아무것도 보관하지 않습"
+"니다."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -422,15 +425,18 @@ msgid "({} unread)"
 msgid_plural "({} unread)"
 msgstr[0] "(읽지 않음 {}개)"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid ""
 "The running tetherd is {}, but this is tether {}. Stop it and it\n"
 "restarts on demand:\n"
 "    pkill tetherd\n"
-msgstr "실행 중인 tetherd는 {}이지만 이것은 tether {}입니다. 중지하면 필요할 때 다시 시작됩니다:\n    pkill tetherd\n"
+msgstr ""
+"실행 중인 tetherd는 {}이지만 이것은 tether {}입니다. 중지하면 필요할 때 다시 "
+"시작됩니다:\n"
+"    pkill tetherd\n"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
 msgstr "이전 빌드"
 
@@ -576,7 +582,8 @@ msgstr "알림 미러링을 껐습니다."
 
 #: src/cli/main.cpp
 msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
-msgstr "encrypted, plaintext 또는 none이 필요합니다. 예: --bt-retention encrypted\n"
+msgstr ""
+"encrypted, plaintext 또는 none이 필요합니다. 예: --bt-retention encrypted\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -800,12 +807,14 @@ msgstr "기기와 본드를 맺기 전까지 bearer API 지원 여부는 확인�
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
-"derived, so notification mirroring cannot work on it. Delete this computer "
-"on the iPhone (Forget This Device) and pair again."
-msgstr ""
-"기기와 본드가 맺혀 있지만 BR/EDR만 포함합니다. LE 키가 생성되지 않아 알림 미"
-"러링이 동작할 수 없습니다. iPhone에서 이 컴퓨터를 삭제하고(이 기기 지우기) 다"
-"시 페어링하십시오."
+"derived, so notification mirroring cannot work on it."
+msgstr "기기와 본드가 맺혀 있지만 BR/EDR만 포함합니다. LE 키가 생성되지 않아 알림 미러링이 동작할 수 없습니다."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid ""
+"This adapter cannot solicit ANCS, so notification mirroring is unavailable "
+"on it and re-pairing will not change that."
+msgstr "이 어댑터는 ANCS를 요청할 수 없으므로 알림 미러링을 사용할 수 없으며, 다시 페어링해도 달라지지 않습니다."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -814,6 +823,10 @@ msgid ""
 msgstr ""
 "이 컨트롤러에서 Secure Connections가 꺼져 있으며, 바로 이것이 키 생성을 막고 "
 "있습니다. 켜기 전까지는 다시 페어링해도 소용이 없습니다."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
+msgstr "iPhone에서 이 컴퓨터를 삭제하고(이 기기 지우기) 다시 페어링하십시오."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1383,7 +1396,10 @@ msgid ""
 "Where messages and contacts are stored on this computer. Encrypted keeps "
 "them with a key in your desktop keyring. Do not keep deletes what is already "
 "stored and retains nothing further."
-msgstr "이 컴퓨터에 메시지와 연락처를 저장하는 방식입니다. 암호화는 데스크톱 키링의 키로 보관합니다. 보관 안 함은 이미 저장된 내용을 삭제하고 이후 아무것도 보관하지 않습니다."
+msgstr ""
+"이 컴퓨터에 메시지와 연락처를 저장하는 방식입니다. 암호화는 데스크톱 키링의 "
+"키로 보관합니다. 보관 안 함은 이미 저장된 내용을 삭제하고 이후 아무것도 보관"
+"하지 않습니다."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

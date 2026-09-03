@@ -177,6 +177,7 @@ checks the daemon does not make.
 | The phone shows two entries for this computer | A failed pairing left both a Classic and an LE record | Delete both on the phone before retrying |
 | LE never connects and the log repeats `org.bluez.Error.InProgress` | BlueZ is holding an auto-connect registration that never completed | `sudo systemctl restart bluetooth` -- nothing short of that clears it, see 2026-08-19 below. With `tether-btclass@hci0` enabled the class survives the restart |
 | The log says `could not re-arm the ANCS solicitation` | BlueZ refused to register the advertisement, so nothing is on air for the iPhone to answer | `sudo systemctl restart bluetooth`. Nothing else brings it back, and the LE link cannot form without it |
+| Pairing warns `RegisterAdvertisement ... doesn't exist` on `org.bluez.LEAdvertisingManager1` | BlueZ exported no advertising manager on this adapter at all, because the controller reports no LE advertising support. Distinct from the row above, where the interface exists and the call is refused | Restarting `bluetooth.service` changes nothing. Confirm with `./scripts/bt-probe.sh`; the only route to ANCS is a controller that can advertise, selected with `tether --bt-adapter <hciN>` -- see 2026-09-03 below |
 | LE never connects and the log repeats `le-connection-abort-by-local` | Something on this side is cancelling the connection. Tether's own cause was a `PreferredBearer` write racing the async connect, fixed; anything else writing that property during a connect will do the same | Check no other Bluetooth tool is driving the same device. The phone is not the cause: `abort-by-local` means the local host cancelled |
 | Messages stopped after turning notification mirroring off | Fixed. The toggle used to restart supervision, which abandoned the MAP and PBAP sessions at obexd instead of removing them, and the iPhone serves one MAP session at a time | Nothing. Mirroring is switched in place now, and a dropped profile supervisor releases its sessions. On an older build, restart `tetherd` |
 | Notifications stopped and never came back, while messages and contacts kept working | Fixed. The bearer supervisor used to stop retrying LE after six attempts, and only a Classic drop or a daemon restart re-armed it | Nothing. The solicitation is kept on air whenever LE is down, which is what the iPhone answers -- see 2026-08-22 |
@@ -1591,3 +1592,57 @@ Fixed:
 Still open: `AncsClientState`'s GATT signal callbacks run on the GLib thread and are unsubscribed
 from whichever thread destroys the client, so a callback in flight during teardown remains a
 narrow window. It needs the unsubscribe routed through `BluezMonitor::invoke_sync()`.
+
+### 2026-09-03 - An adapter with no `LEAdvertisingManager1`, and three futile re-pairs
+
+Reported as #118, a redacted `bt_diagnostics` dump with no prose. Every field below
+is from that dump; the controller, kernel, BlueZ version, phone model and iOS version
+were **not captured** -- the report carried none of them, which is half the finding.
+
+| | |
+|---|---|
+| Controller | not captured |
+| Kernel | not captured |
+| BlueZ | not captured; running with `-E` (`bearer_api: unknown` rather than `absent`) |
+| Adapter roles | central + peripheral; **0** advertising instances |
+| Adapter class | `0x7c0908`, reported `class_ok` |
+| Phone | not captured; MAP and PBAP both connected, so an iPhone |
+| Tether | 0.2.23 |
+
+Every pairing attempt logged the same warning:
+
+```
+Could not advertise for ANCS: GDBus.Error:org.freedesktop.DBus.Error.UnknownMethod:
+Method "RegisterAdvertisement" with signature "oa{sv}" on interface
+"org.bluez.LEAdvertisingManager1" doesn't exist
+```
+
+`UnknownMethod` means the object exists and the interface on it does not. BlueZ
+registers `LEAdvertisingManager1` only from `read_adv_features_callback()`, after
+`MGMT_OP_READ_ADV_FEATURES` returns a non-zero max advertising length, so a
+controller that reports no LE advertising support gets no interface -- not an
+interface whose instances are busy. `advertising_instances: 0` in the same dump is
+consistent with both readings, which is why the two were not separable from the
+report alone.
+
+The consequence is a closed loop. Nothing solicits ANCS, so the iPhone is never
+asked for the service, so it never offers Show Message Notifications, so no LE keys
+derive, so the bond is BR/EDR-only -- and the BR/EDR-only reason then told the
+reporter to Forget This Device and pair again. The timeline shows them doing exactly
+that three times across 4.7 hours, ending each time where they started.
+
+Fixed on our side, since the hardware cannot be:
+
+- `resolve_capability()` only advises a re-pair when one could derive the LE half. With
+  no advertising, or no peripheral role, the reason names the adapter as the cause and
+  says plainly that re-pairing will not change it. The `bt_pair_result` message follows
+  the same rule, keyed on whether the solicitation actually went on air.
+- `bt_diagnostics` reports `bluez_version` and `kernel`, and `advertising_manager`
+  alongside `advertising_instances`, so "no interface" and "no free instance" are
+  separable in the next report. Nothing in the daemon read the BlueZ version before
+  this; only `scripts/bt-probe.sh` did.
+
+Also in the dump, unrelated and already reported correctly: MAP cycling through
+`no_record` / `busy` / `forbidden` / `none` for hours (another client holding the
+phone's single MAP session), and `bt_message_read` with `success: true, synced: 0`
+(marked read locally, not pushed to the phone -- working as designed).

@@ -11,8 +11,10 @@
 #include <cstdlib>
 #include <deque>
 #include <functional>
+#include <glib.h>
 #include <mutex>
 #include <regex>
+#include <sys/utsname.h>
 
 namespace tether::bluetooth {
 
@@ -21,6 +23,38 @@ namespace tether::bluetooth {
         // A pairing attempt is a few dozen events; this holds several attempts
         // without letting a long-running daemon accumulate a report nobody reads.
         constexpr size_t TIMELINE_CAPACITY = 200;
+
+        // BlueZ has no version on D-Bus, installed version has to come from the tooling.
+        std::string bluez_version() {
+            static const std::string cached = [] {
+                gchar* out = nullptr;
+                gint status = 0;
+                GError* error = nullptr;
+                if (!g_spawn_command_line_sync("bluetoothctl --version", &out, nullptr, &status, &error)) {
+                    g_clear_error(&error);
+                    g_free(out);
+                    return std::string();
+                }
+                // "bluetoothctl: 5.86"
+                std::string text = out ? out : "";
+                g_free(out);
+                const size_t colon = text.rfind(':');
+                if (colon == std::string::npos)
+                    return std::string();
+                std::string version = text.substr(colon + 1);
+                const size_t begin = version.find_first_not_of(" \t\r\n");
+                const size_t end = version.find_last_not_of(" \t\r\n");
+                if (begin == std::string::npos)
+                    return std::string();
+                return version.substr(begin, end - begin + 1);
+            }();
+            return cached;
+        }
+
+        std::string kernel_release() {
+            utsname info{};
+            return uname(&info) == 0 ? std::string(info.release) : std::string();
+        }
 
         const std::regex kDevNode(R"(dev_[0-9A-Fa-f]{2}(?:_[0-9A-Fa-f]{2}){5})");
         const std::regex kAddress(R"([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})");
@@ -227,6 +261,8 @@ namespace tether::bluetooth {
         nlohmann::json report;
         report["command"] = "bt_diagnostics";
         report["version"] = TETHER_VERSION;
+        report["bluez_version"] = bluez_version();
+        report["kernel"] = kernel_release();
         report["auth_strategy"] = to_string(config.auth_strategy);
         // The address itself is never reported; whether one is selected is what
         // matters for reading the rest.

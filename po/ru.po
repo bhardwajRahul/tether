@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 20:38-0700\n"
+"POT-Creation-Date: 2026-09-03 11:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Russian\n"
@@ -144,7 +144,10 @@ msgstr "Дублировать заголовки и текст уведомле
 msgid ""
 "How message history and contacts are kept on disk. Encrypted uses a key from "
 "the desktop keyring; none deletes what is stored and keeps nothing further."
-msgstr "Как история сообщений и контакты хранятся на диске. encrypted использует ключ из связки ключей рабочего стола; none удаляет сохранённое и больше ничего не хранит."
+msgstr ""
+"Как история сообщений и контакты хранятся на диске. encrypted использует "
+"ключ из связки ключей рабочего стола; none удаляет сохранённое и больше "
+"ничего не хранит."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -438,15 +441,18 @@ msgstr[0] "({} непрочитанное)"
 msgstr[1] "({} непрочитанных)"
 msgstr[2] "({} непрочитанных)"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid ""
 "The running tetherd is {}, but this is tether {}. Stop it and it\n"
 "restarts on demand:\n"
 "    pkill tetherd\n"
-msgstr "Запущен tetherd {}, но это tether {}. Остановите его — он запустится снова по требованию:\n    pkill tetherd\n"
+msgstr ""
+"Запущен tetherd {}, но это tether {}. Остановите его — он запустится снова "
+"по требованию:\n"
+"    pkill tetherd\n"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
 msgstr "более старая сборка"
 
@@ -599,7 +605,8 @@ msgstr "Дублирование уведомлений выключено."
 
 #: src/cli/main.cpp
 msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
-msgstr "Ожидалось encrypted, plaintext или none, например --bt-retention encrypted\n"
+msgstr ""
+"Ожидалось encrypted, plaintext или none, например --bt-retention encrypted\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -830,12 +837,14 @@ msgstr ""
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
-"derived, so notification mirroring cannot work on it. Delete this computer "
-"on the iPhone (Forget This Device) and pair again."
-msgstr ""
-"Связь с устройством создана, но охватывает только BR/EDR -- ключи LE не были "
-"получены, поэтому дублирование уведомлений на ней работать не может. Удалите "
-"этот компьютер на iPhone («Забыть это устройство») и создайте пару заново."
+"derived, so notification mirroring cannot work on it."
+msgstr "Связь с устройством создана, но охватывает только BR/EDR -- ключи LE не были получены, поэтому дублирование уведомлений на ней работать не может."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid ""
+"This adapter cannot solicit ANCS, so notification mirroring is unavailable "
+"on it and re-pairing will not change that."
+msgstr "Этот адаптер не может запросить ANCS, поэтому дублирование уведомлений на нём недоступно, и повторное создание пары этого не изменит."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -844,6 +853,10 @@ msgid ""
 msgstr ""
 "Secure Connections выключен на этом контроллере, и именно это блокирует "
 "получение ключей; повторное сопряжение не поможет, пока он не будет включён."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
+msgstr "Удалите этот компьютер на iPhone («Забыть это устройство») и создайте пару заново."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1426,7 +1439,10 @@ msgid ""
 "Where messages and contacts are stored on this computer. Encrypted keeps "
 "them with a key in your desktop keyring. Do not keep deletes what is already "
 "stored and retains nothing further."
-msgstr "Где на этом компьютере хранятся сообщения и контакты. «Зашифрованно» хранит их с ключом в вашей связке ключей. «Не хранить» удаляет уже сохранённое и больше ничего не хранит."
+msgstr ""
+"Где на этом компьютере хранятся сообщения и контакты. «Зашифрованно» хранит "
+"их с ключом в вашей связке ключей. «Не хранить» удаляет уже сохранённое и "
+"больше ничего не хранит."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

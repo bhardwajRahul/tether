@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 20:38-0700\n"
+"POT-Creation-Date: 2026-09-03 11:19-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: French\n"
@@ -147,7 +147,10 @@ msgstr ""
 msgid ""
 "How message history and contacts are kept on disk. Encrypted uses a key from "
 "the desktop keyring; none deletes what is stored and keeps nothing further."
-msgstr "Comment l'historique des messages et les contacts sont conservés sur le disque. encrypted utilise une clé du trousseau du bureau ; none supprime ce qui est stocké et ne conserve plus rien."
+msgstr ""
+"Comment l'historique des messages et les contacts sont conservés sur le "
+"disque. encrypted utilise une clé du trousseau du bureau ; none supprime ce "
+"qui est stocké et ne conserve plus rien."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -440,15 +443,18 @@ msgid_plural "({} unread)"
 msgstr[0] "({} non lu)"
 msgstr[1] "({} non lus)"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid ""
 "The running tetherd is {}, but this is tether {}. Stop it and it\n"
 "restarts on demand:\n"
 "    pkill tetherd\n"
-msgstr "Le tetherd en cours d'exécution est {}, mais ceci est tether {}. Arrêtez-le, il redémarrera à la demande :\n    pkill tetherd\n"
+msgstr ""
+"Le tetherd en cours d'exécution est {}, mais ceci est tether {}. Arrêtez-le, "
+"il redémarrera à la demande :\n"
+"    pkill tetherd\n"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
 msgstr "une version plus ancienne"
 
@@ -459,7 +465,8 @@ msgstr "Impossible de lire les contacts depuis le démon.\n"
 #: src/cli/main.cpp
 #, c-format
 msgid "No contacts yet. Check 'tether --bt-connection'.\n"
-msgstr "Aucun contact pour l'instant. Vérifiez avec 'tether --bt-connection'.\n"
+msgstr ""
+"Aucun contact pour l'instant. Vérifiez avec 'tether --bt-connection'.\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -601,7 +608,8 @@ msgstr "Duplication des notifications désactivée."
 
 #: src/cli/main.cpp
 msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
-msgstr "Attendu encrypted, plaintext ou none, p. ex. --bt-retention encrypted\n"
+msgstr ""
+"Attendu encrypted, plaintext ou none, p. ex. --bt-retention encrypted\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -838,13 +846,14 @@ msgstr ""
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
-"derived, so notification mirroring cannot work on it. Delete this computer "
-"on the iPhone (Forget This Device) and pair again."
-msgstr ""
-"Un appareil est lié, mais le lien ne couvre que BR/EDR : aucune clé LE n'a "
-"été dérivée, la duplication des notifications ne peut donc pas fonctionner "
-"avec lui. Supprimez cet ordinateur sur l'iPhone (Oublier cet appareil) et "
-"appairez de nouveau."
+"derived, so notification mirroring cannot work on it."
+msgstr "Un appareil est lié, mais le lien ne couvre que BR/EDR : aucune clé LE n'a été dérivée, la duplication des notifications ne peut donc pas fonctionner avec lui."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid ""
+"This adapter cannot solicit ANCS, so notification mirroring is unavailable "
+"on it and re-pairing will not change that."
+msgstr "Cet adaptateur ne peut pas solliciter ANCS, la duplication des notifications n'est donc pas disponible sur lui et un nouvel appairage n'y changera rien."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -854,6 +863,10 @@ msgstr ""
 "« Connexions sécurisées » est désactivé sur ce contrôleur, et c'est ce qui "
 "bloque la dérivation ; réappairer ne servira à rien tant que ce n'est pas "
 "activé."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
+msgstr "Supprimez cet ordinateur sur l'iPhone (Oublier cet appareil) et appairez de nouveau."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1438,7 +1451,10 @@ msgid ""
 "Where messages and contacts are stored on this computer. Encrypted keeps "
 "them with a key in your desktop keyring. Do not keep deletes what is already "
 "stored and retains nothing further."
-msgstr "Où les messages et les contacts sont stockés sur cet ordinateur. Chiffré les conserve avec une clé dans le trousseau de votre bureau. Ne pas conserver supprime ce qui est déjà stocké et ne conserve plus rien."
+msgstr ""
+"Où les messages et les contacts sont stockés sur cet ordinateur. Chiffré les "
+"conserve avec une clé dans le trousseau de votre bureau. Ne pas conserver "
+"supprime ce qui est déjà stocké et ne conserve plus rien."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

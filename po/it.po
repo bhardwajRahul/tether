@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 20:38-0700\n"
+"POT-Creation-Date: 2026-09-03 11:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Italian\n"
@@ -145,7 +145,10 @@ msgstr "Rispecchia titoli e testo delle notifiche, non solo l'app."
 msgid ""
 "How message history and contacts are kept on disk. Encrypted uses a key from "
 "the desktop keyring; none deletes what is stored and keeps nothing further."
-msgstr "Come vengono conservati su disco la cronologia dei messaggi e i contatti. encrypted usa una chiave del portachiavi del desktop; none elimina quanto memorizzato e non conserva altro."
+msgstr ""
+"Come vengono conservati su disco la cronologia dei messaggi e i contatti. "
+"encrypted usa una chiave del portachiavi del desktop; none elimina quanto "
+"memorizzato e non conserva altro."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -434,15 +437,18 @@ msgid_plural "({} unread)"
 msgstr[0] "({} non letto)"
 msgstr[1] "({} non letti)"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid ""
 "The running tetherd is {}, but this is tether {}. Stop it and it\n"
 "restarts on demand:\n"
 "    pkill tetherd\n"
-msgstr "Il tetherd in esecuzione è {}, ma questo è tether {}. Fermalo; si riavvia su richiesta:\n    pkill tetherd\n"
+msgstr ""
+"Il tetherd in esecuzione è {}, ma questo è tether {}. Fermalo; si riavvia su "
+"richiesta:\n"
+"    pkill tetherd\n"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
 msgstr "una versione più vecchia"
 
@@ -834,13 +840,14 @@ msgstr ""
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
-"derived, so notification mirroring cannot work on it. Delete this computer "
-"on the iPhone (Forget This Device) and pair again."
-msgstr ""
-"Un dispositivo è associato, ma l'associazione copre solo BR/EDR -- non sono "
-"state derivate chiavi LE, quindi il mirroring delle notifiche non può "
-"funzionare. Elimina questo computer sull'iPhone (Dimentica questo "
-"dispositivo) e accoppia di nuovo."
+"derived, so notification mirroring cannot work on it."
+msgstr "Un dispositivo è associato, ma l'associazione copre solo BR/EDR -- non sono state derivate chiavi LE, quindi il mirroring delle notifiche non può funzionare."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid ""
+"This adapter cannot solicit ANCS, so notification mirroring is unavailable "
+"on it and re-pairing will not change that."
+msgstr "Questo adattatore non può sollecitare ANCS, quindi il mirroring delle notifiche non è disponibile su di esso e riaccoppiare non lo cambierà."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -849,6 +856,10 @@ msgid ""
 msgstr ""
 "Secure Connections è disattivato su questo controller, ed è ciò che blocca "
 "la derivazione; riaccoppiare non servirà finché non è attivo."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
+msgstr "Elimina questo computer sull'iPhone (Dimentica questo dispositivo) e accoppia di nuovo."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1429,7 +1440,10 @@ msgid ""
 "Where messages and contacts are stored on this computer. Encrypted keeps "
 "them with a key in your desktop keyring. Do not keep deletes what is already "
 "stored and retains nothing further."
-msgstr "Dove messaggi e contatti vengono memorizzati su questo computer. Cifrata li conserva con una chiave nel portachiavi del desktop. Non conservare elimina quanto già memorizzato e non conserva altro."
+msgstr ""
+"Dove messaggi e contatti vengono memorizzati su questo computer. Cifrata li "
+"conserva con una chiave nel portachiavi del desktop. Non conservare elimina "
+"quanto già memorizzato e non conserva altro."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

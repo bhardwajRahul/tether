@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 20:38-0700\n"
+"POT-Creation-Date: 2026-09-03 11:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Dutch\n"
@@ -144,7 +144,10 @@ msgstr "Titels en tekst van meldingen spiegelen, niet alleen de app."
 msgid ""
 "How message history and contacts are kept on disk. Encrypted uses a key from "
 "the desktop keyring; none deletes what is stored and keeps nothing further."
-msgstr "Hoe berichtgeschiedenis en contacten op schijf worden bewaard. encrypted gebruikt een sleutel uit de sleutelbos van het bureaublad; none verwijdert wat is opgeslagen en bewaart verder niets."
+msgstr ""
+"Hoe berichtgeschiedenis en contacten op schijf worden bewaard. encrypted "
+"gebruikt een sleutel uit de sleutelbos van het bureaublad; none verwijdert "
+"wat is opgeslagen en bewaart verder niets."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -433,15 +436,18 @@ msgid_plural "({} unread)"
 msgstr[0] "({} ongelezen)"
 msgstr[1] "({} ongelezen)"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid ""
 "The running tetherd is {}, but this is tether {}. Stop it and it\n"
 "restarts on demand:\n"
 "    pkill tetherd\n"
-msgstr "De draaiende tetherd is {}, maar dit is tether {}. Stop hem; hij start vanzelf opnieuw wanneer nodig:\n    pkill tetherd\n"
+msgstr ""
+"De draaiende tetherd is {}, maar dit is tether {}. Stop hem; hij start "
+"vanzelf opnieuw wanneer nodig:\n"
+"    pkill tetherd\n"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
 msgstr "een oudere build"
 
@@ -592,7 +598,8 @@ msgstr "Spiegelen van meldingen uitgeschakeld."
 
 #: src/cli/main.cpp
 msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
-msgstr "Verwacht encrypted, plaintext of none, bijv. --bt-retention encrypted\n"
+msgstr ""
+"Verwacht encrypted, plaintext of none, bijv. --bt-retention encrypted\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -828,13 +835,14 @@ msgstr ""
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
-"derived, so notification mirroring cannot work on it. Delete this computer "
-"on the iPhone (Forget This Device) and pair again."
-msgstr ""
-"Er is een apparaat gekoppeld, maar de koppeling dekt alleen BR/EDR -- er "
-"zijn geen LE-sleutels afgeleid, dus het spiegelen van meldingen kan er niet "
-"mee werken. Verwijder deze computer op de iPhone (Vergeet dit apparaat) en "
-"koppel opnieuw."
+"derived, so notification mirroring cannot work on it."
+msgstr "Er is een apparaat gekoppeld, maar de koppeling dekt alleen BR/EDR -- er zijn geen LE-sleutels afgeleid, dus het spiegelen van meldingen kan er niet mee werken."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid ""
+"This adapter cannot solicit ANCS, so notification mirroring is unavailable "
+"on it and re-pairing will not change that."
+msgstr "Deze adapter kan ANCS niet opvragen, dus het spiegelen van meldingen is er niet beschikbaar en opnieuw koppelen verandert daar niets aan."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -843,6 +851,10 @@ msgid ""
 msgstr ""
 "Secure Connections staat uit op deze controller, en dat blokkeert de "
 "afleiding; opnieuw koppelen helpt pas als het aanstaat."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
+msgstr "Verwijder deze computer op de iPhone (Vergeet dit apparaat) en koppel opnieuw."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1423,7 +1435,10 @@ msgid ""
 "Where messages and contacts are stored on this computer. Encrypted keeps "
 "them with a key in your desktop keyring. Do not keep deletes what is already "
 "stored and retains nothing further."
-msgstr "Waar berichten en contacten op deze computer worden opgeslagen. Versleuteld bewaart ze met een sleutel in uw sleutelbos. Niet bewaren verwijdert wat al is opgeslagen en bewaart verder niets."
+msgstr ""
+"Waar berichten en contacten op deze computer worden opgeslagen. Versleuteld "
+"bewaart ze met een sleutel in uw sleutelbos. Niet bewaren verwijdert wat al "
+"is opgeslagen en bewaart verder niets."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

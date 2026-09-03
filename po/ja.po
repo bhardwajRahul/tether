@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 20:38-0700\n"
+"POT-Creation-Date: 2026-09-03 11:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -143,7 +143,10 @@ msgstr "アプリ名だけでなく、通知のタイトルと本文もミラー
 msgid ""
 "How message history and contacts are kept on disk. Encrypted uses a key from "
 "the desktop keyring; none deletes what is stored and keeps nothing further."
-msgstr "メッセージ履歴と連絡先をディスクにどう保持するか。encrypted はデスクトップのキーリングにある鍵を使います。none は保存済みのものを削除し、以後何も保持しません。"
+msgstr ""
+"メッセージ履歴と連絡先をディスクにどう保持するか。encrypted はデスクトップの"
+"キーリングにある鍵を使います。none は保存済みのものを削除し、以後何も保持しま"
+"せん。"
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -423,15 +426,18 @@ msgid "({} unread)"
 msgid_plural "({} unread)"
 msgstr[0] "({} 件未読)"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid ""
 "The running tetherd is {}, but this is tether {}. Stop it and it\n"
 "restarts on demand:\n"
 "    pkill tetherd\n"
-msgstr "実行中の tetherd は {} ですが、こちらは tether {} です。停止すれば必要に応じて自動で起動します:\n    pkill tetherd\n"
+msgstr ""
+"実行中の tetherd は {} ですが、こちらは tether {} です。停止すれば必要に応じ"
+"て自動で起動します:\n"
+"    pkill tetherd\n"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
 msgstr "より古いビルド"
 
@@ -442,7 +448,8 @@ msgstr "デーモンから連絡先を読み取れませんでした。\n"
 #: src/cli/main.cpp
 #, c-format
 msgid "No contacts yet. Check 'tether --bt-connection'.\n"
-msgstr "まだ連絡先はありません。'tether --bt-connection' を確認してください。\n"
+msgstr ""
+"まだ連絡先はありません。'tether --bt-connection' を確認してください。\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -578,7 +585,9 @@ msgstr "通知のミラーリングを無効にしました。"
 
 #: src/cli/main.cpp
 msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
-msgstr "encrypted、plaintext、none のいずれかを指定してください。例: --bt-retention encrypted\n"
+msgstr ""
+"encrypted、plaintext、none のいずれかを指定してください。例: --bt-retention "
+"encrypted\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -806,12 +815,14 @@ msgstr ""
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
-"derived, so notification mirroring cannot work on it. Delete this computer "
-"on the iPhone (Forget This Device) and pair again."
-msgstr ""
-"デバイスとボンドがありますが、対象は BR/EDR のみです。LE 鍵が導出されていない"
-"ため、通知のミラーリングは機能しません。iPhone でこのコンピュータを削除し (こ"
-"のデバイスの登録を解除)、もう一度ペアリングしてください。"
+"derived, so notification mirroring cannot work on it."
+msgstr "デバイスとボンドがありますが、対象は BR/EDR のみです。LE 鍵が導出されていないため、通知のミラーリングは機能しません。"
+
+#: src/core/src/bluetooth/objects.cpp
+msgid ""
+"This adapter cannot solicit ANCS, so notification mirroring is unavailable "
+"on it and re-pairing will not change that."
+msgstr "このアダプタは ANCS を要求できないため、通知のミラーリングは利用できません。ペアリングし直しても変わりません。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -820,6 +831,10 @@ msgid ""
 msgstr ""
 "このコントローラで Secure Connections がオフになっており、それが鍵の導出を妨"
 "げています。オンにするまでは、ペアリングをやり直しても解決しません。"
+
+#: src/core/src/bluetooth/objects.cpp
+msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
+msgstr "iPhone でこのコンピュータを削除し (このデバイスの登録を解除)、もう一度ペアリングしてください。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1397,7 +1412,10 @@ msgid ""
 "Where messages and contacts are stored on this computer. Encrypted keeps "
 "them with a key in your desktop keyring. Do not keep deletes what is already "
 "stored and retains nothing further."
-msgstr "このコンピューターでメッセージと連絡先を保存する方法。「暗号化する」はデスクトップのキーリングにある鍵で保存します。「保持しない」は保存済みのものを削除し、以後何も保持しません。"
+msgstr ""
+"このコンピューターでメッセージと連絡先を保存する方法。「暗号化する」はデスク"
+"トップのキーリングにある鍵で保存します。「保持しない」は保存済みのものを削除"
+"し、以後何も保持しません。"
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

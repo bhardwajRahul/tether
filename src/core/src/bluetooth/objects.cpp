@@ -119,6 +119,7 @@ namespace tether::bluetooth {
             a.device_class = get_uint32(props, "Class");
             a.powered = get_bool(props, "Powered");
             a.roles = get_strv(props, "Roles");
+            a.modalias = get_string(props, "Modalias");
             g_variant_unref(props);
 
             if (GVariant* adv = g_variant_lookup_value(ifaces, IFACE_LE_ADV_MGR, G_VARIANT_TYPE("a{sv}"))) {
@@ -422,12 +423,19 @@ namespace tether::bluetooth {
 
         if (cap.bonded_device_present && !cap.bond_has_le) {
             std::string reason = _("A device is bonded, but the bond covers BR/EDR only -- no LE keys were derived, "
-                                   "so notification mirroring cannot work on it. Delete this computer on the iPhone "
-                                   "(Forget This Device) and pair again.");
-            if (cap.secure_connections_known && !cap.secure_connections)
+                                   "so notification mirroring cannot work on it.");
+
+            if (!cap.advertising || !cap.le_peripheral)
+                reason += std::string(" ") +
+                          _("This adapter cannot solicit ANCS, so notification mirroring is unavailable on it and "
+                            "re-pairing will not change that.");
+            else if (cap.secure_connections_known && !cap.secure_connections)
                 reason += std::string(" ") +
                           _("Secure Connections is off on this controller, which is what blocks the derivation; "
                             "re-pairing will not help until it is on.");
+            else
+                reason +=
+                    std::string(" ") + _("Delete this computer on the iPhone (Forget This Device) and pair again.");
             cap.reasons.emplace_back(std::move(reason));
         }
         if (!cap.class_ok) {
@@ -447,6 +455,8 @@ namespace tether::bluetooth {
             {"class", a.device_class},
             {"powered", a.powered},
             {"roles", a.roles},
+            {"modalias", a.modalias},
+            {"advertising_manager", a.has_advertising_manager},
             {"advertising_instances", a.advertising_instances},
             {"class_ok", a.class_is_handsfree()},
         };
