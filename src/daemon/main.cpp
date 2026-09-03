@@ -106,8 +106,8 @@ int main(int argc, char** argv) {
 
                 // on avahi's poll thread
                 const auto& addr = dev.addresses.front();
-                loop.post([&tcp_srv, host = addr.address, port = addr.port, name = dev.name]() {
-                    tcp_srv.connect_peer(host, port, name);
+                loop.post([&tcp_srv, host = addr.address, port = addr.port, name = dev.name, fp = dev.fingerprint]() {
+                    tcp_srv.connect_peer(host, port, name, fp);
                 });
             }
 
@@ -129,6 +129,8 @@ int main(int argc, char** argv) {
             }
             tether::broadcast_local_event(payload.dump());
         });
+
+        tcp_srv.set_peers_changed_callback([&discovery] { discovery.refresh(); });
     }
 
     tether::WaylandContext wayland_srv(loop);

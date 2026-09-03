@@ -1484,27 +1484,38 @@ namespace tether {
         return my_fingerprint < peer_fingerprint;
     }
 
-    bool TcpServer::connect_peer(const std::string& host, int port, const std::string& peer_name) {
+    // A dial is identified by the peer's fingerprint when mDNS gave us one, and by address otherwise.
+    static std::string dial_key_for(const std::string& host, const std::string& fingerprint) {
+        return fingerprint.empty() ? host : fingerprint;
+    }
+
+    bool TcpServer::connect_peer(const std::string& host,
+                                 int port,
+                                 const std::string& peer_name,
+                                 const std::string& expected_fingerprint) {
         if (host.empty())
             return false;
 
+        const bool by_fingerprint = !expected_fingerprint.empty();
         for (auto const& [fd, remote] : connected_remote_clients) {
             (void)fd;
-            if (remote.address == host) {
+            const bool match = by_fingerprint ? remote.fingerprint == expected_fingerprint : remote.address == host;
+            if (match) {
                 debug::log(INFO, "TcpServer: Already holding a session with {}", host);
                 return true;
             }
         }
 
-        if (!dialing_.insert(host).second) {
+        const std::string dial_key = dial_key_for(host, expected_fingerprint);
+        if (!dialing_.insert(dial_key).second) {
             debug::log(INFO, "TcpServer: Dial to {} already in flight", host);
             return true;
         }
 
         // connect() blocks, and the loop watches EPOLLIN only
-        std::thread([this, host, port, peer_name]() {
+        std::thread([this, host, port, peer_name, expected_fingerprint, dial_key]() {
             // adopt_peer clears it on the success path, once the fd is in the client tables.
-            auto give_up = [&] { loop_.post([this, host]() { dialing_.erase(host); }); };
+            auto give_up = [&] { loop_.post([this, dial_key]() { dialing_.erase(dial_key); }); };
 
             auto fail = [&](const char* reason) {
                 give_up();
@@ -1571,14 +1582,19 @@ namespace tether {
             timeval none{0, 0};
             setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &none, sizeof(none));
 
-            loop_.post([this, sock, host, peer_name]() { adopt_peer(sock, host, peer_name); });
+            loop_.post([this, sock, host, peer_name, expected_fingerprint]() {
+                adopt_peer(sock, host, peer_name, expected_fingerprint);
+            });
         }).detach();
 
         return true;
     }
 
-    void TcpServer::adopt_peer(int fd, const std::string& host, const std::string& peer_name) {
-        dialing_.erase(host);
+    void TcpServer::adopt_peer(int fd,
+                               const std::string& host,
+                               const std::string& peer_name,
+                               const std::string& expected_fingerprint) {
+        dialing_.erase(dial_key_for(host, expected_fingerprint));
 
         int flags = fcntl(fd, F_GETFL, 0);
         fcntl(fd, F_SETFL, flags | O_NONBLOCK);
@@ -1597,6 +1613,7 @@ namespace tether {
         client_info_[fd].device_name = peer_name;
         connected_remote_clients[fd].address = host;
         connected_remote_clients[fd].device_name = peer_name;
+        connected_remote_clients[fd].fingerprint = expected_fingerprint;
 
         loop_.addFd(fd, [this](int cfd) { handle_client(cfd); });
 
@@ -1905,6 +1922,8 @@ namespace tether {
         broadcast_local_event(connected_event.dump());
     }
 
+    void TcpServer::set_peers_changed_callback(std::function<void()> callback) { peers_changed_ = std::move(callback); }
+
     bool TcpServer::forget_device(const std::string& fingerprint) {
         if (fingerprint.empty())
             return false;
@@ -1976,6 +1995,9 @@ namespace tether {
                              {"address", address},
                              {"connected", promoted}};
         broadcast_local_event(event.dump());
+
+        if (!promoted && peers_changed_)
+            peers_changed_();
 
         // An external acceptance supersedes any dialog for the same request.
         // Its exit callback observes the promoted session and ignores the stale

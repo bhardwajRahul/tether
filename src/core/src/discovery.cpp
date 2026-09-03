@@ -598,6 +598,19 @@ namespace tether {
         avahi_threaded_poll_start(impl_->browse_poll);
     }
 
+    void Discovery::refresh() {
+        std::function<void(const std::vector<DiscoveredDevice>&)> cb;
+        std::vector<DiscoveredDevice> grouped;
+        {
+            std::lock_guard<std::mutex> lock(impl_->results_mutex);
+            if (!impl_->browse_callback)
+                return;
+            cb = impl_->browse_callback;
+            grouped = group_discovered_hosts(impl_->results, impl_->pub_fingerprint);
+        }
+        cb(grouped);
+    }
+
     void Discovery::stop_continuous_browse() {
         if (!impl_->browse_poll)
             return;

@@ -2,6 +2,7 @@
 
 #include "tether/event_loop.hpp"
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <nlohmann/json.hpp>
 #include <openssl/ssl.h>
@@ -92,11 +93,17 @@ namespace tether {
         bool accept_device(const std::string& fingerprint, const std::string& fallback_name = "Paired Device");
 
         // Dial a peer and add the session into this server's client tables
-        bool connect_peer(const std::string& host, int port, const std::string& peer_name = "");
+        bool connect_peer(const std::string& host,
+                          int port,
+                          const std::string& peer_name = "",
+                          const std::string& expected_fingerprint = "");
 
         // Drops a pairing: unpins the fingerprint and closes any live session with it.
         // Returns true when the fingerprint was pinned.
         bool forget_device(const std::string& fingerprint);
+
+        // Invoked when the set of trusted peers gains a member with no live session.
+        void set_peers_changed_callback(std::function<void()> callback);
 
     private:
         struct ConnectedClientInfo {
@@ -108,7 +115,10 @@ namespace tether {
 
         void handle_accept(int fd);
         void handle_client(int client_fd);
-        void adopt_peer(int fd, const std::string& host, const std::string& peer_name);
+        void adopt_peer(int fd,
+                        const std::string& host,
+                        const std::string& peer_name,
+                        const std::string& expected_fingerprint);
         void spawn_pair_dialog(int client_fd, SSL* ssl, const std::string& fingerprint, const std::string& device_name);
         // Marks a session trusted and wires it into the broadcast registry.
         void promote_session(int client_fd, const std::string& fingerprint, const std::string& device_name);
@@ -125,7 +135,10 @@ namespace tether {
         std::map<int, ConnectedClientInfo> client_info_;
         // fds we dialled
         std::map<int, bool> client_initiated_;
+
         std::set<std::string> dialing_;
+
+        std::function<void()> peers_changed_;
 
         // Track spawned dialog child processes
         struct PendingPairDialog {
