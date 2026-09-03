@@ -21,7 +21,9 @@ discovers this machine and then cannot reach it.
 
 Profiles for \fBufw\fR(8) and \fBfirewalld\fR(1) are installed but never
 applied; run \fBufw allow Tether\fR or
-\fBfirewall-cmd --permanent --add-service=tether\fR to use them.
+\fBfirewall-cmd --permanent --add-service=tether\fR to use them. A source
+install writes each profile only if that tool's directory already exists;
+packages always carry both.
 .SH FILES
 .TP
 \fB/etc/ufw/applications.d/tether\fR
