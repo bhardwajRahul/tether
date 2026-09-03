@@ -20,6 +20,11 @@ let
             "hci0"
             "hci1"
           ];
+          extensions = [
+            "firefox"
+            "chromium"
+            "thunderbird"
+          ];
         };
       }
     ];
@@ -50,6 +55,11 @@ let
               "hci0"
               "hci1"
             ];
+            extensions = [
+              "firefox"
+              "chromium"
+              "thunderbird"
+            ];
           };
         }
       ];
@@ -67,6 +77,25 @@ let
         }
       ];
     }).config;
+  extensionOnlyConfig = (
+    lib.nixosSystem {
+      inherit system;
+      modules = [
+        tetherModule
+        {
+          programs.tether = {
+            enable = true;
+            extensions = [
+              "firefox"
+              "chromium"
+              "thunderbird"
+            ];
+          };
+        }
+      ];
+    }
+  );
+  extOnlyConfig = extensionOnlyConfig.config;
   hasTetherBluetoothService =
     moduleConfig:
     lib.any (lib.hasPrefix "tether-btclass@") (builtins.attrNames moduleConfig.systemd.services);
@@ -83,6 +112,12 @@ assert !baseOnlyConfig.services.avahi.enable;
 assert !lib.elem 5134 baseOnlyConfig.networking.firewall.allowedTCPPorts;
 assert !baseOnlyConfig.hardware.bluetooth.enable;
 assert !hasTetherBluetoothService baseOnlyConfig;
+assert
+  !lib.elem baseOnlyConfig.programs.tether.package baseOnlyConfig.programs.firefox.nativeMessagingHosts.packages;
+assert
+  !baseOnlyConfig.environment.etc ? "chromium/native-messaging-hosts/com.tether.extension.json";
+assert
+  !baseOnlyConfig.environment.etc ? "opt/chrome/native-messaging-hosts/com.tether.extension.json";
 assert !masterDisabledConfig.services.avahi.enable;
 assert !lib.elem 5134 masterDisabledConfig.networking.firewall.allowedTCPPorts;
 assert !masterDisabledConfig.hardware.bluetooth.enable;
@@ -90,6 +125,15 @@ assert !hasTetherBluetoothService masterDisabledConfig;
 assert wifiOnlyConfig.services.avahi.enable;
 assert !wifiOnlyConfig.services.avahi.openFirewall;
 assert !lib.elem 5134 wifiOnlyConfig.networking.firewall.allowedTCPPorts;
+assert !extOnlyConfig.services.avahi.enable;
+assert !extOnlyConfig.hardware.bluetooth.enable;
+assert !extOnlyConfig.services.avahi.enable;
+assert lib.elem extOnlyConfig.programs.tether.package
+  extOnlyConfig.programs.firefox.nativeMessagingHosts.packages;
+assert !extOnlyConfig.programs.thunderbird.enable;
+assert extOnlyConfig.environment.etc ? "chromium/native-messaging-hosts/com.tether.extension.json";
+assert
+  extOnlyConfig.environment.etc ? "opt/chrome/native-messaging-hosts/com.tether.extension.json";
 assert config.hardware.bluetooth.enable;
 assert config.hardware.bluetooth.settings.General.Experimental;
 assert config.systemd.services ? "tether-btclass@hci0";

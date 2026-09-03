@@ -173,6 +173,12 @@ programs.tether = {
     enable = true;
     adapters = [ "hci0" ];
   };
+
+  extensions = [
+    "firefox"
+    "chromium"
+    "thunderbird"
+  ];
 };
 ```
 

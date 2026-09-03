@@ -35,6 +35,14 @@
           app = name: {
             type = "app";
             program = "${tether}/bin/${name}";
+
+            meta = {
+              description = "Bridge an iPhone to the Linux desktop: clipboard, files, messages, and notifications";
+              maintainers = [ { email = "zack@bartel.com"; } ];
+              homepage = "https://github.com/zackb/tether";
+              license = nixpkgs.lib.licenses.mit;
+              platforms = systems;
+            };
           };
         in
         {
@@ -52,7 +60,7 @@
         };
       };
 
-      nixosModules.default = tetherModule;
+      nixosModules.default = self.nixosModules.tether;
       nixosModules.tether = tetherModule;
 
       checks = forAllSystems (system: {
