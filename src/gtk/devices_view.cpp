@@ -47,6 +47,7 @@ namespace tether::ui {
             GtkWidget* lbl_action_status = nullptr;
             GtkWidget* btn_grid = nullptr;
             GtkWidget* btn_action_bt_pair = nullptr;
+            GtkWidget* btn_forget = nullptr;
             bool select_bt_after_scan = false;
 
             GtkWidget* lbl_unpaired_name = nullptr;
@@ -367,7 +368,7 @@ namespace tether::ui {
                 else
                     set_status_action(
                         online ? _("Connected and ready.")
-                               : _("Device is offline. Open the Tether app on iPhone while on the same network."));
+                               : _("Device is offline. Make sure it is switched on and on the same network."));
                 if (g_devices.btn_grid) {
                     gtk_widget_set_visible(g_devices.btn_grid, online);
                 }
@@ -467,6 +468,28 @@ namespace tether::ui {
 
             daemon_send({{"command", "bt_unpair"}, {"address", g_devices.selected_bt_address}});
             set_bt_progress(_("Removing the pairing\u2026"));
+        }
+
+        void on_forget_click(GtkWidget*, gpointer) {
+            if (g_devices.selected_device_fp.empty())
+                return;
+
+            GtkWidget* dialog = gtk_message_dialog_new(GTK_WINDOW(main_window()),
+                                                       GTK_DIALOG_MODAL,
+                                                       GTK_MESSAGE_QUESTION,
+                                                       GTK_BUTTONS_OK_CANCEL,
+                                                       _("Forget %s?"),
+                                                       g_devices.selected_device_name.c_str());
+            gtk_message_dialog_format_secondary_text(
+                GTK_MESSAGE_DIALOG(dialog),
+                _("Tether will stop connecting to it. Forget this computer on the other device too, "
+                  "then pair again to reconnect."));
+            const bool confirmed = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK;
+            gtk_widget_destroy(dialog);
+            if (!confirmed)
+                return;
+
+            daemon_send({{"command", "forget_device"}, {"fingerprint", g_devices.selected_device_fp}});
         }
 
         void on_bt_enabled_toggled(GtkWidget* widget, gpointer) {
@@ -643,7 +666,7 @@ namespace tether::ui {
             if (!g_devices.mdns_ok) {
                 set_route_status(Route::WiFi,
                                  false,
-                                 _("avahi-daemon isn't running, so the iPhone can't find this PC. Start it "
+                                 _("avahi-daemon isn't running, so other devices can't find this PC. Start it "
                                    "with: sudo systemctl enable --now avahi-daemon"));
                 return;
             }
@@ -651,12 +674,13 @@ namespace tether::ui {
             if (g_devices.firewall_active && !g_devices.discovered_devices.empty()) {
                 set_route_status(Route::WiFi,
                                  false,
-                                 _("An iPhone is on the network but cannot reach this PC. A firewall is "
+                                 _("A device is on the network but cannot reach this PC. A firewall is "
                                    "running; Tether needs inbound TCP 5134. Allow it with: sudo ufw allow "
                                    "5134/tcp"));
                 return;
             }
-            set_route_status(Route::WiFi, false, _("No paired iPhone is connected. Open the Tether app on the phone."));
+            set_route_status(
+                Route::WiFi, false, _("No paired device is connected. Switch it on and join the same network."));
         }
 
         void apply_state_snapshot(const nlohmann::json& j) {
@@ -1016,6 +1040,22 @@ namespace tether::ui {
                 devices_view_refresh();
                 update_right_pane();
             }
+            return true;
+        }
+        if (command == "forget_device_result") {
+            const std::string fp = event.value("fingerprint", "");
+            g_devices.connected_fps.erase(
+                std::remove(g_devices.connected_fps.begin(), g_devices.connected_fps.end(), fp),
+                g_devices.connected_fps.end());
+            if (g_devices.selected_device_fp == fp) {
+                g_devices.selected_device_fp.clear();
+                g_devices.selected_device_name.clear();
+                g_devices.selected_device_ip.clear();
+            }
+            // paired_devices is rebuilt from known_hosts.json the daemon has already written.
+            devices_view_refresh();
+            update_right_pane();
+            update_wifi_indicator();
             return true;
         }
         if (command == "discovery_result") {
@@ -1479,9 +1519,15 @@ namespace tether::ui {
         g_signal_connect(g_devices.btn_action_bt_pair, "clicked", G_CALLBACK(on_action_bt_pair_clicked), nullptr);
         gtk_box_pack_start(GTK_BOX(action_box), g_devices.btn_action_bt_pair, FALSE, FALSE, 0);
 
+        g_devices.btn_forget = gtk_button_new_with_label(_("Forget"));
+        gtk_widget_set_halign(g_devices.btn_forget, GTK_ALIGN_CENTER);
+        g_signal_connect(g_devices.btn_forget, "clicked", G_CALLBACK(on_forget_click), nullptr);
+        gtk_box_pack_start(GTK_BOX(action_box), g_devices.btn_forget, FALSE, FALSE, 0);
+
         GtkSizeGroup* action_button_sizes = gtk_size_group_new(GTK_SIZE_GROUP_BOTH);
         gtk_size_group_add_widget(action_button_sizes, btn_send_clip);
         gtk_size_group_add_widget(action_button_sizes, g_devices.btn_action_bt_pair);
+        gtk_size_group_add_widget(action_button_sizes, g_devices.btn_forget);
         g_object_unref(action_button_sizes);
 
         g_devices.lbl_action_status = gtk_label_new(_("Ready"));

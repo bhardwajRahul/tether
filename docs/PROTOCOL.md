@@ -140,6 +140,14 @@ Every node is a peer. A PC, iPhone or iPad all listen and all dial, and one cert
 
 A node must never pin a peer on local assertion alone — a UI must not report a device paired or connected until `pair_accepted` has crossed the wire and the trust record exists.
 
+### Reconnecting
+
+A node dials a peer it already trusts on its own, whenever mDNS resolves one whose `fp=` is in `known_hosts.json`.
+
+Only the node with the **lower** fingerprint dials. Every node both listens and browses, so an unconditional dial leaves each side holding two sessions with the same peer, and every broadcast goes out twice. The comparison is reciprocal, so exactly one of any two nodes dials and no negotiation is needed.
+
+The iPhone app dials on launch and is therefore reachable either way.
+
 ### `pair_request` (Untrusted Client -> Daemon)
 
 **Description**: Emitted natively by a new client over standard TLS to gracefully present its identity and X.509 fingerprint. The Daemon immediately intercepts the payload, extracts the fingerprint natively from the `SSL*` pipe, and flags it locally as "Pending Authentication". Anything other than `pair_request` results in the TLS socket securely disconnecting.
@@ -198,6 +206,13 @@ Trusts a pending pair request by moving the target fingerprint into the daemon's
 **Response**: The daemon promotes any matching live TLS session, notifies the phone and local subscribers,
 then replies with `{"command":"accept_device_result","accepted":true,"connected":true}`. `connected` is false
 when the trust record was saved for a device that is no longer connected.
+
+### `forget_device` (Local Client -> Daemon)
+Removes a fingerprint from `known_hosts.json` and closes any live session holding it.
+**Payload**: `{"command": "forget_device", "fingerprint": "12:aa:bb:cc..."}`
+**Response**: `{"command":"forget_device_result","fingerprint":"...","forgotten":true}`, also broadcast
+to local subscribers. `forgotten` is false when the fingerprint was not pinned. Both ends must forget
+a peer: a node that still trusts it will keep dialling it (see §3).
 
 ### `send_file` (Local Client -> Daemon)
 Offloads an entire file transfer to the daemon. The daemon spawns a thread to read the local filesystem and pushes the chunks sequence securely.

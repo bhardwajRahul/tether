@@ -94,7 +94,23 @@ int main(int argc, char** argv) {
         discovery.set_state_callback([](bool available) { tether::set_mdns_available(available); });
         discovery.publish(hostname, 5134, my_fp);
 
-        discovery.start_continuous_browse([](const std::vector<tether::DiscoveredDevice>& devices) {
+        discovery.start_continuous_browse([&loop, &tcp_srv](const std::vector<tether::DiscoveredDevice>& devices) {
+            // Reestablish sessions with peers we already trust.
+            const std::string my_fp = tether::Crypto::instance().get_my_fingerprint();
+            for (const auto& dev : devices) {
+                if (dev.addresses.empty())
+                    continue;
+                if (!tether::should_dial_peer(
+                        my_fp, dev.fingerprint, tether::Crypto::instance().is_host_known(dev.fingerprint)))
+                    continue;
+
+                // on avahi's poll thread
+                const auto& addr = dev.addresses.front();
+                loop.post([&tcp_srv, host = addr.address, port = addr.port, name = dev.name, fp = dev.fingerprint]() {
+                    tcp_srv.connect_peer(host, port, name, fp);
+                });
+            }
+
             nlohmann::json payload;
             payload["command"] = "discovery_result";
             payload["devices"] = nlohmann::json::array();
@@ -113,6 +129,8 @@ int main(int argc, char** argv) {
             }
             tether::broadcast_local_event(payload.dump());
         });
+
+        tcp_srv.set_peers_changed_callback([&discovery] { discovery.refresh(); });
     }
 
     tether::WaylandContext wayland_srv(loop);

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 11:19-0700\n"
+"POT-Creation-Date: 2026-09-03 13:02-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: German\n"
@@ -174,6 +174,10 @@ msgstr ""
 #: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
 msgstr "Eine ausstehende Kopplungsanfrage lokal annehmen."
+
+#: src/cli/main.cpp
+msgid "Remove a Wi-Fi pairing and drop its session."
+msgstr "Eine WLAN-Kopplung entfernen und ihre Sitzung beenden."
 
 #: src/cli/main.cpp
 msgid "Send a pair_request over TCP to the daemon."
@@ -540,6 +544,14 @@ msgstr ""
 "der Daemon defekt?\n"
 
 #: src/cli/main.cpp
+msgid "--forget expects a fingerprint.\n"
+msgstr "--forget erwartet einen Fingerabdruck.\n"
+
+#: src/cli/main.cpp
+msgid "No paired device with that fingerprint.\n"
+msgstr "Kein gekoppeltes Gerät mit diesem Fingerabdruck.\n"
+
+#: src/cli/main.cpp
 #, c++-format
 msgid "Transfer Failed: {}"
 msgstr "Übertragung fehlgeschlagen: {}"
@@ -846,13 +858,19 @@ msgstr ""
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
 "derived, so notification mirroring cannot work on it."
-msgstr "Ein Gerät ist gebunden, aber die Bindung umfasst nur BR/EDR — es wurden keine LE-Schlüssel abgeleitet, daher kann die Spiegelung von Mitteilungen damit nicht funktionieren."
+msgstr ""
+"Ein Gerät ist gebunden, aber die Bindung umfasst nur BR/EDR — es wurden "
+"keine LE-Schlüssel abgeleitet, daher kann die Spiegelung von Mitteilungen "
+"damit nicht funktionieren."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "This adapter cannot solicit ANCS, so notification mirroring is unavailable "
 "on it and re-pairing will not change that."
-msgstr "Dieser Adapter kann ANCS nicht anfordern, daher ist die Spiegelung von Mitteilungen auf ihm nicht verfügbar, und erneutes Koppeln ändert daran nichts."
+msgstr ""
+"Dieser Adapter kann ANCS nicht anfordern, daher ist die Spiegelung von "
+"Mitteilungen auf ihm nicht verfügbar, und erneutes Koppeln ändert daran "
+"nichts."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -865,7 +883,9 @@ msgstr ""
 
 #: src/core/src/bluetooth/objects.cpp
 msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
-msgstr "Löschen Sie diesen Rechner am iPhone („Dieses Gerät ignorieren“) und koppeln Sie erneut."
+msgstr ""
+"Löschen Sie diesen Rechner am iPhone („Dieses Gerät ignorieren“) und koppeln "
+"Sie erneut."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1127,11 +1147,8 @@ msgid "Connected and ready."
 msgstr "Verbunden und bereit."
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Device is offline. Open the Tether app on iPhone while on the same network."
-msgstr ""
-"Das Gerät ist offline. Öffnen Sie die Tether-App auf dem iPhone im selben "
-"Netz."
+msgid "Device is offline. Make sure it is switched on and on the same network."
+msgstr "Das Gerät ist offline. Stellen Sie sicher, dass es eingeschaltet und im selben Netz ist."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -1171,6 +1188,17 @@ msgstr ""
 #: src/gtk/devices_view.cpp
 msgid "Removing the pairing…"
 msgstr "Kopplung wird entfernt…"
+
+#: src/gtk/devices_view.cpp
+#, c-format
+msgid "Forget %s?"
+msgstr "%s vergessen?"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Tether will stop connecting to it. Forget this computer on the other device "
+"too, then pair again to reconnect."
+msgstr "Tether verbindet sich nicht mehr damit. Vergessen Sie diesen Computer auch auf dem anderen Gerät und koppeln Sie dann erneut, um die Verbindung wiederherzustellen."
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
@@ -1219,26 +1247,19 @@ msgstr ""
 
 #: src/gtk/devices_view.cpp
 msgid ""
-"avahi-daemon isn't running, so the iPhone can't find this PC. Start it with: "
-"sudo systemctl enable --now avahi-daemon"
-msgstr ""
-"avahi-daemon läuft nicht, daher kann das iPhone diesen PC nicht finden. "
-"Starten Sie ihn mit: sudo systemctl enable --now avahi-daemon"
+"avahi-daemon isn't running, so other devices can't find this PC. Start it "
+"with: sudo systemctl enable --now avahi-daemon"
+msgstr "avahi-daemon läuft nicht, daher können andere Geräte diesen PC nicht finden. Starten Sie ihn mit: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid ""
-"An iPhone is on the network but cannot reach this PC. A firewall is running; "
+"A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
-msgstr ""
-"Ein iPhone ist im Netzwerk, erreicht diesen PC aber nicht. Eine Firewall ist "
-"aktiv; Tether benötigt eingehendes TCP 5134. Erlauben mit: sudo ufw allow "
-"5134/tcp"
+msgstr "Ein Gerät ist im Netzwerk, erreicht diesen PC aber nicht. Eine Firewall ist aktiv; Tether benötigt eingehendes TCP 5134. Erlauben mit: sudo ufw allow 5134/tcp"
 
 #: src/gtk/devices_view.cpp
-msgid "No paired iPhone is connected. Open the Tether app on the phone."
-msgstr ""
-"Es ist kein gekoppeltes iPhone verbunden. Öffnen Sie die Tether-App auf dem "
-"Telefon."
+msgid "No paired device is connected. Switch it on and join the same network."
+msgstr "Es ist kein gekoppeltes Gerät verbunden. Schalten Sie es ein und verbinden Sie es mit demselben Netz."
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
@@ -1497,6 +1518,10 @@ msgstr "Zwischenablage senden"
 #: src/gtk/devices_view.cpp
 msgid "Clipboard sync requested..."
 msgstr "Synchronisierung der Zwischenablage angefordert..."
+
+#: src/gtk/devices_view.cpp
+msgid "Forget"
+msgstr "Vergessen"
 
 #: src/gtk/main.cpp
 msgid "Keep running in tray when closed"

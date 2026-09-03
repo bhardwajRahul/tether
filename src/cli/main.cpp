@@ -213,6 +213,7 @@ static const Opt kOptions[] = {
      N_("Install the browser and mail extension's native messaging manifests for this user. Needed only for "
         "portable builds; the distro packages install them system-wide.")},
     {"--accept <fingerprint>", N_("Accept a pending pairing request locally.")},
+    {"--forget <fingerprint>", N_("Remove a Wi-Fi pairing and drop its session.")},
     {"--pair", N_("Send a pair_request over TCP to the daemon.")},
 };
 
@@ -891,6 +892,10 @@ int main(int argc, char* argv[]) {
             action = "accept";
             if (i + 1 < argc && argv[i + 1][0] != '-')
                 arg_val = argv[++i];
+        } else if (arg == "--forget") {
+            action = "forget";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
         } else if (arg == "--host") {
             if (i + 1 < argc && argv[i + 1][0] != '-')
                 host = argv[++i];
@@ -987,6 +992,16 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         debug::log(INFO, "Successfully paired device: {}", arg_val);
+    } else if (action == "forget") {
+        if (arg_val.empty()) {
+            debug::log(ERR, _("--forget expects a fingerprint.\n"));
+            return 1;
+        }
+        if (!client.forget_device(arg_val)) {
+            debug::log(ERR, _("No paired device with that fingerprint.\n"));
+            return 1;
+        }
+        debug::log(INFO, "Forgot device: {}", arg_val);
     } else if (action == "pair") {
         char hostname[256] = {};
         gethostname(hostname, sizeof(hostname) - 1);

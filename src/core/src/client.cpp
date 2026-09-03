@@ -278,6 +278,20 @@ namespace tether {
         }
     }
 
+    bool Client::forget_device(const std::string& fingerprint) {
+        if (!is_connected() || ssl_ || fingerprint.empty())
+            return false;
+
+        nlohmann::json request{{"command", "forget_device"}, {"fingerprint", fingerprint}};
+        const std::string response = send_and_wait(request.dump() + "\n");
+        try {
+            const auto parsed = nlohmann::json::parse(response);
+            return parsed.value("command", "") == "forget_device_result" && parsed.value("forgotten", false);
+        } catch (...) {
+            return false;
+        }
+    }
+
     std::string Client::pair(const std::string& device_name, std::string& err_out) {
         if (!ssl_) {
             err_out = "Pairing requires a TCP+TLS connection. Use --host to specify a target.";

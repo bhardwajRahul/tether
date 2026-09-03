@@ -78,6 +78,9 @@ namespace tether {
         // Only one continuous browse session can run per Discovery instance.
         void start_continuous_browse(std::function<void(const std::vector<DiscoveredDevice>&)> callback);
 
+        // Re-run the browse callback against the current cache.
+        void refresh();
+
         // Stop continuous background discovery.
         void stop_continuous_browse();
 

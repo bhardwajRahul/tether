@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
 #include <iostream>
 #include <unistd.h>
 
@@ -63,6 +64,46 @@ TEST_F(CryptoTest, MultipleKnownHosts) {
     EXPECT_TRUE(tether::Crypto::instance().is_host_known("fp2"));
     EXPECT_TRUE(tether::Crypto::instance().is_host_known("fp3"));
     EXPECT_FALSE(tether::Crypto::instance().is_host_known("fp4"));
+}
+
+TEST_F(CryptoTest, RemoveKnownHost) {
+    EXPECT_TRUE(tether::Crypto::instance().init());
+
+    tether::Crypto::instance().add_known_host("Doomed Device", "doomed_fp");
+    EXPECT_TRUE(tether::Crypto::instance().is_host_known("doomed_fp"));
+
+    EXPECT_TRUE(tether::Crypto::instance().remove_known_host("doomed_fp"));
+    EXPECT_FALSE(tether::Crypto::instance().is_host_known("doomed_fp"));
+    EXPECT_EQ(tether::Crypto::instance().get_known_hosts_dump().find("Doomed Device"), std::string::npos);
+
+    // Idempotent, and the removal survives a reload from disk.
+    EXPECT_FALSE(tether::Crypto::instance().remove_known_host("doomed_fp"));
+
+    std::ifstream iff(home_ / ".config/tether/known_hosts.json");
+    std::stringstream on_disk;
+    on_disk << iff.rdbuf();
+    EXPECT_EQ(on_disk.str().find("doomed_fp"), std::string::npos);
+}
+
+TEST_F(CryptoTest, UnreadableKnownHostsIsNotOverwritten) {
+    if (geteuid() == 0)
+        GTEST_SKIP() << "root reads regardless of mode bits";
+
+    EXPECT_TRUE(tether::Crypto::instance().init());
+    tether::Crypto::instance().add_known_host("Precious Device", "precious_fp");
+
+    // An unreadable file must never be rewritten: that would silently wipe every pairing.
+    const auto hosts = home_ / ".config/tether/known_hosts.json";
+    std::filesystem::permissions(hosts, std::filesystem::perms::none);
+    std::filesystem::last_write_time(hosts, std::filesystem::file_time_type::clock::now());
+
+    EXPECT_FALSE(tether::Crypto::instance().is_host_known("precious_fp"));
+
+    std::filesystem::permissions(hosts, std::filesystem::perms::owner_read | std::filesystem::perms::owner_write);
+    std::ifstream iff(hosts);
+    std::stringstream on_disk;
+    on_disk << iff.rdbuf();
+    EXPECT_NE(on_disk.str().find("precious_fp"), std::string::npos);
 }
 
 TEST_F(CryptoTest, GetMyFingerprint) {

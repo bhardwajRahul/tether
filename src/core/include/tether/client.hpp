@@ -33,6 +33,7 @@ namespace tether {
 
         std::string list_devices();
         bool accept_device(const std::string& fingerprint, const std::string& name = "Paired Device");
+        bool forget_device(const std::string& fingerprint);
         std::string pair(const std::string& device_name, std::string& err_out);
 
     private:

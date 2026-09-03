@@ -560,3 +560,29 @@ TEST(FirewallTest, UfwEnabledIsFalseWhenTheKeyIsAbsent) {
     EXPECT_FALSE(tether::ufw_enabled("ENABLED\n"));
     EXPECT_FALSE(tether::ufw_enabled("ENABLEDX=yes\n"));
 }
+
+// Both nodes browse and both listen, so an unconditional dial gives each side two promoted
+// sessions to the same peer and every broadcast goes out twice.
+TEST(ShouldDialPeer, OnlyTheLowerFingerprintDials) {
+    EXPECT_TRUE(tether::should_dial_peer("aaa", "bbb", true));
+    EXPECT_FALSE(tether::should_dial_peer("bbb", "aaa", true));
+}
+
+TEST(ShouldDialPeer, IsReciprocal) {
+    const char* fps[] = {"00", "0a", "a0", "aa", "ff", "deadbeef", "0123456789abcdef"};
+    for (const char* a : fps) {
+        for (const char* b : fps) {
+            if (std::string(a) == b)
+                continue;
+            EXPECT_NE(tether::should_dial_peer(a, b, true), tether::should_dial_peer(b, a, true))
+                << a << " vs " << b;
+        }
+    }
+}
+
+TEST(ShouldDialPeer, SkipsUnknownIncompleteAndSelf) {
+    EXPECT_FALSE(tether::should_dial_peer("aaa", "bbb", false)); // unpaired peer must still prompt
+    EXPECT_FALSE(tether::should_dial_peer("", "bbb", true));
+    EXPECT_FALSE(tether::should_dial_peer("aaa", "", true)); // peer published no fp= TXT record
+    EXPECT_FALSE(tether::should_dial_peer("aaa", "aaa", true));
+}
