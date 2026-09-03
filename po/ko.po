@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -99,6 +99,10 @@ msgid "Reply in one conversation."
 msgstr "한 대화에서 답장합니다."
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr "iPhone 연락처를 나열하거나 이름 또는 번호로 검색합니다."
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Bluetooth로 iPhone과 페어링합니다."
 
@@ -133,6 +137,12 @@ msgstr "알림 미러링을 켜거나 끕니다."
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "앱뿐 아니라 알림의 제목과 본문도 미러링합니다."
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
+msgstr "메시지 기록과 연락처를 디스크에 보관하는 방식입니다. encrypted는 데스크톱 키링의 키를 사용하고, none은 저장된 내용을 삭제하며 이후 아무것도 보관하지 않습니다."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -413,6 +423,31 @@ msgid_plural "({} unread)"
 msgstr[0] "(읽지 않음 {}개)"
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Restart it with:\n"
+"    systemctl --user restart tetherd\n"
+msgstr "실행 중인 tetherd는 {}이지만 이것은 tether {}입니다. 다음 명령으로 다시 시작하십시오:\n    systemctl --user restart tetherd\n"
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr "이전 빌드"
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr "데몬에서 연락처를 읽지 못했습니다.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr "아직 연락처가 없습니다. 'tether --bt-connection'을 확인하십시오.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr "%s과(와) 일치하는 연락처가 없습니다\n"
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr "데몬에서 메시지를 읽지 못했습니다.\n"
 
@@ -537,6 +572,20 @@ msgstr "알림 미러링을 켰습니다."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "알림 미러링을 껐습니다."
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr "encrypted, plaintext 또는 none이 필요합니다. 예: --bt-retention encrypted\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr "저장된 메시지와 연락처를 삭제하는 중입니다.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
+msgstr "보관 방식을 %s(으)로 설정했습니다.\n"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
@@ -1311,6 +1360,29 @@ msgid ""
 msgstr ""
 "어떤 앱이 보냈는지뿐 아니라 각 알림의 제목과 본문도 iPhone에 요청합니다. "
 "iPhone의 '메시지 알림 보기' 설정도 켜져 있어야 합니다."
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr "메시지 기록 보관:"
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr "암호화"
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr "암호화 안 함"
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr "보관 안 함"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr "이 컴퓨터에 메시지와 연락처를 저장하는 방식입니다. 암호화는 데스크톱 키링의 키로 보관합니다. 보관 안 함은 이미 저장된 내용을 삭제하고 이후 아무것도 보관하지 않습니다."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

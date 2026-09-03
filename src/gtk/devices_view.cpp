@@ -72,6 +72,7 @@ namespace tether::ui {
             GtkWidget* chk_bt_enabled = nullptr;
             GtkWidget* chk_bt_ancs = nullptr;
             GtkWidget* chk_bt_content = nullptr;
+            GtkWidget* cmb_bt_retention = nullptr;
             GtkWidget* btn_bt_unpair = nullptr;
 
             GtkWidget* lbl_welcome_wifi = nullptr;
@@ -162,6 +163,7 @@ namespace tether::ui {
         void on_bt_enabled_toggled(GtkWidget* widget, gpointer);
         void on_bt_ancs_toggled(GtkWidget* widget, gpointer);
         void on_bt_content_toggled(GtkWidget* widget, gpointer);
+        void on_bt_retention_changed(GtkWidget* widget, gpointer);
 
         void update_action_bt_scan_controls() {
             if (g_devices.btn_action_bt_pair)
@@ -309,6 +311,14 @@ namespace tether::ui {
                                          g_devices.bt_status.value("ancs_content_enabled", true));
             g_signal_handlers_unblock_by_func(
                 g_devices.chk_bt_content, reinterpret_cast<gpointer>(on_bt_content_toggled), nullptr);
+
+            gtk_widget_set_visible(gtk_widget_get_parent(g_devices.cmb_bt_retention), available && supervised);
+            g_signal_handlers_block_by_func(
+                g_devices.cmb_bt_retention, reinterpret_cast<gpointer>(on_bt_retention_changed), nullptr);
+            gtk_combo_box_set_active_id(GTK_COMBO_BOX(g_devices.cmb_bt_retention),
+                                        g_devices.bt_status.value("retention", "encrypted").c_str());
+            g_signal_handlers_unblock_by_func(
+                g_devices.cmb_bt_retention, reinterpret_cast<gpointer>(on_bt_retention_changed), nullptr);
         }
 
         void update_right_pane() {
@@ -459,6 +469,12 @@ namespace tether::ui {
         void on_bt_content_toggled(GtkWidget* widget, gpointer) {
             daemon_send({{"command", "bt_set_ancs_content"},
                          {"enabled", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) == TRUE}});
+        }
+
+        void on_bt_retention_changed(GtkWidget* widget, gpointer) {
+            const gchar* id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(widget));
+            if (id)
+                daemon_send({{"command", "bt_set_retention"}, {"retention", id}});
         }
 
         void on_bt_setup_copy_click(GtkWidget*, gpointer) {
@@ -1328,6 +1344,20 @@ namespace tether::ui {
                                       "has to be on."));
         g_signal_connect(g_devices.chk_bt_content, "toggled", G_CALLBACK(on_bt_content_toggled), nullptr);
         gtk_box_pack_start(GTK_BOX(bt_box), g_devices.chk_bt_content, FALSE, FALSE, 0);
+
+        GtkWidget* retention_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        gtk_box_pack_start(GTK_BOX(retention_row), gtk_label_new(_("Keep message history:")), FALSE, FALSE, 0);
+        g_devices.cmb_bt_retention = gtk_combo_box_text_new();
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(g_devices.cmb_bt_retention), "encrypted", _("Encrypted"));
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(g_devices.cmb_bt_retention), "plaintext", _("Unencrypted"));
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(g_devices.cmb_bt_retention), "none", _("Do not keep"));
+        gtk_widget_set_tooltip_text(g_devices.cmb_bt_retention,
+                                    _("Where messages and contacts are stored on this computer. Encrypted keeps "
+                                      "them with a key in your desktop keyring. Do not keep deletes what is "
+                                      "already stored and retains nothing further."));
+        g_signal_connect(g_devices.cmb_bt_retention, "changed", G_CALLBACK(on_bt_retention_changed), nullptr);
+        gtk_box_pack_start(GTK_BOX(retention_row), g_devices.cmb_bt_retention, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(bt_box), retention_row, FALSE, FALSE, 0);
 
         g_devices.lbl_bt_reason = gtk_label_new(nullptr);
         gtk_label_set_xalign(GTK_LABEL(g_devices.lbl_bt_reason), 0.0);

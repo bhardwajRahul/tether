@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Swedish\n"
@@ -101,6 +101,10 @@ msgid "Reply in one conversation."
 msgstr "Svara i en konversation."
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr "Lista iPhone-kontakter, eller sök i dem på namn eller nummer."
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Parkoppla en iPhone via Bluetooth."
 
@@ -135,6 +139,12 @@ msgstr "Slå på eller av spegling av aviseringar."
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "Spegla aviseringarnas rubrik och text, inte bara appen."
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
+msgstr "Hur meddelandehistorik och kontakter sparas på disk. encrypted använder en nyckel från skrivbordets nyckelring; none raderar det som sparats och sparar inget mer."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -422,6 +432,31 @@ msgstr[0] "({} oläst)"
 msgstr[1] "({} olästa)"
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Restart it with:\n"
+"    systemctl --user restart tetherd\n"
+msgstr "Den körande tetherd är {}, men detta är tether {}. Starta om den med:\n    systemctl --user restart tetherd\n"
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr "ett äldre bygge"
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr "Kunde inte läsa kontakterna från demonen.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr "Inga kontakter ännu. Kontrollera 'tether --bt-connection'.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr "Inga kontakter matchar %s\n"
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr "Kunde inte läsa meddelandena från demonen.\n"
 
@@ -551,6 +586,20 @@ msgstr "Spegling av aviseringar aktiverad."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "Spegling av aviseringar avaktiverad."
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr "Förväntade encrypted, plaintext eller none, t.ex. --bt-retention encrypted\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr "Raderar sparade meddelanden och kontakter.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
+msgstr "Lagring inställd på %s.\n"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
@@ -1336,6 +1385,29 @@ msgstr ""
 "Ber iPhonen om varje aviserings rubrik och meddelandetext, inte bara vilken "
 "app som skickade den. Telefonens egen inställning \"Visa "
 "meddelandeaviseringar\" måste ändå vara på."
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr "Spara meddelandehistorik:"
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr "Krypterat"
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr "Okrypterat"
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr "Spara inte"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr "Var meddelanden och kontakter lagras på den här datorn. Krypterat sparar dem med en nyckel i din nyckelring. Spara inte raderar det som redan lagrats och sparar inget mer."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

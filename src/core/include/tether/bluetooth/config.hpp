@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tether/secret_store.hpp"
+
 #include <string>
 
 namespace tether::bluetooth {
@@ -33,6 +35,8 @@ namespace tether::bluetooth {
         // Controller to use, "hci1" or its address. Empty picks the first
         // powered one, which is wrong on any machine with a second controller.
         std::string adapter;
+        // How the message journal and contact cache are kept on disk. Encrypted by default.
+        Retention retention = Retention::Encrypted;
 
         bool operator==(const Config&) const = default;
     };

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -100,6 +100,10 @@ msgid "Reply in one conversation."
 msgstr "1 つの会話で返信します。"
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr "iPhone の連絡先を一覧表示、または名前や番号で検索します。"
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Bluetooth で iPhone とペアリングします。"
 
@@ -134,6 +138,12 @@ msgstr "通知のミラーリングをオンまたはオフにします。"
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "アプリ名だけでなく、通知のタイトルと本文もミラーリングします。"
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
+msgstr "メッセージ履歴と連絡先をディスクにどう保持するか。encrypted はデスクトップのキーリングにある鍵を使います。none は保存済みのものを削除し、以後何も保持しません。"
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -414,6 +424,31 @@ msgid_plural "({} unread)"
 msgstr[0] "({} 件未読)"
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Restart it with:\n"
+"    systemctl --user restart tetherd\n"
+msgstr "実行中の tetherd は {} ですが、こちらは tether {} です。次のコマンドで再起動してください:\n    systemctl --user restart tetherd\n"
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr "より古いビルド"
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr "デーモンから連絡先を読み取れませんでした。\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr "まだ連絡先はありません。'tether --bt-connection' を確認してください。\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr "%s に一致する連絡先はありません\n"
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr "デーモンからメッセージを読み取れませんでした。\n"
 
@@ -539,6 +574,20 @@ msgstr "通知のミラーリングを有効にしました。"
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "通知のミラーリングを無効にしました。"
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr "encrypted、plaintext、none のいずれかを指定してください。例: --bt-retention encrypted\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr "保存されたメッセージと連絡先を削除しています。\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
+msgstr "保持設定を %s にしました。\n"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
@@ -1325,6 +1374,29 @@ msgid ""
 msgstr ""
 "どのアプリが送信したかだけでなく、各通知のタイトルと本文も iPhone に要求しま"
 "す。iPhone 側の「メッセージ通知を表示」もオンになっている必要があります。"
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr "メッセージ履歴の保持:"
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr "暗号化する"
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr "暗号化しない"
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr "保持しない"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr "このコンピューターでメッセージと連絡先を保存する方法。「暗号化する」はデスクトップのキーリングにある鍵で保存します。「保持しない」は保存済みのものを削除し、以後何も保持しません。"
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

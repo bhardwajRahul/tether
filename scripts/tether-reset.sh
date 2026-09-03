@@ -2,7 +2,8 @@
 # Delete Tether's pairing state so the next pair starts from nothing.
 #
 #   tether-reset.sh wifi   mTLS keys, known hosts, pending pair requests
-#   tether-reset.sh bt     the BlueZ bond, Bluetooth config, contacts, messages
+#   tether-reset.sh bt     the BlueZ bond, Bluetooth config, contacts, messages,
+#                          and the key the encrypted store was written with
 #   tether-reset.sh all    both, plus the daemon log
 #
 # Paths are spelled out rather than derived from XDG_CONFIG_HOME/XDG_DATA_HOME
@@ -44,8 +45,11 @@ wifi_paths=(
 bt_paths=(
     "$config/bluetooth.json"
     "$config/groups.json"
+    "$config/store.key"
     "$share/contacts.json"
+    "$share/contacts.json.enc"
     "$share/messages.ndjson"
+    "$share/messages.ndjson.enc"
 )
 
 paths=()
@@ -114,6 +118,14 @@ for p in "${paths[@]}"; do
         printf '  %s✗%s %s\n' "$red" "$rst" "$p"
     fi
 done
+
+# The store key normally lives in the desktop keyring, not in a file, so the
+# loop above misses it on any machine with a working secret service.
+if [[ $scope == bt || $scope == all ]] && command -v secret-tool >/dev/null 2>&1; then
+    if secret-tool clear application tether >/dev/null 2>&1; then
+        printf '  %s✓%s store key in the desktop keyring\n' "$grn" "$rst"
+    fi
+fi
 
 echo
 echo "Done. The iPhone side cannot be cleared from here:"

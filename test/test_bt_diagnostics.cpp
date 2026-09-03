@@ -1,6 +1,8 @@
 #include "tether/bluetooth/diagnostics.hpp"
 
+#include "scoped_env.hpp"
 #include <cstdlib>
+
 #include <gtest/gtest.h>
 
 using namespace tether::bluetooth;
@@ -69,8 +71,10 @@ TEST(BtDiagnostics, LeavesTimestampsAndErrorCodesAlone) {
 }
 
 TEST(BtDiagnostics, RedactsHomeAndRuntimeDirectories) {
-    setenv("HOME", "/home/someone", 1);
-    setenv("XDG_RUNTIME_DIR", "/run/user/1000", 1);
+    // Scoped, not set: HOME also picks the store key and the Bluetooth store
+    // paths, so leaking it here breaks whichever test happens to run next.
+    tether::testing::ScopedEnv home("HOME", std::string("/home/someone"));
+    tether::testing::ScopedEnv runtime("XDG_RUNTIME_DIR", std::string("/run/user/1000"));
     Redactor r;
     EXPECT_EQ(r.text("staged /run/user/1000/tether/out.bmsg"), "staged <runtime>/tether/out.bmsg");
     EXPECT_EQ(r.text("wrote /home/someone/.config/tether/bluetooth.json"),
@@ -78,9 +82,13 @@ TEST(BtDiagnostics, RedactsHomeAndRuntimeDirectories) {
 }
 
 TEST(BtDiagnostics, RedactsRuntimeDirectoryWithoutTheEnvironmentVariable) {
+    const char* previous = getenv("XDG_RUNTIME_DIR");
+    const std::string saved = previous ? previous : "";
     unsetenv("XDG_RUNTIME_DIR");
     Redactor r;
     EXPECT_EQ(r.text("/run/user/4242/tether/tetherd.sock"), "<runtime>/tether/tetherd.sock");
+    if (!saved.empty())
+        setenv("XDG_RUNTIME_DIR", saved.c_str(), 1);
 }
 
 TEST(BtDiagnostics, DropsContentKeysRatherThanRedactingThem) {

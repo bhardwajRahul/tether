@@ -825,9 +825,62 @@ iPhone was, exactly as on 2026-08-19.
 The transfer object disappears from D-Bus the moment it finishes, so a vanished object
 is a normal terminal state rather than a failure (file may still take a bit to appear afterwards),
 which is why the pull waits instead of giving up. Contacts are staged in `$XDG_RUNTIME_DIR` rather than `/tmp`, since a
-phonebook is personal data, and the cache and journal are both written mode 0600.
+phonebook is personal data.
 
-***THIS HAS TO CHANGE BEFORE PUBLIC RELEASE.***
+### The store at rest
+
+Mode 0600 was the whole protection until 0.2.24, and it is not enough: it does
+nothing about `$HOME` backups, a synced home directory, or another process
+running as the same user. Both stores are now sealed.
+
+Each record is `base64(nonce[12] || ciphertext || tag[16])`, AES-256-GCM
+through the OpenSSL that is already linked for TLS. The journal seals per line
+so appending stays an append; the contact cache is rewritten whole after every
+PBAP pull anyway, so it gets one envelope for the file.
+
+The key is 32 bytes from `RAND_bytes`, kept in the desktop secret service
+(schema `com.tether.Store`, attribute `application=tether`). Lookup uses
+`secret_service_search_sync` **without** `SECRET_SEARCH_UNLOCK`:
+`secret_password_lookup_sync` would raise an unlock prompt, which is wrong for a
+user unit that can start before the graphical session. On a host with no secret
+service on the bus at all the key falls back to `~/.config/tether/store.key`,
+mode 0600 — that stops a backup or a synced home, not another process running as
+you, and it is never written when a wallet is merely locked.
+
+Three retention modes, `retention` in `bluetooth.json`, also `tether
+--bt-retention`:
+
+| Mode | Journal | Contacts | An older tetherd sees |
+|---|---|---|---|
+| `encrypted` (default) | `messages.ndjson.enc` | `contacts.json.enc` | nothing |
+| `plaintext` | `messages.ndjson` | `contacts.json` | files it reads correctly |
+| `none` | — | — | nothing |
+
+The path follows the mode, and that is load-bearing rather than cosmetic. A
+package upgrade leaves the running daemon on the old binary, and a downgrade can
+put an old binary back permanently. An old `tetherd` cannot parse a sealed line,
+so it would read an empty history and then compact that emptiness back over the
+file. Because the only names it ever opens are `messages.ndjson` and
+`contacts.json`, and those only ever hold plaintext, it finds nothing under
+`encrypted` and writes to files nothing else reads. Rolling forward finds the
+sealed store intact. `compact()` additionally refuses to replace a populated
+journal with zero records, which closes the same hole for the next format change.
+
+Changing modes migrates the data: read under the old mode, write under the new,
+fsync, rename, then unlink the source — never the other way round, so a crash
+mid-migration leaves both copies rather than neither. A store written by a
+pre-0.2.24 daemon migrates on the first start after the upgrade.
+
+A locked wallet keeps MAP and PBAP up and messages flowing to the UI, and only
+pauses what is retained: the journal does not open, nothing is replayed, and
+contact names go unresolved. The key is retried on each message poll, rate
+limited to one wallet round trip a minute, so history starts persisting within a
+minute of the user unlocking.
+
+> **Losing the keyring entry loses the retained history.** There is no escrow and
+> no plaintext copy left behind. The phone can refill part of it over MAP; sent
+> messages, which the iPhone's MAP sent folder never returns, are gone. `tether
+> --bt-retention plaintext` is the supported way to keep a readable copy.
 
 ## Credits
 

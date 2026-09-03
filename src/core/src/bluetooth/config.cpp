@@ -51,6 +51,7 @@ namespace tether::bluetooth {
         j["group_messages_enabled"] = config.group_messages_enabled;
         j["enabled"] = config.enabled;
         j["adapter"] = config.adapter;
+        j["retention"] = to_string(config.retention);
         return j.dump(2);
     }
 
@@ -68,6 +69,7 @@ namespace tether::bluetooth {
             config.group_messages_enabled = j.value("group_messages_enabled", false);
             config.enabled = j.value("enabled", true);
             config.adapter = j.value("adapter", "");
+            config.retention = retention_from_string(j.value("retention", "encrypted"));
         } catch (const std::exception&) {
             // A corrupt file must not stop the daemon; defaults are safe.
         }

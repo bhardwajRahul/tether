@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tether/bluetooth/messages.hpp"
+#include "tether/secret_store.hpp"
 
 #include <cstdint>
 #include <fstream>
@@ -12,12 +13,26 @@ namespace tether::bluetooth {
     inline constexpr size_t JOURNAL_MAX_MESSAGES = 10000;
     inline constexpr int64_t JOURNAL_MAX_AGE_SECONDS = 90LL * 24 * 3600;
 
+    // Encrypted retention keeps messages.ndjson.enc; plaintext keeps the
+    // readable messages.ndjson an older tetherd would also write. Nothing ever
+    // writes a sealed record to the plaintext name, which is what makes running
+    // an older daemon against this store harmless.
+    std::string journal_path(Retention mode);
     std::string journal_path();
 
-    // Append-only newline-delimited JSON at ~/.local/share/tether/messages.ndjson.
+    // Rewrites the journal from one mode's file into the other's and removes the
+    // source. No-op unless the source exists and the destination does not, so it
+    // is safe to call on every open. False on any refusal, including a source
+    // that could not be read.
+    bool migrate_journal(Retention from, Retention to);
+
+    // Append-only newline-delimited JSON, one record per line, mode 0600. Each
+    // record is sealed under the active retention mode.
     class MessageJournal {
     public:
-        // Creates the directory and opens the file for appending, mode 0600
+        // Creates the directory and opens the file for appending, mode 0600.
+        // False when retention is off, or when it is encrypted and the wallet
+        // has no key to offer yet: the caller then runs live-only and retries.
         bool open();
         bool is_open() const { return out_.is_open(); }
         void close();
@@ -27,7 +42,9 @@ namespace tether::bluetooth {
         // Malformed lines are skipped rather than aborting the load
         std::vector<Message> load(int64_t now) const;
 
-        // Rewrites the file to exactly `messages`, atomically.
+        // Rewrites the file to exactly `messages`, atomically. Refuses to empty
+        // a populated journal, so a read that silently produced nothing cannot
+        // destroy the history it failed to parse.
         bool compact(const std::vector<Message>& messages);
 
     private:

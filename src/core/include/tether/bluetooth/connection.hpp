@@ -96,6 +96,9 @@ namespace tether::bluetooth {
     // Why a group thread can or cannot be replied to, for the UI to show.
     ReplyEligibility group_reply_status(const std::string& thread_key, std::string& reason);
 
+    // Closes the message journal and drops the in-memory history.
+    void discard_retained_messages();
+
     void set_group_replies_enabled(bool enabled);
     void reload_group_rosters();
 

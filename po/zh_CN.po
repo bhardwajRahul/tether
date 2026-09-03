@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -99,6 +99,10 @@ msgid "Reply in one conversation."
 msgstr "在某个会话中回复。"
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr "列出 iPhone 通讯录，或按姓名或号码搜索。"
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "通过蓝牙与 iPhone 配对。"
 
@@ -131,6 +135,12 @@ msgstr "开启或关闭通知镜像。"
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "镜像通知的标题和正文，而不只是所属 App。"
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
+msgstr "消息记录和通讯录在磁盘上的保存方式。encrypted 使用桌面密钥环中的密钥；none 会删除已存储的内容且不再保留任何内容。"
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -409,6 +419,31 @@ msgid_plural "({} unread)"
 msgstr[0] "（{} 条未读）"
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Restart it with:\n"
+"    systemctl --user restart tetherd\n"
+msgstr "正在运行的 tetherd 是 {}，而此处是 tether {}。请用以下命令重启:\n    systemctl --user restart tetherd\n"
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr "较旧的版本"
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr "无法从守护进程读取通讯录。\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr "暂无通讯录。请检查 'tether --bt-connection'。\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr "没有匹配 %s 的联系人\n"
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr "无法从守护进程读取信息。\n"
 
@@ -532,6 +567,20 @@ msgstr "通知镜像已启用。"
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "通知镜像已停用。"
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr "应为 encrypted、plaintext 或 none，例如 --bt-retention encrypted\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr "正在删除已存储的消息和通讯录。\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
+msgstr "保留方式已设为 %s。\n"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
@@ -1283,6 +1332,29 @@ msgid ""
 msgstr ""
 "向 iPhone 请求每条通知的标题和正文，而不只是发送它的 App。iPhone 自身的“显示"
 "信息通知”开关仍需保持开启。"
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr "保留消息记录："
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr "加密"
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr "不加密"
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr "不保留"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr "消息和通讯录在这台计算机上的存储方式。「加密」会用桌面密钥环中的密钥保存。「不保留」会删除已存储的内容且不再保留任何内容。"
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

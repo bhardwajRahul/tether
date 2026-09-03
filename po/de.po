@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: German\n"
@@ -100,6 +100,10 @@ msgid "Reply in one conversation."
 msgstr "In einer Unterhaltung antworten."
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr "Kontakte des iPhones auflisten oder nach Name oder Nummer durchsuchen."
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Ein iPhone per Bluetooth koppeln."
 
@@ -135,6 +139,12 @@ msgstr "Die Spiegelung von Mitteilungen ein- oder ausschalten."
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "Titel und Text der Mitteilungen spiegeln, nicht nur die App."
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
+msgstr "Wie Nachrichtenverlauf und Kontakte auf der Festplatte abgelegt werden. encrypted verwendet einen Schlüssel aus dem Schlüsselbund der Arbeitsumgebung; none löscht das Gespeicherte und behält nichts weiter."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -426,6 +436,31 @@ msgstr[0] "({} ungelesen)"
 msgstr[1] "({} ungelesen)"
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Restart it with:\n"
+"    systemctl --user restart tetherd\n"
+msgstr "Der laufende tetherd ist {}, dies hier ist aber tether {}. Starten Sie ihn neu mit:\n    systemctl --user restart tetherd\n"
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr "ein älterer Build"
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr "Die Kontakte konnten nicht vom Daemon gelesen werden.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr "Noch keine Kontakte. Prüfen Sie 'tether --bt-connection'.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr "Keine Kontakte passen zu %s\n"
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr "Die Nachrichten konnten nicht vom Daemon gelesen werden.\n"
 
@@ -561,6 +596,20 @@ msgstr "Spiegelung von Mitteilungen eingeschaltet."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "Spiegelung von Mitteilungen ausgeschaltet."
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr "Erwartet wurde encrypted, plaintext oder none, z. B. --bt-retention encrypted\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr "Gespeicherte Nachrichten und Kontakte werden gelöscht.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
+msgstr "Aufbewahrung auf %s gesetzt.\n"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
@@ -1367,6 +1416,29 @@ msgstr ""
 "Das iPhone nach Titel und Text jeder Mitteilung fragen, nicht nur nach der "
 "sendenden App. Die Einstellung „Nachrichtenmitteilungen anzeigen“ am Telefon "
 "muss weiterhin aktiv sein."
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr "Nachrichtenverlauf aufbewahren:"
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr "Verschlüsselt"
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr "Unverschlüsselt"
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr "Nicht aufbewahren"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr "Wo Nachrichten und Kontakte auf diesem Rechner gespeichert werden. Verschlüsselt bewahrt sie mit einem Schlüssel in Ihrem Schlüsselbund auf. Nicht aufbewahren löscht das bereits Gespeicherte und behält nichts weiter."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

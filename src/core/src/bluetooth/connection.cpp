@@ -9,6 +9,7 @@
 #include "tether/bluetooth/pairing.hpp"
 #include "tether/bluetooth/pbap_session.hpp"
 #include "tether/log.hpp"
+#include "tether/secret_store.hpp"
 #include <tether/i18n.hpp>
 
 #include <algorithm>
@@ -159,6 +160,13 @@ namespace tether::bluetooth {
         std::lock_guard<std::mutex> lock(g_messages_mutex);
         return resolve_group_recipients(
             info, thread_key, contact_store(), rosters, g_group_replies_enabled, recipients, reason);
+    }
+
+    void discard_retained_messages() {
+        std::lock_guard<std::mutex> lock(g_messages_mutex);
+        g_journal.close();
+        g_messages = MessageStore();
+        contact_store() = ContactStore();
     }
 
     void set_group_replies_enabled(bool enabled) {
@@ -696,12 +704,22 @@ namespace tether::bluetooth {
     }
 
     // Pulls the inbox and folds it into the store, announcing anything new.
-    //
-    // ponytail: polling only. MAP's notification service would push new mail
-    // instead, but obexd surfaces it as ObjectManager signals on the session bus,
-    // which is a second watcher to build and maintain. Dedupe by handle makes
-    // polling correct either way; add MNS if the poll latency proves annoying.
     void ConnectionState::sync_messages(int64_t now) {
+        // The journal stays shut when the wallet was locked at startup
+        {
+            std::lock_guard<std::mutex> lock(g_messages_mutex);
+            if (!g_journal.is_open() && secret::retention() != Retention::None && secret::have_key()) {
+                if (g_journal.open()) {
+                    contact_store() = load_contacts();
+                    auto history = g_journal.load(now);
+                    for (const auto& message : history)
+                        g_messages.add(message);
+                    g_journal.compact(history);
+                    debug::log(INFO, "bluetooth: wallet unlocked; replayed {} message(s)", history.size());
+                }
+            }
+        }
+
         if (!profiles->status().map_open) {
             if (!open_map_path.empty()) {
                 std::lock_guard<std::mutex> lock(g_map_mutex);

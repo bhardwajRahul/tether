@@ -40,6 +40,10 @@ namespace tether {
     nlohmann::json build_bt_status();
     nlohmann::json build_bt_devices();
 
+    // How many contacts a bt_list_contacts answers with when the caller does not say.
+    inline constexpr size_t BT_CONTACTS_DEFAULT_LIMIT = 100;
+    nlohmann::json build_bt_contacts(const std::string& query, size_t limit = BT_CONTACTS_DEFAULT_LIMIT);
+
     // Whether mDNS is usable (avahi-daemon is running). False until the
     // Avahi client reports otherwise. Setting it pushes an "mdns_status" event
     // to local subscribers.

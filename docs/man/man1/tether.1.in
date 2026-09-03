@@ -94,6 +94,21 @@ Show messages in one conversation.
 \fB\-\-bt-send\fR \fITHREAD\fR \fITEXT\fR
 Reply in one conversation.
 .TP
+\fB\-\-bt-contacts\fR [\fIQUERY\fR]
+List iPhone contacts, or search them by name, number or email address. Prints each
+contact's name followed by its addresses, one per line, in the same
+\fItel:\fR/\fIemail:\fR form \fB\-\-bt-send\fR takes as its conversation.
+.TP
+\fB\-\-bt-retention\fR \fIencrypted\fR|\fIplaintext\fR|\fInone\fR
+How message history and the contact cache are kept on disk. \fIencrypted\fR, the
+default, seals them with a key from the desktop keyring, falling back to a 0600
+key file on a host with no secret service. \fIplaintext\fR keeps the readable
+files earlier versions wrote. \fInone\fR deletes what is already stored and
+retains nothing further.
+.IP
+Losing the keyring entry loses the retained history: there is no escrow and no
+plaintext copy is left behind.
+.TP
 \fB\-\-bt-notifications\fR
 List mirrored iPhone notifications.
 .TP

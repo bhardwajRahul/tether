@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Brazilian Portuguese\n"
@@ -101,6 +101,10 @@ msgid "Reply in one conversation."
 msgstr "Responder em uma conversa."
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr "Listar os contatos do iPhone, ou procurá-los por nome ou número."
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Parear com um iPhone por Bluetooth."
 
@@ -135,6 +139,12 @@ msgstr "Ativar ou desativar o espelhamento de notificações."
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "Espelhar títulos e texto das notificações, não apenas o app."
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
+msgstr "Como o histórico de mensagens e os contatos são guardados em disco. encrypted usa uma chave do chaveiro da área de trabalho; none apaga o que está armazenado e não guarda mais nada."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -424,6 +434,31 @@ msgstr[0] "({} não lida)"
 msgstr[1] "({} não lidas)"
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Restart it with:\n"
+"    systemctl --user restart tetherd\n"
+msgstr "O tetherd em execução é {}, mas este é o tether {}. Reinicie-o com:\n    systemctl --user restart tetherd\n"
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr "uma versão mais antiga"
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr "Não foi possível ler os contatos no daemon.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr "Ainda não há contatos. Verifique 'tether --bt-connection'.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr "Nenhum contato corresponde a %s\n"
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr "Não foi possível ler as mensagens no daemon.\n"
 
@@ -554,6 +589,20 @@ msgstr "Espelhamento de notificações ativado."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "Espelhamento de notificações desativado."
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr "Esperado encrypted, plaintext ou none, p. ex. --bt-retention encrypted\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr "Apagando as mensagens e os contatos armazenados.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
+msgstr "Retenção definida como %s.\n"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
@@ -1351,6 +1400,29 @@ msgstr ""
 "Pede ao iPhone o título e o texto de cada notificação, não apenas qual app a "
 "enviou. A opção \"Mostrar Notificações de Mensagens\" do próprio telefone "
 "ainda precisa estar ativada."
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr "Guardar o histórico de mensagens:"
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr "Criptografado"
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr "Sem criptografia"
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr "Não guardar"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr "Onde as mensagens e os contatos são armazenados neste computador. Criptografado os guarda com uma chave no chaveiro da sua área de trabalho. Não guardar apaga o que já está armazenado e não guarda mais nada."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

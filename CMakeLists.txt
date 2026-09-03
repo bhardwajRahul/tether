@@ -33,6 +33,7 @@ pkg_check_modules(WAYLAND REQUIRED IMPORTED_TARGET wayland-client)
 pkg_check_modules(AVAHI REQUIRED IMPORTED_TARGET avahi-client)
 find_package(OpenSSL REQUIRED)
 find_package(Intl REQUIRED)
+pkg_check_modules(SECRET REQUIRED IMPORTED_TARGET libsecret-1)
 
 include(FetchContent)
 

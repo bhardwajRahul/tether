@@ -1,8 +1,10 @@
 #include "tether/bluetooth/journal.hpp"
 #include "tether/log.hpp"
+#include "tether/secret_store.hpp"
 
 #include <algorithm>
 #include <cstdlib>
+#include <fcntl.h>
 #include <filesystem>
 #include <map>
 #include <nlohmann/json.hpp>
@@ -29,22 +31,41 @@ namespace tether::bluetooth {
                                          ec);
         }
 
+        // Flushes a file to disk before anything is renamed over or unlinked.
+        void sync_path(const std::string& path) {
+            const int fd = ::open(path.c_str(), O_RDONLY);
+            if (fd < 0)
+                return;
+            ::fsync(fd);
+            ::close(fd);
+        }
+
+        Retention other_mode(Retention mode) {
+            return mode == Retention::Encrypted ? Retention::Plaintext : Retention::Encrypted;
+        }
+
     } // namespace
 
-    std::string journal_path() {
+    std::string journal_path(Retention mode) {
         std::string home = home_dir();
-        if (home.empty())
+        if (home.empty() || mode == Retention::None)
             return {};
-        return (std::filesystem::path(home) / ".local" / "share" / "tether" / "messages.ndjson").string();
+        const std::filesystem::path dir = std::filesystem::path(home) / ".local" / "share" / "tether";
+        return (dir / (mode == Retention::Encrypted ? "messages.ndjson.enc" : "messages.ndjson")).string();
     }
 
+    std::string journal_path() { return journal_path(secret::retention()); }
+
     std::string serialize_message_line(const Message& message) {
-        return to_json(message).dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        return secret::seal(to_json(message).dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
     }
 
     bool deserialize_message_line(const std::string& line, Message& out) {
+        std::string text;
+        if (!secret::unseal(line, text))
+            return false;
         try {
-            auto j = nlohmann::json::parse(line);
+            auto j = nlohmann::json::parse(text);
             if (!j.is_object())
                 return false;
             Message message;
@@ -97,13 +118,91 @@ namespace tether::bluetooth {
         return messages;
     }
 
+    bool migrate_journal(Retention from, Retention to) {
+        const std::string source = journal_path(from);
+        const std::string destination = journal_path(to);
+        if (source.empty() || destination.empty() || source == destination)
+            return false;
+        if (!std::filesystem::exists(source) || std::filesystem::exists(destination))
+            return false;
+
+        std::ifstream in(source);
+        if (!in.is_open())
+            return false;
+
+        std::vector<std::string> records;
+        std::string line;
+        size_t unreadable = 0;
+        while (std::getline(in, line)) {
+            if (line.empty())
+                continue;
+            std::string text;
+            if (secret::unseal(line, text, from))
+                records.push_back(std::move(text));
+            else
+                ++unreadable;
+        }
+        in.close();
+
+        if (records.empty() && unreadable) {
+            debug::log(WARN, "bluetooth: cannot read {} to migrate it; leaving it in place", source);
+            return false;
+        }
+
+        std::error_code ec;
+        std::filesystem::create_directories(std::filesystem::path(destination).parent_path(), ec);
+
+        const std::string tmp = destination + ".tmp";
+        {
+            std::ofstream out(tmp, std::ios::trunc);
+            if (!out.is_open()) {
+                debug::log(ERR, "bluetooth: cannot write {}", tmp);
+                return false;
+            }
+            for (const auto& record : records) {
+                const std::string sealed = secret::seal(record, to);
+                if (sealed.empty())
+                    return false;
+                out << sealed << "\n";
+            }
+            if (!out) {
+                debug::log(ERR, "bluetooth: failed writing {}", tmp);
+                return false;
+            }
+        }
+        restrict_permissions(tmp);
+
+        // The source is deleted immediately after, so the replacement has to be on disk first.
+        sync_path(tmp);
+        std::filesystem::rename(tmp, destination, ec);
+        if (ec) {
+            debug::log(ERR, "bluetooth: cannot replace {}: {}", destination, ec.message());
+            std::filesystem::remove(tmp, ec);
+            return false;
+        }
+        sync_path(std::filesystem::path(destination).parent_path().string());
+
+        std::filesystem::remove(source, ec);
+        debug::log(INFO, "bluetooth: migrated {} message(s) to {} retention", records.size(), to_string(to));
+        return true;
+    }
+
     bool MessageJournal::open() {
-        path_ = journal_path();
+        const Retention mode = secret::retention();
+        if (mode == Retention::None)
+            return false;
+        // Encrypted set but a locked or unreachable wallet: stay live-only
+        if (!secret::have_key())
+            return false;
+
+        path_ = journal_path(mode);
         if (path_.empty())
             return false;
 
         std::error_code ec;
         std::filesystem::create_directories(std::filesystem::path(path_).parent_path(), ec);
+
+        migrate_journal(other_mode(mode), mode);
 
         out_.open(path_, std::ios::app);
         if (!out_.is_open()) {
@@ -122,7 +221,12 @@ namespace tether::bluetooth {
     void MessageJournal::append(const Message& message) {
         if (!out_.is_open())
             return;
-        out_ << serialize_message_line(message) << "\n";
+
+        const std::string line = serialize_message_line(message);
+        if (line.empty())
+            return;
+
+        out_ << line << "\n";
         out_.flush();
     }
 
@@ -159,6 +263,12 @@ namespace tether::bluetooth {
             return false;
 
         std::error_code ec;
+
+        if (messages.empty() && std::filesystem::file_size(path, ec) > 0 && !ec) {
+            debug::log(WARN, "bluetooth: refusing to empty a populated journal");
+            return false;
+        }
+
         std::filesystem::create_directories(std::filesystem::path(path).parent_path(), ec);
 
         const std::string tmp = path + ".tmp";
@@ -168,8 +278,14 @@ namespace tether::bluetooth {
                 debug::log(ERR, "bluetooth: cannot write {}", tmp);
                 return false;
             }
-            for (const auto& message : messages)
-                out << serialize_message_line(message) << "\n";
+            for (const auto& message : messages) {
+                const std::string line = serialize_message_line(message);
+                if (line.empty()) {
+                    debug::log(ERR, "bluetooth: cannot seal the journal; leaving {} as it was", path);
+                    return false;
+                }
+                out << line << "\n";
+            }
             if (!out) {
                 debug::log(ERR, "bluetooth: failed writing {}", tmp);
                 return false;

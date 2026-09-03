@@ -17,6 +17,7 @@
 #include <tether/extension_host.hpp>
 #include <tether/i18n.hpp>
 #include <tether/log.hpp>
+#include <tether/version.hpp>
 #include <thread>
 #include <unistd.h>
 #include <vector>
@@ -190,6 +191,7 @@ static const Opt kOptions[] = {
     {"--bt-threads", N_("List iPhone message conversations.")},
     {"--bt-messages <thread>", N_("Show messages in one conversation.")},
     {"--bt-send <thread> <text>", N_("Reply in one conversation.")},
+    {"--bt-contacts [query]", N_("List iPhone contacts, or search them by name or number.")},
     {"--bt-pair <addr> [--explicit-pair]", N_("Pair with an iPhone over Bluetooth.")},
     {"--explicit-pair",
      N_("Ask the iPhone to authenticate directly instead of connecting first. Tether falls back to this on "
@@ -201,6 +203,9 @@ static const Opt kOptions[] = {
     {"--bt-enable <on|off>", N_("Connect to the iPhone over Bluetooth, or stop.")},
     {"--bt-ancs <on|off>", N_("Turn notification mirroring on or off.")},
     {"--bt-ancs-content <on|off>", N_("Mirror notification titles and bodies, not just the app.")},
+    {"--bt-retention <encrypted|plaintext|none>",
+     N_("How message history and contacts are kept on disk. Encrypted uses a key from the desktop keyring; "
+        "none deletes what is stored and keeps nothing further.")},
     {"--bt-adapter <hciN|auto>", N_("Choose which Bluetooth controller to use.")},
     {"--bt-notifications", N_("List mirrored iPhone notifications.")},
     {"--bt-diagnostics", N_("Print a redacted Bluetooth report for a bug report.")},
@@ -655,6 +660,61 @@ static int print_bt_threads(tether::Client& client) {
     return 0;
 }
 
+// A package upgrade replaces the binaries but leaves the old tetherd running.
+static void warn_if_daemon_is_older(tether::Client& client) {
+    std::string running;
+    try {
+        auto status = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_status\"}\n"));
+        running = status.value("version", "");
+    } catch (const std::exception&) {
+        return;
+    }
+    if (running == TETHER_VERSION)
+        return;
+
+    // No version field at all means a daemon older than the field itself.
+    debug::log(ERR,
+               _("The running tetherd is {}, but this is tether {}. Restart it with:\n"
+                 "    systemctl --user restart tetherd\n"),
+               running.empty() ? _("an older build") : running.c_str(),
+               TETHER_VERSION);
+}
+
+static int print_bt_contacts(tether::Client& client, const std::string& query) {
+    nlohmann::json request;
+    request["command"] = "bt_list_contacts";
+    request["query"] = query;
+
+    nlohmann::json resp;
+    try {
+        resp = nlohmann::json::parse(client.send_and_wait(request.dump() + "\n"));
+    } catch (const std::exception&) {
+        debug::log(ERR, _("Could not read contacts from the daemon.\n"));
+        warn_if_daemon_is_older(client);
+        return 1;
+    }
+
+    const auto& contacts = resp["contacts"];
+    if (contacts.empty()) {
+        if (query.empty())
+            fprintf(stdout, _("No contacts yet. Check 'tether --bt-connection'.\n"));
+        else
+            fprintf(stdout, _("No contacts match %s\n"), query.c_str());
+        return 0;
+    }
+
+    // Name then addresses, one address per line
+    for (const auto& c : contacts) {
+        // A vCard with addresses but no FN would start its block with a blank line
+        const std::string name = c.value("name", "");
+        if (!name.empty())
+            fprintf(stdout, "  %s\n", name.c_str());
+        for (const auto& address : c["addresses"])
+            fprintf(stdout, "      %s\n", address.get<std::string>().c_str());
+    }
+    return 0;
+}
+
 static int print_bt_messages(tether::Client& client, const std::string& thread) {
     nlohmann::json request;
     request["command"] = "bt_list_messages";
@@ -777,6 +837,10 @@ int main(int argc, char* argv[]) {
             action = "bt_diagnostics";
         } else if (arg == "--bt-threads") {
             action = "bt_threads";
+        } else if (arg == "--bt-contacts") {
+            action = "bt_contacts";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
         } else if (arg == "--bt-messages") {
             action = "bt_messages";
             if (i + 1 < argc && argv[i + 1][0] != '-')
@@ -799,6 +863,10 @@ int main(int argc, char* argv[]) {
                 arg_val = argv[++i];
         } else if (arg == "--bt-ancs-content") {
             action = "bt_ancs_content";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
+        } else if (arg == "--bt-retention") {
+            action = "bt_retention";
             if (i + 1 < argc && argv[i + 1][0] != '-')
                 arg_val = argv[++i];
         } else if (arg == "--bt-adapter") {
@@ -961,6 +1029,8 @@ int main(int argc, char* argv[]) {
         return print_bt_diagnostics(client);
     } else if (action == "bt_threads") {
         return print_bt_threads(client);
+    } else if (action == "bt_contacts") {
+        return print_bt_contacts(client, arg_val);
     } else if (action == "bt_notifications") {
         return print_bt_notifications(client);
     } else if (action == "bt_messages") {
@@ -1023,6 +1093,22 @@ int main(int argc, char* argv[]) {
                 "%s\n",
                 content ? (on ? _("Notification contents enabled.") : _("Notification contents disabled."))
                         : (on ? _("Notification mirroring enabled.") : _("Notification mirroring disabled.")));
+    } else if (action == "bt_retention") {
+        if (arg_val != "encrypted" && arg_val != "plaintext" && arg_val != "none") {
+            debug::log(ERR, _("Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"));
+            return 1;
+        }
+        if (arg_val == "none")
+            fprintf(stdout, _("Deleting stored messages and contacts.\n"));
+
+        nlohmann::json request;
+        request["command"] = "bt_set_retention";
+        request["retention"] = arg_val;
+        if (!client.send(request.dump() + "\n")) {
+            debug::log(ERR, _("Could not reach the daemon.\n"));
+            return 1;
+        }
+        fprintf(stdout, _("Retention set to %s.\n"), arg_val.c_str());
     } else if (action == "bt_adapter") {
         if (arg_val.empty()) {
             debug::log(ERR, _("Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"));
