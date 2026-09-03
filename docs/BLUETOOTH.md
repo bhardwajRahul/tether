@@ -1477,3 +1477,45 @@ Fixed by giving `btmgmt` a pipe everywhere it is spawned: `echo |` in the unit, 
 and in `bt-probe.sh`, and a real stdin pipe closed immediately for EOF in `probe_secure_connections()`.
 The unit also grew `TimeoutStartSec=60`, because `Type=oneshot` defaults to no start timeout -- that
 is why a stall wedged `bluetooth.service` and everything ordered after it instead of failing.
+
+### 2026-09-02 - `tetherd` segfaulted every time supervision was restarted
+
+Reported as #110: three SIGSEGVs in ~20 hours, always with the iPhone (re)connecting while
+supervision was restarting. The core showed `~ProfileSupervisor` running inside
+`ConnectionManager::start()` on one thread and `stop()` joining the worker on another, with the
+destructor reading unmapped memory.
+
+The concurrency in the core was real but not the fault. `start()` replaced the per-device objects
+in the wrong order:
+
+```
+state_->profile_ops = std::make_unique<ObexProfileOps>(address);          // frees the old ops
+state_->profiles    = std::make_unique<ProfileSupervisor>(*profile_ops);  // destroys the old supervisor
+```
+
+`ProfileSupervisor` holds `ProfileOps&` and its destructor calls `reset()`, which removes both
+obexd sessions through that reference -- the destructor added on 2026-08-29 so sessions are not
+abandoned. `stop()` cleared every other piece of per-device state but left these four
+`unique_ptr`s alone, so on every `set_device()` after the first the old supervisor was still
+alive when `start()` freed the ops underneath it. The destructor then read `conn_` out of freed
+memory and made a D-Bus call through it. That is a deterministic use-after-free on a restart, not
+a rare race, and the two earlier `error 15` crashes are the same object reached through a
+dangling pointer.
+
+Fixed:
+
+- `stop()` releases the per-device objects in dependency order -- supervisors, then the ops they
+  borrow -- so `start()` only ever builds into empty pointers.
+- `start()`, `stop()` and `set_device()` are serialized on a lifecycle mutex, held across both
+  halves of a restart. Every caller reaches them from a detached thread (`run_bt_pair()`,
+  `restart_supervision()`), and nothing had ordered them. The supervisor thread never takes it,
+  so `stop()` can join under it.
+- The ANCS client is a `shared_ptr` behind its own mutex. `notifications()` and
+  `perform_notification_action()` are served on a command thread while the supervisor thread
+  rebuilds the client in `apply_ancs_preference()` and `stop()` releases it; a caller now holds
+  the client alive for as long as it is inside it. `AncsClientState::ready` is atomic for the
+  same reason.
+
+Still open: `AncsClientState`'s GATT signal callbacks run on the GLib thread and are unsubscribed
+from whichever thread destroys the client, so a callback in flight during teardown remains a
+narrow window. It needs the unsubscribe routed through `BluezMonitor::invoke_sync()`.
