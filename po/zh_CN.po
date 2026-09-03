@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 20:38-0700\n"
+"POT-Creation-Date: 2026-09-03 11:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -140,7 +140,9 @@ msgstr "镜像通知的标题和正文，而不只是所属 App。"
 msgid ""
 "How message history and contacts are kept on disk. Encrypted uses a key from "
 "the desktop keyring; none deletes what is stored and keeps nothing further."
-msgstr "消息记录和通讯录在磁盘上的保存方式。encrypted 使用桌面密钥环中的密钥；none 会删除已存储的内容且不再保留任何内容。"
+msgstr ""
+"消息记录和通讯录在磁盘上的保存方式。encrypted 使用桌面密钥环中的密钥；none 会"
+"删除已存储的内容且不再保留任何内容。"
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -418,15 +420,17 @@ msgid "({} unread)"
 msgid_plural "({} unread)"
 msgstr[0] "（{} 条未读）"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid ""
 "The running tetherd is {}, but this is tether {}. Stop it and it\n"
 "restarts on demand:\n"
 "    pkill tetherd\n"
-msgstr "正在运行的 tetherd 是 {}，而此处是 tether {}。停止它，它会按需重新启动:\n    pkill tetherd\n"
+msgstr ""
+"正在运行的 tetherd 是 {}，而此处是 tether {}。停止它，它会按需重新启动:\n"
+"    pkill tetherd\n"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
 msgstr "较旧的版本"
 
@@ -781,11 +785,14 @@ msgstr "在与设备建立绑定之前，bearer API 的支持情况无法确认�
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
-"derived, so notification mirroring cannot work on it. Delete this computer "
-"on the iPhone (Forget This Device) and pair again."
-msgstr ""
-"已与设备建立绑定，但绑定仅覆盖 BR/EDR —— 没有派生出 LE 密钥，因此通知镜像无法"
-"工作。请在 iPhone 上删除这台电脑（忽略此设备），然后重新配对。"
+"derived, so notification mirroring cannot work on it."
+msgstr "已与设备建立绑定，但绑定仅覆盖 BR/EDR —— 没有派生出 LE 密钥，因此通知镜像无法工作。"
+
+#: src/core/src/bluetooth/objects.cpp
+msgid ""
+"This adapter cannot solicit ANCS, so notification mirroring is unavailable "
+"on it and re-pairing will not change that."
+msgstr "此适配器无法请求 ANCS，因此其上无法使用通知镜像，重新配对也不会改变这一点。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -794,6 +801,10 @@ msgid ""
 msgstr ""
 "此控制器上的 Secure Connections 已关闭，正是它阻止了密钥派生；在开启之前，重"
 "新配对无济于事。"
+
+#: src/core/src/bluetooth/objects.cpp
+msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
+msgstr "请在 iPhone 上删除这台电脑（忽略此设备），然后重新配对。"
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1355,7 +1366,9 @@ msgid ""
 "Where messages and contacts are stored on this computer. Encrypted keeps "
 "them with a key in your desktop keyring. Do not keep deletes what is already "
 "stored and retains nothing further."
-msgstr "消息和通讯录在这台计算机上的存储方式。「加密」会用桌面密钥环中的密钥保存。「不保留」会删除已存储的内容且不再保留任何内容。"
+msgstr ""
+"消息和通讯录在这台计算机上的存储方式。「加密」会用桌面密钥环中的密钥保存。"
+"「不保留」会删除已存储的内容且不再保留任何内容。"
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

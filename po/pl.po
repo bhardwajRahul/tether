@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 20:38-0700\n"
+"POT-Creation-Date: 2026-09-03 11:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Polish\n"
@@ -144,7 +144,10 @@ msgstr "Kopiuj tytuły i treść powiadomień, nie tylko aplikację."
 msgid ""
 "How message history and contacts are kept on disk. Encrypted uses a key from "
 "the desktop keyring; none deletes what is stored and keeps nothing further."
-msgstr "Jak historia wiadomości i kontakty są przechowywane na dysku. encrypted używa klucza z pęku kluczy środowiska; none usuwa zapisane dane i niczego dalej nie przechowuje."
+msgstr ""
+"Jak historia wiadomości i kontakty są przechowywane na dysku. encrypted "
+"używa klucza z pęku kluczy środowiska; none usuwa zapisane dane i niczego "
+"dalej nie przechowuje."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -438,15 +441,18 @@ msgstr[0] "({} nieprzeczytana)"
 msgstr[1] "({} nieprzeczytane)"
 msgstr[2] "({} nieprzeczytanych)"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid ""
 "The running tetherd is {}, but this is tether {}. Stop it and it\n"
 "restarts on demand:\n"
 "    pkill tetherd\n"
-msgstr "Działający tetherd to {}, a to jest tether {}. Zatrzymaj go; uruchomi się ponownie na żądanie:\n    pkill tetherd\n"
+msgstr ""
+"Działający tetherd to {}, a to jest tether {}. Zatrzymaj go; uruchomi się "
+"ponownie na żądanie:\n"
+"    pkill tetherd\n"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
 msgstr "starsza wersja"
 
@@ -597,7 +603,8 @@ msgstr "Kopiowanie powiadomień wyłączone."
 
 #: src/cli/main.cpp
 msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
-msgstr "Oczekiwano encrypted, plaintext lub none, np. --bt-retention encrypted\n"
+msgstr ""
+"Oczekiwano encrypted, plaintext lub none, np. --bt-retention encrypted\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -831,12 +838,14 @@ msgstr ""
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
-"derived, so notification mirroring cannot work on it. Delete this computer "
-"on the iPhone (Forget This Device) and pair again."
-msgstr ""
-"Urządzenie jest powiązane, ale powiązanie obejmuje tylko BR/EDR -- nie "
-"wyprowadzono kluczy LE, więc kopiowanie powiadomień nie może na nim działać. "
-"Usuń ten komputer na iPhonie (Zapomnij to urządzenie) i sparuj ponownie."
+"derived, so notification mirroring cannot work on it."
+msgstr "Urządzenie jest powiązane, ale powiązanie obejmuje tylko BR/EDR -- nie wyprowadzono kluczy LE, więc kopiowanie powiadomień nie może na nim działać."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid ""
+"This adapter cannot solicit ANCS, so notification mirroring is unavailable "
+"on it and re-pairing will not change that."
+msgstr "Ten adapter nie może zażądać ANCS, więc kopiowanie powiadomień jest na nim niedostępne, a ponowne sparowanie tego nie zmieni."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -846,6 +855,10 @@ msgstr ""
 "Secure Connections jest wyłączone na tym kontrolerze i właśnie to blokuje "
 "wyprowadzenie kluczy; ponowne parowanie nie pomoże, dopóki nie zostanie "
 "włączone."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
+msgstr "Usuń ten komputer na iPhonie (Zapomnij to urządzenie) i sparuj ponownie."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1426,7 +1439,10 @@ msgid ""
 "Where messages and contacts are stored on this computer. Encrypted keeps "
 "them with a key in your desktop keyring. Do not keep deletes what is already "
 "stored and retains nothing further."
-msgstr "Gdzie na tym komputerze przechowywane są wiadomości i kontakty. Zaszyfrowane przechowuje je przy użyciu klucza z pęku kluczy. Nie przechowuj usuwa już zapisane dane i niczego dalej nie przechowuje."
+msgstr ""
+"Gdzie na tym komputerze przechowywane są wiadomości i kontakty. Zaszyfrowane "
+"przechowuje je przy użyciu klucza z pęku kluczy. Nie przechowuj usuwa już "
+"zapisane dane i niczego dalej nie przechowuje."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

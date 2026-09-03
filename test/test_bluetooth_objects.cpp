@@ -42,6 +42,20 @@ namespace {
       }
     })";
 
+    // The same adapter on a controller BlueZ gave no LEAdvertisingManager1 at all,
+    // which is what a controller reporting no LE advertising support looks like.
+    constexpr const char* ADAPTER_NO_ADVERTISING = R"({
+      '/org/bluez/hci0': {
+        'org.bluez.Adapter1': {
+          'Address': <'AC:F2:3C:AF:52:9C'>,
+          'Alias': <'btw'>,
+          'Class': <uint32 8127496>,
+          'Powered': <true>,
+          'Roles': <['central', 'peripheral']>
+        }
+      }
+    })";
+
     // An iPhone bonded on both transports, exposing MAP, PBAP and ANCS.
     constexpr const char* IPHONE_BONDED = R"({
       '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
@@ -87,7 +101,9 @@ TEST(BluetoothObjects, ParsesAdapterProperties) {
     EXPECT_TRUE(a.has_role("central"));
     EXPECT_TRUE(a.has_role("peripheral"));
     EXPECT_FALSE(a.has_role("broadcaster"));
+    EXPECT_TRUE(a.has_advertising_manager);
     EXPECT_EQ(a.advertising_instances, 15);
+    EXPECT_EQ(to_json(a)["advertising_manager"], true);
     // 8127496 == 0x7c0408: service bits set above an A/V Hands-Free base class.
     EXPECT_TRUE(a.class_is_handsfree());
 }
@@ -301,6 +317,41 @@ TEST(Capability, ClassicOnlyIphoneBondIsNamedAsSuch) {
     // The controller can still do ANCS; it is this bond that cannot. Downgrading
     // the mode would be a claim about the hardware.
     EXPECT_EQ(cap.mode, DeliveryMode::Full);
+}
+
+// A controller that cannot advertise never solicits ANCS, so the iPhone is never
+// asked for the service and no bond made on it can have an LE half. Telling that
+// user to Forget This Device and pair again sends them round a loop that cannot
+// terminate -- which is exactly what issue #118 recorded, three times over.
+TEST(Capability, NoRepairAdviceWhenTheAdapterCannotAdvertise) {
+    Payload p(join(ADAPTER_NO_ADVERTISING, R"({
+      '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
+        'org.bluez.Device1': {
+          'Paired': <true>,
+          'Bonded': <true>,
+          'UUIDs': <['00001132-0000-1000-8000-00805f9b34fb', '0000112f-0000-1000-8000-00805f9b34fb']>
+        }
+      }
+    })")
+                  .c_str());
+    auto objects = parse_managed_objects(p.v);
+    objects.experimental_api = true;
+    auto cap = resolve_capability(objects);
+
+    ASSERT_FALSE(cap.advertising);
+    ASSERT_TRUE(cap.bonded_device_present);
+    ASSERT_FALSE(cap.bond_has_le);
+
+    bool named = false;
+    for (const auto& reason : cap.reasons) {
+        if (reason.find("BR/EDR only") == std::string::npos)
+            continue;
+        named = true;
+        EXPECT_EQ(reason.find("Forget This Device"), std::string::npos) << "advises a re-pair that cannot help";
+        EXPECT_EQ(reason.find("pair again"), std::string::npos) << "advises a re-pair that cannot help";
+        EXPECT_NE(reason.find("cannot solicit ANCS"), std::string::npos) << "does not name the real cause";
+    }
+    EXPECT_TRUE(named) << "a bond with no LE half went unreported";
 }
 
 // Headsets and controllers bond over BR/EDR alone by design. Reading one of

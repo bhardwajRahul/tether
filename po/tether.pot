@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether 0.2.23\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 20:38-0700\n"
+"POT-Creation-Date: 2026-09-03 11:19-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -402,7 +402,7 @@ msgid_plural "({} unread)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid ""
 "The running tetherd is {}, but this is tether {}. Stop it and it\n"
@@ -410,7 +410,7 @@ msgid ""
 "    pkill tetherd\n"
 msgstr ""
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
 msgstr ""
 
@@ -750,14 +750,23 @@ msgstr ""
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
-"derived, so notification mirroring cannot work on it. Delete this computer "
-"on the iPhone (Forget This Device) and pair again."
+"derived, so notification mirroring cannot work on it."
+msgstr ""
+
+#: src/core/src/bluetooth/objects.cpp
+msgid ""
+"This adapter cannot solicit ANCS, so notification mirroring is unavailable "
+"on it and re-pairing will not change that."
 msgstr ""
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "Secure Connections is off on this controller, which is what blocks the "
 "derivation; re-pairing will not help until it is on."
+msgstr ""
+
+#: src/core/src/bluetooth/objects.cpp
+msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
 msgstr ""
 
 #: src/core/src/bluetooth/objects.cpp

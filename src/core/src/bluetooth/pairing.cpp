@@ -757,7 +757,8 @@ namespace tether::bluetooth {
         // "Show Message Notifications" and "Sync Contacts" toggles, and it is safe
         // to broadcast because the bond already exists.
         std::string advert_err;
-        if (start_advert(monitor, adapter_path, advert_err)) {
+        const bool soliciting = start_advert(monitor, adapter_path, advert_err);
+        if (soliciting) {
             hold_advert_for(ANCS_ADVERT_TIMEOUT_SECONDS);
             notify(progress,
                    "soliciting",
@@ -770,7 +771,11 @@ namespace tether::bluetooth {
         if (!result.dual_bond) {
             result.message += " The bond covers BR/EDR only, so messages and contacts will work but notification "
                               "mirroring will not.";
-            if (result.auth_strategy_used == AuthStrategy::ExplicitPair)
+            // nothing solicited ANCS, so the phone was never asked
+            if (!soliciting)
+                result.message += " Nothing could put the ANCS solicitation on air, so pairing again will not "
+                                  "derive the LE half.";
+            else if (result.auth_strategy_used == AuthStrategy::ExplicitPair)
                 result.message += " Only the connect-first transaction derives the LE keys, and the iPhone refused "
                                   "it this time. To try for notifications, Forget This Device on the iPhone and "
                                   "pair again.";

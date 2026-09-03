@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 20:38-0700\n"
+"POT-Creation-Date: 2026-09-03 11:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Czech\n"
@@ -143,7 +143,9 @@ msgstr "Zrcadlit názvy a text oznámení, nejen aplikaci."
 msgid ""
 "How message history and contacts are kept on disk. Encrypted uses a key from "
 "the desktop keyring; none deletes what is stored and keeps nothing further."
-msgstr "Jak se na disku uchovává historie zpráv a kontakty. encrypted použije klíč z klíčenky prostředí; none smaže uložená data a dál nic neuchovává."
+msgstr ""
+"Jak se na disku uchovává historie zpráv a kontakty. encrypted použije klíč z "
+"klíčenky prostředí; none smaže uložená data a dál nic neuchovává."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -437,15 +439,18 @@ msgstr[0] "({} nepřečtená)"
 msgstr[1] "({} nepřečtené)"
 msgstr[2] "({} nepřečtených)"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid ""
 "The running tetherd is {}, but this is tether {}. Stop it and it\n"
 "restarts on demand:\n"
 "    pkill tetherd\n"
-msgstr "Běžící tetherd je {}, ale toto je tether {}. Zastavte jej; spustí se znovu podle potřeby:\n    pkill tetherd\n"
+msgstr ""
+"Běžící tetherd je {}, ale toto je tether {}. Zastavte jej; spustí se znovu "
+"podle potřeby:\n"
+"    pkill tetherd\n"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
 msgstr "starší sestavení"
 
@@ -595,7 +600,8 @@ msgstr "Zrcadlení oznámení vypnuto."
 
 #: src/cli/main.cpp
 msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
-msgstr "Očekáváno encrypted, plaintext nebo none, např. --bt-retention encrypted\n"
+msgstr ""
+"Očekáváno encrypted, plaintext nebo none, např. --bt-retention encrypted\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -823,12 +829,14 @@ msgstr "Podpora bearer API zůstává nepotvrzená, dokud není zařízení svá
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
-"derived, so notification mirroring cannot work on it. Delete this computer "
-"on the iPhone (Forget This Device) and pair again."
-msgstr ""
-"Zařízení je svázáno, ale vazba pokrývá pouze BR/EDR -- nebyly odvozeny žádné "
-"LE klíče, takže zrcadlení oznámení na ní nemůže fungovat. Smažte tento "
-"počítač na iPhonu (Zapomenout toto zařízení) a spárujte znovu."
+"derived, so notification mirroring cannot work on it."
+msgstr "Zařízení je svázáno, ale vazba pokrývá pouze BR/EDR -- nebyly odvozeny žádné LE klíče, takže zrcadlení oznámení na ní nemůže fungovat."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid ""
+"This adapter cannot solicit ANCS, so notification mirroring is unavailable "
+"on it and re-pairing will not change that."
+msgstr "Tento adaptér nedokáže vyžádat ANCS, takže na něm není zrcadlení oznámení k dispozici a opětovné spárování to nezmění."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -837,6 +845,10 @@ msgid ""
 msgstr ""
 "Secure Connections je na tomto řadiči vypnuté a právě to blokuje odvození; "
 "opětovné spárování nepomůže, dokud nebude zapnuté."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
+msgstr "Smažte tento počítač na iPhonu (Zapomenout toto zařízení) a spárujte znovu."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1412,7 +1424,10 @@ msgid ""
 "Where messages and contacts are stored on this computer. Encrypted keeps "
 "them with a key in your desktop keyring. Do not keep deletes what is already "
 "stored and retains nothing further."
-msgstr "Kde se v tomto počítači ukládají zprávy a kontakty. Šifrovaně je uchová pomocí klíče ve vaší klíčence. Neuchovávat smaže již uložená data a dál nic neuchovává."
+msgstr ""
+"Kde se v tomto počítači ukládají zprávy a kontakty. Šifrovaně je uchová "
+"pomocí klíče ve vaší klíčence. Neuchovávat smaže již uložená data a dál nic "
+"neuchovává."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

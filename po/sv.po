@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 20:38-0700\n"
+"POT-Creation-Date: 2026-09-03 11:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Swedish\n"
@@ -144,7 +144,10 @@ msgstr "Spegla aviseringarnas rubrik och text, inte bara appen."
 msgid ""
 "How message history and contacts are kept on disk. Encrypted uses a key from "
 "the desktop keyring; none deletes what is stored and keeps nothing further."
-msgstr "Hur meddelandehistorik och kontakter sparas på disk. encrypted använder en nyckel från skrivbordets nyckelring; none raderar det som sparats och sparar inget mer."
+msgstr ""
+"Hur meddelandehistorik och kontakter sparas på disk. encrypted använder en "
+"nyckel från skrivbordets nyckelring; none raderar det som sparats och sparar "
+"inget mer."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -431,15 +434,18 @@ msgid_plural "({} unread)"
 msgstr[0] "({} oläst)"
 msgstr[1] "({} olästa)"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 #, c++-format
 msgid ""
 "The running tetherd is {}, but this is tether {}. Stop it and it\n"
 "restarts on demand:\n"
 "    pkill tetherd\n"
-msgstr "Den körande tetherd är {}, men detta är tether {}. Stoppa den; den startar om vid behov:\n    pkill tetherd\n"
+msgstr ""
+"Den körande tetherd är {}, men detta är tether {}. Stoppa den; den startar "
+"om vid behov:\n"
+"    pkill tetherd\n"
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gtk/devices_view.cpp
 msgid "an older build"
 msgstr "ett äldre bygge"
 
@@ -590,7 +596,8 @@ msgstr "Spegling av aviseringar avaktiverad."
 
 #: src/cli/main.cpp
 msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
-msgstr "Förväntade encrypted, plaintext eller none, t.ex. --bt-retention encrypted\n"
+msgstr ""
+"Förväntade encrypted, plaintext eller none, t.ex. --bt-retention encrypted\n"
 
 #: src/cli/main.cpp
 #, c-format
@@ -819,12 +826,14 @@ msgstr "Stödet för bearer-API:et är obekräftat tills en enhet är bunden."
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
 "A device is bonded, but the bond covers BR/EDR only -- no LE keys were "
-"derived, so notification mirroring cannot work on it. Delete this computer "
-"on the iPhone (Forget This Device) and pair again."
-msgstr ""
-"En enhet är bunden, men bindningen omfattar bara BR/EDR -- inga LE-nycklar "
-"härleddes, så spegling av aviseringar kan inte fungera på den. Radera den "
-"här datorn på iPhonen (Glöm denna enhet) och parkoppla igen."
+"derived, so notification mirroring cannot work on it."
+msgstr "En enhet är bunden, men bindningen omfattar bara BR/EDR -- inga LE-nycklar härleddes, så spegling av aviseringar kan inte fungera på den."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid ""
+"This adapter cannot solicit ANCS, so notification mirroring is unavailable "
+"on it and re-pairing will not change that."
+msgstr "Den här adaptern kan inte begära ANCS, så spegling av aviseringar är inte tillgänglig på den och att parkoppla igen ändrar inte det."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -833,6 +842,10 @@ msgid ""
 msgstr ""
 "Secure Connections är avstängt på den här kontrollern, och det är vad som "
 "blockerar härledningen; att parkoppla om hjälper inte förrän det är på."
+
+#: src/core/src/bluetooth/objects.cpp
+msgid "Delete this computer on the iPhone (Forget This Device) and pair again."
+msgstr "Radera den här datorn på iPhonen (Glöm denna enhet) och parkoppla igen."
 
 #: src/core/src/bluetooth/objects.cpp
 msgid ""
@@ -1408,7 +1421,10 @@ msgid ""
 "Where messages and contacts are stored on this computer. Encrypted keeps "
 "them with a key in your desktop keyring. Do not keep deletes what is already "
 "stored and retains nothing further."
-msgstr "Var meddelanden och kontakter lagras på den här datorn. Krypterat sparar dem med en nyckel i din nyckelring. Spara inte raderar det som redan lagrats och sparar inget mer."
+msgstr ""
+"Var meddelanden och kontakter lagras på den här datorn. Krypterat sparar dem "
+"med en nyckel i din nyckelring. Spara inte raderar det som redan lagrats och "
+"sparar inget mer."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
