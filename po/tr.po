@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Turkish\n"
@@ -99,6 +99,10 @@ msgid "Reply in one conversation."
 msgstr "Bir konuşmada yanıtla."
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr "iPhone kişilerini listeler veya ada ya da numaraya göre arar."
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Bluetooth üzerinden bir iPhone ile eşleş."
 
@@ -134,6 +138,12 @@ msgstr "Bildirim yansıtmayı aç ya da kapat."
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr ""
 "Yalnızca uygulamayı değil, bildirimlerin başlığını ve metnini de yansıt."
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
+msgstr "Mesaj geçmişinin ve kişilerin diskte nasıl tutulacağı. encrypted masaüstü anahtarlığındaki bir anahtarı kullanır; none saklananları siler ve başka bir şey tutmaz."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -422,6 +432,32 @@ msgstr[0] "({} okunmamış)"
 msgstr[1] "({} okunmamış)"
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Stop it and it\n"
+"restarts on demand:\n"
+"    pkill tetherd\n"
+msgstr "Çalışan tetherd {}, ancak bu tether {}. Onu durdurun; gerektiğinde yeniden başlar:\n    pkill tetherd\n"
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr "daha eski bir sürüm"
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr "Kişiler arka plan hizmetinden okunamadı.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr "Henüz kişi yok. 'tether --bt-connection' komutunu denetleyin.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr "%s ile eşleşen kişi yok\n"
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr "Mesajlar arka plan hizmetinden okunamadı.\n"
 
@@ -551,6 +587,20 @@ msgstr "Bildirim yansıtma etkinleştirildi."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "Bildirim yansıtma devre dışı bırakıldı."
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr "encrypted, plaintext veya none bekleniyordu, örn. --bt-retention encrypted\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr "Saklanan mesajlar ve kişiler siliniyor.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
+msgstr "Saklama %s olarak ayarlandı.\n"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
@@ -1334,6 +1384,29 @@ msgstr ""
 "iPhone'dan her bildirimin başlığını ve metnini ister; yalnızca hangi "
 "uygulamanın gönderdiğini değil. Telefonun kendi \"Mesaj Bildirimlerini "
 "Göster\" seçeneğinin yine de açık olması gerekir."
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr "Mesaj geçmişini sakla:"
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr "Şifreli"
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr "Şifresiz"
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr "Saklama"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr "Mesajların ve kişilerin bu bilgisayarda nerede saklanacağı. Şifreli, onları masaüstü anahtarlığınızdaki bir anahtarla saklar. Saklama, halihazırda saklananları siler ve başka bir şey tutmaz."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

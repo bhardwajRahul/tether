@@ -1,12 +1,15 @@
 #include "tether/bluetooth/contacts.hpp"
 #include "tether/bluetooth/bmessage.hpp"
 #include "tether/log.hpp"
+#include "tether/secret_store.hpp"
 
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <fcntl.h>
 #include <filesystem>
 #include <fstream>
+#include <glib.h>
 #include <pwd.h>
 #include <unistd.h>
 
@@ -99,12 +102,46 @@ namespace tether::bluetooth {
         return out;
     }
 
-    std::string contacts_path() {
-        std::string home = home_dir();
-        if (home.empty())
-            return {};
-        return (std::filesystem::path(home) / ".local" / "share" / "tether" / "contacts.json").string();
+    static std::string fold(const std::string& text) {
+        gchar* normalized = g_utf8_normalize(text.c_str(), -1, G_NORMALIZE_ALL);
+        gchar* folded = g_utf8_casefold(normalized ? normalized : text.c_str(), -1);
+        std::string out = folded ? folded : "";
+        g_free(normalized);
+        g_free(folded);
+        return out;
     }
+
+    std::vector<VCard> ContactStore::search(const std::string& needle, size_t limit) const {
+        const std::string wanted = fold(needle);
+        std::vector<VCard> out;
+        for (const auto& card : contacts_) {
+            if (out.size() >= limit)
+                break;
+            if (wanted.empty()) {
+                out.push_back(card);
+                continue;
+            }
+            std::string haystack = fold(card.name);
+            for (const auto& tel : card.tels)
+                haystack += " " + fold(tel) + " " + normalize_phone(tel);
+            for (const auto& email : card.emails)
+                haystack += " " + fold(email);
+            if (haystack.find(wanted) != std::string::npos)
+                out.push_back(card);
+        }
+        std::sort(out.begin(), out.end(), [](const VCard& a, const VCard& b) { return fold(a.name) < fold(b.name); });
+        return out;
+    }
+
+    std::string contacts_path(Retention mode) {
+        std::string home = home_dir();
+        if (home.empty() || mode == Retention::None)
+            return {};
+        const std::filesystem::path dir = std::filesystem::path(home) / ".local" / "share" / "tether";
+        return (dir / (mode == Retention::Encrypted ? "contacts.json.enc" : "contacts.json")).string();
+    }
+
+    std::string contacts_path() { return contacts_path(secret::retention()); }
 
     std::string serialize_contacts(const ContactStore& store) {
         nlohmann::json j;
@@ -116,14 +153,18 @@ namespace tether::bluetooth {
             c["emails"] = card.emails;
             j["contacts"].push_back(std::move(c));
         }
-        return j.dump(2);
+
+        return secret::seal(j.dump(2));
     }
 
     ContactStore deserialize_contacts(const std::string& text) {
         ContactStore store;
         std::vector<VCard> cards;
+        std::string plain;
+        if (!secret::unseal(text, plain))
+            return store;
         try {
-            auto j = nlohmann::json::parse(text);
+            auto j = nlohmann::json::parse(plain);
             for (const auto& c : j.value("contacts", nlohmann::json::array())) {
                 VCard card;
                 card.name = c.value("name", "");
@@ -142,7 +183,14 @@ namespace tether::bluetooth {
     }
 
     ContactStore load_contacts() {
-        std::string path = contacts_path();
+        const Retention mode = secret::retention();
+        if (mode == Retention::None || !secret::have_key())
+            return {};
+
+        // No-op unless a cache written under the other mode is still there.
+        migrate_contacts(mode == Retention::Encrypted ? Retention::Plaintext : Retention::Encrypted, mode);
+
+        std::string path = contacts_path(mode);
         if (path.empty())
             return {};
         std::ifstream in(path);
@@ -153,7 +201,16 @@ namespace tether::bluetooth {
     }
 
     bool save_contacts(const ContactStore& store) {
-        std::string path = contacts_path();
+        const Retention mode = secret::retention();
+        if (mode == Retention::None)
+            return false;
+
+        const std::string body = serialize_contacts(store);
+
+        if (body.empty())
+            return false;
+
+        std::string path = contacts_path(mode);
         if (path.empty())
             return false;
 
@@ -168,7 +225,7 @@ namespace tether::bluetooth {
                 debug::log(ERR, "bluetooth: cannot write {}", tmp);
                 return false;
             }
-            out << serialize_contacts(store);
+            out << body;
             if (!out) {
                 debug::log(ERR, "bluetooth: failed writing {}", tmp);
                 return false;
@@ -186,6 +243,70 @@ namespace tether::bluetooth {
             std::filesystem::remove(tmp, ec);
             return false;
         }
+        return true;
+    }
+
+    bool migrate_contacts(Retention from, Retention to) {
+        const std::string source = contacts_path(from);
+        const std::string destination = contacts_path(to);
+        if (source.empty() || destination.empty() || source == destination)
+            return false;
+        if (!std::filesystem::exists(source))
+            return false;
+
+        // A destination already there means an earlier migration was interrupted between
+        // the rename and the unlink.
+        if (std::filesystem::exists(destination)) {
+            std::error_code ec;
+            std::filesystem::remove(source, ec);
+            debug::log(INFO, "bluetooth: removed {}, left over from an interrupted migration", source);
+            return !ec;
+        }
+
+        std::ifstream in(source);
+        if (!in.is_open())
+            return false;
+        std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        in.close();
+
+        std::string plain;
+        if (!secret::unseal(text, plain, from)) {
+            debug::log(WARN, "bluetooth: cannot read {} to migrate it; leaving it in place", source);
+            return false;
+        }
+        const std::string sealed = secret::seal(plain, to);
+        if (sealed.empty())
+            return false;
+
+        std::error_code ec;
+        std::filesystem::create_directories(std::filesystem::path(destination).parent_path(), ec);
+
+        const std::string tmp = destination + ".tmp";
+        {
+            std::ofstream out(tmp, std::ios::trunc);
+            if (!out.is_open())
+                return false;
+            out << sealed;
+            if (!out)
+                return false;
+        }
+        std::filesystem::permissions(tmp,
+                                     std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
+                                     std::filesystem::perm_options::replace,
+                                     ec);
+
+        if (const int fd = ::open(tmp.c_str(), O_RDONLY); fd >= 0) {
+            ::fsync(fd);
+            ::close(fd);
+        }
+        std::filesystem::rename(tmp, destination, ec);
+        if (ec) {
+            debug::log(ERR, "bluetooth: cannot replace {}: {}", destination, ec.message());
+            std::filesystem::remove(tmp, ec);
+            return false;
+        }
+        std::filesystem::remove(source, ec);
+        debug::log(INFO, "bluetooth: migrated the contact cache to {} retention", to_string(to));
         return true;
     }
 

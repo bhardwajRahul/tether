@@ -18,6 +18,7 @@
 #include <tether/log.hpp>
 #include <tether/net.hpp>
 #include <tether/otp.hpp>
+#include <tether/secret_store.hpp>
 #include <tether/wayland.hpp>
 #include <unistd.h>
 
@@ -237,6 +238,10 @@ int main(int argc, char** argv) {
         // that covers LE.
         auto bt_config = tether::bluetooth::load_config();
         tether::bluetooth::g_bt_connections = &connections;
+
+        // Before anything opens the journal or the contact cache: the mode picks
+        // which file each of those lives in.
+        tether::secret::set_retention(bt_config.retention);
 
         tether::bluetooth::set_group_replies_enabled(bt_config.group_messages_enabled &&
                                                      bt_config.ancs_content_enabled && bt_config.ancs_enabled);

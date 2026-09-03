@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Polish\n"
@@ -101,6 +101,10 @@ msgid "Reply in one conversation."
 msgstr "Odpowiedz w jednej rozmowie."
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr "Wypisz kontakty z iPhone'a lub wyszukaj je według nazwy albo numeru."
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Sparuj iPhone'a przez Bluetooth."
 
@@ -135,6 +139,12 @@ msgstr "Włącz lub wyłącz kopiowanie powiadomień."
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "Kopiuj tytuły i treść powiadomień, nie tylko aplikację."
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
+msgstr "Jak historia wiadomości i kontakty są przechowywane na dysku. encrypted używa klucza z pęku kluczy środowiska; none usuwa zapisane dane i niczego dalej nie przechowuje."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -429,6 +439,32 @@ msgstr[1] "({} nieprzeczytane)"
 msgstr[2] "({} nieprzeczytanych)"
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Stop it and it\n"
+"restarts on demand:\n"
+"    pkill tetherd\n"
+msgstr "Działający tetherd to {}, a to jest tether {}. Zatrzymaj go; uruchomi się ponownie na żądanie:\n    pkill tetherd\n"
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr "starsza wersja"
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr "Nie udało się odczytać kontaktów od demona.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr "Nie ma jeszcze kontaktów. Sprawdź 'tether --bt-connection'.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr "Żaden kontakt nie pasuje do %s\n"
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr "Nie udało się odczytać wiadomości od demona.\n"
 
@@ -558,6 +594,20 @@ msgstr "Kopiowanie powiadomień włączone."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "Kopiowanie powiadomień wyłączone."
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr "Oczekiwano encrypted, plaintext lub none, np. --bt-retention encrypted\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr "Usuwanie zapisanych wiadomości i kontaktów.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
+msgstr "Przechowywanie ustawione na %s.\n"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
@@ -1354,6 +1404,29 @@ msgstr ""
 "Prosi iPhone'a o tytuł i treść każdego powiadomienia, a nie tylko o to, "
 "która aplikacja je wysłała. Opcja „Pokaż powiadomienia o wiadomościach” w "
 "telefonie i tak musi być włączona."
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr "Przechowuj historię wiadomości:"
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr "Zaszyfrowane"
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr "Niezaszyfrowane"
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr "Nie przechowuj"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr "Gdzie na tym komputerze przechowywane są wiadomości i kontakty. Zaszyfrowane przechowuje je przy użyciu klucza z pęku kluczy. Nie przechowuj usuwa już zapisane dane i niczego dalej nie przechowuje."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

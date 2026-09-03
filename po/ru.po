@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Russian\n"
@@ -101,6 +101,10 @@ msgid "Reply in one conversation."
 msgstr "Ответить в одной переписке."
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr "Показать контакты iPhone или найти их по имени либо номеру."
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Создать пару с iPhone по Bluetooth."
 
@@ -135,6 +139,12 @@ msgstr "Включить или выключить дублирование ув
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "Дублировать заголовки и текст уведомлений, а не только приложение."
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
+msgstr "Как история сообщений и контакты хранятся на диске. encrypted использует ключ из связки ключей рабочего стола; none удаляет сохранённое и больше ничего не хранит."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -429,6 +439,32 @@ msgstr[1] "({} непрочитанных)"
 msgstr[2] "({} непрочитанных)"
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Stop it and it\n"
+"restarts on demand:\n"
+"    pkill tetherd\n"
+msgstr "Запущен tetherd {}, но это tether {}. Остановите его — он запустится снова по требованию:\n    pkill tetherd\n"
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr "более старая сборка"
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr "Не удалось прочитать контакты у демона.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr "Контактов пока нет. Проверьте 'tether --bt-connection'.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr "Нет контактов, соответствующих %s\n"
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr "Не удалось прочитать сообщения у демона.\n"
 
@@ -560,6 +596,20 @@ msgstr "Дублирование уведомлений включено."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "Дублирование уведомлений выключено."
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr "Ожидалось encrypted, plaintext или none, например --bt-retention encrypted\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr "Удаление сохранённых сообщений и контактов.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
+msgstr "Хранение установлено на %s.\n"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
@@ -1354,6 +1404,29 @@ msgstr ""
 "Запрашивает у iPhone заголовок и текст каждого уведомления, а не только "
 "приложение, которое его отправило. Параметр «Показ уведомлений о сообщениях» "
 "на самом телефоне всё равно должен быть включён."
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr "Хранить историю сообщений:"
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr "Зашифрованно"
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr "Незашифрованно"
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr "Не хранить"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr "Где на этом компьютере хранятся сообщения и контакты. «Зашифрованно» хранит их с ключом в вашей связке ключей. «Не хранить» удаляет уже сохранённое и больше ничего не хранит."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

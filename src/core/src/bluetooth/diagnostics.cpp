@@ -1,4 +1,5 @@
 #include "tether/bluetooth/diagnostics.hpp"
+#include <tether/secret_store.hpp>
 
 #include "tether/bluetooth/config.hpp"
 #include "tether/bluetooth/monitor.hpp"
@@ -235,6 +236,8 @@ namespace tether::bluetooth {
         report["group_messages_enabled"] = config.group_messages_enabled;
         report["enabled"] = config.enabled;
         report["ancs_soliciting"] = ancs_solicitation_active();
+        report["retention"] = to_string(config.retention);
+        report["retention_ready"] = secret::have_key();
         report["status"] = redactor.value(status);
         report["connection"] = redactor.value(connection);
         report["timeline"] = redactor.value(diagnostic_timeline());

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Czech\n"
@@ -100,6 +100,10 @@ msgid "Reply in one conversation."
 msgstr "Odpovědět v jedné konverzaci."
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr "Vypsat kontakty z iPhonu nebo je vyhledat podle jména či čísla."
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Spárovat iPhone přes Bluetooth."
 
@@ -134,6 +138,12 @@ msgstr "Zapnout nebo vypnout zrcadlení oznámení."
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "Zrcadlit názvy a text oznámení, nejen aplikaci."
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
+msgstr "Jak se na disku uchovává historie zpráv a kontakty. encrypted použije klíč z klíčenky prostředí; none smaže uložená data a dál nic neuchovává."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -428,6 +438,32 @@ msgstr[1] "({} nepřečtené)"
 msgstr[2] "({} nepřečtených)"
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Stop it and it\n"
+"restarts on demand:\n"
+"    pkill tetherd\n"
+msgstr "Běžící tetherd je {}, ale toto je tether {}. Zastavte jej; spustí se znovu podle potřeby:\n    pkill tetherd\n"
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr "starší sestavení"
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr "Nepodařilo se načíst kontakty od démona.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr "Zatím žádné kontakty. Zkontrolujte 'tether --bt-connection'.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr "Žádné kontakty neodpovídají %s\n"
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr "Nepodařilo se načíst zprávy od démona.\n"
 
@@ -556,6 +592,20 @@ msgstr "Zrcadlení oznámení zapnuto."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "Zrcadlení oznámení vypnuto."
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr "Očekáváno encrypted, plaintext nebo none, např. --bt-retention encrypted\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr "Mažou se uložené zprávy a kontakty.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
+msgstr "Uchovávání nastaveno na %s.\n"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
@@ -1340,6 +1390,29 @@ msgstr ""
 "Žádá iPhone o název a text každého oznámení, nejen o to, která aplikace jej "
 "poslala. Volba „Zobrazovat oznámení zpráv“ v telefonu musí být přesto "
 "zapnutá."
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr "Uchovávat historii zpráv:"
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr "Šifrovaně"
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr "Nešifrovaně"
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr "Neuchovávat"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr "Kde se v tomto počítači ukládají zprávy a kontakty. Šifrovaně je uchová pomocí klíče ve vaší klíčence. Neuchovávat smaže již uložená data a dál nic neuchovává."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

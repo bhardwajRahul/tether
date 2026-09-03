@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Ukrainian\n"
@@ -102,6 +102,10 @@ msgid "Reply in one conversation."
 msgstr "Відповісти в одній розмові."
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr "Показати контакти iPhone або знайти їх за іменем чи номером."
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Створити пару з iPhone через Bluetooth."
 
@@ -136,6 +140,12 @@ msgstr "Увімкнути або вимкнути дублювання спов
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "Дублювати заголовки та текст сповіщень, а не лише програму."
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
+msgstr "Як історія повідомлень і контакти зберігаються на диску. encrypted використовує ключ зі сховища ключів стільниці; none вилучає збережене й більше нічого не зберігає."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -430,6 +440,32 @@ msgstr[1] "({} непрочитані)"
 msgstr[2] "({} непрочитаних)"
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Stop it and it\n"
+"restarts on demand:\n"
+"    pkill tetherd\n"
+msgstr "Запущено tetherd {}, але це tether {}. Зупиніть його — він запуститься знову за потреби:\n    pkill tetherd\n"
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr "старіша збірка"
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr "Не вдалося прочитати контакти у демона.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr "Контактів поки немає. Перевірте 'tether --bt-connection'.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr "Немає контактів, що відповідають %s\n"
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr "Не вдалося прочитати повідомлення у демона.\n"
 
@@ -559,6 +595,20 @@ msgstr "Дублювання сповіщень увімкнено."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "Дублювання сповіщень вимкнено."
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr "Очікувалося encrypted, plaintext або none, наприклад --bt-retention encrypted\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr "Вилучення збережених повідомлень і контактів.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
+msgstr "Зберігання встановлено на %s.\n"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
@@ -1351,6 +1401,29 @@ msgstr ""
 "Запитує в iPhone заголовок і текст кожного сповіщення, а не лише те, яка "
 "програма його надіслала. Параметр «Показ сповіщень про повідомлення» на "
 "самому телефоні все одно має бути ввімкнено."
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr "Зберігати історію повідомлень:"
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr "Зашифровано"
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr "Незашифровано"
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr "Не зберігати"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr "Де на цьому комп'ютері зберігаються повідомлення й контакти. «Зашифровано» зберігає їх із ключем у вашому сховищі ключів. «Не зберігати» вилучає вже збережене й більше нічого не зберігає."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"

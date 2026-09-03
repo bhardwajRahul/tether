@@ -111,6 +111,8 @@ namespace tether::ui {
 
         enum ComposeColumn { COMPOSE_COL_DISPLAY, COMPOSE_COL_ADDRESS, COMPOSE_COL_SEARCH, COMPOSE_COL_COUNT };
 
+        constexpr int CONTACT_COMPLETION_LIMIT = 5000;
+
         void update_composer_sensitivity();
         void update_placeholder();
         void apply_row_selection(GtkWidget* row);
@@ -799,38 +801,43 @@ namespace tether::ui {
             return out;
         }
 
-        // Read from disk rather than held: the daemon rewrites this cache after
-        // every PBAP sync, and the app outlives several of them.
-        // ponytail: a bt_list_contacts command would give the live store instead
-        // of the last saved snapshot; add it if the cache proves too stale.
-        void rebuild_contact_completion() {
+        void request_contact_completion() {
+            nlohmann::json j;
+            j["command"] = "bt_list_contacts";
+            j["limit"] = CONTACT_COMPLETION_LIMIT;
+            daemon_send(j);
+        }
+
+        void show_contact_completion(const nlohmann::json& event) {
             gtk_list_store_clear(g_messages.compose_model);
             g_messages.compose_names.clear();
+            if (!event.contains("contacts") || !event["contacts"].is_array())
+                return;
 
-            const bluetooth::ContactStore contacts = bluetooth::load_contacts();
             std::set<std::string> seen;
-            for (const auto& card : contacts.contacts()) {
-                std::vector<std::string> addresses = card.tels;
-                addresses.insert(addresses.end(), card.emails.begin(), card.emails.end());
-                for (const auto& address : addresses) {
-                    // The same validation a typed address gets, so the popup can
-                    // never offer something the send path would then refuse.
+            for (const auto& card : event["contacts"]) {
+                const std::string name = card.value("name", "");
+                if (!card.contains("addresses") || !card["addresses"].is_array())
+                    continue;
+                for (const auto& entry : card["addresses"]) {
+                    if (!entry.is_string())
+                        continue;
+
                     bluetooth::Recipient recipient;
                     std::string err;
-                    if (!bluetooth::recipient_from_input(address, recipient, err))
+                    if (!bluetooth::recipient_from_thread_key(entry.get<std::string>(), recipient, err))
                         continue;
                     const std::string key = bluetooth::thread_key_for(recipient);
                     if (key.empty() || !seen.insert(key).second)
                         continue;
-                    if (!card.name.empty())
-                        g_messages.compose_names.emplace(key, card.name);
+                    if (!name.empty())
+                        g_messages.compose_names.emplace(key, name);
 
-                    const std::string display =
-                        card.name.empty() ? recipient.address : card.name + " · " + recipient.address;
+                    const std::string display = name.empty() ? recipient.address : name + " · " + recipient.address;
                     // The normalized form is in the haystack too, so "5551234567"
                     // finds a contact whose number is stored as "+1 (555) 123-4567".
                     const std::string search =
-                        fold(card.name + " " + recipient.address + " " + key.substr(key.find(':') + 1));
+                        fold(name + " " + recipient.address + " " + key.substr(key.find(':') + 1));
 
                     GtkTreeIter iter;
                     gtk_list_store_append(g_messages.compose_model, &iter);
@@ -943,7 +950,7 @@ namespace tether::ui {
 
             g_messages.composing = true;
             g_messages.compose_requested_key.clear();
-            rebuild_contact_completion();
+            request_contact_completion();
 
             clear_list_box(g_messages.conversation);
             g_messages.rendered.clear();
@@ -1054,6 +1061,10 @@ namespace tether::ui {
         }
         if (command == "bt_messages") {
             show_messages(event);
+            return true;
+        }
+        if (command == "bt_contacts") {
+            show_contact_completion(event);
             return true;
         }
         if (command == "bt_connection_changed") {

@@ -7,6 +7,7 @@ add_library(tether STATIC
     src/otp.cpp
     src/file_transfer.cpp
     src/crypto.cpp
+    src/secret_store.cpp
     src/client.cpp
     src/extension_host.cpp
     src/discovery.cpp
@@ -61,5 +62,6 @@ target_link_libraries(tether PUBLIC
     OpenSSL::Crypto
     PkgConfig::AVAHI
     PkgConfig::GLIB
+    PkgConfig::SECRET
     Intl::Intl
 )

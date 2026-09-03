@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: tether 0.2.22\n"
+"Project-Id-Version: tether 0.2.23\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -99,6 +99,10 @@ msgid "Reply in one conversation."
 msgstr ""
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr ""
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr ""
 
@@ -128,6 +132,12 @@ msgstr ""
 
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
 msgstr ""
 
 #: src/cli/main.cpp
@@ -393,6 +403,32 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Stop it and it\n"
+"restarts on demand:\n"
+"    pkill tetherd\n"
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr ""
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr ""
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr ""
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr ""
 
@@ -513,6 +549,20 @@ msgstr ""
 
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr ""
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr ""
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
 msgstr ""
 
 #: src/cli/main.cpp
@@ -1203,6 +1253,29 @@ msgid ""
 "Ask the iPhone for each notification's title and message text, not just "
 "which app sent it. The phone's own Show Message Notifications toggle still "
 "has to be on."
+msgstr ""
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr ""
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr ""
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr ""
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr ""
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
 msgstr ""
 
 #: src/gtk/devices_view.cpp

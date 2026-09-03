@@ -41,7 +41,10 @@
 #include <optional>
 #include <set>
 #include <sstream>
+#include <tether/bluetooth/journal.hpp>
 #include <tether/log.hpp>
+#include <tether/secret_store.hpp>
+#include <tether/version.hpp>
 #include <thread>
 #include <vector>
 
@@ -301,6 +304,9 @@ namespace tether {
         status["adapter"] = config.adapter;
         status["ancs_content_enabled"] = config.ancs_content_enabled;
         status["enabled"] = config.enabled;
+        status["retention"] = to_string(config.retention);
+        status["retention_ready"] = secret::have_key();
+        status["version"] = TETHER_VERSION;
         if (!bluetooth::g_bluez) {
             status["capability"] = nullptr;
             status["adapters"] = nlohmann::json::array();
@@ -609,6 +615,35 @@ namespace tether {
             }
         }
         result["messages"] = messages;
+        return result;
+    }
+
+    nlohmann::json build_bt_contacts(const std::string& query, size_t limit) {
+        nlohmann::json result;
+        result["command"] = "bt_contacts";
+        result["query"] = query;
+        nlohmann::json contacts = nlohmann::json::array();
+        {
+            std::lock_guard<std::mutex> lock(bluetooth::message_store_mutex());
+            for (const auto& card : bluetooth::contact_store().search(query, limit)) {
+                nlohmann::json entry;
+                entry["name"] = card.name;
+                // Namespaced the same way threads are, so an address here can be
+                // handed straight back as the thread of a bt_send_message.
+                nlohmann::json addresses = nlohmann::json::array();
+                for (const auto& tel : card.tels)
+                    if (std::string normalized = bluetooth::normalize_phone(tel); !normalized.empty())
+                        addresses.push_back("tel:" + normalized);
+                for (const auto& email : card.emails)
+                    if (std::string normalized = bluetooth::normalize_email(email); !normalized.empty())
+                        addresses.push_back("email:" + normalized);
+                if (addresses.empty())
+                    continue;
+                entry["addresses"] = std::move(addresses);
+                contacts.push_back(std::move(entry));
+            }
+        }
+        result["contacts"] = contacts;
         return result;
     }
 
@@ -940,6 +975,13 @@ namespace tether {
                         std::string payload = build_bt_threads().dump() + "\n";
                         write_plain_packet(client_fd, payload);
                         continue;
+                    } else if (j.contains("command") && j["command"] == "bt_list_contacts") {
+                        std::string payload =
+                            build_bt_contacts(j.value("query", ""), j.value("limit", BT_CONTACTS_DEFAULT_LIMIT))
+                                .dump(-1, ' ', false, nlohmann::json::error_handler_t::replace) +
+                            "\n";
+                        write_plain_packet(client_fd, payload);
+                        continue;
                     } else if (j.contains("command") && j["command"] == "bt_list_messages" && j.contains("thread")) {
                         std::string payload = build_bt_messages(j["thread"]).dump() + "\n";
                         write_plain_packet(client_fd, payload);
@@ -1069,6 +1111,27 @@ namespace tether {
                         // follows this toggle.
                         bluetooth::set_group_replies_enabled(config.group_messages_enabled &&
                                                              config.ancs_content_enabled && config.ancs_enabled);
+                        broadcast_local_event(build_bt_status().dump());
+                    } else if (j.contains("command") && j["command"] == "bt_set_retention" && j.contains("retention")) {
+                        auto config = bluetooth::load_config();
+                        const Retention previous = config.retention;
+                        config.retention = retention_from_string(j.value("retention", "encrypted"));
+                        if (config.retention != previous) {
+                            bluetooth::save_config(config);
+                            secret::set_retention(config.retention);
+                            // Move what is already stored
+                            if (config.retention == Retention::None) {
+                                bluetooth::discard_retained_messages();
+                                std::error_code ec;
+                                for (auto mode : {Retention::Encrypted, Retention::Plaintext}) {
+                                    std::filesystem::remove(bluetooth::journal_path(mode), ec);
+                                    std::filesystem::remove(bluetooth::contacts_path(mode), ec);
+                                }
+                            } else {
+                                bluetooth::migrate_journal(previous, config.retention);
+                                bluetooth::migrate_contacts(previous, config.retention);
+                            }
+                        }
                         broadcast_local_event(build_bt_status().dump());
                     } else if (j.contains("command") && j["command"] == "bt_list_notifications") {
                         nlohmann::json payload;

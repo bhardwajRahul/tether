@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tether/bluetooth/vcard.hpp"
+#include "tether/secret_store.hpp"
 
 #include <map>
 #include <nlohmann/json.hpp>
@@ -21,6 +22,9 @@ namespace tether::bluetooth {
         // Every address a display name maps to. Returns all matches.
         std::vector<std::string> addresses_for_name(const std::string& name) const;
 
+        // Contacts whose name or any of their addresses contains `needle`, case- and accent-insensitively.
+        std::vector<VCard> search(const std::string& needle, size_t limit) const;
+
         size_t size() const { return contacts_.size(); }
         size_t indexed() const { return by_key_.size(); }
         const std::vector<VCard>& contacts() const { return contacts_; }
@@ -32,9 +36,13 @@ namespace tether::bluetooth {
         std::map<std::string, std::string> by_tel_suffix_;
     };
 
-    // Cached at ~/.local/share/tether/contacts.json so names survive a restart
-    // and are available before PBAP reconnects.
+    std::string contacts_path(Retention mode);
     std::string contacts_path();
+
+    // Rewrites the cache from one mode's file into the other's and removes the
+    // source. No-op unless the source exists and the destination does not.
+    bool migrate_contacts(Retention from, Retention to);
+
     bool save_contacts(const ContactStore& store);
     ContactStore load_contacts();
 

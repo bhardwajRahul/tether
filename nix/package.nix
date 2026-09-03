@@ -16,6 +16,7 @@
   avahi,
   openssl,
   glib,
+  libsecret,
   gtk3,
   gtk-layer-shell,
   libnotify,
@@ -89,6 +90,7 @@ stdenv.mkDerivation (finalAttrs: {
     avahi
     openssl
     glib
+    libsecret
     gtk3
     gtk-layer-shell
     libnotify

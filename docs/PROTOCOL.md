@@ -334,6 +334,20 @@ identifier. Group keys are `group:name:<slug>` or `group:members:<slugs>`.
 **Response**: `{"command": "bt_messages", "thread": ..., "messages": [...]}` with `handle`,
 `body`, `timestamp`, `outgoing`, `read`, and `folder` per message.
 
+#### `bt_list_contacts` (Client -> Daemon, answered directly)
+**Payload**: `{"command": "bt_list_contacts", "query": "ada", "limit": 100}`
+Both fields are optional; an empty or absent `query` matches every contact, and `limit`
+defaults to 100.
+**Response**: `{"command": "bt_contacts", "query": ..., "contacts": [...]}`. Each contact
+carries `name` and `addresses`, namespaced exactly as thread keys are
+(`tel:+15035550101`, `email:ada@example.com`), so an address can be handed straight back
+as the `thread` of a `bt_send_message`. Contacts with no usable address are omitted.
+
+Matching is a case- and accent-insensitive substring over the name and every address,
+with numbers matched in normalized form too, so `5551234567` finds a contact stored as
+`+1 (555) 123-4567`. This is the only way to read the phonebook: the cache on disk is
+encrypted and only `tetherd` holds the key.
+
 #### `bt_mark_read` (Client -> Daemon, broadcast)
 **Payload**: `{"command": "bt_mark_read", "handle": "...", "read": true}`
 Writes through to the phone over OBEX, so it answers asynchronously with a
@@ -374,12 +388,27 @@ Notifications* toggle is the consent gate. With it off, only `app_id` and `app_n
 populated. Messages notifications (`com.apple.MobileSMS`) are retained but never raise a
 desktop popup, since MAP already delivers those with working read state.
 
+Since 0.2.24 `bt_status` also carries `version`, the daemon's own `TETHER_VERSION`. A
+client that finds the field absent, or holding a version other than its own, is talking to
+a `tetherd` left running across a package upgrade.
+
 #### `bt_set_ancs_content` (Client -> Daemon, broadcast)
 **Payload**: `{"command": "bt_set_ancs_content", "enabled": true}`
 Turns notification content mirroring on or off. Persists to
 `ancs_content_enabled` in `~/.config/tether/bluetooth.json`, applies to the running ANCS
 client without a restart, and answers with a fresh `bt_status`. `bt_status` carries
 `ancs_enabled` and `ancs_content_enabled` so a client can render the current state.
+
+#### `bt_set_retention` (Client -> Daemon, broadcast)
+**Payload**: `{"command": "bt_set_retention", "retention": "encrypted"}`
+One of `encrypted` (the default), `plaintext`, or `none`. Persists to `retention` in
+`~/.config/tether/bluetooth.json` and answers with a fresh `bt_status`.
+
+Changing the mode moves what is already stored to the path the new mode uses; `none`
+deletes the message journal and the contact cache outright. `bt_status` carries
+`retention` alongside `retention_ready`, which is false when the mode is `encrypted` and
+the wallet has no key to offer yet — the link stays up in that state, but nothing is
+retained or replayed. See `BLUETOOTH.md` for the on-disk format.
 
 #### `bt_notification_action` (Client -> Daemon, broadcast)
 **Payload**: `{"command": "bt_notification_action", "uid": 42, "action": "positive"}`

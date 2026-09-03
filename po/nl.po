@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-02 11:40-0700\n"
+"POT-Creation-Date: 2026-09-02 20:38-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Dutch\n"
@@ -100,6 +100,10 @@ msgid "Reply in one conversation."
 msgstr "In één gesprek antwoorden."
 
 #: src/cli/main.cpp
+msgid "List iPhone contacts, or search them by name or number."
+msgstr "Contacten van de iPhone tonen, of erin zoeken op naam of nummer."
+
+#: src/cli/main.cpp
 msgid "Pair with an iPhone over Bluetooth."
 msgstr "Een iPhone via Bluetooth koppelen."
 
@@ -135,6 +139,12 @@ msgstr "Het spiegelen van meldingen in- of uitschakelen."
 #: src/cli/main.cpp
 msgid "Mirror notification titles and bodies, not just the app."
 msgstr "Titels en tekst van meldingen spiegelen, niet alleen de app."
+
+#: src/cli/main.cpp
+msgid ""
+"How message history and contacts are kept on disk. Encrypted uses a key from "
+"the desktop keyring; none deletes what is stored and keeps nothing further."
+msgstr "Hoe berichtgeschiedenis en contacten op schijf worden bewaard. encrypted gebruikt een sleutel uit de sleutelbos van het bureaublad; none verwijdert wat is opgeslagen en bewaart verder niets."
 
 #: src/cli/main.cpp
 msgid "Choose which Bluetooth controller to use."
@@ -424,6 +434,32 @@ msgstr[0] "({} ongelezen)"
 msgstr[1] "({} ongelezen)"
 
 #: src/cli/main.cpp
+#, c++-format
+msgid ""
+"The running tetherd is {}, but this is tether {}. Stop it and it\n"
+"restarts on demand:\n"
+"    pkill tetherd\n"
+msgstr "De draaiende tetherd is {}, maar dit is tether {}. Stop hem; hij start vanzelf opnieuw wanneer nodig:\n    pkill tetherd\n"
+
+#: src/cli/main.cpp
+msgid "an older build"
+msgstr "een oudere build"
+
+#: src/cli/main.cpp
+msgid "Could not read contacts from the daemon.\n"
+msgstr "Kon de contacten niet van de daemon lezen.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts yet. Check 'tether --bt-connection'.\n"
+msgstr "Nog geen contacten. Controleer 'tether --bt-connection'.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No contacts match %s\n"
+msgstr "Geen contacten komen overeen met %s\n"
+
+#: src/cli/main.cpp
 msgid "Could not read messages from the daemon.\n"
 msgstr "Kon de berichten niet van de daemon lezen.\n"
 
@@ -553,6 +589,20 @@ msgstr "Spiegelen van meldingen ingeschakeld."
 #: src/cli/main.cpp
 msgid "Notification mirroring disabled."
 msgstr "Spiegelen van meldingen uitgeschakeld."
+
+#: src/cli/main.cpp
+msgid "Expected encrypted, plaintext or none, e.g. --bt-retention encrypted\n"
+msgstr "Verwacht encrypted, plaintext of none, bijv. --bt-retention encrypted\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Deleting stored messages and contacts.\n"
+msgstr "Opgeslagen berichten en contacten worden verwijderd.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "Retention set to %s.\n"
+msgstr "Bewaren ingesteld op %s.\n"
 
 #: src/cli/main.cpp
 msgid "Expected a controller, e.g. --bt-adapter hci1, or --bt-adapter auto\n"
@@ -1351,6 +1401,29 @@ msgstr ""
 "Vraagt de iPhone om de titel en tekst van elke melding, niet alleen welke "
 "app hem stuurde. De optie \"Toon berichtmeldingen\" van de telefoon moet nog "
 "steeds aanstaan."
+
+#: src/gtk/devices_view.cpp
+msgid "Keep message history:"
+msgstr "Berichtgeschiedenis bewaren:"
+
+#: src/gtk/devices_view.cpp
+msgid "Encrypted"
+msgstr "Versleuteld"
+
+#: src/gtk/devices_view.cpp
+msgid "Unencrypted"
+msgstr "Onversleuteld"
+
+#: src/gtk/devices_view.cpp
+msgid "Do not keep"
+msgstr "Niet bewaren"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr "Waar berichten en contacten op deze computer worden opgeslagen. Versleuteld bewaart ze met een sleutel in uw sleutelbos. Niet bewaren verwijdert wat al is opgeslagen en bewaart verder niets."
 
 #: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
