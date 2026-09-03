@@ -142,13 +142,23 @@ TEST(DiscoveryTest, RefreshReinvokesBrowseCallback) {
 
     std::mutex mutex;
     int calls = 0;
+    bool available = false;
+    discovery.set_state_callback([&](bool state) {
+        std::lock_guard<std::mutex> lock(mutex);
+        available = state;
+    });
     discovery.start_continuous_browse([&](const std::vector<tether::DiscoveredDevice>&) {
         std::lock_guard<std::mutex> lock(mutex);
         ++calls;
     });
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     {
         std::lock_guard<std::mutex> lock(mutex);
+        // Without a reachable avahi-daemon start_continuous_browse tears itself down and
+        // releases the callback, so there is nothing for refresh() to re-invoke.
+        if (!available)
+            GTEST_SKIP() << "avahi-daemon not reachable; browse never started";
         calls = 0; // ignore anything Avahi announced on its own
     }
 
