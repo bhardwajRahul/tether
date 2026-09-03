@@ -1,6 +1,7 @@
 #include "scoped_env.hpp"
 
 #include <gtest/gtest.h>
+#include <tether/bluetooth/bmessage.hpp>
 #include <tether/bluetooth/contacts.hpp>
 #include <tether/bluetooth/messages.hpp>
 #include <tether/bluetooth/vcard.hpp>
@@ -330,4 +331,43 @@ TEST(ContactStore, AnUnreadableKeyDoesNotClobberTheCache) {
     std::ifstream after_in(sealed);
     const std::string after((std::istreambuf_iterator<char>(after_in)), std::istreambuf_iterator<char>());
     EXPECT_EQ(after, before) << "the cache was rewritten by a daemon that could not read it";
+}
+
+// bt_list_contacts emits addresses already namespaced, and the composer turns
+// one back into a recipient to fill its completion. recipient_from_input takes a
+// *bare* address and rejects the "tel:" prefix as a vCard delimiter, so feeding
+// it these silently empties the popup instead of erroring.
+TEST(ContactSearch, NamespacedAddressesParseBackToTheSameThreadKey) {
+    for (const std::string key : {"tel:+15551234567", "email:ada@example.com"}) {
+        Recipient recipient;
+        std::string err;
+        ASSERT_TRUE(recipient_from_thread_key(key, recipient, err)) << key << ": " << err;
+        EXPECT_EQ(thread_key_for(recipient), key);
+
+        // The form the daemon does not send, spelled out so the reason this
+        // helper is the right one does not have to be rediscovered.
+        Recipient rejected;
+        std::string reject_err;
+        EXPECT_FALSE(recipient_from_input(key, rejected, reject_err))
+            << "recipient_from_input accepted a namespaced address; the two helpers are no longer distinct";
+    }
+}
+
+// Every address bt_list_contacts is built from has to survive that round trip,
+// or the contact silently vanishes from the picker.
+TEST(ContactSearch, EveryEmittedAddressIsUsableAsARecipient) {
+    for (const auto& card : three_contacts().search("", 10)) {
+        for (const auto& tel : card.tels) {
+            const std::string key = "tel:" + normalize_phone(tel);
+            Recipient recipient;
+            std::string err;
+            EXPECT_TRUE(recipient_from_thread_key(key, recipient, err)) << key << ": " << err;
+        }
+        for (const auto& email : card.emails) {
+            const std::string key = "email:" + normalize_email(email);
+            Recipient recipient;
+            std::string err;
+            EXPECT_TRUE(recipient_from_thread_key(key, recipient, err)) << key << ": " << err;
+        }
+    }
 }

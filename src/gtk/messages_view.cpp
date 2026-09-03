@@ -822,11 +822,10 @@ namespace tether::ui {
                 for (const auto& entry : card["addresses"]) {
                     if (!entry.is_string())
                         continue;
-                    // The same validation a typed address gets, so the popup can
-                    // never offer something the send path would then refuse.
+
                     bluetooth::Recipient recipient;
                     std::string err;
-                    if (!bluetooth::recipient_from_input(entry.get<std::string>(), recipient, err))
+                    if (!bluetooth::recipient_from_thread_key(entry.get<std::string>(), recipient, err))
                         continue;
                     const std::string key = bluetooth::thread_key_for(recipient);
                     if (key.empty() || !seen.insert(key).second)
