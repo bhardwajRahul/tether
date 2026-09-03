@@ -4,6 +4,7 @@
 #include "tether/bluetooth/monitor.hpp"
 #include "tether/log.hpp"
 
+#include <atomic>
 #include <ctime>
 #include <deque>
 #include <gio/gio.h>
@@ -37,7 +38,8 @@ namespace tether::bluetooth::ancs {
         std::string data_source_path;
 
         bool subscribed = false;
-        bool ready = false;
+
+        std::atomic<bool> ready{false};
         bool initial_sync = true;
         bool content_enabled = false;
         std::string reason = "Waiting for the iPhone's notification service.";
@@ -129,12 +131,12 @@ namespace tether::bluetooth::ancs {
     } // namespace
 
     void AncsClientState::set_status(bool now_ready, const std::string& text) {
-        if (ready == now_ready && reason == text)
+        if (ready.load() == now_ready && reason == text)
             return;
         ready = now_ready;
         reason = text;
         if (on_status)
-            on_status(ready, reason);
+            on_status(ready.load(), reason);
     }
 
     bool AncsClientState::write_control_point(const std::vector<uint8_t>& payload) {

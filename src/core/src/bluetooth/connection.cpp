@@ -581,6 +581,9 @@ namespace tether::bluetooth {
         std::mutex mutex;
         std::condition_variable wake;
 
+        // Serializes start/stop/set_device
+        std::mutex lifecycle;
+
         std::string address;
         // What the user asked for, versus what the controller can currently do.
         bool ancs_preference = true;
@@ -605,7 +608,8 @@ namespace tether::bluetooth {
         bool map_session_backfill = true;
         std::string pulled_pbap_path;
 
-        std::unique_ptr<ancs::AncsClient> ancs_client;
+        std::shared_ptr<ancs::AncsClient> ancs_client;
+        mutable std::mutex ancs_mutex;
         ConnectionManager::NotificationFn on_notification;
         ConnectionManager::WithdrawFn on_withdraw;
         bool ancs_ready = false;
@@ -623,6 +627,12 @@ namespace tether::bluetooth {
         // current capability.
         void apply_ancs_preference();
         void build_ancs_client();
+
+        // The current client, kept alive for as long as the caller.
+        std::shared_ptr<ancs::AncsClient> ancs() const {
+            std::lock_guard<std::mutex> lock(ancs_mutex);
+            return ancs_client;
+        }
 
         // Rebuilds the cached payload from the supervisors. Supervisor thread
         // only: it is the sole writer of BearerStatus and ProfileStatus, both of
@@ -934,7 +944,8 @@ namespace tether::bluetooth {
 
     // Keeps the ANCS client pointed at the LE session and drains its work.
     void ConnectionState::sync_ancs(int64_t now) {
-        if (!ancs_client)
+        auto client = ancs();
+        if (!client)
             return;
 
         // ANCS rides the LE bearer, but BlueZ keeps exposing the bonded
@@ -987,12 +998,12 @@ namespace tether::bluetooth {
                 current_status["ancs_reason"] = ancs_reason;
         }
 
-        ancs_client->set_device(device_path);
-        ancs_client->tick(now);
+        client->set_device(device_path);
+        client->tick(now);
     }
 
     void ConnectionState::build_ancs_client() {
-        ancs_client = std::make_unique<ancs::AncsClient>(
+        auto client = std::make_shared<ancs::AncsClient>(
             *monitor,
             [this](const ancs::Notification& notification) {
                 if (on_notification)
@@ -1016,25 +1027,29 @@ namespace tether::bluetooth {
                 debug::log(INFO, "ancs: {}", reason);
                 publish();
             });
-        ancs_client->set_content_enabled(ancs_content_wanted.load());
+        client->set_content_enabled(ancs_content_wanted.load());
+        std::lock_guard<std::mutex> lock(ancs_mutex);
+        ancs_client = std::move(client);
     }
 
     void ConnectionState::apply_ancs_preference() {
         ancs_preference = ancs_wanted.load();
         const bool effective = ancs_preference && ancs_available();
         if (effective == ancs_enabled) {
-            if (ancs_client)
-                ancs_client->set_content_enabled(ancs_content_wanted.load());
+            if (auto client = ancs())
+                client->set_content_enabled(ancs_content_wanted.load());
             return;
         }
 
         ancs_enabled = effective;
         bearers->set_ancs_enabled(effective);
         ancs_absent_since = -1;
-        if (effective && on_notification)
+        if (effective && on_notification) {
             build_ancs_client();
-        else
+        } else {
+            std::lock_guard<std::mutex> lock(ancs_mutex);
             ancs_client.reset();
+        }
         {
             std::lock_guard<std::mutex> lock(status_mutex);
             ancs_ready = false;
@@ -1103,6 +1118,16 @@ namespace tether::bluetooth {
     ConnectionManager::~ConnectionManager() { stop(); }
 
     bool ConnectionManager::start(const std::string& address, bool ancs_enabled) {
+        std::lock_guard<std::mutex> lock(state_->lifecycle);
+        return start_locked(address, ancs_enabled);
+    }
+
+    void ConnectionManager::stop() {
+        std::lock_guard<std::mutex> lock(state_->lifecycle);
+        stop_locked();
+    }
+
+    bool ConnectionManager::start_locked(const std::string& address, bool ancs_enabled) {
         if (state_->running)
             return true;
         if (address.empty()) {
@@ -1154,7 +1179,7 @@ namespace tether::bluetooth {
         return true;
     }
 
-    void ConnectionManager::stop() {
+    void ConnectionManager::stop_locked() {
         if (!state_->running && !state_->thread.joinable())
             return;
         {
@@ -1165,9 +1190,9 @@ namespace tether::bluetooth {
         if (state_->thread.joinable())
             state_->thread.join();
 
-        // MapSession borrows profile_ops' bus connection, and start() replaces
-        // profile_ops. Drop the session before anything can hand out a pointer
-        // into a connection that is about to go away.
+        // MapSession borrows profile_ops' bus connection, which is released
+        // below. Drop the session before anything can hand out a pointer into a
+        // connection that is about to go away.
         {
             std::lock_guard<std::mutex> lock(g_map_mutex);
             g_map_session.reset();
@@ -1175,7 +1200,19 @@ namespace tether::bluetooth {
 
         // Everything below is scoped to one device and one set of sessions, and
         // must not leak into the next start().
-        state_->ancs_client.reset();
+        {
+            std::lock_guard<std::mutex> lock(state_->ancs_mutex);
+            state_->ancs_client.reset();
+        }
+
+        // The supervisors borrow the ops objects — ~ProfileSupervisor removes the
+        // obexd sessions through them — so they go first, and start() only ever
+        // builds into empty pointers.
+        state_->profiles.reset();
+        state_->bearers.reset();
+        state_->profile_ops.reset();
+        state_->bearer_ops.reset();
+
         state_->open_map_path.clear();
         state_->pulled_pbap_path.clear();
         state_->map_session_backfill = true;
@@ -1201,14 +1238,16 @@ namespace tether::bluetooth {
     void ConnectionManager::set_ancs_content_enabled(bool enabled) { state_->ancs_content_wanted = enabled; }
 
     bool ConnectionManager::perform_notification_action(uint32_t uid, ancs::ActionId action) {
-        return state_->ancs_client && state_->ancs_client->perform_action(uid, action);
+        auto client = state_->ancs();
+        return client && client->perform_action(uid, action);
     }
 
     nlohmann::json ConnectionManager::notifications(size_t limit) const {
         nlohmann::json out = nlohmann::json::array();
-        if (!state_->ancs_client)
+        auto client = state_->ancs();
+        if (!client)
             return out;
-        for (const auto& notification : state_->ancs_client->recent_notifications(limit))
+        for (const auto& notification : client->recent_notifications(limit))
             out.push_back(ancs::to_json(notification));
         return out;
     }
@@ -1216,8 +1255,9 @@ namespace tether::bluetooth {
     void ConnectionManager::set_device(const std::string& address, bool ancs_enabled) {
         // Restarting is simpler than mutating supervisor state under the worker,
         // and selecting a device is rare. stop() clears the per-device state.
-        stop();
-        start(address, ancs_enabled);
+        std::lock_guard<std::mutex> lock(state_->lifecycle);
+        stop_locked();
+        start_locked(address, ancs_enabled);
     }
 
     void ConnectionManager::set_ancs_enabled(bool enabled) { state_->ancs_wanted = enabled; }

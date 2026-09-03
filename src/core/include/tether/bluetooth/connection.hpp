@@ -67,6 +67,9 @@ namespace tether::bluetooth {
         nlohmann::json status() const;
 
     private:
+        bool start_locked(const std::string& address, bool ancs_enabled);
+        void stop_locked();
+
         std::unique_ptr<ConnectionState> state_;
     };
 
