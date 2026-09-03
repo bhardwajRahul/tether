@@ -149,11 +149,25 @@ install(FILES packaging/systemd/tether-btclass@.service
 # firewall profiles for the mTLS listener (5134/tcp) and mDNS (5353/udp) installed but not applied (user's call).
 set(UFW_APPLICATIONS_DIR "/etc/ufw/applications.d" CACHE PATH "ufw application profile directory")
 set(FIREWALLD_SERVICE_DIR "lib/firewalld/services" CACHE PATH "firewalld service directory")
-install(FILES packaging/firewall/tether.ufw
-        DESTINATION "${UFW_APPLICATIONS_DIR}"
-        RENAME tether)
-install(FILES packaging/firewall/tether.xml
-        DESTINATION "${FIREWALLD_SERVICE_DIR}")
+# write them only where the directory already exists
+function(install_if_dir_exists src dir name)
+    install(CODE "
+        set(_dir \"${dir}\")
+        if(NOT IS_ABSOLUTE \"\${_dir}\")
+            set(_dir \"\${CMAKE_INSTALL_PREFIX}/\${_dir}\")
+        endif()
+        if(NOT \"\$ENV{DESTDIR}\" STREQUAL \"\" OR IS_DIRECTORY \"\${_dir}\")
+            file(INSTALL DESTINATION \"\${_dir}\" TYPE FILE RENAME \"${name}\" FILES \"${src}\")
+        else()
+            message(STATUS \"Skipping \${_dir}/${name}: directory not present\")
+        endif()
+    ")
+endfunction()
+
+install_if_dir_exists("${CMAKE_CURRENT_SOURCE_DIR}/packaging/firewall/tether.ufw"
+                      "${UFW_APPLICATIONS_DIR}" tether)
+install_if_dir_exists("${CMAKE_CURRENT_SOURCE_DIR}/packaging/firewall/tether.xml"
+                      "${FIREWALLD_SERVICE_DIR}" tether.xml)
 
 
 # Extension Building only if npm is available
