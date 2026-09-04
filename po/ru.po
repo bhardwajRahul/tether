@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 13:02-0700\n"
+"POT-Creation-Date: 2026-09-03 19:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Russian\n"
@@ -1133,7 +1133,8 @@ msgstr "Подключено и готово."
 
 #: src/gtk/devices_view.cpp
 msgid "Device is offline. Make sure it is switched on and on the same network."
-msgstr "Устройство не в сети. Убедитесь, что оно включено и находится в той же сети."
+msgstr ""
+"Устройство не в сети. Убедитесь, что оно включено и находится в той же сети."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -1183,7 +1184,9 @@ msgstr "Забыть %s?"
 msgid ""
 "Tether will stop connecting to it. Forget this computer on the other device "
 "too, then pair again to reconnect."
-msgstr "Tether перестанет к нему подключаться. Забудьте этот компьютер и на другом устройстве, затем выполните сопряжение заново."
+msgstr ""
+"Tether перестанет к нему подключаться. Забудьте этот компьютер и на другом "
+"устройстве, затем выполните сопряжение заново."
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
@@ -1233,17 +1236,24 @@ msgstr ""
 msgid ""
 "avahi-daemon isn't running, so other devices can't find this PC. Start it "
 "with: sudo systemctl enable --now avahi-daemon"
-msgstr "avahi-daemon не запущен, поэтому другие устройства не могут найти этот компьютер. Запустите его командой: sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"avahi-daemon не запущен, поэтому другие устройства не могут найти этот "
+"компьютер. Запустите его командой: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
-msgstr "Устройство есть в сети, но не может подключиться к этому ПК. Работает брандмауэр; Tether требуется входящий TCP 5134. Разрешите его командой: sudo ufw allow 5134/tcp"
+msgstr ""
+"Устройство есть в сети, но не может подключиться к этому ПК. Работает "
+"брандмауэр; Tether требуется входящий TCP 5134. Разрешите его командой: sudo "
+"ufw allow 5134/tcp"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired device is connected. Switch it on and join the same network."
-msgstr "Ни одно сопряжённое устройство не подключено. Включите его и подключите к той же сети."
+msgstr ""
+"Ни одно сопряжённое устройство не подключено. Включите его и подключите к "
+"той же сети."
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
@@ -1649,6 +1659,10 @@ msgstr "Синхронизация устройств"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Создавайте пары устройств и синхронизируйте буфер обмена по сети"
+
+#, fuzzy
+#~ msgid "Tether version"
+#~ msgstr "Показать версию tether."
 
 #, fuzzy
 #~ msgid "on"

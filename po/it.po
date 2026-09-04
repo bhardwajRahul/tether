@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 13:02-0700\n"
+"POT-Creation-Date: 2026-09-03 19:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Italian\n"
@@ -1137,7 +1137,8 @@ msgstr "Connesso e pronto."
 
 #: src/gtk/devices_view.cpp
 msgid "Device is offline. Make sure it is switched on and on the same network."
-msgstr "Il dispositivo è offline. Assicurati che sia acceso e sulla stessa rete."
+msgstr ""
+"Il dispositivo è offline. Assicurati che sia acceso e sulla stessa rete."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -1187,7 +1188,9 @@ msgstr "Dimenticare %s?"
 msgid ""
 "Tether will stop connecting to it. Forget this computer on the other device "
 "too, then pair again to reconnect."
-msgstr "Tether smetterà di connettersi. Dimentica questo computer anche sull'altro dispositivo, poi accoppia di nuovo per riconnetterti."
+msgstr ""
+"Tether smetterà di connettersi. Dimentica questo computer anche sull'altro "
+"dispositivo, poi accoppia di nuovo per riconnetterti."
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
@@ -1237,17 +1240,25 @@ msgstr ""
 msgid ""
 "avahi-daemon isn't running, so other devices can't find this PC. Start it "
 "with: sudo systemctl enable --now avahi-daemon"
-msgstr "avahi-daemon non è in esecuzione, quindi gli altri dispositivi non riescono a trovare questo computer. Avvialo con: sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"avahi-daemon non è in esecuzione, quindi gli altri dispositivi non riescono "
+"a trovare questo computer. Avvialo con: sudo systemctl enable --now avahi-"
+"daemon"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
-msgstr "Un dispositivo è in rete ma non riesce a raggiungere questo PC. È attivo un firewall; Tether richiede la porta TCP 5134 in ingresso. Consentila con: sudo ufw allow 5134/tcp"
+msgstr ""
+"Un dispositivo è in rete ma non riesce a raggiungere questo PC. È attivo un "
+"firewall; Tether richiede la porta TCP 5134 in ingresso. Consentila con: "
+"sudo ufw allow 5134/tcp"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired device is connected. Switch it on and join the same network."
-msgstr "Nessun dispositivo accoppiato è connesso. Accendilo e collegalo alla stessa rete."
+msgstr ""
+"Nessun dispositivo accoppiato è connesso. Accendilo e collegalo alla stessa "
+"rete."
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
@@ -1655,6 +1666,10 @@ msgstr "Sincronizzazione dispositivi"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Accoppia dispositivi e sincronizza gli appunti sulla rete"
+
+#, fuzzy
+#~ msgid "Tether version"
+#~ msgstr "Mostra la versione di tether."
 
 #, fuzzy
 #~ msgid "on"

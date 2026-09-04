@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 13:02-0700\n"
+"POT-Creation-Date: 2026-09-03 19:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Turkish\n"
@@ -1117,7 +1117,8 @@ msgstr "Bağlandı ve hazır."
 
 #: src/gtk/devices_view.cpp
 msgid "Device is offline. Make sure it is switched on and on the same network."
-msgstr "Aygıt çevrimdışı. Açık olduğundan ve aynı ağda bulunduğundan emin olun."
+msgstr ""
+"Aygıt çevrimdışı. Açık olduğundan ve aynı ağda bulunduğundan emin olun."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -1166,7 +1167,9 @@ msgstr "%s unutulsun mu?"
 msgid ""
 "Tether will stop connecting to it. Forget this computer on the other device "
 "too, then pair again to reconnect."
-msgstr "Tether artık bu aygıta bağlanmayacak. Bu bilgisayarı diğer aygıtta da unutun, sonra yeniden bağlanmak için tekrar eşleştirin."
+msgstr ""
+"Tether artık bu aygıta bağlanmayacak. Bu bilgisayarı diğer aygıtta da "
+"unutun, sonra yeniden bağlanmak için tekrar eşleştirin."
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
@@ -1216,13 +1219,18 @@ msgstr ""
 msgid ""
 "avahi-daemon isn't running, so other devices can't find this PC. Start it "
 "with: sudo systemctl enable --now avahi-daemon"
-msgstr "avahi-daemon çalışmıyor, bu yüzden diğer aygıtlar bu bilgisayarı bulamıyor. Şu komutla başlatın: sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"avahi-daemon çalışmıyor, bu yüzden diğer aygıtlar bu bilgisayarı bulamıyor. "
+"Şu komutla başlatın: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
-msgstr "Ağda bir aygıt var ancak bu bilgisayara ulaşamıyor. Bir güvenlik duvarı çalışıyor; Tether gelen TCP 5134 bağlantı noktasına ihtiyaç duyar. Şu komutla izin verin: sudo ufw allow 5134/tcp"
+msgstr ""
+"Ağda bir aygıt var ancak bu bilgisayara ulaşamıyor. Bir güvenlik duvarı "
+"çalışıyor; Tether gelen TCP 5134 bağlantı noktasına ihtiyaç duyar. Şu "
+"komutla izin verin: sudo ufw allow 5134/tcp"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired device is connected. Switch it on and join the same network."
@@ -1629,6 +1637,10 @@ msgstr "Aygıt eşzamanlaması"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Aygıtları eşleştirin ve panoyu ağ üzerinden eşzamanlayın"
+
+#, fuzzy
+#~ msgid "Tether version"
+#~ msgstr "tether sürümünü yazdır."
 
 #, fuzzy
 #~ msgid "on"
