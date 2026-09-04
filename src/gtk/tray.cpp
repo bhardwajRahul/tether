@@ -29,6 +29,7 @@ namespace tether::ui {
     <property name="Status" type="s" access="read"/>
     <property name="IconName" type="s" access="read"/>
     <property name="ItemIsMenu" type="b" access="read"/>
+    <property name="Menu" type="o" access="read"/>
     <property name="ToolTip" type="(sa(iiay)ss)" access="read"/>
     <method name="Activate">
       <arg name="x" type="i" direction="in"/>
@@ -134,6 +135,8 @@ namespace tether::ui {
                 return g_variant_new_string(g_icon.c_str());
             if (name == "ItemIsMenu")
                 return g_variant_new_boolean(FALSE);
+            if (name == "Menu")
+                return g_variant_new_object_path("/NO_DBUSMENU");
             if (name == "ToolTip")
                 return build_tooltip();
             return nullptr;
