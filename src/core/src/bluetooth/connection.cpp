@@ -169,6 +169,12 @@ namespace tether::bluetooth {
         contact_store() = ContactStore();
     }
 
+    void move_retained_store(Retention previous, Retention next) {
+        std::lock_guard<std::mutex> lock(g_messages_mutex);
+        g_journal.close();
+        migrate_contacts(previous, next);
+    }
+
     void set_group_replies_enabled(bool enabled) {
         std::lock_guard<std::mutex> lock(g_group_mutex);
         g_group_replies_enabled = enabled;
@@ -1179,8 +1185,6 @@ namespace tether::bluetooth {
                 auto history = g_journal.load(now);
                 for (const auto& message : history)
                     g_messages.add(message);
-                // load() already applied retention, so writing back what survived
-                // is what actually trims the file. Idempotent when nothing aged out.
                 g_journal.compact(history);
                 debug::log(INFO, "bluetooth: replayed {} message(s) from the journal", history.size());
             }

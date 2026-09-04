@@ -23,7 +23,8 @@ namespace tether::bluetooth {
     } // namespace
 
     namespace {
-        constexpr int CONFIG_VERSION = 1;
+        // 2 since 0.2.24 how to tell "never had a retention setting" from "lost one".
+        constexpr int CONFIG_VERSION = 2;
     } // namespace
 
     const char* to_string(AuthStrategy strategy) {

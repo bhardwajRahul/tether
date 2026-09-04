@@ -42,14 +42,15 @@ namespace tether::bluetooth {
         // Malformed lines are skipped rather than aborting the load
         std::vector<Message> load(int64_t now) const;
 
-        // Rewrites the file to exactly `messages`, atomically. Refuses to empty
-        // a populated journal, so a read that silently produced nothing cannot
-        // destroy the history it failed to parse.
+        // Rewrites the file to exactly `messages`, atomically. Refuses when the
+        // last load could not read the whole file, so a wrong key or a truncated
+        // record cannot be compacted away.
         bool compact(const std::vector<Message>& messages);
 
     private:
         std::ofstream out_;
         std::string path_;
+        mutable size_t skipped_ = 0;
     };
 
     std::string serialize_message_line(const Message& message);

@@ -272,15 +272,20 @@ namespace tether {
                     return wait_and_retry(
                         "secret: wallet is locked and holds no store key; history starts once it unlocks");
 
-                case KeyLookup::Absent:
-                    if (!generate(key))
+                case KeyLookup::Absent: {
+                    // an earlier run with no secret service already sealed the store.
+                    const bool promoted = key_from_file(key);
+                    if (!promoted && !generate(key))
                         return false;
                     if (!key_to_service(key))
                         return wait_and_retry("secret: cannot store a new key in the wallet");
                     g_key = std::move(key);
                     g_failed_once = false;
-                    debug::log(INFO, "secret: generated a new store key in the wallet");
+                    debug::log(INFO,
+                               promoted ? "secret: adopted the store key file into the wallet"
+                                        : "secret: generated a new store key in the wallet");
                     return true;
+                }
 
                 case KeyLookup::NoService:
                     break;

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:48-0700\n"
+"POT-Creation-Date: 2026-09-03 20:40-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Turkish\n"
@@ -318,6 +318,18 @@ msgstr "bağlanıyor"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "kapalı (--bt-enable on)"
+
+#: src/cli/main.cpp
+msgid "History"
+msgstr "Geçmiş"
+
+#: src/cli/main.cpp
+msgid ""
+"paused - the desktop keyring has no key to offer yet.\n"
+"Unlock it, or run 'tether --bt-retention plaintext'."
+msgstr ""
+"duraklatıldı - masaüstü anahtarlığında henüz anahtar yok.\n"
+"Kilidini açın veya 'tether --bt-retention plaintext' komutunu çalıştırın."
 
 #: src/cli/main.cpp
 msgid "in use"
@@ -1070,7 +1082,8 @@ msgstr "Mesaj gönder"
 
 #: src/gtk/contacts_view.cpp
 msgid "No contacts yet. Check the Bluetooth link on the Devices page."
-msgstr "Henüz kişi yok. Aygıtlar sayfasındaki Bluetooth bağlantısını denetleyin."
+msgstr ""
+"Henüz kişi yok. Aygıtlar sayfasındaki Bluetooth bağlantısını denetleyin."
 
 #: src/gtk/contacts_view.cpp
 msgid "Search contacts"
@@ -1115,6 +1128,14 @@ msgstr "Uyumluluk kipi — mesajlar ve kişiler, bildirim yansıtma yok."
 #: src/gtk/devices_view.cpp
 msgid "This machine cannot carry the Bluetooth features."
 msgstr "Bu makine Bluetooth özelliklerini taşıyamaz."
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer\n"
+"yet. Unlock it, or choose Unencrypted above."
+msgstr ""
+"İleti geçmişi duraklatıldı: masaüstü anahtarlığında henüz anahtar yok.\n"
+"Kilidini açın veya yukarıdan Şifresiz seçeneğini seçin."
 
 #: src/gtk/devices_view.cpp
 msgid "Link"

@@ -245,6 +245,14 @@ namespace tether::ui {
                                       running.empty() ? _("an older build") : running.c_str(),
                                       TETHER_VERSION);
                 }
+
+                if (g_devices.bt_status.value("retention", "encrypted") == "encrypted" &&
+                    !g_devices.bt_status.value("retention_ready", true)) {
+                    if (!mode.empty())
+                        mode += "\n";
+                    mode += _("Message history is paused: the desktop keyring has no key to offer\n"
+                              "yet. Unlock it, or choose Unencrypted above.");
+                }
             }
             set_text(g_devices.lbl_bt_mode, mode);
 

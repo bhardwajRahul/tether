@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:48-0700\n"
+"POT-Creation-Date: 2026-09-03 20:40-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Spanish\n"
@@ -321,6 +321,18 @@ msgstr "conectando"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "desactivado (--bt-enable on)"
+
+#: src/cli/main.cpp
+msgid "History"
+msgstr "Historial"
+
+#: src/cli/main.cpp
+msgid ""
+"paused - the desktop keyring has no key to offer yet.\n"
+"Unlock it, or run 'tether --bt-retention plaintext'."
+msgstr ""
+"en pausa: el depósito de claves aún no ofrece ninguna clave.\n"
+"Desbloquéalo o ejecuta «tether --bt-retention plaintext»."
 
 #: src/cli/main.cpp
 msgid "in use"
@@ -1090,7 +1102,9 @@ msgstr "Enviar mensaje"
 
 #: src/gtk/contacts_view.cpp
 msgid "No contacts yet. Check the Bluetooth link on the Devices page."
-msgstr "Aún no hay contactos. Comprueba el enlace Bluetooth en la página Dispositivos."
+msgstr ""
+"Aún no hay contactos. Comprueba el enlace Bluetooth en la página "
+"Dispositivos."
 
 #: src/gtk/contacts_view.cpp
 msgid "Search contacts"
@@ -1137,6 +1151,14 @@ msgstr ""
 #: src/gtk/devices_view.cpp
 msgid "This machine cannot carry the Bluetooth features."
 msgstr "Este equipo no puede ofrecer las funciones Bluetooth."
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer\n"
+"yet. Unlock it, or choose Unencrypted above."
+msgstr ""
+"El historial de mensajes está en pausa: el depósito de claves aún no\n"
+"ofrece ninguna clave. Desbloquéalo o elige Sin cifrar arriba."
 
 #: src/gtk/devices_view.cpp
 msgid "Link"

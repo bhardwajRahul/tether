@@ -238,8 +238,12 @@ int main(int argc, char** argv) {
                              otp});
         });
 
+    auto bt_config = tether::bluetooth::load_config();
+
+    tether::secret::set_retention(bt_config.retention);
+
     // Pick the controller before the first capability, a second adapter never comes up bound to the wrong one.
-    bluez.set_preferred_adapter(tether::bluetooth::load_config().adapter);
+    bluez.set_preferred_adapter(bt_config.adapter);
     if (bluez.start()) {
         tether::bluetooth::g_bluez = &bluez;
         loop.addFd(bluez.event_fd(), [&bluez](int) {
@@ -254,12 +258,7 @@ int main(int argc, char** argv) {
         // Supervise the selected iPhone's bearers and OBEX sessions. ANCS is only
         // attempted when the controller can carry it and pairing produced a bond
         // that covers LE.
-        auto bt_config = tether::bluetooth::load_config();
         tether::bluetooth::g_bt_connections = &connections;
-
-        // Before anything opens the journal or the contact cache: the mode picks
-        // which file each of those lives in.
-        tether::secret::set_retention(bt_config.retention);
 
         tether::bluetooth::set_group_replies_enabled(bt_config.group_messages_enabled &&
                                                      bt_config.ancs_content_enabled && bt_config.ancs_enabled);

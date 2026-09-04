@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:48-0700\n"
+"POT-Creation-Date: 2026-09-03 20:40-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -314,6 +314,18 @@ msgstr "연결 중"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "꺼짐 (--bt-enable on)"
+
+#: src/cli/main.cpp
+msgid "History"
+msgstr "기록"
+
+#: src/cli/main.cpp
+msgid ""
+"paused - the desktop keyring has no key to offer yet.\n"
+"Unlock it, or run 'tether --bt-retention plaintext'."
+msgstr ""
+"일시 중지됨 - 데스크톱 키링에 아직 키가 없습니다.\n"
+"키링을 잠금 해제하거나 'tether --bt-retention plaintext'를 실행하세요."
 
 #: src/cli/main.cpp
 msgid "in use"
@@ -1096,6 +1108,14 @@ msgstr "호환 모드 — 메시지와 연락처만, 알림 미러링 없음."
 #: src/gtk/devices_view.cpp
 msgid "This machine cannot carry the Bluetooth features."
 msgstr "이 컴퓨터는 Bluetooth 기능을 지원할 수 없습니다."
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer\n"
+"yet. Unlock it, or choose Unencrypted above."
+msgstr ""
+"메시지 기록이 일시 중지되었습니다: 데스크톱 키링에 아직 키가 없습니다.\n"
+"키링을 잠금 해제하거나 위에서 '암호화 안 함'을 선택하세요."
 
 #: src/gtk/devices_view.cpp
 msgid "Link"

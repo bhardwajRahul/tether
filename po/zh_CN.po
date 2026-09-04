@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:48-0700\n"
+"POT-Creation-Date: 2026-09-03 20:40-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -309,6 +309,18 @@ msgstr "正在连接"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "已关闭（--bt-enable on）"
+
+#: src/cli/main.cpp
+msgid "History"
+msgstr "历史记录"
+
+#: src/cli/main.cpp
+msgid ""
+"paused - the desktop keyring has no key to offer yet.\n"
+"Unlock it, or run 'tether --bt-retention plaintext'."
+msgstr ""
+"已暂停 - 桌面密钥环尚无可用密钥。\n"
+"请解锁密钥环，或运行 'tether --bt-retention plaintext'。"
 
 #: src/cli/main.cpp
 msgid "in use"
@@ -1070,6 +1082,14 @@ msgstr "兼容模式 —— 信息和通讯录，无通知镜像。"
 #: src/gtk/devices_view.cpp
 msgid "This machine cannot carry the Bluetooth features."
 msgstr "这台机器无法支持蓝牙功能。"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer\n"
+"yet. Unlock it, or choose Unencrypted above."
+msgstr ""
+"消息历史已暂停：桌面密钥环尚无可用密钥。\n"
+"请解锁密钥环，或在上方选择“不加密”。"
 
 #: src/gtk/devices_view.cpp
 msgid "Link"
