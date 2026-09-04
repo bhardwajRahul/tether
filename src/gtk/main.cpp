@@ -1,4 +1,5 @@
 #include "calls_view.hpp"
+#include "contact_completion.hpp"
 #include "contacts_view.hpp"
 #include "daemon_client.hpp"
 #include "devices_view.hpp"
@@ -243,6 +244,7 @@ namespace {
         });
 
         daemon_client_start([](const nlohmann::json& event) {
+            contact_completion_update(event);
             if (devices_view_handle_event(event))
                 return;
             if (contacts_view_handle_event(event))

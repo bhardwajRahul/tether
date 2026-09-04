@@ -7,6 +7,7 @@ add_executable(tether-gtk
     prefs.cpp
     message_format.cpp
     calls_view.cpp
+    contact_completion.cpp
     contacts_view.cpp
     daemon_client.cpp
     devices_view.cpp

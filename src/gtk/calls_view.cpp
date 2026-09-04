@@ -1,4 +1,5 @@
 #include "calls_view.hpp"
+#include "contact_completion.hpp"
 #include "daemon_client.hpp"
 #include "ui_util.hpp"
 #include <tether/i18n.hpp>
@@ -180,8 +181,11 @@ namespace tether::ui {
 
     void calls_view_set_visible(bool visible) {
         g_calls.visible = visible;
-        if (visible)
-            request_calls();
+        if (!visible)
+            return;
+        request_calls();
+        // Nothing else pulls the address book when this is the first view opened.
+        contact_completion_request();
     }
 
     bool calls_view_handle_event(const nlohmann::json& event) {
@@ -225,6 +229,7 @@ namespace tether::ui {
         g_calls.entry = gtk_entry_new();
         gtk_entry_set_placeholder_text(GTK_ENTRY(g_calls.entry), _("Number to call"));
         gtk_entry_set_input_purpose(GTK_ENTRY(g_calls.entry), GTK_INPUT_PURPOSE_PHONE);
+        attach_contact_completion(g_calls.entry, ContactKind::Tel);
         gtk_widget_set_sensitive(g_calls.entry, FALSE);
         g_signal_connect(g_calls.entry, "activate", G_CALLBACK(on_dial_clicked), nullptr);
         gtk_box_pack_start(GTK_BOX(dial_bar), g_calls.entry, TRUE, TRUE, 0);
