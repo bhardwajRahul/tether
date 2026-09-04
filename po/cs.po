@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 13:02-0700\n"
+"POT-Creation-Date: 2026-09-03 19:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Czech\n"
@@ -1170,7 +1170,9 @@ msgstr "Zapomenout %s?"
 msgid ""
 "Tether will stop connecting to it. Forget this computer on the other device "
 "too, then pair again to reconnect."
-msgstr "Tether se k němu přestane připojovat. Zapomeňte tento počítač i na druhém zařízení a pro obnovení spojení proveďte nové spárování."
+msgstr ""
+"Tether se k němu přestane připojovat. Zapomeňte tento počítač i na druhém "
+"zařízení a pro obnovení spojení proveďte nové spárování."
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
@@ -1220,17 +1222,24 @@ msgstr ""
 msgid ""
 "avahi-daemon isn't running, so other devices can't find this PC. Start it "
 "with: sudo systemctl enable --now avahi-daemon"
-msgstr "avahi-daemon neběží, takže tento počítač jiná zařízení nenajdou. Spusťte jej příkazem: sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"avahi-daemon neběží, takže tento počítač jiná zařízení nenajdou. Spusťte jej "
+"příkazem: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
-msgstr "V síti je zařízení, ale nemůže se připojit k tomuto PC. Běží firewall; Tether potřebuje příchozí TCP 5134. Povolte jej příkazem: sudo ufw allow 5134/tcp"
+msgstr ""
+"V síti je zařízení, ale nemůže se připojit k tomuto PC. Běží firewall; "
+"Tether potřebuje příchozí TCP 5134. Povolte jej příkazem: sudo ufw allow "
+"5134/tcp"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired device is connected. Switch it on and join the same network."
-msgstr "Není připojeno žádné spárované zařízení. Zapněte je a připojte do stejné sítě."
+msgstr ""
+"Není připojeno žádné spárované zařízení. Zapněte je a připojte do stejné "
+"sítě."
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
@@ -1635,6 +1644,10 @@ msgstr "Synchronizace zařízení"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Spárujte zařízení a synchronizujte schránku po síti"
+
+#, fuzzy
+#~ msgid "Tether version"
+#~ msgstr "Vypsat verzi tether."
 
 #, fuzzy
 #~ msgid "on"

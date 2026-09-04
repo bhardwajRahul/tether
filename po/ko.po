@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 13:02-0700\n"
+"POT-Creation-Date: 2026-09-03 19:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -1098,7 +1098,8 @@ msgstr "연결되어 사용할 준비가 되었습니다."
 
 #: src/gtk/devices_view.cpp
 msgid "Device is offline. Make sure it is switched on and on the same network."
-msgstr "기기가 오프라인입니다. 전원이 켜져 있고 같은 네트워크에 있는지 확인하십시오."
+msgstr ""
+"기기가 오프라인입니다. 전원이 켜져 있고 같은 네트워크에 있는지 확인하십시오."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -1147,7 +1148,9 @@ msgstr "%s을(를) 삭제할까요?"
 msgid ""
 "Tether will stop connecting to it. Forget this computer on the other device "
 "too, then pair again to reconnect."
-msgstr "Tether가 이 기기에 연결하지 않습니다. 다른 기기에서도 이 컴퓨터를 삭제한 뒤 다시 페어링하여 연결하십시오."
+msgstr ""
+"Tether가 이 기기에 연결하지 않습니다. 다른 기기에서도 이 컴퓨터를 삭제한 뒤 "
+"다시 페어링하여 연결하십시오."
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
@@ -1197,17 +1200,23 @@ msgstr ""
 msgid ""
 "avahi-daemon isn't running, so other devices can't find this PC. Start it "
 "with: sudo systemctl enable --now avahi-daemon"
-msgstr "avahi-daemon이 실행되고 있지 않아 다른 기기가 이 PC를 찾을 수 없습니다. 다음 명령으로 시작하십시오: sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"avahi-daemon이 실행되고 있지 않아 다른 기기가 이 PC를 찾을 수 없습니다. 다음 "
+"명령으로 시작하십시오: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
-msgstr "네트워크에 기기가 있지만 이 PC에 연결할 수 없습니다. 방화벽이 실행 중입니다. Tether에는 인바운드 TCP 5134가 필요합니다. 다음 명령으로 허용하세요: sudo ufw allow 5134/tcp"
+msgstr ""
+"네트워크에 기기가 있지만 이 PC에 연결할 수 없습니다. 방화벽이 실행 중입니다. "
+"Tether에는 인바운드 TCP 5134가 필요합니다. 다음 명령으로 허용하세요: sudo "
+"ufw allow 5134/tcp"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired device is connected. Switch it on and join the same network."
-msgstr "연결된 페어링 기기가 없습니다. 기기를 켜고 같은 네트워크에 연결하십시오."
+msgstr ""
+"연결된 페어링 기기가 없습니다. 기기를 켜고 같은 네트워크에 연결하십시오."
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
@@ -1604,6 +1613,10 @@ msgstr "기기 동기화"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "기기를 페어링하고 네트워크를 통해 클립보드를 동기화합니다"
+
+#, fuzzy
+#~ msgid "Tether version"
+#~ msgstr "tether 버전을 표시합니다."
 
 #, fuzzy
 #~ msgid "on"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 13:02-0700\n"
+"POT-Creation-Date: 2026-09-03 19:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -1111,7 +1111,9 @@ msgstr "接続済みで使用できます。"
 
 #: src/gtk/devices_view.cpp
 msgid "Device is offline. Make sure it is switched on and on the same network."
-msgstr "デバイスはオフラインです。電源が入っていて同じネットワーク上にあることを確認してください。"
+msgstr ""
+"デバイスはオフラインです。電源が入っていて同じネットワーク上にあることを確認"
+"してください。"
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -1160,7 +1162,9 @@ msgstr "%s を削除しますか？"
 msgid ""
 "Tether will stop connecting to it. Forget this computer on the other device "
 "too, then pair again to reconnect."
-msgstr "Tether はこのデバイスへの接続を停止します。もう一方のデバイスでもこのパソコンを削除し、再接続するにはもう一度ペアリングしてください。"
+msgstr ""
+"Tether はこのデバイスへの接続を停止します。もう一方のデバイスでもこのパソコン"
+"を削除し、再接続するにはもう一度ペアリングしてください。"
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
@@ -1210,17 +1214,25 @@ msgstr ""
 msgid ""
 "avahi-daemon isn't running, so other devices can't find this PC. Start it "
 "with: sudo systemctl enable --now avahi-daemon"
-msgstr "avahi-daemon が実行されていないため、他のデバイスはこのパソコンを見つけられません。次のコマンドで起動してください: sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"avahi-daemon が実行されていないため、他のデバイスはこのパソコンを見つけられま"
+"せん。次のコマンドで起動してください: sudo systemctl enable --now avahi-"
+"daemon"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
-msgstr "デバイスはネットワーク上にありますが、この PC に到達できません。ファイアウォールが有効です。Tether は受信 TCP 5134 が必要です。次のコマンドで許可してください: sudo ufw allow 5134/tcp"
+msgstr ""
+"デバイスはネットワーク上にありますが、この PC に到達できません。ファイア"
+"ウォールが有効です。Tether は受信 TCP 5134 が必要です。次のコマンドで許可して"
+"ください: sudo ufw allow 5134/tcp"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired device is connected. Switch it on and join the same network."
-msgstr "ペアリング済みのデバイスが接続されていません。電源を入れて同じネットワークに接続してください。"
+msgstr ""
+"ペアリング済みのデバイスが接続されていません。電源を入れて同じネットワークに"
+"接続してください。"
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
@@ -1621,6 +1633,10 @@ msgstr "デバイスの同期"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "デバイスをペアリングし、ネットワーク越しにクリップボードを同期します"
+
+#, fuzzy
+#~ msgid "Tether version"
+#~ msgstr "tether のバージョンを表示します。"
 
 #, fuzzy
 #~ msgid "on"

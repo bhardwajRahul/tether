@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 13:02-0700\n"
+"POT-Creation-Date: 2026-09-03 19:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -1121,7 +1121,9 @@ msgstr "忘记 %s？"
 msgid ""
 "Tether will stop connecting to it. Forget this computer on the other device "
 "too, then pair again to reconnect."
-msgstr "Tether 将不再连接该设备。请同时在对方设备上忘记这台电脑，然后重新配对以恢复连接。"
+msgstr ""
+"Tether 将不再连接该设备。请同时在对方设备上忘记这台电脑，然后重新配对以恢复连"
+"接。"
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
@@ -1171,13 +1173,17 @@ msgstr ""
 msgid ""
 "avahi-daemon isn't running, so other devices can't find this PC. Start it "
 "with: sudo systemctl enable --now avahi-daemon"
-msgstr "avahi-daemon 未运行，因此其他设备无法找到此电脑。请使用以下命令启动：sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"avahi-daemon 未运行，因此其他设备无法找到此电脑。请使用以下命令启动：sudo "
+"systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
-msgstr "网络中有一台设备，但无法连接到这台电脑。防火墙正在运行；Tether 需要入站 TCP 5134。请使用以下命令放行：sudo ufw allow 5134/tcp"
+msgstr ""
+"网络中有一台设备，但无法连接到这台电脑。防火墙正在运行；Tether 需要入站 TCP "
+"5134。请使用以下命令放行：sudo ufw allow 5134/tcp"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired device is connected. Switch it on and join the same network."
@@ -1574,6 +1580,10 @@ msgstr "设备同步"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "配对设备并通过网络同步剪贴板"
+
+#, fuzzy
+#~ msgid "Tether version"
+#~ msgstr "显示 tether 版本。"
 
 #, fuzzy
 #~ msgid "on"

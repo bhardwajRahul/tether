@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 13:02-0700\n"
+"POT-Creation-Date: 2026-09-03 19:19-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Swedish\n"
@@ -1120,7 +1120,8 @@ msgstr "Ansluten och redo."
 
 #: src/gtk/devices_view.cpp
 msgid "Device is offline. Make sure it is switched on and on the same network."
-msgstr "Enheten är offline. Kontrollera att den är påslagen och i samma nätverk."
+msgstr ""
+"Enheten är offline. Kontrollera att den är påslagen och i samma nätverk."
 
 #: src/gtk/devices_view.cpp
 #, c++-format
@@ -1169,7 +1170,9 @@ msgstr "Glöm %s?"
 msgid ""
 "Tether will stop connecting to it. Forget this computer on the other device "
 "too, then pair again to reconnect."
-msgstr "Tether slutar ansluta till den. Glöm den här datorn på den andra enheten också och parkoppla sedan igen för att ansluta."
+msgstr ""
+"Tether slutar ansluta till den. Glöm den här datorn på den andra enheten "
+"också och parkoppla sedan igen för att ansluta."
 
 #: src/gtk/devices_view.cpp
 msgid "Setup commands copied to the clipboard."
@@ -1219,17 +1222,24 @@ msgstr ""
 msgid ""
 "avahi-daemon isn't running, so other devices can't find this PC. Start it "
 "with: sudo systemctl enable --now avahi-daemon"
-msgstr "avahi-daemon körs inte, så andra enheter kan inte hitta den här datorn. Starta den med: sudo systemctl enable --now avahi-daemon"
+msgstr ""
+"avahi-daemon körs inte, så andra enheter kan inte hitta den här datorn. "
+"Starta den med: sudo systemctl enable --now avahi-daemon"
 
 #: src/gtk/devices_view.cpp
 msgid ""
 "A device is on the network but cannot reach this PC. A firewall is running; "
 "Tether needs inbound TCP 5134. Allow it with: sudo ufw allow 5134/tcp"
-msgstr "En enhet finns i nätverket men når inte den här datorn. En brandvägg är aktiv; Tether behöver inkommande TCP 5134. Tillåt det med: sudo ufw allow 5134/tcp"
+msgstr ""
+"En enhet finns i nätverket men når inte den här datorn. En brandvägg är "
+"aktiv; Tether behöver inkommande TCP 5134. Tillåt det med: sudo ufw allow "
+"5134/tcp"
 
 #: src/gtk/devices_view.cpp
 msgid "No paired device is connected. Switch it on and join the same network."
-msgstr "Ingen parkopplad enhet är ansluten. Slå på den och anslut den till samma nätverk."
+msgstr ""
+"Ingen parkopplad enhet är ansluten. Slå på den och anslut den till samma "
+"nätverk."
 
 #: src/gtk/devices_view.cpp
 msgid "Unknown Device"
@@ -1633,6 +1643,10 @@ msgstr "Enhetssynkronisering"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Parkoppla enheter och synkronisera urklipp över nätverket"
+
+#, fuzzy
+#~ msgid "Tether version"
+#~ msgstr "Visa tether-versionen."
 
 #, fuzzy
 #~ msgid "on"

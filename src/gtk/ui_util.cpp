@@ -175,9 +175,8 @@ namespace tether::ui {
         gtk_box_pack_start(GTK_BOX(bar), indicator(Route::WiFi).box, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(bar), indicator(Route::Bluetooth).box, FALSE, FALSE, 0);
 
-        GtkWidget* version = gtk_label_new(TETHER_VERSION);
+        GtkWidget* version = gtk_label_new("v" TETHER_VERSION);
         gtk_style_context_add_class(gtk_widget_get_style_context(version), "muted");
-        gtk_widget_set_tooltip_text(version, _("Tether version"));
         gtk_box_pack_end(GTK_BOX(bar), version, FALSE, FALSE, 0);
 
         set_route_status(Route::WiFi, false, _("Waiting for the Tether daemon."));
