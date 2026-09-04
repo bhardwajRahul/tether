@@ -303,6 +303,7 @@ namespace tether {
         status["ancs_enabled"] = config.ancs_enabled;
         status["adapter"] = config.adapter;
         status["ancs_content_enabled"] = config.ancs_content_enabled;
+        status["calls_enabled"] = config.calls_enabled;
         status["enabled"] = config.enabled;
         status["retention"] = to_string(config.retention);
         status["retention_ready"] = secret::have_key();
@@ -515,7 +516,8 @@ namespace tether {
                 event["detail"] = detail;
                 broadcast_local_event(event.dump());
             },
-            ask_client_to_confirm);
+            ask_client_to_confirm,
+            config.calls_enabled);
 
         if (result.success) {
             config.device_address = result.device_address;
@@ -1112,6 +1114,59 @@ namespace tether {
                         bluetooth::set_group_replies_enabled(config.group_messages_enabled &&
                                                              config.ancs_content_enabled && config.ancs_enabled);
                         broadcast_local_event(build_bt_status().dump());
+                    } else if (j.contains("command") && j["command"] == "bt_set_calls") {
+                        auto config = bluetooth::load_config();
+                        config.calls_enabled = j.value("enabled", false);
+                        bluetooth::save_config(config);
+                        if (bluetooth::g_bt_connections)
+                            bluetooth::g_bt_connections->set_calls_enabled(config.calls_enabled);
+                        broadcast_local_event(build_bt_status().dump());
+                    } else if (j.contains("command") && j["command"] == "bt_list_calls") {
+                        nlohmann::json payload;
+                        payload["command"] = "bt_calls";
+                        payload["calls"] = bluetooth::g_bt_connections ? bluetooth::g_bt_connections->calls()
+                                                                       : nlohmann::json::array();
+                        std::string out = payload.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace) + "\n";
+                        write_plain_packet(client_fd, out);
+                        continue;
+                    } else if (j.contains("command") && j["command"] == "bt_call_dial" && j.contains("number")) {
+                        std::string err = _("Bluetooth is unavailable.");
+                        nlohmann::json payload;
+                        payload["command"] = "bt_call_result";
+                        payload["action"] = "dial";
+                        payload["success"] = bluetooth::g_bt_connections &&
+                                             bluetooth::g_bt_connections->dial(j.value("number", std::string{}), err);
+                        if (!payload["success"])
+                            payload["message"] = err;
+                        broadcast_local_event(payload.dump());
+                        write_plain_packet(client_fd, payload.dump() + "\n");
+                        continue;
+                    } else if (j.contains("command") && j["command"] == "bt_call_action" && j.contains("action")) {
+                        const std::string action = j.value("action", std::string{});
+                        std::string err = _("Bluetooth is unavailable.");
+                        nlohmann::json payload;
+                        payload["command"] = "bt_call_result";
+                        payload["action"] = action;
+                        payload["success"] =
+                            bluetooth::g_bt_connections &&
+                            bluetooth::g_bt_connections->call_action(j.value("path", std::string{}), action, err);
+                        if (!payload["success"])
+                            payload["message"] = err;
+                        broadcast_local_event(payload.dump());
+                        write_plain_packet(client_fd, payload.dump() + "\n");
+                        continue;
+                    } else if (j.contains("command") && j["command"] == "bt_call_tones" && j.contains("tones")) {
+                        std::string err = _("Bluetooth is unavailable.");
+                        nlohmann::json payload;
+                        payload["command"] = "bt_call_result";
+                        payload["action"] = "tones";
+                        payload["success"] = bluetooth::g_bt_connections && bluetooth::g_bt_connections->call_tones(
+                                                                                j.value("tones", std::string{}), err);
+                        if (!payload["success"])
+                            payload["message"] = err;
+                        broadcast_local_event(payload.dump());
+                        write_plain_packet(client_fd, payload.dump() + "\n");
+                        continue;
                     } else if (j.contains("command") && j["command"] == "bt_set_retention" && j.contains("retention")) {
                         auto config = bluetooth::load_config();
                         const Retention previous = config.retention;

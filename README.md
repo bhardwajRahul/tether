@@ -32,6 +32,7 @@
 | **Mail Extension** | ✅ Stable |
 | **Messages (SMS/iMessage)** | 🧪 Beta |
 | **Notification Mirroring** | 🧪 Beta |
+| **Phone Calls** | 🧪 Beta |
 | **TOTP/OTP Vault** | 🗓️ Planning |
 
 ### Clipboard Sync
@@ -43,10 +44,15 @@ Drag and drop files from Linux directly into the iPhone app, or receive files au
 ### Messages and Notifications
 Read and reply to SMS and iMessage conversations, and see notifications from any app on the phone, on the Linux desktop.
 
+### Phone Calls
+Place, answer and end calls on the iPhone from the desktop, with caller ID resolved
+against your contacts, plus the phone's carrier and signal. The call audio stays on the
+iPhone. Nothing to configure; see [docs/BLUETOOTH.md](docs/BLUETOOTH.md).
+
 ### Device Pairing
 There are two ways tether communicates with the iPhone:
 - WiFi: for clipboard sync, file transfer, and OTP handling
-- Bluetooth: for Messages and Notifications
+- Bluetooth: for Messages, Notifications, and Calls
 
 You can use either or both, depending on your needs.
 

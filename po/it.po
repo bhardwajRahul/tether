@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 20:40-0700\n"
+"POT-Creation-Date: 2026-09-04 10:58-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Italian\n"
@@ -157,6 +157,30 @@ msgstr "Sceglie quale adattatore Bluetooth usare."
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
 msgstr "Elenca le notifiche dell'iPhone rispecchiate."
+
+#: src/cli/main.cpp
+msgid "List calls on the iPhone."
+msgstr "Elencare le chiamate sull'iPhone."
+
+#: src/cli/main.cpp
+msgid "Place a call from the iPhone."
+msgstr "Effettuare una chiamata dall'iPhone."
+
+#: src/cli/main.cpp
+msgid "Answer the ringing call."
+msgstr "Rispondere alla chiamata in arrivo."
+
+#: src/cli/main.cpp
+msgid "Hang up every call."
+msgstr "Chiudere tutte le chiamate."
+
+#: src/cli/main.cpp
+msgid ""
+"Turn call control on or off. Calls run over Bluetooth Hands-Free; the audio "
+"stays on the iPhone."
+msgstr ""
+"Attivare o disattivare il controllo delle chiamate. Le chiamate usano il "
+"vivavoce Bluetooth; l'audio resta sull'iPhone."
 
 #: src/cli/main.cpp
 msgid "Print a redacted Bluetooth report for a bug report."
@@ -425,8 +449,42 @@ msgid "Contacts (PBAP)"
 msgstr "Contatti (PBAP)"
 
 #: src/cli/main.cpp
+msgid "no carrier"
+msgstr "nessun operatore"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid " signal {0}/5 battery {1}/5"
+msgstr " segnale {0}/5 batteria {1}/5"
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "roaming"
+msgstr "roaming"
+
+#: src/cli/main.cpp
+msgid "Calls (HFP)"
+msgstr "Chiamate (HFP)"
+
+#: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
 msgstr "Impossibile leggere la diagnostica Bluetooth dal daemon.\n"
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "The call could not be placed."
+msgstr "Non è stato possibile effettuare la chiamata."
+
+#: src/cli/main.cpp
+msgid "Could not read calls from the daemon.\n"
+msgstr "Impossibile leggere le chiamate dal servizio.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No calls. Check 'tether --bt-connection'.\n"
+msgstr "Nessuna chiamata. Controllare 'tether --bt-connection'.\n"
+
+#: src/cli/main.cpp
+msgid "withheld"
+msgstr "nascosto"
 
 #: src/cli/main.cpp
 msgid "Could not read notifications from the daemon.\n"
@@ -564,6 +622,34 @@ msgstr "Nessun dispositivo accoppiato con quell'impronta.\n"
 #, c++-format
 msgid "Transfer Failed: {}"
 msgstr "Trasferimento non riuscito: {}"
+
+#: src/cli/main.cpp
+msgid "A number is required, e.g. --bt-call +15551234567\n"
+msgstr "È richiesto un numero, ad es. --bt-call +15551234567\n"
+
+#: src/cli/main.cpp
+msgid "Dialing."
+msgstr "Composizione in corso."
+
+#: src/cli/main.cpp
+msgid "Answering."
+msgstr "Risposta in corso."
+
+#: src/cli/main.cpp
+msgid "Hanging up."
+msgstr "Chiusura in corso."
+
+#: src/cli/main.cpp
+msgid "Expected on or off, e.g. --bt-calls-enable on\n"
+msgstr "Atteso on o off, ad es. --bt-calls-enable on\n"
+
+#: src/cli/main.cpp
+msgid "Call control enabled."
+msgstr "Controllo delle chiamate attivato."
+
+#: src/cli/main.cpp
+msgid "Call control disabled."
+msgstr "Controllo delle chiamate disattivato."
 
 #: src/cli/main.cpp
 msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
@@ -758,6 +844,10 @@ msgid ""
 msgstr ""
 "L'iPhone non offre notifiche su questo collegamento. Nuova richiesta in "
 "corso..."
+
+#: src/core/src/bluetooth/connection.cpp
+msgid "Call control is off."
+msgstr "Il controllo delle chiamate è disattivato."
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "No paired iPhone selected."
@@ -1002,7 +1092,8 @@ msgstr ""
 msgid "{} could not be opened."
 msgstr "Non è stato possibile aprire {}."
 
-#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/notifications_view.cpp
+#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/calls_view.cpp
+#: src/gtk/notifications_view.cpp
 msgid "Waiting for the iPhone."
 msgstr "In attesa dell'iPhone."
 
@@ -1013,6 +1104,34 @@ msgstr "Messaggi e contatti sono connessi."
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
 msgstr "Apertura di messaggi e contatti..."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "The iPhone has not connected Hands-Free to this computer."
+msgstr "L'iPhone non ha collegato il vivavoce a questo computer."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Connecting to the iPhone's Hands-Free service."
+msgstr "Connessione al servizio vivavoce dell'iPhone."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a dialable number."
+msgstr "Non è un numero componibile."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "No call named."
+msgstr "Nessuna chiamata indicata."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "That call is no longer active."
+msgstr "Quella chiamata non è più attiva."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Unknown call action."
+msgstr "Azione di chiamata sconosciuta."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a DTMF sequence."
+msgstr "Non è una sequenza DTMF."
 
 #: src/core/src/net.cpp
 msgid "Notification mirroring is already active; nothing to do."
@@ -1085,6 +1204,76 @@ msgstr "Rispondi"
 #: src/daemon/notification.cpp
 msgid "Copy Code"
 msgstr "Copia codice"
+
+#: src/gtk/calls_view.cpp
+msgid "Incoming"
+msgstr "In arrivo"
+
+#: src/gtk/calls_view.cpp
+msgid "Call waiting"
+msgstr "Avviso di chiamata"
+
+#: src/gtk/calls_view.cpp
+msgid "Dialing"
+msgstr "Composizione"
+
+#: src/gtk/calls_view.cpp
+msgid "Ringing"
+msgstr "Squilla"
+
+#: src/gtk/calls_view.cpp
+msgid "On call"
+msgstr "In chiamata"
+
+#: src/gtk/calls_view.cpp
+msgid "On hold"
+msgstr "In attesa"
+
+#: src/gtk/calls_view.cpp
+msgid "Ended"
+msgstr "Terminata"
+
+#: src/gtk/calls_view.cpp
+msgid "No service"
+msgstr "Nessun servizio"
+
+#: src/gtk/calls_view.cpp
+msgid "Unknown caller"
+msgstr "Chiamante sconosciuto"
+
+#: src/gtk/calls_view.cpp
+msgid "Answer"
+msgstr "Rispondi"
+
+#: src/gtk/calls_view.cpp
+msgid "Decline"
+msgstr "Rifiuta"
+
+#: src/gtk/calls_view.cpp
+msgid "Hang up"
+msgstr "Chiudi"
+
+#: src/gtk/calls_view.cpp
+msgid "No calls."
+msgstr "Nessuna chiamata."
+
+#: src/gtk/calls_view.cpp
+msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+msgstr ""
+"Il controllo delle chiamate è disattivato. Attivarlo con 'tether --bt-calls-"
+"enable on'."
+
+#: src/gtk/calls_view.cpp
+msgid "Number to call"
+msgstr "Numero da chiamare"
+
+#: src/gtk/calls_view.cpp
+msgid "Call"
+msgstr "Chiama"
+
+#: src/gtk/calls_view.cpp
+msgid "The iPhone's carrier, signal, and battery."
+msgstr "Operatore, segnale e batteria dell'iPhone."
 
 #: src/gtk/contacts_view.cpp
 msgid "Copy"
@@ -1579,6 +1768,10 @@ msgid "Devices"
 msgstr "Dispositivi"
 
 #: src/gtk/main.cpp
+msgid "Calls"
+msgstr "Chiamate"
+
+#: src/gtk/main.cpp
 msgid "Start hidden in the system tray"
 msgstr "Avvia nascosto nella tray di sistema"
 
@@ -1717,6 +1910,45 @@ msgstr "Sincronizzazione dispositivi"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Accoppia dispositivi e sincronizza gli appunti sulla rete"
+
+#~ msgid "Move call audio to this computer, or back to the iPhone."
+#~ msgstr ""
+#~ "Spostare l'audio della chiamata su questo computer, o di nuovo "
+#~ "sull'iPhone."
+
+#~ msgid ""
+#~ "Turn call control on or off. Needs the hfp_hf role and telephony service "
+#~ "in WirePlumber; see docs/BLUETOOTH.md."
+#~ msgstr ""
+#~ "Attivare o disattivare il controllo delle chiamate. Richiede il ruolo "
+#~ "hfp_hf e il servizio di telefonia in WirePlumber; vedere docs/"
+#~ "BLUETOOTH.md."
+
+#~ msgid "Call audio moved to this computer."
+#~ msgstr "Audio della chiamata spostato su questo computer."
+
+#~ msgid "Take audio here"
+#~ msgstr "Porta l'audio qui"
+
+#~ msgid ""
+#~ "Play the call through this computer's speakers and microphone. Handing it "
+#~ "back applies to the next call."
+#~ msgstr ""
+#~ "Riprodurre la chiamata con gli altoparlanti e il microfono di questo "
+#~ "computer. La restituzione vale dalla chiamata successiva."
+
+#~ msgid "Expected here or phone, e.g. --bt-call-audio here\n"
+#~ msgstr "Atteso here o phone, ad es. --bt-call-audio here\n"
+
+#~ msgid ""
+#~ "New calls will stay on the iPhone. A call already playing here does not "
+#~ "move back."
+#~ msgstr ""
+#~ "Le nuove chiamate resteranno sull'iPhone. Una chiamata già in corso qui "
+#~ "non torna indietro."
+
+#~ msgid "Move audio to iPhone"
+#~ msgstr "Sposta l'audio sull'iPhone"
 
 #, fuzzy
 #~ msgid "Tether version"

@@ -18,7 +18,8 @@ TEST(AgentPolicy, AuthorizesOnlyMapAndPbap) {
 }
 
 TEST(AgentPolicy, RefusesEverythingElse) {
-    // Hands-free / headset: the phone offers these, Tether must not accept them.
+    // Hands-free / headset: offered by the phone, and refused until call control
+    // is deliberately turned on.
     EXPECT_FALSE(is_authorized_service("0000111e-0000-1000-8000-00805f9b34fb"));
     EXPECT_FALSE(is_authorized_service("0000110a-0000-1000-8000-00805f9b34fb"));
     // ANCS is reached over GATT after bonding, never authorized as a profile.
@@ -32,6 +33,30 @@ TEST(AgentPolicy, RefusesEverythingElse) {
 
 TEST(AgentPolicy, ServiceMatchIsCaseInsensitive) {
     EXPECT_TRUE(is_authorized_service("0000112F-0000-1000-8000-00805F9B34FB"));
+    EXPECT_TRUE(is_authorized_service("0000111E-0000-1000-8000-00805F9B34FB", true));
+}
+
+// Call control needs the phone to reach the HFP channel PipeWire registers, so
+// the hands-free UUIDs are authorized -- but only then.
+TEST(AgentPolicy, AuthorizesHandsFreeOnlyWithCallsEnabled) {
+    for (const char* uuid : {"0000111e-0000-1000-8000-00805f9b34fb",
+                             "0000111f-0000-1000-8000-00805f9b34fb",
+                             "00001108-0000-1000-8000-00805f9b34fb",
+                             "00001112-0000-1000-8000-00805f9b34fb"}) {
+        EXPECT_FALSE(is_authorized_service(uuid)) << uuid;
+        EXPECT_TRUE(is_authorized_service(uuid, true)) << uuid;
+    }
+}
+
+// Widening the set for calls must not open anything else.
+TEST(AgentPolicy, CallsEnabledStillRefusesEverythingElse) {
+    EXPECT_FALSE(is_authorized_service("0000110a-0000-1000-8000-00805f9b34fb", true)); // A2DP source
+    EXPECT_FALSE(is_authorized_service("0000110b-0000-1000-8000-00805f9b34fb", true)); // A2DP sink
+    EXPECT_FALSE(is_authorized_service("7905f431-b5ce-4e99-a40f-4b1e122d00d0", true)); // ANCS
+    EXPECT_FALSE(is_authorized_service("", true));
+    EXPECT_FALSE(is_authorized_service("garbage", true));
+    EXPECT_FALSE(is_authorized_service("0000111e-0000-1000-8000-00805f9b34f", true));
+    EXPECT_FALSE(is_authorized_service("0000111e-0000-1000-8000-00805f9b34fbb", true));
 }
 
 // iOS renders the comparison with leading zeros. Dropping them shows the user a
@@ -51,6 +76,7 @@ TEST(BluetoothConfig, RoundTrips) {
     config.ancs_enabled = false;
     config.enabled = false;
     config.adapter = "hci1";
+    config.calls_enabled = true;
 
     EXPECT_EQ(deserialize_config(serialize_config(config)), config);
 }
@@ -64,6 +90,8 @@ TEST(BluetoothConfig, DefaultsToConnectFirstAndAncsEnabled) {
     EXPECT_TRUE(config.enabled);
     // No controller pinned means the first powered one.
     EXPECT_TRUE(config.adapter.empty());
+    // Call control needs WirePlumber configured for it, so it is never assumed.
+    EXPECT_FALSE(config.calls_enabled);
 }
 
 // Switching Bluetooth off supervises no device, which is what stops the daemon

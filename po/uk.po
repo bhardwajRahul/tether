@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 20:40-0700\n"
+"POT-Creation-Date: 2026-09-04 10:58-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Ukrainian\n"
@@ -157,6 +157,30 @@ msgstr "Вибирає, який адаптер Bluetooth використову
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
 msgstr "Показати продубльовані сповіщення з iPhone."
+
+#: src/cli/main.cpp
+msgid "List calls on the iPhone."
+msgstr "Показати виклики на iPhone."
+
+#: src/cli/main.cpp
+msgid "Place a call from the iPhone."
+msgstr "Здійснити виклик з iPhone."
+
+#: src/cli/main.cpp
+msgid "Answer the ringing call."
+msgstr "Відповісти на вхідний виклик."
+
+#: src/cli/main.cpp
+msgid "Hang up every call."
+msgstr "Завершити всі виклики."
+
+#: src/cli/main.cpp
+msgid ""
+"Turn call control on or off. Calls run over Bluetooth Hands-Free; the audio "
+"stays on the iPhone."
+msgstr ""
+"Увімкнути або вимкнути керування викликами. Виклики йдуть через Bluetooth "
+"Hands-Free; звук залишається на iPhone."
 
 #: src/cli/main.cpp
 msgid "Print a redacted Bluetooth report for a bug report."
@@ -429,8 +453,42 @@ msgid "Contacts (PBAP)"
 msgstr "Контакти (PBAP)"
 
 #: src/cli/main.cpp
+msgid "no carrier"
+msgstr "немає оператора"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid " signal {0}/5 battery {1}/5"
+msgstr " сигнал {0}/5 батарея {1}/5"
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "roaming"
+msgstr "роумінг"
+
+#: src/cli/main.cpp
+msgid "Calls (HFP)"
+msgstr "Виклики (HFP)"
+
+#: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
 msgstr "Не вдалося прочитати діагностику Bluetooth у демона.\n"
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "The call could not be placed."
+msgstr "Не вдалося здійснити виклик."
+
+#: src/cli/main.cpp
+msgid "Could not read calls from the daemon.\n"
+msgstr "Не вдалося отримати виклики від служби.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No calls. Check 'tether --bt-connection'.\n"
+msgstr "Викликів немає. Перевірте 'tether --bt-connection'.\n"
+
+#: src/cli/main.cpp
+msgid "withheld"
+msgstr "прихований"
 
 #: src/cli/main.cpp
 msgid "Could not read notifications from the daemon.\n"
@@ -569,6 +627,34 @@ msgstr "Немає спареного пристрою з таким відби�
 #, c++-format
 msgid "Transfer Failed: {}"
 msgstr "Передавання не вдалося: {}"
+
+#: src/cli/main.cpp
+msgid "A number is required, e.g. --bt-call +15551234567\n"
+msgstr "Потрібен номер, наприклад --bt-call +15551234567\n"
+
+#: src/cli/main.cpp
+msgid "Dialing."
+msgstr "Триває набір."
+
+#: src/cli/main.cpp
+msgid "Answering."
+msgstr "Відповідь на виклик."
+
+#: src/cli/main.cpp
+msgid "Hanging up."
+msgstr "Завершення виклику."
+
+#: src/cli/main.cpp
+msgid "Expected on or off, e.g. --bt-calls-enable on\n"
+msgstr "Очікувалося on або off, наприклад --bt-calls-enable on\n"
+
+#: src/cli/main.cpp
+msgid "Call control enabled."
+msgstr "Керування викликами увімкнено."
+
+#: src/cli/main.cpp
+msgid "Call control disabled."
+msgstr "Керування викликами вимкнено."
 
 #: src/cli/main.cpp
 msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
@@ -757,6 +843,10 @@ msgstr ""
 msgid ""
 "The iPhone is not offering notifications on this link. Asking it again..."
 msgstr "iPhone не пропонує сповіщень на цьому з'єднанні. Повторний запит..."
+
+#: src/core/src/bluetooth/connection.cpp
+msgid "Call control is off."
+msgstr "Керування викликами вимкнено."
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "No paired iPhone selected."
@@ -996,7 +1086,8 @@ msgstr ""
 msgid "{} could not be opened."
 msgstr "Не вдалося відкрити {}."
 
-#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/notifications_view.cpp
+#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/calls_view.cpp
+#: src/gtk/notifications_view.cpp
 msgid "Waiting for the iPhone."
 msgstr "Очікування iPhone."
 
@@ -1007,6 +1098,34 @@ msgstr "Повідомлення та контакти під'єднано."
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
 msgstr "Відкривання повідомлень і контактів..."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "The iPhone has not connected Hands-Free to this computer."
+msgstr "iPhone не підключив Hands-Free до цього комп’ютера."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Connecting to the iPhone's Hands-Free service."
+msgstr "Підключення до служби Hands-Free на iPhone."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a dialable number."
+msgstr "Такий номер набрати не можна."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "No call named."
+msgstr "Виклик не вказано."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "That call is no longer active."
+msgstr "Цей виклик уже не активний."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Unknown call action."
+msgstr "Невідома дія з викликом."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a DTMF sequence."
+msgstr "Це не послідовність DTMF."
 
 #: src/core/src/net.cpp
 msgid "Notification mirroring is already active; nothing to do."
@@ -1080,6 +1199,76 @@ msgstr "Відповісти"
 #: src/daemon/notification.cpp
 msgid "Copy Code"
 msgstr "Скопіювати код"
+
+#: src/gtk/calls_view.cpp
+msgid "Incoming"
+msgstr "Вхідний"
+
+#: src/gtk/calls_view.cpp
+msgid "Call waiting"
+msgstr "Виклик очікує"
+
+#: src/gtk/calls_view.cpp
+msgid "Dialing"
+msgstr "Набір"
+
+#: src/gtk/calls_view.cpp
+msgid "Ringing"
+msgstr "Дзвінок"
+
+#: src/gtk/calls_view.cpp
+msgid "On call"
+msgstr "Розмова"
+
+#: src/gtk/calls_view.cpp
+msgid "On hold"
+msgstr "На утриманні"
+
+#: src/gtk/calls_view.cpp
+msgid "Ended"
+msgstr "Завершено"
+
+#: src/gtk/calls_view.cpp
+msgid "No service"
+msgstr "Немає мережі"
+
+#: src/gtk/calls_view.cpp
+msgid "Unknown caller"
+msgstr "Невідомий абонент"
+
+#: src/gtk/calls_view.cpp
+msgid "Answer"
+msgstr "Відповісти"
+
+#: src/gtk/calls_view.cpp
+msgid "Decline"
+msgstr "Відхилити"
+
+#: src/gtk/calls_view.cpp
+msgid "Hang up"
+msgstr "Завершити"
+
+#: src/gtk/calls_view.cpp
+msgid "No calls."
+msgstr "Викликів немає."
+
+#: src/gtk/calls_view.cpp
+msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+msgstr ""
+"Керування викликами вимкнено. Увімкніть його командою 'tether --bt-calls-"
+"enable on'."
+
+#: src/gtk/calls_view.cpp
+msgid "Number to call"
+msgstr "Номер для виклику"
+
+#: src/gtk/calls_view.cpp
+msgid "Call"
+msgstr "Подзвонити"
+
+#: src/gtk/calls_view.cpp
+msgid "The iPhone's carrier, signal, and battery."
+msgstr "Оператор, сигнал і батарея iPhone."
 
 #: src/gtk/contacts_view.cpp
 msgid "Copy"
@@ -1571,6 +1760,10 @@ msgid "Devices"
 msgstr "Пристрої"
 
 #: src/gtk/main.cpp
+msgid "Calls"
+msgstr "Виклики"
+
+#: src/gtk/main.cpp
 msgid "Start hidden in the system tray"
 msgstr "Запускатися прихованим у системному лотку"
 
@@ -1708,6 +1901,42 @@ msgstr "Синхронізація пристроїв"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Створюйте пари пристроїв і синхронізуйте буфер обміну через мережу"
+
+#~ msgid "Move call audio to this computer, or back to the iPhone."
+#~ msgstr "Перевести звук виклику на цей комп’ютер або назад на iPhone."
+
+#~ msgid ""
+#~ "Turn call control on or off. Needs the hfp_hf role and telephony service "
+#~ "in WirePlumber; see docs/BLUETOOTH.md."
+#~ msgstr ""
+#~ "Увімкнути або вимкнути керування викликами. Потрібна роль hfp_hf і служба "
+#~ "телефонії у WirePlumber; див. docs/BLUETOOTH.md."
+
+#~ msgid "Call audio moved to this computer."
+#~ msgstr "Звук виклику переведено на цей комп’ютер."
+
+#~ msgid "Take audio here"
+#~ msgstr "Перевести звук сюди"
+
+#~ msgid ""
+#~ "Play the call through this computer's speakers and microphone. Handing it "
+#~ "back applies to the next call."
+#~ msgstr ""
+#~ "Відтворювати виклик через динаміки та мікрофон цього комп’ютера. "
+#~ "Повернення діє з наступного виклику."
+
+#~ msgid "Expected here or phone, e.g. --bt-call-audio here\n"
+#~ msgstr "Очікувалося here або phone, наприклад --bt-call-audio here\n"
+
+#~ msgid ""
+#~ "New calls will stay on the iPhone. A call already playing here does not "
+#~ "move back."
+#~ msgstr ""
+#~ "Нові виклики залишаться на iPhone. Виклик, що вже звучить тут, не "
+#~ "повернеться."
+
+#~ msgid "Move audio to iPhone"
+#~ msgstr "Перевести звук на iPhone"
 
 #, fuzzy
 #~ msgid "Tether version"

@@ -632,6 +632,26 @@ namespace tether::bluetooth {
         std::atomic<bool> ancs_wanted{true};
         std::atomic<bool> ancs_content_wanted{true};
 
+        std::shared_ptr<TelephonyClient> telephony;
+        mutable std::mutex telephony_mutex;
+        ConnectionManager::CallsFn on_calls;
+        std::atomic<bool> calls_wanted{false};
+        bool calls_enabled = false;
+        // Last published call list
+        nlohmann::json last_calls;
+
+        // Brings the telephony client in line with the wanted preference.
+        void apply_calls_preference();
+
+        // Publishes the call list when it differs from the last one.
+        void sync_calls();
+
+        // The current client, kept alive for as long as the caller.
+        std::shared_ptr<TelephonyClient> calls_client() const {
+            std::lock_guard<std::mutex> lock(telephony_mutex);
+            return telephony;
+        }
+
         void run();
         void sync_messages(int64_t now);
         void sync_contacts();
@@ -669,6 +689,8 @@ namespace tether::bluetooth {
 
     void ConnectionState::refresh_status() {
         nlohmann::json payload = to_json(bearers->status(), profiles->status());
+        auto client = calls_client();
+        payload["calls"] = client ? client->status() : nlohmann::json(nullptr);
         std::lock_guard<std::mutex> lock(status_mutex);
         payload["ancs_ready"] = ancs_ready;
         payload["ancs_reason"] = ancs_reason;
@@ -1086,6 +1108,37 @@ namespace tether::bluetooth {
         debug::log(INFO, "bluetooth: notification mirroring {}", effective ? "enabled" : "disabled");
     }
 
+    void ConnectionState::apply_calls_preference() {
+        const bool wanted = calls_wanted.load() && on_calls;
+        if (wanted == calls_enabled)
+            return;
+        calls_enabled = wanted;
+
+        std::shared_ptr<TelephonyClient> client;
+        if (wanted)
+            client = std::make_shared<TelephonyClient>(*monitor, address);
+        {
+            std::lock_guard<std::mutex> lock(telephony_mutex);
+            telephony = std::move(client);
+        }
+        last_calls = nullptr;
+        debug::log(INFO, "bluetooth: call control {}", wanted ? "enabled" : "disabled");
+    }
+
+    void ConnectionState::sync_calls() {
+        auto client = calls_client();
+        if (!client) {
+            last_calls = nullptr;
+            return;
+        }
+        nlohmann::json calls = client->calls();
+        if (calls == last_calls)
+            return;
+        last_calls = calls;
+        if (on_calls)
+            on_calls(std::move(calls));
+    }
+
     void ConnectionState::run() {
         using namespace std::chrono;
         const auto started = steady_clock::now();
@@ -1094,6 +1147,7 @@ namespace tether::bluetooth {
             const int64_t now = duration_cast<seconds>(steady_clock::now() - started).count();
 
             apply_ancs_preference();
+            apply_calls_preference();
 
             const bool obex_up = profiles->status().map_open || profiles->status().pbap_open;
 
@@ -1130,6 +1184,7 @@ namespace tether::bluetooth {
             sync_contacts();
             sync_messages(now);
             sync_ancs(now);
+            sync_calls();
 
             std::unique_lock<std::mutex> lock(mutex);
             wake.wait_for(lock, seconds(SUPERVISOR_TICK_SECONDS), [this] { return !running; });
@@ -1166,7 +1221,9 @@ namespace tether::bluetooth {
         state_->address = address;
         state_->ancs_preference = ancs_enabled;
         state_->ancs_wanted = ancs_enabled;
-        state_->ancs_content_wanted = load_config().ancs_content_enabled;
+        const Config config = load_config();
+        state_->ancs_content_wanted = config.ancs_content_enabled;
+        state_->calls_wanted = config.calls_enabled;
         // Read the controller's capability here rather than letting each caller
         // latch its own copy. At startup BlueZ may not have finished enumerating
         // the adapter, and its free advertising-instance count drops to zero
@@ -1231,6 +1288,13 @@ namespace tether::bluetooth {
             state_->ancs_client.reset();
         }
 
+        {
+            std::lock_guard<std::mutex> lock(state_->telephony_mutex);
+            state_->telephony.reset();
+        }
+        state_->calls_enabled = false;
+        state_->last_calls = nullptr;
+
         // The supervisors borrow the ops objects — ~ProfileSupervisor removes the
         // obexd sessions through them — so they go first, and start() only ever
         // builds into empty pointers.
@@ -1276,6 +1340,54 @@ namespace tether::bluetooth {
         for (const auto& notification : client->recent_notifications(limit))
             out.push_back(ancs::to_json(notification));
         return out;
+    }
+
+    void ConnectionManager::set_call_handler(CallsFn on_calls) { state_->on_calls = std::move(on_calls); }
+
+    void ConnectionManager::set_calls_enabled(bool enabled) { state_->calls_wanted = enabled; }
+
+    bool ConnectionManager::dial(const std::string& number, std::string& err) {
+        auto client = state_->calls_client();
+        if (!client) {
+            err = _("Call control is off.");
+            return false;
+        }
+        return client->dial(number, err);
+    }
+
+    bool ConnectionManager::call_action(const std::string& path, const std::string& action, std::string& err) {
+        auto client = state_->calls_client();
+        if (!client) {
+            err = _("Call control is off.");
+            return false;
+        }
+        return client->call_action(path, action, err);
+    }
+
+    bool ConnectionManager::call_tones(const std::string& tones, std::string& err) {
+        auto client = state_->calls_client();
+        if (!client) {
+            err = _("Call control is off.");
+            return false;
+        }
+        return client->send_tones(tones, err);
+    }
+
+    nlohmann::json ConnectionManager::calls() const {
+        auto client = state_->calls_client();
+        if (!client)
+            return nlohmann::json::array();
+
+        nlohmann::json calls = client->calls();
+        std::lock_guard<std::mutex> lock(g_messages_mutex);
+        for (auto& call : calls) {
+            const std::string number = call.value("number", "");
+            if (number.empty() || !call.value("name", "").empty())
+                continue;
+            if (std::string name = contact_store().name_for("tel:" + number); !name.empty())
+                call["name"] = std::move(name);
+        }
+        return calls;
     }
 
     void ConnectionManager::set_device(const std::string& address, bool ancs_enabled) {

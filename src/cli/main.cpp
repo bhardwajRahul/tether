@@ -208,6 +208,12 @@ static const Opt kOptions[] = {
         "none deletes what is stored and keeps nothing further.")},
     {"--bt-adapter <hciN|auto>", N_("Choose which Bluetooth controller to use.")},
     {"--bt-notifications", N_("List mirrored iPhone notifications.")},
+    {"--bt-calls", N_("List calls on the iPhone.")},
+    {"--bt-call <number>", N_("Place a call from the iPhone.")},
+    {"--bt-answer", N_("Answer the ringing call.")},
+    {"--bt-hangup", N_("Hang up every call.")},
+    {"--bt-calls-enable <on|off>",
+     N_("Turn call control on or off. Calls run over Bluetooth Hands-Free; the audio stays on the iPhone.")},
     {"--bt-diagnostics", N_("Print a redacted Bluetooth report for a bug report.")},
     {"--install-extension-host",
      N_("Install the browser and mail extension's native messaging manifests for this user. Needed only for "
@@ -555,17 +561,34 @@ static int print_bt_connection(tether::Client& client) {
     fields.emplace_back(_("Contacts (PBAP)"), pbap);
 
     fields.emplace_back(_("Notifications"), yn(resp.value("ancs_ready", false)));
+
+    // Null while call control is off, which is the common case.
+    const nlohmann::json calls = resp.value("calls", nlohmann::json());
+    std::string call_state = yn(calls.is_object() && calls.value("available", false));
+    if (calls.is_object() && calls.value("available", false)) {
+        // Carrier and signal come from the phone over HFP.
+        const std::string carrier = calls.value("operator", "");
+        call_state += "  [" + (carrier.empty() ? std::string(_("no carrier")) : carrier) +
+                      tether::tr_format(_(" signal {0}/5 battery {1}/5"),
+                                        std::to_string(calls.value("signal", 0)),
+                                        std::to_string(calls.value("battery", 0))) +
+                      (calls.value("roaming", false) ? std::string(" ") + _("roaming") : std::string{}) + "]";
+    }
+    fields.emplace_back(_("Calls (HFP)"), call_state);
     print_fields(fields);
 
     const std::string link = resp.value("link_reason", "");
     const std::string profiles = resp.value("profile_reason", "");
     const std::string notifications = resp.value("ancs_reason", "");
+    const std::string call_reason = calls.is_object() ? calls.value("reason", "") : "";
     if (!link.empty())
         fprintf(stdout, "\n  %s\n", link.c_str());
     if (!profiles.empty())
         fprintf(stdout, "  %s\n", profiles.c_str());
     if (!notifications.empty())
         fprintf(stdout, "  %s\n", notifications.c_str());
+    if (!call_reason.empty())
+        fprintf(stdout, "  %s\n", call_reason.c_str());
     return 0;
 }
 
@@ -593,6 +616,51 @@ static std::string format_time(int64_t epoch) {
     char buf[32];
     std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M", &tm);
     return buf;
+}
+
+// Reports the daemon's own bt_call_result rather than assuming the send worked.
+static int run_call_command(tether::Client& client, const nlohmann::json& request, const char* done) {
+    nlohmann::json resp;
+    try {
+        resp = nlohmann::json::parse(client.send_and_wait(request.dump() + "\n"));
+    } catch (const std::exception&) {
+        debug::log(ERR, _("Could not reach the daemon.\n"));
+        return 1;
+    }
+    if (!resp.value("success", false)) {
+        debug::log(ERR, "{}\n", resp.value("message", _("The call could not be placed.")));
+        return 1;
+    }
+    fprintf(stdout, "%s\n", done);
+    return 0;
+}
+
+static int print_bt_calls(tether::Client& client) {
+    nlohmann::json resp;
+    try {
+        resp = nlohmann::json::parse(client.send_and_wait("{\"command\":\"bt_list_calls\"}\n"));
+    } catch (const std::exception&) {
+        debug::log(ERR, _("Could not read calls from the daemon.\n"));
+        return 1;
+    }
+
+    const auto& calls = resp["calls"];
+    if (calls.empty()) {
+        fprintf(stdout, _("No calls. Check 'tether --bt-connection'.\n"));
+        return 0;
+    }
+
+    for (const auto& call : calls) {
+        const std::string number = call.value("number", "");
+        const std::string name = call.value("name", "");
+        fprintf(stdout,
+                "%-12s %-24s %s\n",
+                call.value("state", "").c_str(),
+                (number.empty() ? _("withheld") : number.c_str()),
+                name.c_str());
+        fprintf(stdout, "  %s\n", call.value("path", "").c_str());
+    }
+    return 0;
 }
 
 static int print_bt_notifications(tether::Client& client) {
@@ -881,6 +949,22 @@ int main(int argc, char* argv[]) {
                 arg_val = argv[++i];
         } else if (arg == "--bt-notifications") {
             action = "bt_notifications";
+        } else if (arg == "--bt-calls") {
+            action = "bt_calls";
+        } else if (arg == "--bt-answer") {
+            action = "bt_call_action";
+            arg_val = "answer";
+        } else if (arg == "--bt-hangup") {
+            action = "bt_call_action";
+            arg_val = "hangup_all";
+        } else if (arg == "--bt-call") {
+            action = "bt_call";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
+        } else if (arg == "--bt-calls-enable") {
+            action = "bt_calls_enable";
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+                arg_val = argv[++i];
         } else if (arg == "--bt-pair") {
             action = "bt_pair";
             if (i + 1 < argc && argv[i + 1][0] != '-')
@@ -1059,6 +1143,35 @@ int main(int argc, char* argv[]) {
         return print_bt_contacts(client, arg_val);
     } else if (action == "bt_notifications") {
         return print_bt_notifications(client);
+    } else if (action == "bt_calls") {
+        return print_bt_calls(client);
+    } else if (action == "bt_call") {
+        if (arg_val.empty()) {
+            debug::log(ERR, _("A number is required, e.g. --bt-call +15551234567\n"));
+            return 1;
+        }
+        nlohmann::json request;
+        request["command"] = "bt_call_dial";
+        request["number"] = arg_val;
+        return run_call_command(client, request, _("Dialing."));
+    } else if (action == "bt_call_action") {
+        nlohmann::json request;
+        request["command"] = "bt_call_action";
+        request["action"] = arg_val;
+        return run_call_command(client, request, arg_val == "answer" ? _("Answering.") : _("Hanging up."));
+    } else if (action == "bt_calls_enable") {
+        if (arg_val != "on" && arg_val != "off") {
+            debug::log(ERR, _("Expected on or off, e.g. --bt-calls-enable on\n"));
+            return 1;
+        }
+        nlohmann::json request;
+        request["command"] = "bt_set_calls";
+        request["enabled"] = arg_val == "on";
+        if (!client.send(request.dump() + "\n")) {
+            debug::log(ERR, _("Could not reach the daemon.\n"));
+            return 1;
+        }
+        fprintf(stdout, "%s\n", arg_val == "on" ? _("Call control enabled.") : _("Call control disabled."));
     } else if (action == "bt_messages") {
         if (arg_val.empty()) {
             debug::log(ERR, _("A thread key is required, e.g. --bt-messages tel:+15551234567\n"));

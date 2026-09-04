@@ -308,6 +308,13 @@ int main(int argc, char** argv) {
                 });
         }
 
+        connections.set_call_handler([](const nlohmann::json& calls) {
+            nlohmann::json event;
+            event["command"] = "bt_calls";
+            event["calls"] = calls;
+            tether::broadcast_local_event(event.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
+        });
+
         connections.start(tether::bluetooth::supervised_address(bt_config), bt_config.ancs_enabled);
     } else {
         debug::log(INFO, "Bluetooth unavailable; messages and notifications are disabled");

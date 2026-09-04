@@ -123,6 +123,25 @@ Turn notification mirroring on or off.
 \fB\-\-bt-ancs-content\fR \fIon\fR|\fIoff\fR
 Mirror notification titles and bodies, not just the app.
 .TP
+\fB\-\-bt-calls\fR
+List calls on the iPhone: what is ringing, dialing, or connected.
+.TP
+\fB\-\-bt-call\fR \fInumber\fR
+Place a call from the iPhone. A leading \fI+\fR and digits are kept; spaces, dashes,
+dots and parentheses are dropped and anything else is refused.
+.TP
+\fB\-\-bt-answer\fR
+Answer the ringing call.
+.TP
+\fB\-\-bt-hangup\fR
+End every call.
+.TP
+\fB\-\-bt-calls-enable\fR \fIon\fR|\fIoff\fR
+Turn call control on or off. Off by default. Calls run over BlueZ's own hands-free
+profile, which needs \fBbluetoothd --experimental\fR -- the same flag notification
+mirroring requires. Control only: the call audio stays on the iPhone. See
+\fIdocs/BLUETOOTH.md\fR.
+.TP
 \fB\-\-bt-adapter\fR \fIhciN\fR|\fIauto\fR
 Choose which Bluetooth controller to use, by \fIhciN\fR or by address. Defaults to
 \fIauto\fR, the first powered controller, which is the wrong one on a machine with

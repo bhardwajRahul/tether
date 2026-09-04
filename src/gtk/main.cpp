@@ -1,3 +1,4 @@
+#include "calls_view.hpp"
 #include "contacts_view.hpp"
 #include "daemon_client.hpp"
 #include "devices_view.hpp"
@@ -49,6 +50,7 @@ namespace {
             gtk_widget_set_visible(g_refresh_button, view == "devices");
 
         messages_view_set_visible(view == "messages");
+        calls_view_set_visible(view == "calls");
         notifications_view_set_visible(view == "notifications");
         contacts_view_set_visible(view == "contacts");
     }
@@ -213,6 +215,7 @@ namespace {
         gtk_stack_add_titled(GTK_STACK(stack), devices_view_new(), "devices", _("Devices"));
         gtk_stack_add_titled(GTK_STACK(stack), messages_view_new(), "messages", _("Messages"));
         gtk_stack_add_titled(GTK_STACK(stack), notifications_view_new(), "notifications", _("Notifications"));
+        gtk_stack_add_titled(GTK_STACK(stack), calls_view_new(), "calls", _("Calls"));
         gtk_stack_add_titled(GTK_STACK(stack),
                              contacts_view_new([](const std::string& thread_key) {
                                  show_view("messages");
@@ -246,7 +249,9 @@ namespace {
                 return;
             if (messages_view_handle_event(event))
                 return;
-            notifications_view_handle_event(event);
+            if (notifications_view_handle_event(event))
+                return;
+            calls_view_handle_event(event);
         });
 
         devices_view_trigger_discovery();
@@ -272,7 +277,7 @@ int main(int argc, char** argv) {
                                   G_OPTION_ARG_NONE,
                                   _("Start hidden in the system tray"),
                                   nullptr);
-    for (const char* view : {"devices", "messages", "notifications", "contacts"}) {
+    for (const char* view : {"devices", "messages", "notifications", "calls", "contacts"}) {
         g_application_add_main_option(
             G_APPLICATION(app), view, 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, _("Open on this tab"), nullptr);
     }

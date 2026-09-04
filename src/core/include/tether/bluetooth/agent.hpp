@@ -12,7 +12,7 @@ namespace tether::bluetooth {
     // reason to consume.
     //   0x112E PBAP client, 0x112F PBAP server,
     //   0x1132 MAP server,  0x1133 MAP notification server, 0x1134 MAP client
-    bool is_authorized_service(const std::string& uuid);
+    bool is_authorized_service(const std::string& uuid, bool calls_enabled = false);
 
     // BlueZ hands passkeys over as a plain integer; Apple shows six digits with
     // leading zeros, and a mismatch here reads to the user as a failed pairing.
@@ -34,7 +34,10 @@ namespace tether::bluetooth {
         // of the prompt, which is harmless during a foreground pairing.
         using ConfirmHandler = std::function<bool(const std::string& code)>;
 
-        PairingAgent(GDBusConnection* connection, std::string device_path, ConfirmHandler on_confirm);
+        PairingAgent(GDBusConnection* connection,
+                     std::string device_path,
+                     ConfirmHandler on_confirm,
+                     bool calls_enabled = false);
         ~PairingAgent();
 
         PairingAgent(const PairingAgent&) = delete;

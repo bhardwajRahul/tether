@@ -11,6 +11,7 @@ add_executable(tether_test
     test_ancs_notifications.cpp
     test_groups.cpp
     test_bt_diagnostics.cpp
+    test_telephony.cpp
     test_vcard.cpp
     test_journal.cpp
     test_crypto.cpp
