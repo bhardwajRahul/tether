@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether 0.2.23\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:48-0700\n"
+"POT-Creation-Date: 2026-09-03 20:40-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -295,6 +295,16 @@ msgstr ""
 
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "History"
+msgstr ""
+
+#: src/cli/main.cpp
+msgid ""
+"paused - the desktop keyring has no key to offer yet.\n"
+"Unlock it, or run 'tether --bt-retention plaintext'."
 msgstr ""
 
 #: src/cli/main.cpp
@@ -1009,6 +1019,12 @@ msgstr ""
 
 #: src/gtk/devices_view.cpp
 msgid "This machine cannot carry the Bluetooth features."
+msgstr ""
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer\n"
+"yet. Unlock it, or choose Unencrypted above."
 msgstr ""
 
 #: src/gtk/devices_view.cpp

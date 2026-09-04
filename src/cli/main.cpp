@@ -371,6 +371,11 @@ static int print_bt_status(tether::Client& client) {
                         resp.value("ancs_enabled", true) ? _("mirroring on")
                                                          : _("mirroring off (tether --bt-ancs on)"));
     fields.emplace_back(_("Tether"), resp.value("enabled", true) ? _("connecting") : _("off (--bt-enable on)"));
+
+    if (resp.value("retention", "encrypted") == "encrypted" && !resp.value("retention_ready", true))
+        fields.emplace_back(_("History"),
+                            _("paused - the desktop keyring has no key to offer yet.\n"
+                              "Unlock it, or run 'tether --bt-retention plaintext'."));
     print_fields(fields);
 
     for (const auto& adapter : resp["adapters"]) {

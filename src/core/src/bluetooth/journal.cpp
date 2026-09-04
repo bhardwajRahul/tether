@@ -144,8 +144,11 @@ namespace tether::bluetooth {
         }
         in.close();
 
-        if (records.empty() && unreadable) {
-            debug::log(WARN, "bluetooth: cannot read {} to migrate it; leaving it in place", source);
+        if (unreadable) {
+            debug::log(WARN,
+                       "bluetooth: {} has {} unreadable line(s); leaving it in place rather than migrating part of it",
+                       source,
+                       unreadable);
             return false;
         }
 
@@ -157,6 +160,7 @@ namespace tether::bluetooth {
         const bool merging = std::filesystem::exists(destination);
         const std::string tmp = destination + ".tmp";
         const std::string target = merging ? destination : tmp;
+        bool failed = false;
         {
             std::ofstream out(target, merging ? std::ios::app : std::ios::trunc);
             if (!out.is_open()) {
@@ -165,14 +169,22 @@ namespace tether::bluetooth {
             }
             for (const auto& record : records) {
                 const std::string sealed = secret::seal(record, to);
-                if (sealed.empty())
-                    return false;
+                if (sealed.empty()) {
+                    debug::log(ERR, "bluetooth: cannot seal {}; leaving {} in place", destination, source);
+                    failed = true;
+                    break;
+                }
                 out << sealed << "\n";
             }
-            if (!out) {
+            if (!failed && !out) {
                 debug::log(ERR, "bluetooth: failed writing {}", target);
-                return false;
+                failed = true;
             }
+        }
+        if (failed) {
+            if (!merging)
+                std::filesystem::remove(tmp, ec);
+            return false;
         }
         restrict_permissions(target);
 
@@ -244,6 +256,7 @@ namespace tether::bluetooth {
 
     std::vector<Message> MessageJournal::load(int64_t now) const {
         std::vector<Message> messages;
+        skipped_ = 0;
         const std::string path = path_.empty() ? journal_path() : path_;
         if (path.empty())
             return messages;
@@ -265,6 +278,7 @@ namespace tether::bluetooth {
         }
         if (skipped)
             debug::log(WARN, "bluetooth: skipped {} unreadable journal line(s)", skipped);
+        skipped_ = skipped;
 
         return apply_retention(std::move(messages), now);
     }
@@ -275,6 +289,11 @@ namespace tether::bluetooth {
             return false;
 
         std::error_code ec;
+
+        if (skipped_) {
+            debug::log(WARN, "bluetooth: refusing to rewrite {} after a partial read", path);
+            return false;
+        }
 
         if (messages.empty() && std::filesystem::file_size(path, ec) > 0 && !ec) {
             debug::log(WARN, "bluetooth: refusing to empty a populated journal");

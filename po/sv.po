@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:48-0700\n"
+"POT-Creation-Date: 2026-09-03 20:40-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Swedish\n"
@@ -319,6 +319,18 @@ msgstr "ansluter"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "av (--bt-enable on)"
+
+#: src/cli/main.cpp
+msgid "History"
+msgstr "Historik"
+
+#: src/cli/main.cpp
+msgid ""
+"paused - the desktop keyring has no key to offer yet.\n"
+"Unlock it, or run 'tether --bt-retention plaintext'."
+msgstr ""
+"pausad – skrivbordets nyckelring har ännu ingen nyckel.\n"
+"Lås upp den eller kör ”tether --bt-retention plaintext”."
 
 #: src/cli/main.cpp
 msgid "in use"
@@ -1071,7 +1083,8 @@ msgstr "Skicka meddelande"
 
 #: src/gtk/contacts_view.cpp
 msgid "No contacts yet. Check the Bluetooth link on the Devices page."
-msgstr "Inga kontakter ännu. Kontrollera Bluetooth-anslutningen på sidan Enheter."
+msgstr ""
+"Inga kontakter ännu. Kontrollera Bluetooth-anslutningen på sidan Enheter."
 
 #: src/gtk/contacts_view.cpp
 msgid "Search contacts"
@@ -1118,6 +1131,14 @@ msgstr ""
 #: src/gtk/devices_view.cpp
 msgid "This machine cannot carry the Bluetooth features."
 msgstr "Den här maskinen klarar inte Bluetooth-funktionerna."
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer\n"
+"yet. Unlock it, or choose Unencrypted above."
+msgstr ""
+"Meddelandehistoriken är pausad: nyckelringen har ännu ingen nyckel.\n"
+"Lås upp den eller välj Okrypterat ovan."
 
 #: src/gtk/devices_view.cpp
 msgid "Link"

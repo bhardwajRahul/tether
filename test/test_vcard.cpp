@@ -390,3 +390,27 @@ TEST(ContactSearch, EveryEmittedAddressIsUsableAsARecipient) {
         }
     }
 }
+
+// The interrupted-migration rule keeps the destination and drops the source. The
+// test above writes the same phonebook to both paths, so it cannot tell which one
+// survived; this one gives them different contents and pins the documented rule.
+TEST(ContactStore, AnInterruptedMigrationKeepsTheDestinationNotTheSource) {
+    ScopedStore scoped("migrate-destination-wins");
+
+    ASSERT_TRUE(save_contacts(three_contacts()));
+    ASSERT_TRUE(std::filesystem::exists(scoped.store() / "contacts.json.enc"));
+
+    // A stale plaintext cache holding somebody the sealed one has never heard of.
+    {
+        secret::set_retention(Retention::Plaintext);
+        ContactStore stale;
+        stale.set(parse_vcards("BEGIN:VCARD\nFN:Stale Contact\nTEL:+15550000009\nEND:VCARD\n"));
+        ASSERT_TRUE(save_contacts(stale));
+    }
+
+    secret::set_retention(Retention::Encrypted);
+    const ContactStore loaded = load_contacts();
+    EXPECT_EQ(loaded.name_for("tel:+15551234567"), "Ada Lovelace") << "the sealed cache was replaced by the source";
+    EXPECT_EQ(loaded.name_for("tel:+15550000009"), "") << "the stale source won over the destination";
+    EXPECT_FALSE(std::filesystem::exists(scoped.store() / "contacts.json")) << "the plaintext copy is still on disk";
+}

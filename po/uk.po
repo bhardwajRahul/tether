@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:48-0700\n"
+"POT-Creation-Date: 2026-09-03 20:40-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Ukrainian\n"
@@ -323,6 +323,18 @@ msgstr "з'єднання"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "вимкнено (--bt-enable on)"
+
+#: src/cli/main.cpp
+msgid "History"
+msgstr "Історія"
+
+#: src/cli/main.cpp
+msgid ""
+"paused - the desktop keyring has no key to offer yet.\n"
+"Unlock it, or run 'tether --bt-retention plaintext'."
+msgstr ""
+"призупинено — у сховищі ключів ще немає ключа.\n"
+"Розблокуйте його або виконайте «tether --bt-retention plaintext»."
 
 #: src/cli/main.cpp
 msgid "in use"
@@ -1083,7 +1095,8 @@ msgstr "Написати повідомлення"
 
 #: src/gtk/contacts_view.cpp
 msgid "No contacts yet. Check the Bluetooth link on the Devices page."
-msgstr "Контактів поки немає. Перевірте зʼєднання Bluetooth на сторінці «Пристрої»."
+msgstr ""
+"Контактів поки немає. Перевірте зʼєднання Bluetooth на сторінці «Пристрої»."
 
 #: src/gtk/contacts_view.cpp
 msgid "Search contacts"
@@ -1128,6 +1141,14 @@ msgstr "Режим сумісності — повідомлення та кон
 #: src/gtk/devices_view.cpp
 msgid "This machine cannot carry the Bluetooth features."
 msgstr "Ця машина не потягне функції Bluetooth."
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer\n"
+"yet. Unlock it, or choose Unencrypted above."
+msgstr ""
+"Історію повідомлень призупинено: у сховищі ключів ще немає ключа.\n"
+"Розблокуйте його або виберіть «Без шифрування» вище."
 
 #: src/gtk/devices_view.cpp
 msgid "Link"

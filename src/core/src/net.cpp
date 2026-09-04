@@ -1128,8 +1128,7 @@ namespace tether {
                                     std::filesystem::remove(bluetooth::contacts_path(mode), ec);
                                 }
                             } else {
-                                bluetooth::migrate_journal(previous, config.retention);
-                                bluetooth::migrate_contacts(previous, config.retention);
+                                bluetooth::move_retained_store(previous, config.retention);
                             }
                         }
                         broadcast_local_event(build_bt_status().dump());

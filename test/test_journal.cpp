@@ -397,3 +397,105 @@ TEST(Journal, RetentionNoneWritesNothing) {
 
     std::filesystem::remove_all(home);
 }
+
+// One readable record is enough to clear the emptiness guard, so a journal the
+// wrong key cannot open used to be compacted down to whatever happened to decode.
+TEST(Journal, APartialReadIsNotCompactedAway) {
+    const auto home = scratch("partial");
+    const auto store = home / ".local" / "share" / "tether";
+    const auto sealed = store / "messages.ndjson.enc";
+
+    {
+        ScopedHome scoped(home);
+        MessageJournal journal;
+        ASSERT_TRUE(journal.open());
+        journal.append(make("/msg/1", NOW, "one"));
+        journal.append(make("/msg/2", NOW + 1, "two"));
+        journal.append(make("/msg/3", NOW + 2, "three"));
+    }
+    ASSERT_EQ(lines_of(sealed).size(), 3u);
+
+    // Dropping the key file makes the next open generate a fresh one in the same
+    // home, which is what a store sealed under a key the wallet later replaced
+    // looks like from here.
+    std::filesystem::remove(home / ".config" / "tether" / "store.key");
+
+    {
+        ScopedHome scoped(home);
+        MessageJournal journal;
+        ASSERT_TRUE(journal.open());
+        journal.append(make("/msg/4", NOW + 3, "four"));
+
+        auto loaded = journal.load(NOW + 3);
+        ASSERT_EQ(loaded.size(), 1u) << "the old key's records should not be readable here";
+        EXPECT_FALSE(journal.compact(loaded)) << "a partial read must not be written back";
+    }
+
+    EXPECT_EQ(lines_of(sealed).size(), 4u) << "the records the new key could not read were compacted away";
+
+    std::filesystem::remove_all(home);
+}
+
+// A mode change while the journal is open used to unlink the file out from under
+// the append stream, so every later message went to a deleted inode.
+TEST(Journal, AMigrationWhileOpenDoesNotStrandLaterAppends) {
+    const auto home = scratch("switch-open");
+    const auto store = home / ".local" / "share" / "tether";
+
+    ScopedHome scoped(home, Retention::Plaintext);
+    MessageJournal journal;
+    ASSERT_TRUE(journal.open());
+    journal.append(make("/msg/1", NOW, "before"));
+
+    // What bt_set_retention does: close first, then let the reopen migrate.
+    journal.close();
+    secret::set_retention(Retention::Encrypted);
+    ASSERT_TRUE(journal.open());
+    journal.append(make("/msg/2", NOW + 1, "after"));
+
+    EXPECT_FALSE(std::filesystem::exists(store / "messages.ndjson")) << "the plaintext copy outlived the switch";
+    EXPECT_EQ(lines_of(store / "messages.ndjson.enc").size(), 2u);
+
+    auto loaded = journal.load(NOW + 1);
+    ASSERT_EQ(loaded.size(), 2u) << "a message written after the switch was lost";
+    EXPECT_EQ(loaded[0].body, "before");
+    EXPECT_EQ(loaded[1].body, "after");
+
+    std::filesystem::remove_all(home);
+}
+
+// Migration unlinks the source, so carrying over only the lines that happened to
+// decode would destroy the rest.
+TEST(Journal, MigrationRefusesAPartiallyReadableSource) {
+    const auto home = scratch("migrate-partial");
+    const auto store = home / ".local" / "share" / "tether";
+    const auto sealed = store / "messages.ndjson.enc";
+
+    {
+        ScopedHome scoped(home);
+        MessageJournal journal;
+        ASSERT_TRUE(journal.open());
+        journal.append(make("/msg/1", NOW, "one"));
+        journal.append(make("/msg/2", NOW + 1, "two"));
+    }
+
+    // A line no key can open, appended to an otherwise readable store.
+    {
+        std::ofstream out(sealed, std::ios::app);
+        out << "bm90IGEgcmVhbCByZWNvcmQgYXQgYWxs\n";
+    }
+    ASSERT_EQ(lines_of(sealed).size(), 3u);
+
+    {
+        ScopedHome scoped(home, Retention::Plaintext);
+        MessageJournal journal;
+        ASSERT_TRUE(journal.open());
+        // open() creates the plaintext file to append to; the point is that the
+        // migration put nothing in it.
+        EXPECT_TRUE(lines_of(store / "messages.ndjson").empty())
+            << "a partial source was migrated instead of being left alone";
+    }
+    EXPECT_EQ(lines_of(sealed).size(), 3u) << "the unreadable source was removed";
+
+    std::filesystem::remove_all(home);
+}

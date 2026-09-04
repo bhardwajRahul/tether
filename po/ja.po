@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:48-0700\n"
+"POT-Creation-Date: 2026-09-03 20:40-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -315,6 +315,18 @@ msgstr "接続中"
 #: src/cli/main.cpp
 msgid "off (--bt-enable on)"
 msgstr "オフ (--bt-enable on)"
+
+#: src/cli/main.cpp
+msgid "History"
+msgstr "履歴"
+
+#: src/cli/main.cpp
+msgid ""
+"paused - the desktop keyring has no key to offer yet.\n"
+"Unlock it, or run 'tether --bt-retention plaintext'."
+msgstr ""
+"一時停止中 - デスクトップのキーリングにまだ鍵がありません。\n"
+"ロックを解除するか、'tether --bt-retention plaintext' を実行してください。"
 
 #: src/cli/main.cpp
 msgid "in use"
@@ -1063,7 +1075,8 @@ msgstr "メッセージを送信"
 
 #: src/gtk/contacts_view.cpp
 msgid "No contacts yet. Check the Bluetooth link on the Devices page."
-msgstr "まだ連絡先はありません。デバイスページで Bluetooth 接続を確認してください。"
+msgstr ""
+"まだ連絡先はありません。デバイスページで Bluetooth 接続を確認してください。"
 
 #: src/gtk/contacts_view.cpp
 msgid "Search contacts"
@@ -1108,6 +1121,14 @@ msgstr "互換モード — メッセージと連絡先のみ、通知のミラ�
 #: src/gtk/devices_view.cpp
 msgid "This machine cannot carry the Bluetooth features."
 msgstr "このマシンでは Bluetooth 機能を利用できません。"
+
+#: src/gtk/devices_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer\n"
+"yet. Unlock it, or choose Unencrypted above."
+msgstr ""
+"メッセージ履歴は一時停止中です: デスクトップのキーリングにまだ鍵が\n"
+"ありません。ロックを解除するか、上で「暗号化しない」を選んでください。"
 
 #: src/gtk/devices_view.cpp
 msgid "Link"

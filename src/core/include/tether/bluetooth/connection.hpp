@@ -5,6 +5,7 @@
 #include "tether/bluetooth/groups.hpp"
 #include "tether/bluetooth/messages.hpp"
 #include "tether/bluetooth/profile_supervisor.hpp"
+#include "tether/secret_store.hpp"
 
 #include <functional>
 #include <memory>
@@ -98,6 +99,9 @@ namespace tether::bluetooth {
 
     // Closes the message journal and drops the in-memory history.
     void discard_retained_messages();
+
+    // Follows a retention mode change on disk.
+    void move_retained_store(Retention previous, Retention next);
 
     void set_group_replies_enabled(bool enabled);
     void reload_group_rosters();
