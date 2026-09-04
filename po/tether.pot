@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether 0.2.24\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 10:58-0700\n"
+"POT-Creation-Date: 2026-09-04 14:22-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -990,6 +990,10 @@ msgstr ""
 
 #: src/core/src/bluetooth/telephony.cpp
 msgid "Connecting to the iPhone's Hands-Free service."
+msgstr ""
+
+#: src/core/src/bluetooth/telephony.cpp src/gtk/calls_view.cpp
+msgid "Calls are controlled here; the audio plays on the iPhone."
 msgstr ""
 
 #: src/core/src/bluetooth/telephony.cpp

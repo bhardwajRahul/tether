@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 10:58-0700\n"
+"POT-Creation-Date: 2026-09-04 14:22-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -1075,6 +1075,10 @@ msgstr "iPhone이 이 컴퓨터에 핸즈프리를 연결하지 않았습니다.
 #: src/core/src/bluetooth/telephony.cpp
 msgid "Connecting to the iPhone's Hands-Free service."
 msgstr "iPhone의 핸즈프리 서비스에 연결하는 중입니다."
+
+#: src/core/src/bluetooth/telephony.cpp src/gtk/calls_view.cpp
+msgid "Calls are controlled here; the audio plays on the iPhone."
+msgstr "통화는 여기서 제어하고 오디오는 iPhone에서 재생됩니다."
 
 #: src/core/src/bluetooth/telephony.cpp
 msgid "Not a dialable number."

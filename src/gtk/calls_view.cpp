@@ -133,6 +133,10 @@ namespace tether::ui {
             std::string secondary = state_text(state);
             if (!name.empty() && !number.empty())
                 secondary += secondary.empty() ? number : "  -  " + number;
+
+            if (call.value("connected", false))
+                secondary += std::string("\n") + _("Calls are controlled here; the audio plays on the iPhone.");
+
             GtkWidget* secondary_label = gtk_label_new(secondary.c_str());
             gtk_label_set_xalign(GTK_LABEL(secondary_label), 0.0);
             gtk_style_context_add_class(gtk_widget_get_style_context(secondary_label), "muted");
@@ -203,7 +207,7 @@ namespace tether::ui {
             const std::string reason = calls.is_object() ? calls.value("reason", "") : "";
             set_text(g_calls.status_label,
                      g_calls.available
-                         ? _("No calls.")
+                         ? std::string(_("No calls.")) + (reason.empty() ? "" : "\n" + reason)
                          : (reason.empty() ? _("Call control is off. Turn it on with 'tether --bt-calls-enable on'.")
                                            : reason));
             if (g_calls.visible)

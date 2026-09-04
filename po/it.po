@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 10:58-0700\n"
+"POT-Creation-Date: 2026-09-04 14:22-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Italian\n"
@@ -1112,6 +1112,10 @@ msgstr "L'iPhone non ha collegato il vivavoce a questo computer."
 #: src/core/src/bluetooth/telephony.cpp
 msgid "Connecting to the iPhone's Hands-Free service."
 msgstr "Connessione al servizio vivavoce dell'iPhone."
+
+#: src/core/src/bluetooth/telephony.cpp src/gtk/calls_view.cpp
+msgid "Calls are controlled here; the audio plays on the iPhone."
+msgstr "Le chiamate si controllano qui; l'audio viene riprodotto sull'iPhone."
 
 #: src/core/src/bluetooth/telephony.cpp
 msgid "Not a dialable number."

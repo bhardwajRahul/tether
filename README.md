@@ -32,7 +32,7 @@
 | **Mail Extension** | ✅ Stable |
 | **Messages (SMS/iMessage)** | 🧪 Beta |
 | **Notification Mirroring** | 🧪 Beta |
-| **Phone Calls** | 🧪 Beta |
+| **Phone Calls** | 🧪 Alpha |
 | **TOTP/OTP Vault** | 🗓️ Planning |
 
 ### Clipboard Sync
@@ -44,11 +44,6 @@ Drag and drop files from Linux directly into the iPhone app, or receive files au
 ### Messages and Notifications
 Read and reply to SMS and iMessage conversations, and see notifications from any app on the phone, on the Linux desktop.
 
-### Phone Calls
-Place, answer and end calls on the iPhone from the desktop, with caller ID resolved
-against your contacts, plus the phone's carrier and signal. The call audio stays on the
-iPhone. Nothing to configure; see [docs/BLUETOOTH.md](docs/BLUETOOTH.md).
-
 ### Device Pairing
 There are two ways tether communicates with the iPhone:
 - WiFi: for clipboard sync, file transfer, and OTP handling
@@ -57,6 +52,10 @@ There are two ways tether communicates with the iPhone:
 You can use either or both, depending on your needs.
 
 Connections run over TLS 1.2 and both sides present a self-signed X.509 certificate.
+
+### Phone Calls
+Place, answer and end calls on the iPhone from the desktop, complete with caller ID and the phone's carrier and signal. 
+The call audio stays on the iPhone. If you've used Linux long enough you know why (it sounds like "FulsePotty-o"). PulsAlsaWire is too hard to support across all deployment targets.
 
 ### OTP Handling
 Streamline two-factor authentication across your devices:

@@ -118,7 +118,7 @@ namespace tether::bluetooth {
         else if (!gw.ready())
             j["reason"] = _("Connecting to the iPhone's Hands-Free service.");
         else
-            j["reason"] = "";
+            j["reason"] = _("Calls are controlled here; the audio plays on the iPhone.");
         return j;
     }
 
