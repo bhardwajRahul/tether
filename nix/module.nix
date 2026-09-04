@@ -96,8 +96,14 @@ with lib;
     })
 
     (mkIf (cfg.enable && cfg.wifi.enable) {
-      services.avahi.enable = true;
-      services.avahi.openFirewall = mkDefault false;
+      services.avahi = {
+        enable = true;
+        openFirewall = mkDefault false;
+        publish = {
+          enable = true;
+          userServices = true;
+        };
+      };
     })
 
     (mkIf (cfg.enable && cfg.wifi.openFirewall) {
