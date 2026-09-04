@@ -44,6 +44,15 @@ namespace tether::ui {
                                                 GTK_ICON_SIZE_LARGE_TOOLBAR);
         }
 
+        void on_dismiss_clicked(GtkButton* button, gpointer) {
+            nlohmann::json j;
+            j["command"] = "bt_notification_action";
+            j["uid"] = GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(button), "uid"));
+            j["action"] = "negative";
+            daemon_send(j);
+            gtk_widget_set_sensitive(GTK_WIDGET(button), FALSE);
+        }
+
         GtkWidget* build_row(const nlohmann::json& notification) {
             const std::string app = notification.value("app_name", notification.value("app_id", ""));
             const std::string title = notification.value("title", "");
@@ -69,6 +78,16 @@ namespace tether::ui {
                 GtkWidget* time_label = gtk_label_new(stamp.c_str());
                 gtk_style_context_add_class(gtk_widget_get_style_context(time_label), "muted");
                 gtk_box_pack_start(GTK_BOX(header), time_label, FALSE, FALSE, 0);
+            }
+
+            if (notification.value("negative_action", false)) {
+                GtkWidget* dismiss = gtk_button_new_from_icon_name("window-close-symbolic", GTK_ICON_SIZE_BUTTON);
+                gtk_button_set_relief(GTK_BUTTON(dismiss), GTK_RELIEF_NONE);
+                gtk_widget_set_tooltip_text(dismiss, _("Dismiss on the iPhone"));
+                g_object_set_data(
+                    G_OBJECT(dismiss), "uid", GUINT_TO_POINTER(notification.value("uid", static_cast<uint32_t>(0))));
+                g_signal_connect(dismiss, "clicked", G_CALLBACK(on_dismiss_clicked), nullptr);
+                gtk_box_pack_start(GTK_BOX(header), dismiss, FALSE, FALSE, 0);
             }
             gtk_box_pack_start(GTK_BOX(box), header, FALSE, FALSE, 0);
 
@@ -125,6 +144,11 @@ namespace tether::ui {
 
         if (command == "bt_notifications") {
             show_notifications(event);
+            return true;
+        }
+        if (command == "bt_notification_action_result") {
+            if (!event.value("success", false))
+                set_status_main(_("The iPhone would not take the dismissal."));
             return true;
         }
         if (command == "bt_notification" || command == "bt_notification_removed") {

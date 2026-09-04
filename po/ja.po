@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:19-0700\n"
+"POT-Creation-Date: 2026-09-03 19:48-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -896,6 +896,7 @@ msgid "Messages"
 msgstr "メッセージ"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/devices_view.cpp
+#: src/gtk/main.cpp
 msgid "Contacts"
 msgstr "連絡先"
 
@@ -1047,6 +1048,26 @@ msgstr "返信"
 #: src/daemon/notification.cpp
 msgid "Copy Code"
 msgstr "コードをコピー"
+
+#: src/gtk/contacts_view.cpp
+msgid "Copy"
+msgstr "コピー"
+
+#: src/gtk/contacts_view.cpp
+msgid "Copied to the clipboard."
+msgstr "クリップボードにコピーしました。"
+
+#: src/gtk/contacts_view.cpp
+msgid "Message"
+msgstr "メッセージを送信"
+
+#: src/gtk/contacts_view.cpp
+msgid "No contacts yet. Check the Bluetooth link on the Devices page."
+msgstr "まだ連絡先はありません。デバイスページで Bluetooth 接続を確認してください。"
+
+#: src/gtk/contacts_view.cpp
+msgid "Search contacts"
+msgstr "連絡先を検索"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"
@@ -1587,8 +1608,16 @@ msgid "Retry"
 msgstr "再試行"
 
 #: src/gtk/notifications_view.cpp
+msgid "Dismiss on the iPhone"
+msgstr "iPhone で消去"
+
+#: src/gtk/notifications_view.cpp
 msgid "New notification"
 msgstr "新しい通知"
+
+#: src/gtk/notifications_view.cpp
+msgid "The iPhone would not take the dismissal."
+msgstr "iPhone が消去を受け付けませんでした。"
 
 #: src/gtk/notifications_view.cpp
 msgid "No notifications yet."

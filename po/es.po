@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:19-0700\n"
+"POT-Creation-Date: 2026-09-03 19:48-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Spanish\n"
@@ -923,6 +923,7 @@ msgid "Messages"
 msgstr "Mensajes"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/devices_view.cpp
+#: src/gtk/main.cpp
 msgid "Contacts"
 msgstr "Contactos"
 
@@ -1074,6 +1075,26 @@ msgstr "Responder"
 #: src/daemon/notification.cpp
 msgid "Copy Code"
 msgstr "Copiar código"
+
+#: src/gtk/contacts_view.cpp
+msgid "Copy"
+msgstr "Copiar"
+
+#: src/gtk/contacts_view.cpp
+msgid "Copied to the clipboard."
+msgstr "Copiado al portapapeles."
+
+#: src/gtk/contacts_view.cpp
+msgid "Message"
+msgstr "Enviar mensaje"
+
+#: src/gtk/contacts_view.cpp
+msgid "No contacts yet. Check the Bluetooth link on the Devices page."
+msgstr "Aún no hay contactos. Comprueba el enlace Bluetooth en la página Dispositivos."
+
+#: src/gtk/contacts_view.cpp
+msgid "Search contacts"
+msgstr "Buscar contactos"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"
@@ -1619,8 +1640,16 @@ msgid "Retry"
 msgstr "Reintentar"
 
 #: src/gtk/notifications_view.cpp
+msgid "Dismiss on the iPhone"
+msgstr "Descartar en el iPhone"
+
+#: src/gtk/notifications_view.cpp
 msgid "New notification"
 msgstr "Notificación nueva"
+
+#: src/gtk/notifications_view.cpp
+msgid "The iPhone would not take the dismissal."
+msgstr "El iPhone no aceptó el descarte."
 
 #: src/gtk/notifications_view.cpp
 msgid "No notifications yet."

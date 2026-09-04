@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether 0.2.23\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:19-0700\n"
+"POT-Creation-Date: 2026-09-03 19:48-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -816,6 +816,7 @@ msgid "Messages"
 msgstr ""
 
 #: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/devices_view.cpp
+#: src/gtk/main.cpp
 msgid "Contacts"
 msgstr ""
 
@@ -948,6 +949,26 @@ msgstr ""
 
 #: src/daemon/notification.cpp
 msgid "Copy Code"
+msgstr ""
+
+#: src/gtk/contacts_view.cpp
+msgid "Copy"
+msgstr ""
+
+#: src/gtk/contacts_view.cpp
+msgid "Copied to the clipboard."
+msgstr ""
+
+#: src/gtk/contacts_view.cpp
+msgid "Message"
+msgstr ""
+
+#: src/gtk/contacts_view.cpp
+msgid "No contacts yet. Check the Bluetooth link on the Devices page."
+msgstr ""
+
+#: src/gtk/contacts_view.cpp
+msgid "Search contacts"
 msgstr ""
 
 #: src/gtk/daemon_client.cpp
@@ -1444,7 +1465,15 @@ msgid "Retry"
 msgstr ""
 
 #: src/gtk/notifications_view.cpp
+msgid "Dismiss on the iPhone"
+msgstr ""
+
+#: src/gtk/notifications_view.cpp
 msgid "New notification"
+msgstr ""
+
+#: src/gtk/notifications_view.cpp
+msgid "The iPhone would not take the dismissal."
 msgstr ""
 
 #: src/gtk/notifications_view.cpp

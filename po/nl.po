@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:19-0700\n"
+"POT-Creation-Date: 2026-09-03 19:48-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Dutch\n"
@@ -917,6 +917,7 @@ msgid "Messages"
 msgstr "Berichten"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/devices_view.cpp
+#: src/gtk/main.cpp
 msgid "Contacts"
 msgstr "Contacten"
 
@@ -1068,6 +1069,26 @@ msgstr "Antwoorden"
 #: src/daemon/notification.cpp
 msgid "Copy Code"
 msgstr "Code kopiëren"
+
+#: src/gtk/contacts_view.cpp
+msgid "Copy"
+msgstr "Kopiëren"
+
+#: src/gtk/contacts_view.cpp
+msgid "Copied to the clipboard."
+msgstr "Naar het klembord gekopieerd."
+
+#: src/gtk/contacts_view.cpp
+msgid "Message"
+msgstr "Bericht sturen"
+
+#: src/gtk/contacts_view.cpp
+msgid "No contacts yet. Check the Bluetooth link on the Devices page."
+msgstr "Nog geen contacten. Controleer de Bluetooth-verbinding op de pagina Apparaten."
+
+#: src/gtk/contacts_view.cpp
+msgid "Search contacts"
+msgstr "Contacten doorzoeken"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"
@@ -1609,8 +1630,16 @@ msgid "Retry"
 msgstr "Opnieuw proberen"
 
 #: src/gtk/notifications_view.cpp
+msgid "Dismiss on the iPhone"
+msgstr "Sluiten op de iPhone"
+
+#: src/gtk/notifications_view.cpp
 msgid "New notification"
 msgstr "Nieuwe melding"
+
+#: src/gtk/notifications_view.cpp
+msgid "The iPhone would not take the dismissal."
+msgstr "De iPhone accepteerde het sluiten niet."
 
 #: src/gtk/notifications_view.cpp
 msgid "No notifications yet."

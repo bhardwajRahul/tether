@@ -101,6 +101,8 @@ namespace tether::ui {
             GtkListStore* compose_model = nullptr;
             std::map<std::string, std::string> compose_names;
             std::string compose_requested_key;
+            std::string compose_shown;
+            std::string pending_new_thread;
         };
 
         MessagesState g_messages;
@@ -119,12 +121,12 @@ namespace tether::ui {
         void clear_selection();
         void switch_thread(const std::string& key);
         void hide_send_error();
-        std::string fold(const std::string& text);
         // `offer_permissions` shows the button that re-solicits the iPhone's
         // Bluetooth toggles, which only helps when that is the actual problem.
         void set_banner(const std::string& text, bool offer_permissions = false);
         std::string composer_text();
         void leave_compose();
+        void enter_compose();
         void on_recipient_changed(GtkEditable*, gpointer);
 
         gboolean focus_composer_idle(gpointer) {
@@ -402,6 +404,25 @@ namespace tether::ui {
             gtk_list_box_invalidate_filter(GTK_LIST_BOX(g_messages.thread_list));
         }
 
+        // One spelled several ways ("+15551234567", "5551234567"), daemon puts in one bucket.
+        // The UI has to agree.
+        bool same_thread(const std::string& a, const std::string& b) {
+            if (a.empty() || b.empty())
+                return a == b;
+            return bluetooth::thread_bucket(a) == bluetooth::thread_bucket(b);
+        }
+
+        GtkWidget* find_thread_row(const std::string& thread_key) {
+            for (int index = 0;; ++index) {
+                GtkListBoxRow* row = gtk_list_box_get_row_at_index(GTK_LIST_BOX(g_messages.thread_list), index);
+                if (!row)
+                    return nullptr;
+                const char* key = static_cast<const char*>(g_object_get_data(G_OBJECT(row), "thread"));
+                if (key && same_thread(key, thread_key))
+                    return GTK_WIDGET(row);
+            }
+        }
+
         void show_threads(const nlohmann::json& event) {
             if (!event.contains("threads") || !event["threads"].is_array())
                 return;
@@ -428,17 +449,28 @@ namespace tether::ui {
             for (const auto& thread : event["threads"]) {
                 GtkWidget* row = build_thread_row(thread);
                 gtk_list_box_insert(GTK_LIST_BOX(g_messages.thread_list), row, -1);
-                if (thread.value("thread", "") == g_messages.selected_thread)
+                if (same_thread(thread.value("thread", ""), g_messages.selected_thread))
                     reselect = row;
             }
             gtk_widget_show_all(g_messages.thread_list);
 
             if (reselect) {
+                g_messages.pending_new_thread.clear();
                 gtk_list_box_select_row(GTK_LIST_BOX(g_messages.thread_list), GTK_LIST_BOX_ROW(reselect));
                 if (!g_messages.composing)
                     apply_row_selection(reselect);
             } else if (!g_messages.selected_thread.empty() && !g_messages.composing) {
-                clear_selection();
+                bluetooth::Recipient recipient;
+                std::string err;
+                const bool wanted = same_thread(g_messages.pending_new_thread, g_messages.selected_thread) &&
+                                    bluetooth::recipient_from_thread_key(g_messages.selected_thread, recipient, err);
+                g_messages.pending_new_thread.clear();
+                if (wanted) {
+                    enter_compose();
+                    gtk_entry_set_text(GTK_ENTRY(g_messages.compose_entry), recipient.address.c_str());
+                } else {
+                    clear_selection();
+                }
             }
 
             if (g_messages.thread_selected_handler)
@@ -496,7 +528,7 @@ namespace tether::ui {
         }
 
         void show_messages(const nlohmann::json& event) {
-            if (event.value("thread", "") != g_messages.selected_thread)
+            if (!same_thread(event.value("thread", ""), g_messages.selected_thread))
                 return;
 
             static const nlohmann::json none = nlohmann::json::array();
@@ -790,17 +822,6 @@ namespace tether::ui {
             update_composer_sensitivity();
         }
 
-        // Matches what GtkEntryCompletion does to the typed key before handing it
-        // to the match function, so the two are comparable.
-        std::string fold(const std::string& text) {
-            gchar* normalized = g_utf8_normalize(text.c_str(), -1, G_NORMALIZE_ALL);
-            gchar* folded = g_utf8_casefold(normalized ? normalized : text.c_str(), -1);
-            std::string out = folded ? folded : "";
-            g_free(normalized);
-            g_free(folded);
-            return out;
-        }
-
         void request_contact_completion() {
             nlohmann::json j;
             j["command"] = "bt_list_contacts";
@@ -809,6 +830,11 @@ namespace tether::ui {
         }
 
         void show_contact_completion(const nlohmann::json& event) {
+            const std::string payload = event.contains("contacts") ? event["contacts"].dump() : "";
+            if (payload == g_messages.compose_shown)
+                return;
+            g_messages.compose_shown = payload;
+
             gtk_list_store_clear(g_messages.compose_model);
             g_messages.compose_names.clear();
             if (!event.contains("contacts") || !event["contacts"].is_array())
@@ -1016,7 +1042,9 @@ namespace tether::ui {
     void messages_view_open_thread(const std::string& thread_key) {
         if (thread_key.empty())
             return;
+
         leave_compose();
+        g_messages.pending_new_thread = thread_key;
         switch_thread(thread_key);
         g_messages.selected_name.clear();
         g_messages.selected_repliable = false;
@@ -1076,7 +1104,7 @@ namespace tether::ui {
             request_threads();
             if (!g_messages.visible)
                 return true;
-            if (event.value("thread", "") == g_messages.selected_thread)
+            if (same_thread(event.value("thread", ""), g_messages.selected_thread))
                 request_messages(g_messages.selected_thread);
             return true;
         }
