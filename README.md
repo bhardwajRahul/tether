@@ -55,7 +55,7 @@ Connections run over TLS 1.2 and both sides present a self-signed X.509 certific
 
 ### Phone Calls
 Place, answer and end calls on the iPhone from the desktop, complete with caller ID and the phone's carrier and signal. 
-The call audio stays on the iPhone. If you've used Linux long enough you know why (it sounds like "FulsePotty-o"). PulsAlsaWire is too hard to support across all deployment targets.
+The call audio stays on the iPhone. If you've used Linux long enough you know why (it sounds like "FalsePotty-o"). PulsAlsaWire is too hard to support across all deployment targets.
 
 ### OTP Handling
 Streamline two-factor authentication across your devices:
