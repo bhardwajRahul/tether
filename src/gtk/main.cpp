@@ -22,11 +22,25 @@ namespace {
 
     GtkWidget* g_refresh_button = nullptr;
     GtkWidget* g_stack = nullptr;
+    GtkWidget* g_calls_page = nullptr;
     gboolean g_start_hidden = FALSE;
 
     // what the current invocation asked to see
     std::string g_requested_view;
     std::string g_requested_thread;
+
+    // Call control is off by default and enabled out of band, so the tab only
+    // exists once the daemon reports it on.
+    void set_calls_tab_visible(bool enabled) {
+        if (!g_calls_page)
+            return;
+        gtk_widget_set_visible(g_calls_page, enabled);
+        if (enabled || !g_stack)
+            return;
+        const gchar* name = gtk_stack_get_visible_child_name(GTK_STACK(g_stack));
+        if (name && std::string(name) == "calls")
+            gtk_stack_set_visible_child_name(GTK_STACK(g_stack), "devices");
+    }
 
     void apply_requested_view() {
         if (!g_stack)
@@ -216,7 +230,8 @@ namespace {
         gtk_stack_add_titled(GTK_STACK(stack), devices_view_new(), "devices", _("Devices"));
         gtk_stack_add_titled(GTK_STACK(stack), messages_view_new(), "messages", _("Messages"));
         gtk_stack_add_titled(GTK_STACK(stack), notifications_view_new(), "notifications", _("Notifications"));
-        gtk_stack_add_titled(GTK_STACK(stack), calls_view_new(), "calls", _("Calls"));
+        g_calls_page = calls_view_new();
+        gtk_stack_add_titled(GTK_STACK(stack), g_calls_page, "calls", _("Calls"));
         gtk_stack_add_titled(GTK_STACK(stack),
                              contacts_view_new([](const std::string& thread_key) {
                                  show_view("messages");
@@ -245,6 +260,8 @@ namespace {
 
         daemon_client_start([](const nlohmann::json& event) {
             contact_completion_update(event);
+            if (event.value("command", "") == "bt_status")
+                set_calls_tab_visible(event.value("calls_enabled", false));
             if (devices_view_handle_event(event))
                 return;
             if (contacts_view_handle_event(event))
@@ -261,6 +278,7 @@ namespace {
 
         gtk_widget_show_all(root);
         gtk_widget_show_all(header_bar);
+        set_calls_tab_visible(false);
         if (!g_start_hidden)
             gtk_widget_show(window);
         gtk_stack_set_visible_child_name(GTK_STACK(stack), "devices");
