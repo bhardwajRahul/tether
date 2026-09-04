@@ -8,6 +8,7 @@ src/core/src/bluetooth/profile_supervisor.cpp
 src/core/src/net.cpp
 src/daemon/main.cpp
 src/daemon/notification.cpp
+src/gtk/contacts_view.cpp
 src/gtk/daemon_client.cpp
 src/gtk/devices_view.cpp
 src/gtk/main.cpp

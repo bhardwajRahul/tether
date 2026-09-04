@@ -110,6 +110,15 @@ namespace tether::ui {
         g_object_unref(provider);
     }
 
+    std::string fold(const std::string& text) {
+        gchar* normalized = g_utf8_normalize(text.c_str(), -1, G_NORMALIZE_ALL);
+        gchar* folded = g_utf8_casefold(normalized ? normalized : text.c_str(), -1);
+        std::string out = folded ? folded : "";
+        g_free(normalized);
+        g_free(folded);
+        return out;
+    }
+
     std::string escape_markup(const std::string& text) {
         gchar* escaped = g_markup_escape_text(text.c_str(), -1);
         std::string result = escaped ? escaped : "";

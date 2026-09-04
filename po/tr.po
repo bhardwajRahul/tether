@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:19-0700\n"
+"POT-Creation-Date: 2026-09-03 19:48-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Turkish\n"
@@ -905,6 +905,7 @@ msgid "Messages"
 msgstr "Mesajlar"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/devices_view.cpp
+#: src/gtk/main.cpp
 msgid "Contacts"
 msgstr "Kişiler"
 
@@ -1054,6 +1055,26 @@ msgstr "Yanıtla"
 #: src/daemon/notification.cpp
 msgid "Copy Code"
 msgstr "Kodu kopyala"
+
+#: src/gtk/contacts_view.cpp
+msgid "Copy"
+msgstr "Kopyala"
+
+#: src/gtk/contacts_view.cpp
+msgid "Copied to the clipboard."
+msgstr "Panoya kopyalandı."
+
+#: src/gtk/contacts_view.cpp
+msgid "Message"
+msgstr "Mesaj gönder"
+
+#: src/gtk/contacts_view.cpp
+msgid "No contacts yet. Check the Bluetooth link on the Devices page."
+msgstr "Henüz kişi yok. Aygıtlar sayfasındaki Bluetooth bağlantısını denetleyin."
+
+#: src/gtk/contacts_view.cpp
+msgid "Search contacts"
+msgstr "Kişilerde ara"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"
@@ -1590,8 +1611,16 @@ msgid "Retry"
 msgstr "Yeniden dene"
 
 #: src/gtk/notifications_view.cpp
+msgid "Dismiss on the iPhone"
+msgstr "iPhone'da kapat"
+
+#: src/gtk/notifications_view.cpp
 msgid "New notification"
 msgstr "Yeni bildirim"
+
+#: src/gtk/notifications_view.cpp
+msgid "The iPhone would not take the dismissal."
+msgstr "iPhone kapatmayı kabul etmedi."
 
 #: src/gtk/notifications_view.cpp
 msgid "No notifications yet."

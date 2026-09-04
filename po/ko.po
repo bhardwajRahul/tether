@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 19:19-0700\n"
+"POT-Creation-Date: 2026-09-03 19:48-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -886,6 +886,7 @@ msgid "Messages"
 msgstr "메시지"
 
 #: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/devices_view.cpp
+#: src/gtk/main.cpp
 msgid "Contacts"
 msgstr "연락처"
 
@@ -1035,6 +1036,26 @@ msgstr "답장"
 #: src/daemon/notification.cpp
 msgid "Copy Code"
 msgstr "코드 복사"
+
+#: src/gtk/contacts_view.cpp
+msgid "Copy"
+msgstr "복사"
+
+#: src/gtk/contacts_view.cpp
+msgid "Copied to the clipboard."
+msgstr "클립보드에 복사했습니다."
+
+#: src/gtk/contacts_view.cpp
+msgid "Message"
+msgstr "메시지 보내기"
+
+#: src/gtk/contacts_view.cpp
+msgid "No contacts yet. Check the Bluetooth link on the Devices page."
+msgstr "아직 연락처가 없습니다. 기기 페이지에서 블루투스 연결을 확인하세요."
+
+#: src/gtk/contacts_view.cpp
+msgid "Search contacts"
+msgstr "연락처 검색"
 
 #: src/gtk/daemon_client.cpp
 msgid "Daemon Offline"
@@ -1567,8 +1588,16 @@ msgid "Retry"
 msgstr "다시 시도"
 
 #: src/gtk/notifications_view.cpp
+msgid "Dismiss on the iPhone"
+msgstr "iPhone에서 지우기"
+
+#: src/gtk/notifications_view.cpp
 msgid "New notification"
 msgstr "새 알림"
+
+#: src/gtk/notifications_view.cpp
+msgid "The iPhone would not take the dismissal."
+msgstr "iPhone이 지우기를 받아들이지 않았습니다."
 
 #: src/gtk/notifications_view.cpp
 msgid "No notifications yet."

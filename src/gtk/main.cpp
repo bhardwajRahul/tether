@@ -1,3 +1,4 @@
+#include "contacts_view.hpp"
 #include "daemon_client.hpp"
 #include "devices_view.hpp"
 #include "messages_view.hpp"
@@ -49,6 +50,7 @@ namespace {
 
         messages_view_set_visible(view == "messages");
         notifications_view_set_visible(view == "notifications");
+        contacts_view_set_visible(view == "contacts");
     }
 
     // The tray controls live here
@@ -143,6 +145,7 @@ namespace {
             {"devices", "<Control>1", [] { show_view("devices"); }},
             {"messages", "<Control>2", [] { show_view("messages"); }},
             {"notifications", "<Control>3", [] { show_view("notifications"); }},
+            {"contacts", "<Control>4", [] { show_view("contacts"); }},
             {"close",
              "<Control>w",
              [] {
@@ -210,6 +213,13 @@ namespace {
         gtk_stack_add_titled(GTK_STACK(stack), devices_view_new(), "devices", _("Devices"));
         gtk_stack_add_titled(GTK_STACK(stack), messages_view_new(), "messages", _("Messages"));
         gtk_stack_add_titled(GTK_STACK(stack), notifications_view_new(), "notifications", _("Notifications"));
+        gtk_stack_add_titled(GTK_STACK(stack),
+                             contacts_view_new([](const std::string& thread_key) {
+                                 show_view("messages");
+                                 messages_view_open_thread(thread_key);
+                             }),
+                             "contacts",
+                             _("Contacts"));
 
         GtkWidget* switcher = gtk_stack_switcher_new();
         gtk_stack_switcher_set_stack(GTK_STACK_SWITCHER(switcher), GTK_STACK(stack));
@@ -231,6 +241,8 @@ namespace {
 
         daemon_client_start([](const nlohmann::json& event) {
             if (devices_view_handle_event(event))
+                return;
+            if (contacts_view_handle_event(event))
                 return;
             if (messages_view_handle_event(event))
                 return;
@@ -260,7 +272,7 @@ int main(int argc, char** argv) {
                                   G_OPTION_ARG_NONE,
                                   _("Start hidden in the system tray"),
                                   nullptr);
-    for (const char* view : {"devices", "messages", "notifications"}) {
+    for (const char* view : {"devices", "messages", "notifications", "contacts"}) {
         g_application_add_main_option(
             G_APPLICATION(app), view, 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, _("Open on this tab"), nullptr);
     }
@@ -278,7 +290,7 @@ int main(int argc, char** argv) {
                          GVariantDict* options = g_application_command_line_get_options_dict(cmdline);
                          if (g_variant_dict_contains(options, "tray"))
                              g_start_hidden = TRUE;
-                         for (const char* view : {"devices", "messages", "notifications"}) {
+                         for (const char* view : {"devices", "messages", "notifications", "contacts"}) {
                              if (g_variant_dict_contains(options, view))
                                  g_requested_view = view;
                          }
