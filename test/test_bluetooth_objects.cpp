@@ -319,6 +319,39 @@ TEST(Capability, ClassicOnlyIphoneBondIsNamedAsSuch) {
     EXPECT_EQ(cap.mode, DeliveryMode::Full);
 }
 
+// Bearer.LE1 carrying properties says the experimental API is live. It says
+// nothing about the bond, and reading it as "the bond has an LE half" reported
+// "Bond: BR/EDR + LE" for every bonded device on a machine running bluetoothd
+// --experimental -- which is what made issue #128's dump unable to say whether
+// the controller had derived the LE keys at all.
+TEST(Capability, APopulatedLeBearerIsNotProofOfAnLeBond) {
+    Payload p(join(ADAPTER_FULL, R"({
+      '/org/bluez/hci0/dev_60_57_C8_30_6A_F7': {
+        'org.bluez.Device1': {
+          'Paired': <true>,
+          'Bonded': <true>,
+          'UUIDs': <['00001132-0000-1000-8000-00805f9b34fb', '0000112f-0000-1000-8000-00805f9b34fb']>
+        },
+        'org.bluez.Bearer.LE1': { 'Paired': <false>, 'Bonded': <false> }
+      }
+    })")
+                  .c_str());
+    auto objects = parse_managed_objects(p.v);
+    objects.experimental_api = true;
+    auto cap = resolve_capability(objects);
+
+    ASSERT_FALSE(objects.devices.empty());
+    EXPECT_TRUE(objects.devices[0].has_le_bearer);
+    EXPECT_EQ(cap.bearer_api, BearerApi::Confirmed);
+    EXPECT_TRUE(cap.bonded_device_present);
+    EXPECT_FALSE(cap.bond_has_le);
+
+    bool named = false;
+    for (const auto& reason : cap.reasons)
+        named = named || reason.find("BR/EDR only") != std::string::npos;
+    EXPECT_TRUE(named) << "a bond with no LE half went unreported";
+}
+
 // A controller that cannot advertise never solicits ANCS, so the iPhone is never
 // asked for the service and no bond made on it can have an LE half. Telling that
 // user to Forget This Device and pair again sends them round a loop that cannot

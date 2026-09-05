@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 
 namespace tether::bluetooth {
 
@@ -107,6 +108,19 @@ namespace tether::bluetooth {
             return path.substr(0, slash);
         }
 
+        // The chip, which BlueZ does not report.
+        std::string controller_of(const std::string& adapter_path) {
+            const auto slash = adapter_path.find_last_of('/');
+            const std::string id = slash == std::string::npos ? adapter_path : adapter_path.substr(slash + 1);
+            if (id.empty())
+                return {};
+
+            std::ifstream in("/sys/class/bluetooth/" + id + "/device/modalias");
+            std::string line;
+            std::getline(in, line);
+            return line;
+        }
+
         void read_adapter(const std::string& path, GVariant* ifaces, BluezObjects& out) {
             GVariant* props = g_variant_lookup_value(ifaces, IFACE_ADAPTER, G_VARIANT_TYPE("a{sv}"));
             if (!props)
@@ -122,11 +136,13 @@ namespace tether::bluetooth {
             a.powered = get_bool(props, "Powered");
             a.roles = get_strv(props, "Roles");
             a.modalias = get_string(props, "Modalias");
+            a.controller = controller_of(path);
             g_variant_unref(props);
 
             if (GVariant* adv = g_variant_lookup_value(ifaces, IFACE_LE_ADV_MGR, G_VARIANT_TYPE("a{sv}"))) {
                 a.has_advertising_manager = true;
                 a.advertising_instances = get_byte(adv, "SupportedInstances");
+                a.advertising_active_instances = get_byte(adv, "ActiveInstances");
                 g_variant_unref(adv);
             }
 
@@ -442,7 +458,9 @@ namespace tether::bluetooth {
 
             if ((d.bonded || d.paired) && d.looks_like_iphone()) {
                 cap.bonded_device_present = true;
-                if (d.has_le_bearer)
+                // The interface being populated says the API is live, not that the
+                // bond has an LE half. Only Bearer.LE1.Bonded says that.
+                if (d.has_le_bearer && d.le_bonded)
                     cap.bond_has_le = true;
             }
         }
@@ -523,8 +541,10 @@ namespace tether::bluetooth {
             {"powered", a.powered},
             {"roles", a.roles},
             {"modalias", a.modalias},
+            {"controller", a.controller},
             {"advertising_manager", a.has_advertising_manager},
             {"advertising_instances", a.advertising_instances},
+            {"advertising_active_instances", a.advertising_active_instances},
             {"class_ok", a.class_is_handsfree()},
         };
     }

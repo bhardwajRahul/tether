@@ -418,6 +418,7 @@ checks the daemon does not make.
 | `tether --bt-connection` reports LE and messages up but `Notifications: no`, for hours | Fixed. The LE link was opened by the dial and carries no ANCS. A connected link used to take the solicitation off air, so the phone was never asked for the service | Nothing. The advert goes back on air over a link that has stayed up without ANCS -- see 2026-08-23. To clear it by hand on an older build, `tether --bt-solicit`; do not re-pair, and do not cycle the phone's Bluetooth |
 | LE never comes up on a `BR/EDR + LE` bond, the advert is on air, and cycling the phone's Bluetooth changes nothing | The bond is pinned to `PreferredBearer=bredr`, so the inbound LE link the iPhone opens is never accepted | Fixed for new bonds, which are handed back to `le` after pairing. An older bond stays pinned: re-pair it, or set the property by hand with `busctl set-property org.bluez /org/bluez/hci0/dev_<ADDR> org.bluez.Device1 PreferredBearer s le` -- see 2026-08-25 below |
 | The status says the iPhone is not answering on LE, and its permission is on | The phone's Bluetooth stack is wedged, which the granted permission does not prevent | Turn Bluetooth off and back on **on the iPhone**. Re-pairing and re-toggling the permission do not clear this |
+| The status says this computer is not putting the notification request on air | The adapter reports LE advertising support and BlueZ is holding no advertising instance for it, so the iPhone is never asked for the service | Nothing on the iPhone, and re-pairing will not help. Check `controller` in `tether --bt-diagnostics` and try another with `tether --bt-adapter <hciN>` -- see 2026-09-04 below |
 | Everything connects but `ancs_ready` stays false | Compatibility mode, or iOS has not authorized notification content yet | Check `Mode:` in `tether --bt-status`. In full mode the daemon retries, the first request returns `NotPermitted` until the prompt on the phone is approved |
 | A group conversation cannot be replied to | Working as designed until the route is unambiguous | The thread's `reply_reason` says which condition failed |
 | The iPhone never offers the "Show Notifications" toggle, and messages and contacts work | Fixed. A BR/EDR-only bond used to latch notification mirroring off in the config, which takes the ANCS solicitation off air -- so the phone is never asked for the service | Nothing. On an older build, `tether --bt-ancs on` then `tether --bt-solicit`; `tether --bt-status` now shows mirroring under `Notifications:` -- see 2026-09-01 |
@@ -497,6 +498,8 @@ tether --bt-diagnostics
 ```
 
 Prints the delivery mode, auth strategy, Bluetooth settings, current connection state, and timeline of recent link and pairing transitions.
+It names the controller too: `controller` under `status.adapters` is the chip, from
+sysfs. The `modalias` beside it is BlueZ's own device id, not the hardware.
 
 It is redacted for pasting into an issue. Bluetooth addresses, phone numbers, email
 addresses, and home and runtime directories become numbered placeholders.
@@ -2067,3 +2070,80 @@ None of this changes the shipped design. It sharpens the reason for it: the supp
 path needs one flag Tether already requires, and the alternative needs three settings
 across two daemons, gives up call control, gives up keeping the phone's audio on the
 phone, and still depends on the phone choosing to connect.
+
+### 2026-09-04 - A Barrot dongle, and a dump that could not say whether it was the cause
+
+Reported as #128. LE never connected across a 1.8-hour timeline while MAP and PBAP
+worked throughout, on a machine that passes every capability check Tether makes.
+
+| | |
+|---|---|
+| Controller | **Barrot Technology Co.,Ltd.** — `manufacturer 2279` (SIG company id `0x08E7`) in the reporter's `btmgmt info`. USB dongle; exact USB id not captured |
+| Kernel | 7.0.0-31-generic (Kubuntu 26.04.1) |
+| BlueZ | 5.87, self-built, running with `--experimental` |
+| Adapter roles | central + peripheral; 3 advertising instances; `secure-conn`, `ll-privacy` on |
+| Adapter class | `0x7c0408` — A/V Hands-Free |
+| Phone | iPhone 17, iOS 26.6.1 |
+| Tether | 0.2.24 |
+
+Captured: `le_connected` false in all 46 timeline entries. `classic_connected` flapped
+about 20 times with MAP and PBAP churning `none` / `no_record` / `other` / `forbidden`.
+Part of that flapping is the "no locally connectable profile" artifact of 2026-08-23,
+but not its rate -- no MT7925 session recorded above looks like this.
+
+Barrot's only presence in the kernel is `btusb.c`'s CSR-clone workaround, whose comment
+names "a Barrot 8041a02" among controllers that are "really messed-up", plus
+`BTUSB_BARROT` for `33fa:0010` and `33fa:0012`. That is circumstantial: the reporter's
+chip is HCI version 13 (Core 5.4), not the BT 4.0 clone the quirk covers. It is the same
+shape as #69, where an unbranded CSR clone reported `class=ok`, `secure-connections=on`
+and both LE roles and still produced only BR/EDR bonds.
+
+**The finding is that the report could not settle it, and two of our own defects are
+why.** Both are #118's lesson again: a precondition reported as established when it was
+only assumed, and advice that depends on it.
+
+- **`bond_has_le` did not mean the bond had an LE half.** `resolve_capability()` set it
+  from `has_le_bearer` alone, which is only "`Bearer.LE1` carries properties" -- so
+  `--bt-status` printed `Bond: BR/EDR + LE` for every bonded device on any machine
+  running `bluetoothd --experimental`. `pairing.cpp` had the right predicate all along
+  (`has_le_bearer && le_bonded`); the capability path did not. The one question that
+  separates "this chip cannot derive the LE LTK", which is #69's story, from "it derives
+  keys and never carries the link" is exactly what that field was for, and #128's
+  `bond_has_le: true` is worth nothing. Fixed, with a test for a **populated**
+  `Bearer.LE1` whose `Bonded` is false -- the existing tests only covered the absent and
+  empty-interface cases, which is how it survived.
+
+- **Nothing separated "we registered an advert" from "an advert is on air."**
+  `ancs_soliciting` is `AncsAdvertisement::active()`, our own registration flag, and
+  `resolve_capability()` read `SupportedInstances` and never `ActiveInstances`. A
+  controller that accepts `RegisterAdvertisement` and then does not radiate -- the
+  plausible failure for a single-radio chip scheduling an ACL, page scan and inquiry
+  scan at once -- is indistinguishable from a phone ignoring a healthy advert. The
+  supervisor took the second reading unconditionally and told the reporter their iPhone
+  was wedged; they cycled its Bluetooth "countless times". `advertising_active_instances`
+  is now reported, and `BearerOps::solicitation_on_air()` gates the advice: a long LE
+  silence in which the solicitation was never once observed on air names the adapter and
+  says plainly that nothing on the iPhone will change it. The flag is latched across the
+  window, because the advert is legitimately off air while a dial owns the radio and an
+  instantaneous read there would blame a working adapter.
+
+Also corrected here: **`Adapter1.Modalias` is not the controller.** It is BlueZ's own
+device id -- the reporter's `usb:v1D6Bp0246d0557` is Linux Foundation / BlueZ with
+`0x0557` encoding version 5.87, and it reads identically on every machine. The chip comes
+from `/sys/class/bluetooth/<hciN>/device/modalias`, needs no privilege, and is now
+reported as `controller` alongside it and printed by `scripts/bt-probe.sh`. Measured on
+the MT7925 machine, the two read `usb:v0E8Dp0717d0100...` and `usb:v1D6Bp0246d0557`
+respectively.
+
+**The coexistence question is open.** Nothing here proves the Barrot cannot advertise
+while holding a BR/EDR link; it makes the next report able to. What would settle it, in
+order of cost: `btmon` showing whether `LE Set Extended Advertising Enable` ever returns
+a non-zero status and whether any `LE Connection Complete` occurs at all; an external LE
+scanner looking for the `Tether` advert with the iPhone connected and again with its
+Bluetooth off; and `tether --bt-adapter <hciN>` onto any other controller. A secondary
+suspect worth ruling out is `ll-privacy`, since answering the solicitation means the
+iPhone connects with a rotating address the local resolving list has to handle, and clone
+firmware gets resolving lists wrong.
+
+No known-bad-controller list was added. One report is not a rule, and naming the hardware
+in every dump has to come first.

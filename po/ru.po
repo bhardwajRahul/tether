@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 18:00-0700\n"
+"POT-Creation-Date: 2026-09-04 18:25-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Russian\n"
@@ -759,6 +759,14 @@ msgstr ""
 "профиля для подключения — обычное дело на машине без звукового стека или "
 "там, где роли a2dp_sink и hfp_hf отключены. Ничего не отсутствует и ничего "
 "не нужно менять на iPhone."
+
+#: src/core/src/bluetooth/bearer_supervisor.cpp
+msgid ""
+"This computer is not putting the notification request on air, so the iPhone "
+"is never asked for the service. Nothing on the iPhone changes this and re-"
+"pairing will not either. Check the controller with tether --bt-status; "
+"another one can be selected with tether --bt-adapter."
+msgstr "Этот компьютер не передаёт запрос уведомлений в эфир, поэтому iPhone никогда не просят об этой службе. Ничто на iPhone этого не изменит, повторное сопряжение тоже. Проверьте контроллер командой tether --bt-status; другой можно выбрать командой tether --bt-adapter."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -1885,7 +1893,9 @@ msgstr "Показывать всплывающие уведомления"
 
 #: src/gtk/settings_view.cpp
 msgid "Off silences iPhone alerts, new messages and arriving files."
-msgstr "Выключено — не показываются оповещения iPhone, новые сообщения и полученные файлы."
+msgstr ""
+"Выключено — не показываются оповещения iPhone, новые сообщения и полученные "
+"файлы."
 
 #: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."

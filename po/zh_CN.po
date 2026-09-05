@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 18:00-0700\n"
+"POT-Creation-Date: 2026-09-04 18:25-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -724,6 +724,14 @@ msgstr ""
 "信息和通讯录已连接。BlueZ 报告蓝牙链路断开，是因为这台电脑没有向 iPhone 提供"
 "可连接的配置文件——在没有音频栈的机器上，或者关闭了 a2dp_sink 和 hfp_hf 角色的"
 "机器上，这很常见。没有缺少任何东西，iPhone 上也无需更改。"
+
+#: src/core/src/bluetooth/bearer_supervisor.cpp
+msgid ""
+"This computer is not putting the notification request on air, so the iPhone "
+"is never asked for the service. Nothing on the iPhone changes this and re-"
+"pairing will not either. Check the controller with tether --bt-status; "
+"another one can be selected with tether --bt-adapter."
+msgstr "这台计算机没有把通知请求发送到空中，因此从未向 iPhone 请求该服务。在 iPhone 上做任何操作都无法改变这一点，重新配对也不行。用 tether --bt-status 检查控制器；可以用 tether --bt-adapter 选择另一个。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 18:00-0700\n"
+"POT-Creation-Date: 2026-09-04 18:25-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Dutch\n"
@@ -752,6 +752,14 @@ msgstr ""
 "te verbinden — gebruikelijk op een machine zonder audiostack, of waar de "
 "rollen a2dp_sink en hfp_hf uitstaan. Er ontbreekt niets en er hoeft niets te "
 "veranderen op de iPhone."
+
+#: src/core/src/bluetooth/bearer_supervisor.cpp
+msgid ""
+"This computer is not putting the notification request on air, so the iPhone "
+"is never asked for the service. Nothing on the iPhone changes this and re-"
+"pairing will not either. Check the controller with tether --bt-status; "
+"another one can be selected with tether --bt-adapter."
+msgstr "Deze computer zendt het meldingsverzoek niet uit, dus de iPhone wordt nooit om de service gevraagd. Niets op de iPhone verandert dit, en opnieuw koppelen ook niet. Controleer de controller met tether --bt-status; een andere kies je met tether --bt-adapter."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -1884,7 +1892,8 @@ msgstr "Bureaubladmeldingen tonen"
 
 #: src/gtk/settings_view.cpp
 msgid "Off silences iPhone alerts, new messages and arriving files."
-msgstr "Uit dempt iPhone-meldingen, nieuwe berichten en binnenkomende bestanden."
+msgstr ""
+"Uit dempt iPhone-meldingen, nieuwe berichten en binnenkomende bestanden."
 
 #: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
