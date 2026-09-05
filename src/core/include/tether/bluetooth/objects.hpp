@@ -28,11 +28,15 @@ namespace tether::bluetooth {
         uint32_t device_class = 0;
         bool powered = false;
         std::vector<std::string> roles;
-        // Controller identity. Empty when BlueZ has none.
+        // BlueZ's own device id, not the chip's.
         std::string modalias;
+        // The controller itself, from /sys/class/bluetooth/<hciN>/device/modalias.
+        std::string controller;
         // org.bluez.LEAdvertisingManager1 is a separate interface on the same object.
         bool has_advertising_manager = false;
         uint8_t advertising_instances = 0;
+        // Instances BlueZ currently holds registered.
+        uint8_t advertising_active_instances = 0;
 
         bool has_role(const std::string& role) const;
         bool class_is_handsfree() const { return (device_class & COD_MASK) == COD_TARGET; }

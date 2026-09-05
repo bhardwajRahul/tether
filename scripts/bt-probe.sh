@@ -173,6 +173,11 @@ addr=$(prop org.bluez.Adapter1 Address)
 name=$(prop org.bluez.Adapter1 Alias)
 ok "$addr ($name)"
 
+# The chip, which BlueZ never reports: Adapter1.Modalias is BlueZ's own device id
+# and reads the same on every machine. Bug reports need the hardware named.
+controller=$(cat "/sys/class/bluetooth/$ADAPTER/device/modalias" 2>/dev/null || true)
+[[ -n $controller ]] && note "controller $controller"
+
 [[ $(prop org.bluez.Adapter1 Powered) == true ]] && ok "powered on" || bad "powered off (bluetoothctl power on)"
 
 roles=$(prop org.bluez.Adapter1 Roles)

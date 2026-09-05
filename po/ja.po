@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 18:00-0700\n"
+"POT-Creation-Date: 2026-09-04 18:25-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -742,6 +742,14 @@ msgstr ""
 "告します。オーディオスタックのないマシンや、a2dp_sink と hfp_hf のロールが無"
 "効なマシンでは普通のことです。不足しているものはなく、iPhone 側で変更すべき点"
 "もありません。"
+
+#: src/core/src/bluetooth/bearer_supervisor.cpp
+msgid ""
+"This computer is not putting the notification request on air, so the iPhone "
+"is never asked for the service. Nothing on the iPhone changes this and re-"
+"pairing will not either. Check the controller with tether --bt-status; "
+"another one can be selected with tether --bt-adapter."
+msgstr "このコンピューターが通知の要求を電波に乗せていないため、iPhone にサービスが要求されることがありません。iPhone 側では解決できず、ペアリングをやり直しても変わりません。tether --bt-status でコントローラーを確認してください。別のものは tether --bt-adapter で選べます。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
@@ -1860,7 +1868,9 @@ msgstr "デスクトップのポップアップを表示"
 
 #: src/gtk/settings_view.cpp
 msgid "Off silences iPhone alerts, new messages and arriving files."
-msgstr "オフにすると iPhone の通知、新着メッセージ、受信ファイルがすべて表示されません。"
+msgstr ""
+"オフにすると iPhone の通知、新着メッセージ、受信ファイルがすべて表示されませ"
+"ん。"
 
 #: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."

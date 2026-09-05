@@ -56,6 +56,11 @@ namespace {
         // cases reading as they did.
         bool outstanding = false;
         bool le_connect_outstanding() const override { return outstanding; }
+
+        // The healthy case: the adapter accepted the solicitation. Only a test
+        // about an adapter that will not advertise clears this.
+        bool on_air = true;
+        bool solicitation_on_air() const override { return on_air; }
     };
 
     class FakeProfiles : public ProfileOps {
@@ -307,6 +312,44 @@ TEST(BearerSupervisor, NamesThePhoneCycleAfterALongSilence) {
     sup.tick(now + LE_SILENT_SECONDS);
     EXPECT_NE(sup.status().reason.find("not answering on LE"), std::string::npos);
     EXPECT_NE(sup.status().reason.find("turn Bluetooth off"), std::string::npos);
+}
+
+// Same silence, but the adapter never put the solicitation on air, so the phone
+// was never asked for the service. Sending that user to cycle Bluetooth on the
+// iPhone is the #128 dead end: nothing on the phone is wrong.
+TEST(BearerSupervisor, BlamesTheAdapterWhenNothingWasEverSolicited) {
+    FakeBearer ops;
+    ops.le_succeeds = false;
+    ops.on_air = false;
+    BearerSupervisor sup(ops, true);
+
+    int64_t now = 0;
+    sup.tick(now);
+    sup.tick(++now);
+    now += BEARER_SETTLE_SECONDS;
+    sup.tick(now);
+
+    sup.tick(now + LE_SILENT_SECONDS);
+    EXPECT_NE(sup.status().reason.find("not putting the notification request on air"), std::string::npos);
+    EXPECT_EQ(sup.status().reason.find("turn Bluetooth off"), std::string::npos) << "blames the phone";
+}
+
+// The advert is legitimately off air while a dial owns the radio. One tick of
+// that must not turn into "your adapter is broken".
+TEST(BearerSupervisor, OneMomentOffAirDoesNotBlameTheAdapter) {
+    FakeBearer ops;
+    ops.le_succeeds = false;
+    BearerSupervisor sup(ops, true);
+
+    int64_t now = 0;
+    sup.tick(now);
+    sup.tick(++now);
+    now += BEARER_SETTLE_SECONDS;
+    sup.tick(now);
+
+    ops.on_air = false;
+    sup.tick(now + LE_SILENT_SECONDS);
+    EXPECT_NE(sup.status().reason.find("not answering on LE"), std::string::npos);
 }
 
 TEST(BearerSupervisor, RecoversAfterDisconnect) {

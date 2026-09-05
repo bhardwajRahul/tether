@@ -372,6 +372,15 @@ namespace tether::bluetooth {
                 return le_->pending;
             }
 
+            bool solicitation_on_air() const override {
+                if (!ancs_solicitation_active())
+                    return false;
+                const auto objects = monitor_.snapshot();
+                auto device = lookup();
+                const Adapter* adapter = device ? objects.find_adapter(device->adapter_path) : nullptr;
+                return adapter && adapter->advertising_active_instances > 0;
+            }
+
             // Issued asynchronously and never abandoned: a synchronous call that
             // times out leaves BlueZ still connecting, and the next attempt then
             // collides with it forever.

@@ -62,6 +62,11 @@ namespace tether::bluetooth {
                "the a2dp_sink and hfp_hf roles are turned off. Nothing is missing and nothing needs changing on "
                "the iPhone.");
 
+        constexpr const char* LE_NEVER_SOLICITED_ADVICE =
+            N_("This computer is not putting the notification request on air, so the iPhone is never asked for "
+               "the service. Nothing on the iPhone changes this and re-pairing will not either. Check the "
+               "controller with tether --bt-status; another one can be selected with tether --bt-adapter.");
+
         constexpr const char* LE_PHONE_SILENT_ADVICE =
             N_("The iPhone is not answering on LE. Its Bluetooth is wedged on its own side: turn Bluetooth off "
                "and back on on the iPhone, which clears this even when Share System Notifications is already on. "
@@ -76,6 +81,7 @@ namespace tether::bluetooth {
     void BearerSupervisor::reset() {
         classic_failures_ = 0;
         le_down_since_ = -1;
+        solicited_since_le_down_ = false;
         classic_connected_since_ = -1;
         next_classic_attempt_ = 0;
         status_.classic_backoff = 0;
@@ -100,10 +106,14 @@ namespace tether::bluetooth {
         status_.classic_connected = ops_.classic_connected();
         status_.le_available = ops_.le_bearer_available();
         status_.le_connected = status_.le_available && ops_.le_connected();
-        if (status_.le_connected)
+        if (status_.le_connected) {
             le_down_since_ = -1;
-        else if (le_down_since_ < 0)
+            solicited_since_le_down_ = false;
+        } else if (le_down_since_ < 0) {
             le_down_since_ = now;
+        }
+        if (!status_.le_connected && ops_.solicitation_on_air())
+            solicited_since_le_down_ = true;
 
         if (status_.le_connected)
             status_.le_dialling = false;
@@ -203,11 +213,13 @@ namespace tether::bluetooth {
             // read after the attempt, never before
             status_.le_dialling = ops_.le_connect_outstanding();
 
-            status_.reason = le_down_since_ >= 0 && now - le_down_since_ >= LE_SILENT_SECONDS
-                                 ? _(LE_PHONE_SILENT_ADVICE)
-                                 : _("Connected. Waiting for the iPhone to open the LE link that carries "
-                                     "notifications. If it does not, open Settings > Bluetooth > (i) on the "
-                                     "iPhone and check Share System Notifications.");
+            const bool le_silent = le_down_since_ >= 0 && now - le_down_since_ >= LE_SILENT_SECONDS;
+
+            status_.reason = le_silent && !solicited_since_le_down_ ? _(LE_NEVER_SOLICITED_ADVICE)
+                             : le_silent ? _(LE_PHONE_SILENT_ADVICE)
+                                         : _("Connected. Waiting for the iPhone to open the LE link that carries "
+                                             "notifications. If it does not, open Settings > Bluetooth > (i) on the "
+                                             "iPhone and check Share System Notifications.");
             return !(status_ == previous);
         }
 

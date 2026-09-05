@@ -57,6 +57,8 @@ namespace tether::bluetooth {
         virtual ConnectResult connect_le(std::string& err) = 0;
         // Whether a connect request is still outstanding
         virtual bool le_connect_outstanding() const = 0;
+        // Whether the ANCS solicitation is registered AND BlueZ is advertising.
+        virtual bool solicitation_on_air() const = 0;
     };
 
     struct BearerStatus {
@@ -114,6 +116,8 @@ namespace tether::bluetooth {
         bool le_dial_spent_ = false;
         int64_t classic_connected_since_ = -1;
         int64_t le_down_since_ = -1;
+        // Whether the solicitation has been observed on air since LE went down.
+        bool solicited_since_le_down_ = false;
         int64_t next_classic_attempt_ = 0;
     };
 

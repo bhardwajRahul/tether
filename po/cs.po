@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 18:00-0700\n"
+"POT-Creation-Date: 2026-09-04 18:25-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Czech\n"
@@ -754,6 +754,14 @@ msgstr ""
 "se připojil — obvyklé na stroji bez zvukového subsystému nebo tam, kde jsou "
 "role a2dp_sink a hfp_hf vypnuté. Nic nechybí a na iPhonu není třeba nic "
 "měnit."
+
+#: src/core/src/bluetooth/bearer_supervisor.cpp
+msgid ""
+"This computer is not putting the notification request on air, so the iPhone "
+"is never asked for the service. Nothing on the iPhone changes this and re-"
+"pairing will not either. Check the controller with tether --bt-status; "
+"another one can be selected with tether --bt-adapter."
+msgstr "Tento počítač nevysílá požadavek na oznámení, takže iPhone o službu nikdy není požádán. Nic na iPhonu to nezmění a opětovné párování také ne. Zkontrolujte řadič pomocí tether --bt-status; jiný lze vybrat pomocí tether --bt-adapter."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
