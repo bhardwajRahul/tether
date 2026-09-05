@@ -60,6 +60,11 @@ Install the browser and mail extension's native messaging manifests into this
 user's Firefox, Thunderbird, and Chromium directories, pointing at a wrapper in
 \fB~/.local/bin\fR. Needed only for a portable build such as the AppImage; the
 distro packages install the manifests system\-wide.
+.TP
+\fB\-\-install-btclass-unit\fR
+Write \fBtether-btclass@.service\fR to \fB/etc/systemd/system\fR. Needs root, and
+never enables it. Needed only for a portable build such as the AppImage; the distro
+packages install the unit themselves. See \fB\-\-bt-setup\fR.
 .SH BLUETOOTH OPTIONS
 Bluetooth carries iPhone messages (MAP), contacts (PBAP), and notification
 mirroring (ANCS). It is independent of the Wi-Fi pairing above.
@@ -69,8 +74,9 @@ Show the one-time system setup Bluetooth still needs, with the command for each
 step. Nothing is applied: the steps change how the machine behaves over
 Bluetooth outside Tether, so running them is left to the user. One step enables
 \fBtether-btclass@\fR\fIADAPTER\fR\fB.service\fR, which is installed by the
-package but never enabled for you. A portable build installs neither file, so
-the printed commands write them out instead.
+package but never enabled for you. A portable build has no unit on disk, so the
+printed command writes it out first: with \fB\-\-install-btclass-unit\fR on
+the AppImage, and as a here\-document elsewhere.
 .TP
 \fB\-\-bt-status\fR
 Show Bluetooth adapter capability and delivery mode.
@@ -174,13 +180,8 @@ tether \-\-bt-setup
 \fB/usr/lib/systemd/system/tether\-btclass@.service\fR
 Sets the Bluetooth adapter's Class of Device to A/V Hands\-Free, which iOS
 requires before it will offer its Messages and Contacts permissions. Installed
-but not enabled; see \fB\-\-bt-setup\fR.
-.TP
-\fB/usr/share/tether/bluetooth\-experimental.conf\fR
-systemd drop\-in that runs \fBbluetoothd\fR with \fB\-\-experimental\fR, which
-exposes the LE bearer interface ANCS notification mirroring needs. Copy it into
-\fB/etc/systemd/system/bluetooth.service.d/\fR to apply it; see
-\fB\-\-bt-setup\fR. It must be in place before pairing.
+by the distro packages but never enabled; a portable build writes it to
+\fB/etc/systemd/system\fR instead. See \fB\-\-bt-setup\fR.
 .SH SEE ALSO
 .BR tetherd (8),
 .BR tether-gtk (1)

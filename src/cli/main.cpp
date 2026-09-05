@@ -4,6 +4,7 @@
 #include <csignal>
 #include <cstring>
 #include <ctime>
+#include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <sstream>
@@ -17,6 +18,7 @@
 #include <tether/extension_host.hpp>
 #include <tether/i18n.hpp>
 #include <tether/log.hpp>
+#include <tether/packaging.hpp>
 #include <tether/version.hpp>
 #include <thread>
 #include <unistd.h>
@@ -218,6 +220,9 @@ static const Opt kOptions[] = {
     {"--install-extension-host",
      N_("Install the browser and mail extension's native messaging manifests for this user. Needed only for "
         "portable builds; the distro packages install them system-wide.")},
+    {"--install-btclass-unit",
+     N_("Write the tether-btclass@.service unit, which sets the Bluetooth adapter class iOS requires. Needs "
+        "root, and never enables it. Needed only for portable builds; the distro packages install it.")},
     {"--accept <fingerprint>", N_("Accept a pending pairing request locally.")},
     {"--forget <fingerprint>", N_("Remove a Wi-Fi pairing and drop its session.")},
     {"--pair", N_("Send a pair_request over TCP to the daemon.")},
@@ -277,6 +282,31 @@ static int print_extension_host_install() {
     return 0;
 }
 
+// The unit the distro packages install. A portable (AppImage, Flatpak) build has no way to put it there, so the
+// binary gives the commands to run.
+static int install_btclass_unit() {
+    static constexpr const char* kPath = "/etc/systemd/system/tether-btclass@.service";
+
+    if (geteuid() != 0) {
+        debug::log(ERR, _("Writing {} needs root. Run this with sudo.\n"), kPath);
+        return 1;
+    }
+
+    std::ofstream out(kPath, std::ios::trunc);
+    out << tether::packaging::BTCLASS_UNIT;
+    out.close();
+    if (!out) {
+        debug::log(ERR, _("Could not write {}.\n"), kPath);
+        return 1;
+    }
+
+    fprintf(stdout, _("Installed %s\n"), kPath);
+    fprintf(stdout,
+            _("\nIt is not enabled. Run 'systemctl daemon-reload', then "
+              "'systemctl enable --now tether-btclass@hci0' to apply it.\n"));
+    return 0;
+}
+
 // The two known gaps (adapter class, experimental API) change the machine
 // outside Tether, so they are printed for the user to run, never applied here.
 static int print_bt_setup(tether::Client& client) {
@@ -309,10 +339,9 @@ static int print_bt_setup(tether::Client& client) {
     size_t n = 0;
     for (const auto& step : setup) {
         fprintf(stdout, "\n%zu. %s\n\n", ++n, step.value("what", "").c_str());
-        // Indent every line so a multi-line command still reads as one block.
         std::istringstream lines(step.value("command", ""));
         for (std::string line; std::getline(lines, line);)
-            fprintf(stdout, "     %s\n", line.c_str());
+            fprintf(stdout, "%s\n", line.c_str());
     }
 
     fprintf(stdout, _("\nRe-run 'tether --bt-setup' afterwards to confirm.\n"));
@@ -899,6 +928,8 @@ int main(int argc, char* argv[]) {
             action = "list";
         } else if (arg == "--install-extension-host") {
             action = "install_extension_host";
+        } else if (arg == "--install-btclass-unit") {
+            action = "install_btclass_unit";
         } else if (arg == "--bt-setup") {
             action = "bt_setup";
         } else if (arg == "--bt-status") {
@@ -1018,6 +1049,9 @@ int main(int argc, char* argv[]) {
 
     if (action == "install_extension_host")
         return print_extension_host_install();
+
+    if (action == "install_btclass_unit")
+        return install_btclass_unit();
 
     tether::Client client;
 

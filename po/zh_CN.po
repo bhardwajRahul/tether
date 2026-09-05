@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 18:25-0700\n"
+"POT-Creation-Date: 2026-09-05 11:01-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -188,6 +188,13 @@ msgstr ""
 "装到系统范围。"
 
 #: src/cli/main.cpp
+msgid ""
+"Write the tether-btclass@.service unit, which sets the Bluetooth adapter "
+"class iOS requires. Needs root, and never enables it. Needed only for "
+"portable builds; the distro packages install it."
+msgstr "写入 tether-btclass@.service 单元，它设置 iOS 所需的蓝牙适配器类别。需要 root，且从不启用它。仅便携式构建需要；发行版软件包会自行安装。"
+
+#: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
 msgstr "在本地接受待处理的配对请求。"
 
@@ -233,6 +240,24 @@ msgid ""
 msgstr ""
 "\n"
 "请重启浏览器或邮件客户端以使其生效。\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Writing {} needs root. Run this with sudo.\n"
+msgstr "写入 {} 需要 root。请用 sudo 运行。\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Could not write {}.\n"
+msgstr "无法写入 {}。\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"It is not enabled. Run 'systemctl daemon-reload', then 'systemctl enable --"
+"now tether-btclass@hci0' to apply it.\n"
+msgstr "\n它尚未启用。运行 'systemctl daemon-reload'，然后运行 'systemctl enable --now tether-btclass@hci0' 以应用。\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth status from the daemon.\n"
@@ -731,7 +756,10 @@ msgid ""
 "is never asked for the service. Nothing on the iPhone changes this and re-"
 "pairing will not either. Check the controller with tether --bt-status; "
 "another one can be selected with tether --bt-adapter."
-msgstr "这台计算机没有把通知请求发送到空中，因此从未向 iPhone 请求该服务。在 iPhone 上做任何操作都无法改变这一点，重新配对也不行。用 tether --bt-status 检查控制器；可以用 tether --bt-adapter 选择另一个。"
+msgstr ""
+"这台计算机没有把通知请求发送到空中，因此从未向 iPhone 请求该服务。在 iPhone "
+"上做任何操作都无法改变这一点，重新配对也不行。用 tether --bt-status 检查控制"
+"器；可以用 tether --bt-adapter 选择另一个。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""
