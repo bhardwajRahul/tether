@@ -10,6 +10,7 @@
 #include <mutex>
 #include <string>
 #include <tether/log.hpp>
+#include <tether/net.hpp>
 #include <thread>
 #include <unordered_set>
 
@@ -332,7 +333,7 @@ namespace tether {
     }
 
     void DesktopNotifier::notify(const NotificationSpec& spec) {
-        if (!impl_ || !impl_->initialized) {
+        if (!impl_ || !impl_->initialized || !desktop_popups_enabled()) {
             return;
         }
 
@@ -343,7 +344,7 @@ namespace tether {
     }
 
     void DesktopNotifier::notify_file_arrived(const std::filesystem::path& path) {
-        if (!impl_->initialized) {
+        if (!impl_->initialized || !desktop_popups_enabled()) {
             return;
         }
 

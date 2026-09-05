@@ -54,6 +54,7 @@ namespace tether::bluetooth {
         j["enabled"] = config.enabled;
         j["adapter"] = config.adapter;
         j["retention"] = to_string(config.retention);
+        j["desktop_popups_enabled"] = config.desktop_popups_enabled;
         return j.dump(2);
     }
 
@@ -73,6 +74,7 @@ namespace tether::bluetooth {
             config.enabled = j.value("enabled", true);
             config.adapter = j.value("adapter", "");
             config.retention = retention_from_string(j.value("retention", "encrypted"));
+            config.desktop_popups_enabled = j.value("desktop_popups_enabled", true);
         } catch (const std::exception&) {
             // A corrupt file must not stop the daemon; defaults are safe.
         }

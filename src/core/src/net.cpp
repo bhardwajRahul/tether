@@ -307,6 +307,7 @@ namespace tether {
         status["enabled"] = config.enabled;
         status["retention"] = to_string(config.retention);
         status["retention_ready"] = secret::have_key();
+        status["desktop_popups_enabled"] = config.desktop_popups_enabled;
         status["version"] = TETHER_VERSION;
         if (!bluetooth::g_bluez) {
             status["capability"] = nullptr;
@@ -321,6 +322,12 @@ namespace tether {
         status["adapters"] = adapters;
         return status;
     }
+
+    static std::atomic<bool> g_desktop_popups_enabled{true};
+
+    bool desktop_popups_enabled() { return g_desktop_popups_enabled.load(); }
+
+    void set_desktop_popups_enabled(bool enabled) { g_desktop_popups_enabled.store(enabled); }
 
     static std::atomic<bool> g_mdns_available{false};
 
@@ -1120,6 +1127,12 @@ namespace tether {
                         bluetooth::save_config(config);
                         if (bluetooth::g_bt_connections)
                             bluetooth::g_bt_connections->set_calls_enabled(config.calls_enabled);
+                        broadcast_local_event(build_bt_status().dump());
+                    } else if (j.contains("command") && j["command"] == "set_desktop_popups") {
+                        auto config = bluetooth::load_config();
+                        config.desktop_popups_enabled = j.value("enabled", true);
+                        bluetooth::save_config(config);
+                        set_desktop_popups_enabled(config.desktop_popups_enabled);
                         broadcast_local_event(build_bt_status().dump());
                     } else if (j.contains("command") && j["command"] == "bt_list_calls") {
                         nlohmann::json payload;

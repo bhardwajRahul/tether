@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:56-0700\n"
+"POT-Creation-Date: 2026-09-04 18:00-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -1787,6 +1787,22 @@ msgstr "包含通知正文"
 #: src/gtk/settings_view.cpp
 msgid "Title and message content are shown, not just which app sent it."
 msgstr "显示标题和正文，而不只是发送它的应用。"
+
+#: src/gtk/settings_view.cpp
+msgid "Desktop popups"
+msgstr "桌面弹窗"
+
+#: src/gtk/settings_view.cpp
+msgid "What Tether shows in your notification area."
+msgstr "Tether 在通知区域中显示的内容。"
+
+#: src/gtk/settings_view.cpp
+msgid "Show desktop popups"
+msgstr "显示桌面弹窗"
+
+#: src/gtk/settings_view.cpp
+msgid "Off silences iPhone alerts, new messages and arriving files."
+msgstr "关闭后将不显示 iPhone 提醒、新消息和收到的文件。"
 
 #: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."

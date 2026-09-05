@@ -49,6 +49,11 @@ namespace tether {
     // Whether mDNS is usable (avahi-daemon is running). False until the
     // Avahi client reports otherwise. Setting it pushes an "mdns_status" event
     // to local subscribers.
+    // Whether the daemon shows desktop popups at all. Off silences every one:
+    // mirrored iPhone alerts, incoming messages, and arriving files.
+    void set_desktop_popups_enabled(bool enabled);
+    bool desktop_popups_enabled();
+
     void set_mdns_available(bool available);
     bool mdns_available();
     nlohmann::json build_mdns_status();

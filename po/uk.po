@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:56-0700\n"
+"POT-Creation-Date: 2026-09-04 18:00-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Ukrainian\n"
@@ -1871,6 +1871,22 @@ msgid "Title and message content are shown, not just which app sent it."
 msgstr "Показуються заголовок і текст, а не лише програма-відправник."
 
 #: src/gtk/settings_view.cpp
+msgid "Desktop popups"
+msgstr "Спливні сповіщення"
+
+#: src/gtk/settings_view.cpp
+msgid "What Tether shows in your notification area."
+msgstr "Що Tether показує в області сповіщень."
+
+#: src/gtk/settings_view.cpp
+msgid "Show desktop popups"
+msgstr "Показувати спливні сповіщення"
+
+#: src/gtk/settings_view.cpp
+msgid "Off silences iPhone alerts, new messages and arriving files."
+msgstr "Вимкнено — не показуються сповіщення з iPhone, нові повідомлення та отримані файли."
+
+#: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
 msgstr "Розмови SMS та iMessage, синхронізовані через Bluetooth."
 
@@ -1894,12 +1910,16 @@ msgstr "Зберігати історію повідомлень"
 msgid ""
 "Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
 "stored."
-msgstr "«Зашифровано» використовує ключ зі сховища ключів. «Не зберігати» вилучає збережене."
+msgstr ""
+"«Зашифровано» використовує ключ зі сховища ключів. «Не зберігати» вилучає "
+"збережене."
 
 #: src/gtk/settings_view.cpp
 msgid ""
 "Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
-msgstr "Призупинено: немає ключа зі сховища ключів. Розблокуйте його або виберіть «Незашифровано»."
+msgstr ""
+"Призупинено: немає ключа зі сховища ключів. Розблокуйте його або виберіть "
+"«Незашифровано»."
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"

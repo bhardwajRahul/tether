@@ -241,6 +241,7 @@ int main(int argc, char** argv) {
     auto bt_config = tether::bluetooth::load_config();
 
     tether::secret::set_retention(bt_config.retention);
+    tether::set_desktop_popups_enabled(bt_config.desktop_popups_enabled);
 
     // Pick the controller before the first capability, a second adapter never comes up bound to the wrong one.
     bluez.set_preferred_adapter(bt_config.adapter);

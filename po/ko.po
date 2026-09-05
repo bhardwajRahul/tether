@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:56-0700\n"
+"POT-Creation-Date: 2026-09-04 18:00-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -1825,6 +1825,22 @@ msgid "Title and message content are shown, not just which app sent it."
 msgstr "보낸 앱뿐 아니라 제목과 본문도 표시됩니다."
 
 #: src/gtk/settings_view.cpp
+msgid "Desktop popups"
+msgstr "데스크톱 팝업"
+
+#: src/gtk/settings_view.cpp
+msgid "What Tether shows in your notification area."
+msgstr "Tether가 알림 영역에 표시하는 내용입니다."
+
+#: src/gtk/settings_view.cpp
+msgid "Show desktop popups"
+msgstr "데스크톱 팝업 표시"
+
+#: src/gtk/settings_view.cpp
+msgid "Off silences iPhone alerts, new messages and arriving files."
+msgstr "끄면 iPhone 알림, 새 메시지, 도착한 파일이 모두 표시되지 않습니다."
+
+#: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
 msgstr "Bluetooth로 동기화되는 SMS 및 iMessage 대화입니다."
 
@@ -1848,12 +1864,16 @@ msgstr "메시지 기록 보관"
 msgid ""
 "Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
 "stored."
-msgstr "암호화는 데스크톱 키링의 키를 사용합니다. 보관 안 함은 저장된 것을 삭제합니다."
+msgstr ""
+"암호화는 데스크톱 키링의 키를 사용합니다. 보관 안 함은 저장된 것을 삭제합니"
+"다."
 
 #: src/gtk/settings_view.cpp
 msgid ""
 "Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
-msgstr "일시 중지됨: 데스크톱 키링에서 키를 가져올 수 없습니다. 잠금을 해제하거나 암호화 안 함을 선택하세요."
+msgstr ""
+"일시 중지됨: 데스크톱 키링에서 키를 가져올 수 없습니다. 잠금을 해제하거나 암"
+"호화 안 함을 선택하세요."
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"

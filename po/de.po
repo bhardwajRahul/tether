@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:56-0700\n"
+"POT-Creation-Date: 2026-09-04 18:00-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: German\n"
@@ -1895,6 +1895,22 @@ msgid "Title and message content are shown, not just which app sent it."
 msgstr "Titel und Text werden angezeigt, nicht nur die sendende App."
 
 #: src/gtk/settings_view.cpp
+msgid "Desktop popups"
+msgstr "Desktop-Benachrichtigungen"
+
+#: src/gtk/settings_view.cpp
+msgid "What Tether shows in your notification area."
+msgstr "Was Tether in Ihrem Benachrichtigungsbereich anzeigt."
+
+#: src/gtk/settings_view.cpp
+msgid "Show desktop popups"
+msgstr "Desktop-Benachrichtigungen anzeigen"
+
+#: src/gtk/settings_view.cpp
+msgid "Off silences iPhone alerts, new messages and arriving files."
+msgstr "Aus schaltet iPhone-Hinweise, neue Nachrichten und ankommende Dateien stumm."
+
+#: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
 msgstr ""
 "SMS- und iMessage-Unterhaltungen, die über Bluetooth synchronisiert werden."
@@ -1919,12 +1935,16 @@ msgstr "Nachrichtenverlauf aufbewahren"
 msgid ""
 "Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
 "stored."
-msgstr "Verschlüsselt nutzt einen Schlüssel aus dem Schlüsselbund. Nicht aufbewahren löscht das Gespeicherte."
+msgstr ""
+"Verschlüsselt nutzt einen Schlüssel aus dem Schlüsselbund. Nicht aufbewahren "
+"löscht das Gespeicherte."
 
 #: src/gtk/settings_view.cpp
 msgid ""
 "Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
-msgstr "Pausiert: kein Schlüssel aus dem Schlüsselbund. Entsperren Sie ihn oder wählen Sie Unverschlüsselt."
+msgstr ""
+"Pausiert: kein Schlüssel aus dem Schlüsselbund. Entsperren Sie ihn oder "
+"wählen Sie Unverschlüsselt."
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"

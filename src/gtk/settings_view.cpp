@@ -26,6 +26,8 @@ namespace tether::ui {
             GtkWidget* row_content = nullptr;
             GtkWidget* sw_content = nullptr;
 
+            GtkWidget* sw_popups = nullptr;
+
             GtkWidget* row_retention = nullptr;
             GtkWidget* cmb_retention = nullptr;
             GtkWidget* lbl_keyring = nullptr;
@@ -117,6 +119,10 @@ namespace tether::ui {
             daemon_send({{"command", "bt_set_ancs_content"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
         }
 
+        void on_popups_toggled(GtkSwitch* widget, GParamSpec*, gpointer) {
+            daemon_send({{"command", "set_desktop_popups"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
+        }
+
         void on_calls_toggled(GtkSwitch* widget, GParamSpec*, gpointer) {
             daemon_send({{"command", "bt_set_calls"}, {"enabled", gtk_switch_get_active(widget) == TRUE}});
         }
@@ -162,6 +168,11 @@ namespace tether::ui {
             set_switch(g_settings.sw_calls,
                        reinterpret_cast<gpointer>(on_calls_toggled),
                        status.value("calls_enabled", false));
+
+            // Popups cover Wi-Fi file transfers too, so this one never depends on a bond.
+            set_switch(g_settings.sw_popups,
+                       reinterpret_cast<gpointer>(on_popups_toggled),
+                       status.value("desktop_popups_enabled", true));
 
             const std::string retention = status.value("retention", "encrypted");
             set_combo(g_settings.cmb_retention, reinterpret_cast<gpointer>(on_retention_changed), retention);
@@ -238,6 +249,17 @@ namespace tether::ui {
                                              _("Title and message content are shown, not just which app sent "
                                                "it."),
                                              g_settings.sw_content);
+
+            // Desktop popups
+            GtkWidget* popups =
+                add_group(column, _("Desktop popups"), _("What Tether shows in your notification area."));
+
+            g_settings.sw_popups = new_switch();
+            g_signal_connect(g_settings.sw_popups, "notify::active", G_CALLBACK(on_popups_toggled), nullptr);
+            add_row(popups,
+                    _("Show desktop popups"),
+                    _("Off silences iPhone alerts, new messages and arriving files."),
+                    g_settings.sw_popups);
 
             // Messages
             GtkWidget* messages =

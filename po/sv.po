@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:56-0700\n"
+"POT-Creation-Date: 2026-09-04 18:00-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Swedish\n"
@@ -1856,6 +1856,22 @@ msgid "Title and message content are shown, not just which app sent it."
 msgstr "Titel och innehåll visas, inte bara vilken app som skickade det."
 
 #: src/gtk/settings_view.cpp
+msgid "Desktop popups"
+msgstr "Skrivbordsnotiser"
+
+#: src/gtk/settings_view.cpp
+msgid "What Tether shows in your notification area."
+msgstr "Vad Tether visar i ditt aviseringsområde."
+
+#: src/gtk/settings_view.cpp
+msgid "Show desktop popups"
+msgstr "Visa skrivbordsnotiser"
+
+#: src/gtk/settings_view.cpp
+msgid "Off silences iPhone alerts, new messages and arriving files."
+msgstr "Av tystar iPhone-aviseringar, nya meddelanden och inkommande filer."
+
+#: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
 msgstr "SMS- och iMessage-konversationer som synkas via Bluetooth."
 
@@ -1879,12 +1895,15 @@ msgstr "Spara meddelandehistorik"
 msgid ""
 "Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
 "stored."
-msgstr "Krypterat använder en nyckel från nyckelringen. Spara inte raderar det som lagrats."
+msgstr ""
+"Krypterat använder en nyckel från nyckelringen. Spara inte raderar det som "
+"lagrats."
 
 #: src/gtk/settings_view.cpp
 msgid ""
 "Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
-msgstr "Pausad: ingen nyckel från nyckelringen. Lås upp den, eller välj Okrypterat."
+msgstr ""
+"Pausad: ingen nyckel från nyckelringen. Lås upp den, eller välj Okrypterat."
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"

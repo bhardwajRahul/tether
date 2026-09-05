@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:56-0700\n"
+"POT-Creation-Date: 2026-09-04 18:00-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -1847,6 +1847,22 @@ msgid "Title and message content are shown, not just which app sent it."
 msgstr "送信元アプリだけでなく、タイトルと本文も表示されます。"
 
 #: src/gtk/settings_view.cpp
+msgid "Desktop popups"
+msgstr "デスクトップのポップアップ"
+
+#: src/gtk/settings_view.cpp
+msgid "What Tether shows in your notification area."
+msgstr "Tether が通知領域に表示する内容です。"
+
+#: src/gtk/settings_view.cpp
+msgid "Show desktop popups"
+msgstr "デスクトップのポップアップを表示"
+
+#: src/gtk/settings_view.cpp
+msgid "Off silences iPhone alerts, new messages and arriving files."
+msgstr "オフにすると iPhone の通知、新着メッセージ、受信ファイルがすべて表示されません。"
+
+#: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
 msgstr "Bluetooth 経由で同期される SMS と iMessage の会話です。"
 
@@ -1870,12 +1886,16 @@ msgstr "メッセージ履歴を保持"
 msgid ""
 "Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
 "stored."
-msgstr "暗号化するはデスクトップのキーリングの鍵を使います。保持しないは保存済みのものを削除します。"
+msgstr ""
+"暗号化するはデスクトップのキーリングの鍵を使います。保持しないは保存済みのも"
+"のを削除します。"
 
 #: src/gtk/settings_view.cpp
 msgid ""
 "Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
-msgstr "一時停止中: デスクトップのキーリングから鍵を取得できません。ロックを解除するか、暗号化しないを選んでください。"
+msgstr ""
+"一時停止中: デスクトップのキーリングから鍵を取得できません。ロックを解除する"
+"か、暗号化しないを選んでください。"
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"

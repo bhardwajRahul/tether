@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:56-0700\n"
+"POT-Creation-Date: 2026-09-04 18:00-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Turkish\n"
@@ -1851,6 +1851,22 @@ msgstr ""
 "Yalnızca gönderen uygulama değil, başlık ve ileti içeriği de gösterilir."
 
 #: src/gtk/settings_view.cpp
+msgid "Desktop popups"
+msgstr "Masaüstü açılır bildirimleri"
+
+#: src/gtk/settings_view.cpp
+msgid "What Tether shows in your notification area."
+msgstr "Tether'ın bildirim alanınızda gösterdikleri."
+
+#: src/gtk/settings_view.cpp
+msgid "Show desktop popups"
+msgstr "Masaüstü açılır bildirimlerini göster"
+
+#: src/gtk/settings_view.cpp
+msgid "Off silences iPhone alerts, new messages and arriving files."
+msgstr "Kapalıyken iPhone uyarıları, yeni mesajlar ve gelen dosyalar susturulur."
+
+#: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
 msgstr "Bluetooth üzerinden eşitlenen SMS ve iMessage konuşmaları."
 
@@ -1874,12 +1890,16 @@ msgstr "Mesaj geçmişini sakla"
 msgid ""
 "Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
 "stored."
-msgstr "Şifreli, masaüstü anahtarlığındaki bir anahtarı kullanır. Saklama, kayıtlı olanı siler."
+msgstr ""
+"Şifreli, masaüstü anahtarlığındaki bir anahtarı kullanır. Saklama, kayıtlı "
+"olanı siler."
 
 #: src/gtk/settings_view.cpp
 msgid ""
 "Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
-msgstr "Duraklatıldı: masaüstü anahtarlığından anahtar yok. Kilidini açın ya da Şifresiz'i seçin."
+msgstr ""
+"Duraklatıldı: masaüstü anahtarlığından anahtar yok. Kilidini açın ya da "
+"Şifresiz'i seçin."
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"
