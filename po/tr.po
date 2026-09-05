@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:50-0700\n"
+"POT-Creation-Date: 2026-09-04 17:56-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Turkish\n"
@@ -1847,7 +1847,8 @@ msgstr "Bildirim metnini de al"
 
 #: src/gtk/settings_view.cpp
 msgid "Title and message content are shown, not just which app sent it."
-msgstr "Yalnızca gönderen uygulama değil, başlık ve ileti içeriği de gösterilir."
+msgstr ""
+"Yalnızca gönderen uygulama değil, başlık ve ileti içeriği de gösterilir."
 
 #: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
@@ -1871,21 +1872,14 @@ msgstr "Mesaj geçmişini sakla"
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
-msgstr ""
-"Mesajların ve kişilerin bu bilgisayarda nerede saklanacağı. Şifreli, onları "
-"masaüstü anahtarlığınızdaki bir anahtarla saklar. Saklama, halihazırda "
-"saklananları siler ve başka bir şey tutmaz."
+"Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
+"stored."
+msgstr "Şifreli, masaüstü anahtarlığındaki bir anahtarı kullanır. Saklama, kayıtlı olanı siler."
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Message history is paused: the desktop keyring has no key to offer yet. "
-"Unlock it, or choose Unencrypted."
-msgstr ""
-"Mesaj geçmişi duraklatıldı: masaüstü anahtarlığının sunacak bir anahtarı "
-"yok. Kilidini açın ya da Şifresiz'i seçin."
+"Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
+msgstr "Duraklatıldı: masaüstü anahtarlığından anahtar yok. Kilidini açın ya da Şifresiz'i seçin."
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"
@@ -1939,6 +1933,15 @@ msgstr "Aygıt eşzamanlaması"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Aygıtları eşleştirin ve panoyu ağ üzerinden eşzamanlayın"
+
+#~ msgid ""
+#~ "Where messages and contacts are stored on this computer. Encrypted keeps "
+#~ "them with a key in your desktop keyring. Do not keep deletes what is "
+#~ "already stored and retains nothing further."
+#~ msgstr ""
+#~ "Mesajların ve kişilerin bu bilgisayarda nerede saklanacağı. Şifreli, "
+#~ "onları masaüstü anahtarlığınızdaki bir anahtarla saklar. Saklama, "
+#~ "halihazırda saklananları siler ve başka bir şey tutmaz."
 
 #~ msgid ""
 #~ "Turned off automatically when pairing produces no LE bond; turn it back "

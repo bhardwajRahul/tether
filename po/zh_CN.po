@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:50-0700\n"
+"POT-Creation-Date: 2026-09-04 17:56-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -1810,18 +1810,14 @@ msgstr "保留信息历史"
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
-msgstr ""
-"消息和通讯录在这台计算机上的存储方式。「加密」会用桌面密钥环中的密钥保存。"
-"「不保留」会删除已存储的内容且不再保留任何内容。"
+"Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
+"stored."
+msgstr "加密使用桌面密钥环中的密钥。不保留会删除已存储的内容。"
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Message history is paused: the desktop keyring has no key to offer yet. "
-"Unlock it, or choose Unencrypted."
-msgstr "信息历史已暂停：桌面密钥环尚无可用密钥。请解锁密钥环，或选择“不加密”。"
+"Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
+msgstr "已暂停：桌面密钥环未提供密钥。请解锁密钥环，或选择“不加密”。"
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"
@@ -1874,6 +1870,14 @@ msgstr "设备同步"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "配对设备并通过网络同步剪贴板"
+
+#~ msgid ""
+#~ "Where messages and contacts are stored on this computer. Encrypted keeps "
+#~ "them with a key in your desktop keyring. Do not keep deletes what is "
+#~ "already stored and retains nothing further."
+#~ msgstr ""
+#~ "消息和通讯录在这台计算机上的存储方式。「加密」会用桌面密钥环中的密钥保存。"
+#~ "「不保留」会删除已存储的内容且不再保留任何内容。"
 
 #~ msgid ""
 #~ "Turned off automatically when pairing produces no LE bond; turn it back "

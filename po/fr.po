@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:50-0700\n"
+"POT-Creation-Date: 2026-09-04 17:56-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: French\n"
@@ -1885,7 +1885,8 @@ msgstr "Inclure le texte de la notification"
 
 #: src/gtk/settings_view.cpp
 msgid "Title and message content are shown, not just which app sent it."
-msgstr "Le titre et le message sont affichés, pas seulement l'application émettrice."
+msgstr ""
+"Le titre et le message sont affichés, pas seulement l'application émettrice."
 
 #: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
@@ -1909,21 +1910,14 @@ msgstr "Conserver l'historique des messages"
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
-msgstr ""
-"Où les messages et les contacts sont stockés sur cet ordinateur. Chiffré les "
-"conserve avec une clé dans le trousseau de votre bureau. Ne pas conserver "
-"supprime ce qui est déjà stocké et ne conserve plus rien."
+"Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
+"stored."
+msgstr "Chiffré utilise une clé du trousseau. Ne pas conserver supprime ce qui est stocké."
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Message history is paused: the desktop keyring has no key to offer yet. "
-"Unlock it, or choose Unencrypted."
-msgstr ""
-"L'historique des messages est suspendu : le trousseau du bureau n'a pas "
-"encore de clé à fournir. Déverrouillez-le, ou choisissez Non chiffré."
+"Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
+msgstr "Suspendu : aucune clé du trousseau. Déverrouillez-le, ou choisissez Non chiffré."
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"
@@ -1931,7 +1925,9 @@ msgstr "Expérimental"
 
 #: src/gtk/settings_view.cpp
 msgid "Unfinished features. These can stop working at any time."
-msgstr "Fonctionnalités inachevées. Elles peuvent cesser de fonctionner à tout moment."
+msgstr ""
+"Fonctionnalités inachevées. Elles peuvent cesser de fonctionner à tout "
+"moment."
 
 #: src/gtk/settings_view.cpp
 msgid "Call control over Bluetooth"
@@ -1977,6 +1973,15 @@ msgstr "Synchronisation d'appareils"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Appairez des appareils et synchronisez le presse-papiers sur le réseau"
+
+#~ msgid ""
+#~ "Where messages and contacts are stored on this computer. Encrypted keeps "
+#~ "them with a key in your desktop keyring. Do not keep deletes what is "
+#~ "already stored and retains nothing further."
+#~ msgstr ""
+#~ "Où les messages et les contacts sont stockés sur cet ordinateur. Chiffré "
+#~ "les conserve avec une clé dans le trousseau de votre bureau. Ne pas "
+#~ "conserver supprime ce qui est déjà stocké et ne conserve plus rien."
 
 #~ msgid ""
 #~ "Turned off automatically when pairing produces no LE bond; turn it back "

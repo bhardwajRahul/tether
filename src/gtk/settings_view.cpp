@@ -250,13 +250,12 @@ namespace tether::ui {
             g_signal_connect(g_settings.cmb_retention, "changed", G_CALLBACK(on_retention_changed), nullptr);
             g_settings.row_retention = add_row(messages,
                                                _("Keep message history"),
-                                               _("Where messages and contacts are stored on this computer. "
-                                                 "Encrypted keeps them with a key in your desktop keyring. Do not "
-                                                 "keep deletes what is already stored and retains nothing further."),
+                                               _("Encrypted uses a key from your desktop keyring. Do not keep "
+                                                 "deletes what is stored."),
                                                g_settings.cmb_retention);
 
-            g_settings.lbl_keyring = gtk_label_new(_("Message history is paused: the desktop keyring has no key to "
-                                                     "offer yet. Unlock it, or choose Unencrypted."));
+            g_settings.lbl_keyring =
+                gtk_label_new(_("Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."));
             gtk_label_set_xalign(GTK_LABEL(g_settings.lbl_keyring), 0.0);
             gtk_label_set_line_wrap(GTK_LABEL(g_settings.lbl_keyring), TRUE);
             gtk_style_context_add_class(gtk_widget_get_style_context(g_settings.lbl_keyring), "muted");
