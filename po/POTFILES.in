@@ -5,9 +5,11 @@ src/core/src/bluetooth/groups.cpp
 src/core/src/bluetooth/objects.cpp
 src/core/src/bluetooth/pairing.cpp
 src/core/src/bluetooth/profile_supervisor.cpp
+src/core/src/bluetooth/telephony.cpp
 src/core/src/net.cpp
 src/daemon/main.cpp
 src/daemon/notification.cpp
+src/gtk/calls_view.cpp
 src/gtk/contacts_view.cpp
 src/gtk/daemon_client.cpp
 src/gtk/devices_view.cpp

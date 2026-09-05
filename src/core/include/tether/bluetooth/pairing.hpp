@@ -49,11 +49,13 @@ namespace tether::bluetooth {
     // resolves. Intended to be called from a worker thread: GDBusConnection is
     // thread-safe for calls, while the agent's callbacks land on the monitor's
     // GLib thread.
+    // `calls_enabled` widens the agent's service whitelist to hands-free.
     PairResult pair_device(BluezMonitor& monitor,
                            const std::string& address,
                            AuthStrategy strategy,
                            const ProgressFn& progress,
-                           const ConfirmFn& confirm);
+                           const ConfirmFn& confirm,
+                           bool calls_enabled = false);
 
     // Removes the bond so a clean pairing can be retried.
     PairResult unpair_device(BluezMonitor& monitor, const std::string& address);

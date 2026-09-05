@@ -548,7 +548,8 @@ namespace tether::bluetooth {
                            const std::string& address,
                            AuthStrategy strategy,
                            const ProgressFn& progress,
-                           const ConfirmFn& confirm) {
+                           const ConfirmFn& confirm,
+                           bool calls_enabled) {
         PairResult result;
         result.device_address = normalize_address(address);
 
@@ -602,30 +603,34 @@ namespace tether::bluetooth {
             std::atomic<bool> user_rejected{false};
             std::atomic<bool> confirm_unavailable{false};
 
-            PairingAgent agent(conn, device.path, [&](const std::string& code) {
-                auth_seen = true;
-                notify(progress, "confirm", code);
+            PairingAgent agent(
+                conn,
+                device.path,
+                [&](const std::string& code) {
+                    auth_seen = true;
+                    notify(progress, "confirm", code);
 
-                bool unavailable = false;
-                bool accepted = confirm_with_dialog(display_name, code, unavailable);
-                std::string answered_by = "dialog";
+                    bool unavailable = false;
+                    bool accepted = confirm_with_dialog(display_name, code, unavailable);
+                    std::string answered_by = "dialog";
 
-                if (unavailable && confirm) {
-                    accepted = confirm(code);
-                    unavailable = false;
-                    answered_by = "client";
-                }
+                    if (unavailable && confirm) {
+                        accepted = confirm(code);
+                        unavailable = false;
+                        answered_by = "client";
+                    }
 
-                if (unavailable)
-                    confirm_unavailable = true;
-                else if (!accepted)
-                    user_rejected = true;
+                    if (unavailable)
+                        confirm_unavailable = true;
+                    else if (!accepted)
+                        user_rejected = true;
 
-                notify(progress,
-                       unavailable ? "unanswered" : (accepted ? "confirmed" : "declined"),
-                       unavailable ? "no dialog and no client answered" : answered_by);
-                return accepted;
-            });
+                    notify(progress,
+                           unavailable ? "unanswered" : (accepted ? "confirmed" : "declined"),
+                           unavailable ? "no dialog and no client answered" : answered_by);
+                    return accepted;
+                },
+                calls_enabled);
 
             bool exported = false;
             monitor.invoke_sync([&] { exported = agent.export_object(); });

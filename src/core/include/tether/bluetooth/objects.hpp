@@ -76,15 +76,68 @@ namespace tether::bluetooth {
         bool operator==(const Device&) const = default;
     };
 
+    // One call on an audio gateway, from org.bluez.Call1.
+    struct Call {
+        std::string path;
+        // Owning telephony object, so a second phone's calls stay separate.
+        std::string telephony_path;
+        // CLIP for incoming calls, the dialled number for outgoing. BlueZ passes
+        // the literal "withheld" through when the network refuses caller ID.
+        std::string number;
+        std::string name;
+        std::string incoming_line;
+        // BlueZ's own state string, unmapped so an unseen state still reaches
+        // the UI: active, held, dialing, alerting, incoming, waiting,
+        // response_and_hold, disconnected.
+        std::string state;
+        bool multiparty = false;
+
+        bool withheld() const { return number == "withheld"; }
+        bool ringing() const { return state == "incoming" || state == "waiting"; }
+        bool outgoing() const { return state == "dialing" || state == "alerting"; }
+        bool connected() const { return state == "active" || state == "held"; }
+
+        bool operator==(const Call&) const = default;
+    };
+
+    // An HFP audio gateway, from org.bluez.Telephony1. BlueZ exports one per
+    // connected phone at <device>/telephonyN, plus the network state the phone reports over HFP.
+    struct Telephony {
+        std::string path;
+        std::string device_path;
+        std::string uuid;
+        // connecting, slc_connecting, connected, disconnecting.
+        std::string state;
+        std::string operator_name;
+        std::vector<std::string> uri_schemes;
+        // 0-5, as HFP reports them.
+        uint8_t signal = 0;
+        uint8_t battery = 0;
+        bool service = false;
+        bool roaming = false;
+        bool inband_ringtone = false;
+
+        bool ready() const { return state == "connected"; }
+
+        bool operator==(const Telephony&) const = default;
+    };
+
     struct BluezObjects {
         std::vector<Adapter> adapters;
         std::vector<Device> devices;
+        std::vector<Telephony> telephony;
+        std::vector<Call> calls;
 
         // Whether bluetoothd was started with --experimental. Bearer.LE1 exists only under that flag
         bool experimental_api = false;
 
         const Adapter* find_adapter(const std::string& path) const;
         const Device* find_device(const std::string& path) const;
+
+        // The gateway for a device path, or null.
+        const Telephony* find_telephony(const std::string& device_path) const;
+        // Calls belonging to one gateway, in path order.
+        std::vector<Call> calls_for(const std::string& telephony_path) const;
 
         bool operator==(const BluezObjects&) const = default;
     };

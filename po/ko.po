@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 20:40-0700\n"
+"POT-Creation-Date: 2026-09-04 14:22-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -154,6 +154,30 @@ msgstr "사용할 Bluetooth 어댑터를 선택합니다."
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
 msgstr "미러링된 iPhone 알림을 나열합니다."
+
+#: src/cli/main.cpp
+msgid "List calls on the iPhone."
+msgstr "iPhone의 통화를 나열합니다."
+
+#: src/cli/main.cpp
+msgid "Place a call from the iPhone."
+msgstr "iPhone에서 전화를 겁니다."
+
+#: src/cli/main.cpp
+msgid "Answer the ringing call."
+msgstr "수신 중인 통화를 받습니다."
+
+#: src/cli/main.cpp
+msgid "Hang up every call."
+msgstr "모든 통화를 종료합니다."
+
+#: src/cli/main.cpp
+msgid ""
+"Turn call control on or off. Calls run over Bluetooth Hands-Free; the audio "
+"stays on the iPhone."
+msgstr ""
+"통화 제어를 켜거나 끕니다. 통화는 Bluetooth 핸즈프리를 사용하며 오디오는 "
+"iPhone에 남습니다."
 
 #: src/cli/main.cpp
 msgid "Print a redacted Bluetooth report for a bug report."
@@ -414,8 +438,42 @@ msgid "Contacts (PBAP)"
 msgstr "연락처 (PBAP)"
 
 #: src/cli/main.cpp
+msgid "no carrier"
+msgstr "통신사 없음"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid " signal {0}/5 battery {1}/5"
+msgstr " 신호 {0}/5 배터리 {1}/5"
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "roaming"
+msgstr "로밍"
+
+#: src/cli/main.cpp
+msgid "Calls (HFP)"
+msgstr "통화 (HFP)"
+
+#: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
 msgstr "데몬에서 Bluetooth 진단 정보를 읽지 못했습니다.\n"
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "The call could not be placed."
+msgstr "전화를 걸 수 없습니다."
+
+#: src/cli/main.cpp
+msgid "Could not read calls from the daemon.\n"
+msgstr "데몬에서 통화를 읽을 수 없습니다.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No calls. Check 'tether --bt-connection'.\n"
+msgstr "통화가 없습니다. 'tether --bt-connection'을 확인하십시오.\n"
+
+#: src/cli/main.cpp
+msgid "withheld"
+msgstr "발신 표시 제한"
 
 #: src/cli/main.cpp
 msgid "Could not read notifications from the daemon.\n"
@@ -550,6 +608,34 @@ msgstr "해당 지문을 가진 페어링된 기기가 없습니다.\n"
 #, c++-format
 msgid "Transfer Failed: {}"
 msgstr "전송 실패: {}"
+
+#: src/cli/main.cpp
+msgid "A number is required, e.g. --bt-call +15551234567\n"
+msgstr "번호가 필요합니다. 예: --bt-call +15551234567\n"
+
+#: src/cli/main.cpp
+msgid "Dialing."
+msgstr "전화를 거는 중입니다."
+
+#: src/cli/main.cpp
+msgid "Answering."
+msgstr "전화를 받는 중입니다."
+
+#: src/cli/main.cpp
+msgid "Hanging up."
+msgstr "전화를 끊는 중입니다."
+
+#: src/cli/main.cpp
+msgid "Expected on or off, e.g. --bt-calls-enable on\n"
+msgstr "on 또는 off가 필요합니다. 예: --bt-calls-enable on\n"
+
+#: src/cli/main.cpp
+msgid "Call control enabled."
+msgstr "통화 제어를 켰습니다."
+
+#: src/cli/main.cpp
+msgid "Call control disabled."
+msgstr "통화 제어를 껐습니다."
 
 #: src/cli/main.cpp
 msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
@@ -732,6 +818,10 @@ msgstr ""
 msgid ""
 "The iPhone is not offering notifications on this link. Asking it again..."
 msgstr "iPhone이 이 링크에서 알림을 제공하지 않습니다. 다시 요청하는 중..."
+
+#: src/core/src/bluetooth/connection.cpp
+msgid "Call control is off."
+msgstr "통화 제어가 꺼져 있습니다."
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "No paired iPhone selected."
@@ -965,7 +1055,8 @@ msgstr ""
 msgid "{} could not be opened."
 msgstr "{}을(를) 열지 못했습니다."
 
-#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/notifications_view.cpp
+#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/calls_view.cpp
+#: src/gtk/notifications_view.cpp
 msgid "Waiting for the iPhone."
 msgstr "iPhone을 기다리는 중입니다."
 
@@ -976,6 +1067,38 @@ msgstr "메시지와 연락처가 연결되었습니다."
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
 msgstr "메시지와 연락처를 여는 중..."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "The iPhone has not connected Hands-Free to this computer."
+msgstr "iPhone이 이 컴퓨터에 핸즈프리를 연결하지 않았습니다."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Connecting to the iPhone's Hands-Free service."
+msgstr "iPhone의 핸즈프리 서비스에 연결하는 중입니다."
+
+#: src/core/src/bluetooth/telephony.cpp src/gtk/calls_view.cpp
+msgid "Calls are controlled here; the audio plays on the iPhone."
+msgstr "통화는 여기서 제어하고 오디오는 iPhone에서 재생됩니다."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a dialable number."
+msgstr "전화를 걸 수 있는 번호가 아닙니다."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "No call named."
+msgstr "통화를 지정하지 않았습니다."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "That call is no longer active."
+msgstr "그 통화는 더 이상 활성 상태가 아닙니다."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Unknown call action."
+msgstr "알 수 없는 통화 동작입니다."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a DTMF sequence."
+msgstr "DTMF 시퀀스가 아닙니다."
 
 #: src/core/src/net.cpp
 msgid "Notification mirroring is already active; nothing to do."
@@ -1048,6 +1171,74 @@ msgstr "답장"
 #: src/daemon/notification.cpp
 msgid "Copy Code"
 msgstr "코드 복사"
+
+#: src/gtk/calls_view.cpp
+msgid "Incoming"
+msgstr "수신"
+
+#: src/gtk/calls_view.cpp
+msgid "Call waiting"
+msgstr "통화 대기"
+
+#: src/gtk/calls_view.cpp
+msgid "Dialing"
+msgstr "발신 중"
+
+#: src/gtk/calls_view.cpp
+msgid "Ringing"
+msgstr "벨 울리는 중"
+
+#: src/gtk/calls_view.cpp
+msgid "On call"
+msgstr "통화 중"
+
+#: src/gtk/calls_view.cpp
+msgid "On hold"
+msgstr "대기 중"
+
+#: src/gtk/calls_view.cpp
+msgid "Ended"
+msgstr "종료됨"
+
+#: src/gtk/calls_view.cpp
+msgid "No service"
+msgstr "서비스 없음"
+
+#: src/gtk/calls_view.cpp
+msgid "Unknown caller"
+msgstr "알 수 없는 발신자"
+
+#: src/gtk/calls_view.cpp
+msgid "Answer"
+msgstr "받기"
+
+#: src/gtk/calls_view.cpp
+msgid "Decline"
+msgstr "거절"
+
+#: src/gtk/calls_view.cpp
+msgid "Hang up"
+msgstr "끊기"
+
+#: src/gtk/calls_view.cpp
+msgid "No calls."
+msgstr "통화가 없습니다."
+
+#: src/gtk/calls_view.cpp
+msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+msgstr "통화 제어가 꺼져 있습니다. 'tether --bt-calls-enable on'으로 켜십시오."
+
+#: src/gtk/calls_view.cpp
+msgid "Number to call"
+msgstr "전화를 걸 번호"
+
+#: src/gtk/calls_view.cpp
+msgid "Call"
+msgstr "전화 걸기"
+
+#: src/gtk/calls_view.cpp
+msgid "The iPhone's carrier, signal, and battery."
+msgstr "iPhone의 통신사, 신호, 배터리입니다."
 
 #: src/gtk/contacts_view.cpp
 msgid "Copy"
@@ -1528,6 +1719,10 @@ msgid "Devices"
 msgstr "기기"
 
 #: src/gtk/main.cpp
+msgid "Calls"
+msgstr "통화"
+
+#: src/gtk/main.cpp
 msgid "Start hidden in the system tray"
 msgstr "시스템 트레이에 숨겨서 시작"
 
@@ -1662,6 +1857,42 @@ msgstr "기기 동기화"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "기기를 페어링하고 네트워크를 통해 클립보드를 동기화합니다"
+
+#~ msgid "Move call audio to this computer, or back to the iPhone."
+#~ msgstr "통화 오디오를 이 컴퓨터로 옮기거나 iPhone으로 되돌립니다."
+
+#~ msgid ""
+#~ "Turn call control on or off. Needs the hfp_hf role and telephony service "
+#~ "in WirePlumber; see docs/BLUETOOTH.md."
+#~ msgstr ""
+#~ "통화 제어를 켜거나 끕니다. WirePlumber의 hfp_hf 역할과 전화 서비스가 필요"
+#~ "합니다. docs/BLUETOOTH.md를 참고하십시오."
+
+#~ msgid "Call audio moved to this computer."
+#~ msgstr "통화 오디오를 이 컴퓨터로 옮겼습니다."
+
+#~ msgid "Take audio here"
+#~ msgstr "오디오 가져오기"
+
+#~ msgid ""
+#~ "Play the call through this computer's speakers and microphone. Handing it "
+#~ "back applies to the next call."
+#~ msgstr ""
+#~ "이 컴퓨터의 스피커와 마이크로 통화합니다. 되돌리기는 다음 통화부터 적용됩"
+#~ "니다."
+
+#~ msgid "Expected here or phone, e.g. --bt-call-audio here\n"
+#~ msgstr "here 또는 phone이 필요합니다. 예: --bt-call-audio here\n"
+
+#~ msgid ""
+#~ "New calls will stay on the iPhone. A call already playing here does not "
+#~ "move back."
+#~ msgstr ""
+#~ "새 통화는 iPhone에 남습니다. 이미 여기서 재생 중인 통화는 되돌아가지 않습"
+#~ "니다."
+
+#~ msgid "Move audio to iPhone"
+#~ msgstr "오디오를 iPhone으로 옮기기"
 
 #, fuzzy
 #~ msgid "Tether version"

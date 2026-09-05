@@ -1,3 +1,5 @@
+#include "calls_view.hpp"
+#include "contact_completion.hpp"
 #include "contacts_view.hpp"
 #include "daemon_client.hpp"
 #include "devices_view.hpp"
@@ -20,11 +22,25 @@ namespace {
 
     GtkWidget* g_refresh_button = nullptr;
     GtkWidget* g_stack = nullptr;
+    GtkWidget* g_calls_page = nullptr;
     gboolean g_start_hidden = FALSE;
 
     // what the current invocation asked to see
     std::string g_requested_view;
     std::string g_requested_thread;
+
+    // Call control is off by default and enabled out of band, so the tab only
+    // exists once the daemon reports it on.
+    void set_calls_tab_visible(bool enabled) {
+        if (!g_calls_page)
+            return;
+        gtk_widget_set_visible(g_calls_page, enabled);
+        if (enabled || !g_stack)
+            return;
+        const gchar* name = gtk_stack_get_visible_child_name(GTK_STACK(g_stack));
+        if (name && std::string(name) == "calls")
+            gtk_stack_set_visible_child_name(GTK_STACK(g_stack), "devices");
+    }
 
     void apply_requested_view() {
         if (!g_stack)
@@ -49,6 +65,7 @@ namespace {
             gtk_widget_set_visible(g_refresh_button, view == "devices");
 
         messages_view_set_visible(view == "messages");
+        calls_view_set_visible(view == "calls");
         notifications_view_set_visible(view == "notifications");
         contacts_view_set_visible(view == "contacts");
     }
@@ -213,6 +230,8 @@ namespace {
         gtk_stack_add_titled(GTK_STACK(stack), devices_view_new(), "devices", _("Devices"));
         gtk_stack_add_titled(GTK_STACK(stack), messages_view_new(), "messages", _("Messages"));
         gtk_stack_add_titled(GTK_STACK(stack), notifications_view_new(), "notifications", _("Notifications"));
+        g_calls_page = calls_view_new();
+        gtk_stack_add_titled(GTK_STACK(stack), g_calls_page, "calls", _("Calls"));
         gtk_stack_add_titled(GTK_STACK(stack),
                              contacts_view_new([](const std::string& thread_key) {
                                  show_view("messages");
@@ -240,13 +259,18 @@ namespace {
         });
 
         daemon_client_start([](const nlohmann::json& event) {
+            contact_completion_update(event);
+            if (event.value("command", "") == "bt_status")
+                set_calls_tab_visible(event.value("calls_enabled", false));
             if (devices_view_handle_event(event))
                 return;
             if (contacts_view_handle_event(event))
                 return;
             if (messages_view_handle_event(event))
                 return;
-            notifications_view_handle_event(event);
+            if (notifications_view_handle_event(event))
+                return;
+            calls_view_handle_event(event);
         });
 
         devices_view_trigger_discovery();
@@ -254,6 +278,7 @@ namespace {
 
         gtk_widget_show_all(root);
         gtk_widget_show_all(header_bar);
+        set_calls_tab_visible(false);
         if (!g_start_hidden)
             gtk_widget_show(window);
         gtk_stack_set_visible_child_name(GTK_STACK(stack), "devices");
@@ -272,7 +297,7 @@ int main(int argc, char** argv) {
                                   G_OPTION_ARG_NONE,
                                   _("Start hidden in the system tray"),
                                   nullptr);
-    for (const char* view : {"devices", "messages", "notifications", "contacts"}) {
+    for (const char* view : {"devices", "messages", "notifications", "calls", "contacts"}) {
         g_application_add_main_option(
             G_APPLICATION(app), view, 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, _("Open on this tab"), nullptr);
     }

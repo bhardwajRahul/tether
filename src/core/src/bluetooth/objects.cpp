@@ -12,6 +12,8 @@ namespace tether::bluetooth {
 
         constexpr const char* IFACE_ADAPTER = "org.bluez.Adapter1";
         constexpr const char* IFACE_DEVICE = "org.bluez.Device1";
+        constexpr const char* IFACE_TELEPHONY = "org.bluez.Telephony1";
+        constexpr const char* IFACE_CALL = "org.bluez.Call1";
         constexpr const char* IFACE_LE_ADV_MGR = "org.bluez.LEAdvertisingManager1";
         constexpr const char* IFACE_BEARER_LE = "org.bluez.Bearer.LE1";
         constexpr const char* IFACE_BEARER_BREDR = "org.bluez.Bearer.BREDR1";
@@ -131,6 +133,47 @@ namespace tether::bluetooth {
             out.adapters.push_back(std::move(a));
         }
 
+        // BlueZ exports these only with --experimental, and only while HFP is connected, absence is the normal state.
+        void read_telephony(const std::string& path, GVariant* ifaces, BluezObjects& out) {
+            GVariant* props = g_variant_lookup_value(ifaces, IFACE_TELEPHONY, G_VARIANT_TYPE("a{sv}"));
+            if (!props)
+                return;
+
+            Telephony t;
+            t.path = path;
+            t.device_path = parent_path(path);
+            t.uuid = get_string(props, "UUID");
+            t.state = get_string(props, "State");
+            t.operator_name = get_string(props, "OperatorName");
+            t.uri_schemes = get_strv(props, "SupportedURISchemes");
+            t.signal = get_byte(props, "Signal");
+            t.battery = get_byte(props, "BattChg");
+            t.service = get_bool(props, "Service");
+            t.roaming = get_bool(props, "Roaming");
+            t.inband_ringtone = get_bool(props, "InbandRingtone");
+            g_variant_unref(props);
+
+            out.telephony.push_back(std::move(t));
+        }
+
+        void read_call(const std::string& path, GVariant* ifaces, BluezObjects& out) {
+            GVariant* props = g_variant_lookup_value(ifaces, IFACE_CALL, G_VARIANT_TYPE("a{sv}"));
+            if (!props)
+                return;
+
+            Call c;
+            c.path = path;
+            c.telephony_path = parent_path(path);
+            c.number = get_string(props, "LineIdentification");
+            c.name = get_string(props, "Name");
+            c.incoming_line = get_string(props, "IncomingLine");
+            c.state = get_string(props, "State");
+            c.multiparty = get_bool(props, "Multiparty");
+            g_variant_unref(props);
+
+            out.calls.push_back(std::move(c));
+        }
+
         void read_device(const std::string& path, GVariant* ifaces, BluezObjects& out) {
             GVariant* props = g_variant_lookup_value(ifaces, IFACE_DEVICE, G_VARIANT_TYPE("a{sv}"));
             if (!props)
@@ -199,6 +242,24 @@ namespace tether::bluetooth {
         return it == devices.end() ? nullptr : &*it;
     }
 
+    const Telephony* BluezObjects::find_telephony(const std::string& device_path) const {
+        if (device_path.empty())
+            return nullptr;
+        auto it = std::find_if(
+            telephony.begin(), telephony.end(), [&](const Telephony& t) { return t.device_path == device_path; });
+        return it == telephony.end() ? nullptr : &*it;
+    }
+
+    std::vector<Call> BluezObjects::calls_for(const std::string& telephony_path) const {
+        std::vector<Call> out;
+        if (telephony_path.empty())
+            return out;
+        std::copy_if(calls.begin(), calls.end(), std::back_inserter(out), [&](const Call& c) {
+            return c.telephony_path == telephony_path;
+        });
+        return out;
+    }
+
     const char* to_string(DeliveryMode mode) {
         switch (mode) {
         case DeliveryMode::Full:
@@ -244,6 +305,8 @@ namespace tether::bluetooth {
         while (g_variant_iter_loop(&iter, "{&o@a{sa{sv}}}", &path, &ifaces)) {
             read_adapter(path, ifaces, out);
             read_device(path, ifaces, out);
+            read_telephony(path, ifaces, out);
+            read_call(path, ifaces, out);
 
             GVariant* chr = g_variant_lookup_value(ifaces, IFACE_CHARACTERISTIC, G_VARIANT_TYPE("a{sv}"));
             if (!chr)
@@ -270,6 +333,10 @@ namespace tether::bluetooth {
         });
         std::sort(
             out.devices.begin(), out.devices.end(), [](const Device& a, const Device& b) { return a.path < b.path; });
+        std::sort(out.telephony.begin(), out.telephony.end(), [](const Telephony& a, const Telephony& b) {
+            return a.path < b.path;
+        });
+        std::sort(out.calls.begin(), out.calls.end(), [](const Call& a, const Call& b) { return a.path < b.path; });
         return out;
     }
 

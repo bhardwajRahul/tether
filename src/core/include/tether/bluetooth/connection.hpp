@@ -5,6 +5,7 @@
 #include "tether/bluetooth/groups.hpp"
 #include "tether/bluetooth/messages.hpp"
 #include "tether/bluetooth/profile_supervisor.hpp"
+#include "tether/bluetooth/telephony.hpp"
 #include "tether/secret_store.hpp"
 
 #include <functional>
@@ -33,6 +34,8 @@ namespace tether::bluetooth {
         // the phone.
         using NotificationFn = std::function<void(const ancs::Notification&)>;
         using WithdrawFn = std::function<void(uint32_t uid)>;
+        // Called whenever the call list or the telephony service's availability changes.
+        using CallsFn = std::function<void(const nlohmann::json& calls)>;
 
         ConnectionManager(BluezMonitor& monitor, StatusFn on_change, MessageFn on_message = {});
 
@@ -50,6 +53,15 @@ namespace tether::bluetooth {
 
         // Invokes a mirrored notification's action.
         bool perform_notification_action(uint32_t uid, ancs::ActionId action);
+
+        // Enables call control.
+        void set_call_handler(CallsFn on_calls);
+        void set_calls_enabled(bool enabled);
+
+        bool dial(const std::string& number, std::string& err);
+        bool call_action(const std::string& path, const std::string& action, std::string& err);
+        bool call_tones(const std::string& tones, std::string& err);
+        nlohmann::json calls() const;
 
         nlohmann::json notifications(size_t limit = 50) const;
         ~ConnectionManager();

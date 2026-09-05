@@ -9,6 +9,7 @@ Bluetooth accessory. No iOS-side code is involved.
 | SMS / iMessage, read + send | **MAP** (Message Access Profile) via BlueZ `obexd` | BR/EDR | OBEX client |
 | Contacts, for sender names | **PBAP** (Phonebook Access Profile) via `obexd` | BR/EDR | OBEX client |
 | Notifications from any app | **ANCS** (Apple Notification Center Service) | BLE / GATT | GATT central |
+| Phone calls, place + answer | **HFP** (Hands-Free Profile) via BlueZ | BR/EDR | Hands-free unit |
 
 The Tether iOS app is unrelated to these features and just keeps handling clipboard sync and file transfer over TCP + mTLS.
 
@@ -23,6 +24,8 @@ Not every machine can do all of it, so Tether resolves one of two modes from liv
 `tether --bt-status` reports which applies. `scripts/bt-probe.sh` is a
 repo-only development probe that covers a few things the daemon does not check
 (BlueZ version, `obex.service`, tooling); it is not installed by any package.
+`scripts/bt-probe.sh --calls` is a separate mode for the call path, meant to be run
+while a call is connected -- see "Calls".
 
 ## Setup requirements
 
@@ -141,6 +144,234 @@ OBEX connection with `Forbidden` / `0x43`. That is a permissions state, not a pa
 failure (do not re-pair). A transport-level `Connection refused (111)` is different and
 usually means another computer already owns the iPhone's single MAP session.
 
+## Calls
+
+Tether can place, answer and end calls on the iPhone. It implements no HFP.
+
+BlueZ's own hands-free profile owns the RFCOMM link and the AT command layer, and
+exports the result on the same object tree Tether already watches:
+
+```
+/org/bluez/hciN/dev_BDADDR/telephonyM        org.bluez.Telephony1
+    Dial(s uri) -> object, SwapCalls, ReleaseAndAnswer, ReleaseAndSwap,
+    HoldAndAnswer, HangupAll, CreateMultiparty, SendTones(s)
+    UUID, State, Service, Signal, Roaming, BattChg, OperatorName,
+    InbandRingtone, SupportedURISchemes
+
+/org/bluez/hciN/dev_BDADDR/telephonyM/callK  org.bluez.Call1
+    Answer, Hangup
+    LineIdentification, IncomingLine, Name, Multiparty, State
+```
+
+Both are `[experimental]`, so they exist only under `bluetoothd --experimental` --
+which Tether already requires for `org.bluez.Bearer.LE1`. They appear only while the
+phone has Hands-Free connected, and their absence is a normal state, not a fault.
+Documented in `man org.bluez.Telephony` and `man org.bluez.Call`, with a
+`bluetoothctl` submenu behind `menu telephony`.
+
+`BluezMonitor` already subscribes to `InterfacesAdded`/`InterfacesRemoved` and to
+`PropertiesChanged` across `org.bluez`, so the telephony objects arrive in the
+snapshot with no new bus, thread or subscription. `TelephonyClient` holds no state at
+all: it reads the snapshot and issues method calls on the monitor's connection.
+
+### The audio stays on the phone
+
+Control only, by construction. Ringing, caller ID, answering, hanging up and dialling
+all work from the desktop; the call itself plays on the iPhone.
+
+BlueZ's hands-free profile never opens the voice link. HFP is two connections -- RFCOMM
+for the AT commands, SCO for the audio -- and BlueZ only uses the first. Three things
+say so:
+
+- `bluetoothd` contains no `AT+BCC` and no `+BCS`. Those are the Codec Connection
+  commands, the only way a hands-free unit asks the phone to open the voice link. The
+  rest of the AT vocabulary is complete: `BRSF`, `CIND`, `CMER`, `CLIP`, `CCWA`, `COPS`,
+  `CLCC`, `CHLD`, `CHUP`, `BLDN`, `+CIEV`.
+- `profiles/audio/transport.c`, which implements `org.bluez.MediaTransport1`, links with
+  `a2dp.c`, `bap.c` and `asha.c`. Its states are `idle/pending/broadcasting/active` with
+  `Links` for LE Audio BIGs. There is no SCO transport type in it.
+- Measured **during an active call**, where a lazily created transport would have shown
+  up: BlueZ exports no `/fd#` object and PipeWire creates no `bluez_card`.
+  `./scripts/bt-probe.sh --calls` checks all of this in one command.
+
+So the consequence is that **no WirePlumber configuration is needed or wanted**. The
+`hfp_hf` role stays off, the machine never becomes an audio destination for the phone,
+and "Keeping the phone's audio on the phone" below continues to apply unchanged.
+
+`org.bluez.Telephony1` is also where desktop call audio arrives on its own eventually.
+It is not an HFP-specific interface: `profiles/audio/telephony.c` is a shared layer
+sitting alongside `profiles/audio/ccp.c` (LE Audio Call Control), and the `UUID`
+property exists because more than one profile can provide it -- an iPhone over HFP
+reports `0000111f`, an LE Audio phone would report a TBS UUID through the same methods
+and the same `Call1` objects. LE Audio call audio is carried by an ordinary BAP
+`MediaTransport1`, which every audio server already consumes. Tether would need no
+change for either that or a future SCO export.
+
+### What was tried instead
+
+PipeWire's `bluez5` plugin implements the same profile in the HF role and publishes
+`org.pipewire.Telephony`, and it *can* carry the audio (`AudioGatewayTransport1.Activate()`,
+with `bluez5.telephony.default-reject-sco` to keep it on the phone until asked).
+
+It cannot be used at the same time. Both register for UUID `0000111e`, and BlueZ's
+built-in profile wins: `Device1.Connect()` routes into it and fails, and PipeWire's
+profile never gets the link.
+
+```
+profiles/audio/hfp-hf.c:hfp_connect() unable to start connection
+btd_service_connect() hfp profile connect failed for <phone>: Input/output error
+```
+
+Dropping `hfp_hf` from `bluez5.roles` makes BlueZ's profile connect immediately and
+export `telephony0`. Using PipeWire's instead would mean `bluetoothd --noplugin=hfp`,
+a system-wide change to every Bluetooth device on the machine, in exchange for desktop
+call audio. That trade was not taken. The reasons are about maintenance across a large
+and varied install base, not capability:
+
+- **Two prerequisites, both moving.** PipeWire >= 1.4 for the telephony API, *and*
+  `--noplugin=hfp` -- but only on BlueZ >= 5.87, where the built-in profile exists.
+  The required system configuration therefore differs per distro, and appears under
+  existing users when their distro bumps BlueZ. Working calls would break on an
+  unrelated upgrade with no change in Tether.
+- **A CI target cannot run it.** `.github/workflows/ubuntu.yml` builds against Ubuntu
+  24.04, an LTS supported to 2029, whose PipeWire predates the telephony API entirely.
+- **Not every machine has PipeWire.** PulseAudio hosts, servers, containers.
+- **It would bind Tether to one audio server permanently**, where
+  `org.bluez.Telephony1` is already the profile-agnostic layer described above.
+
+BlueZ's route has one prerequisite, `bluetoothd --experimental`, which Tether already
+requires for `org.bluez.Bearer.LE1`, already detects, and already prints the fix for.
+
+Users who want the audio on the desktop can still have it, at the cost of Tether's call
+control -- see below.
+
+### Getting the call audio onto the desktop instead
+
+Possible, and it costs more than it first appears. Walked end to end on 2026-09-04, so
+what follows is measured rather than reasoned.
+
+You give up two things:
+
+- **Tether's call control.** Handing the profile to PipeWire means BlueZ no longer owns
+  it, exports no `org.bluez.Telephony1`, and the Calls page goes empty.
+- **The phone's audio staying on the phone.** `a2dp_sink` turns out to be mandatory
+  here, so music and system sounds move to the desktop as well. Everything
+  "Keeping the phone's audio on the phone" below is written to avoid, you are opting
+  back into. This is the part that surprises people, so it is stated first.
+
+Tether has no code on this path and does not test it in CI.
+
+All three settings are required. Any one missing and nothing works at all.
+
+1. Stop BlueZ's built-in profile claiming UUID `0000111e`. Only needed on BlueZ >= 5.87;
+   older builds have no built-in to disable.
+
+   ```bash
+   sudo mkdir -p /etc/systemd/system/bluetooth.service.d
+   printf '[Service]\nExecStart=\nExecStart=%s --experimental --noplugin=hfp\n' \
+     "$(ls /usr/lib/bluetooth/bluetoothd /usr/libexec/bluetooth/bluetoothd 2>/dev/null | head -1)" \
+     | sudo tee /etc/systemd/system/bluetooth.service.d/no-hfp.conf
+   sudo systemctl daemon-reload && sudo systemctl restart bluetooth
+   ```
+
+   Keep `--experimental`: dropping it takes notification mirroring with it.
+
+2. Give PipeWire the roles and turn its telephony service on, in
+   `~/.config/wireplumber/wireplumber.conf.d/51-no-phone-audio.conf`:
+
+   ```
+   monitor.bluez.properties = {
+     bluez5.roles = [ a2dp_source a2dp_sink hfp_ag hfp_hf bap_source ]
+     bluez5.telephony-dbus-service = true
+     bluez5.telephony.default-reject-sco = true
+   }
+   ```
+
+   Then `systemctl --user restart wireplumber` and reconnect the phone. On
+   WirePlumber 0.4 the same setting goes in `bluetooth.lua.d` as
+   `bluez_monitor.properties["bluez5.roles"]`, as described below.
+
+   `a2dp_sink` is not optional, however much you want it to be. Without it iOS does not
+   treat the machine as an audio destination, does not list it in the Control Center
+   audio picker, and never connects hands-free to it -- PipeWire creates no
+   `bluez_card` at all. Adding it makes the card appear immediately.
+
+   `bluez5.telephony-dbus-service` is not optional either. `org.pipewire.Telephony`
+   being an owned bus name does not mean the service is enabled, and without this
+   setting no gateway object is ever registered.
+
+3. **Let the phone initiate.** The desktop cannot bring the link up. `Device1.Connect()`
+   ignores PipeWire's external profile; `ConnectProfile("0000111e")` fails with
+   `No more profiles to connect to`, because the iPhone advertises `0000111f` and BlueZ
+   matches against the remote's UUID list; `ConnectProfile("0000111f")` returns success
+   and does nothing. Select the machine on the phone -- Control Center's audio route, or
+   Settings > Bluetooth -- and the hands-free link comes up on its own.
+
+Success looks like this in WirePlumber's log
+(`WIREPLUMBER_DEBUG='*bluez*:5' wireplumber`):
+
+```
+spa.bluez5.native   register_profile: Registering Profile /Profile/HFPHF 0000111e-...
+spa.bluez5.native   profile_new_connection: NewConnection ... fd=59, profile /Profile/HFPHF
+spa.bluez5.native   rfcomm_send_next_cmd: RFCOMM >> AT+BRSF=695
+spa.bluez5.telepho  telephony_ag_register: registered AudioGateway: /org/pipewire/Telephony/ag1
+```
+
+and `busctl --user tree org.pipewire.Telephony` then shows the gateway. Call control
+lives on `org.pipewire.Telephony`, mirrored as `org.ofono.VoiceCallManager` and
+`org.ofono.VoiceCall`, so any oFono-compatible dialer can drive it while PipeWire
+carries the audio. `AudioGatewayTransport1.Activate()` pulls the audio to the desktop.
+PipeWire older than 1.4 publishes no telephony API at all, leaving audio but no call
+control.
+
+Watch for `Not activating device bluez_card.<ADDR>` in WirePlumber's log. That is
+`create-device.lua` declining a card whose `api.bluez5.connection` is not yet
+`connected`, and it means the hands-free service level connection has not finished --
+the AT handshake above is still in flight, or was interrupted.
+
+To undo it: delete `/etc/systemd/system/bluetooth.service.d/no-hfp.conf`, restore the
+`bluez5.roles` line to whatever it was, `sudo systemctl daemon-reload && sudo systemctl
+restart bluetooth`, `systemctl --user restart wireplumber`, and reconnect the phone.
+`./scripts/bt-probe.sh --calls` should show `telephony0` again.
+
+### Turning it on
+
+`tether --bt-calls-enable on`, or the Calls page in the GTK app. Off by default.
+
+It also widens the pairing agent's service whitelist to the hands-free and headset
+UUIDs (`agent.cpp` `is_authorized_service`), which the iPhone authorizes against during
+pairing. With calls off, those stay refused. A bond made before calls were enabled
+keeps working; only a fresh pairing goes through the agent.
+
+### Commands
+
+```bash
+tether --bt-calls                    # what is ringing, dialing or connected
+tether --bt-call +15555550123        # dial
+tether --bt-answer                   # answer the ringing call
+tether --bt-hangup                   # end every call
+tether --bt-calls-enable on|off
+```
+
+`tether --bt-connection` reports the gateway alongside the other profiles, with the
+carrier, signal and phone battery HFP supplies.
+
+Dial strings are normalized in the daemon: a leading `+` and digits survive, spaces,
+dashes, dots and parentheses are dropped, and anything else is refused rather than
+handed to the cellular network. BlueZ itself accepts `[0-9+*#,ABCD]{1,80}`, so this is
+the narrower check; it rules out the `*`/`#` supplementary-service codes deliberately.
+
+### What it does not do
+
+- No call audio on the desktop, per above. `./scripts/bt-probe.sh --calls`, run during a
+  call, reports which of the two states this machine is in.
+- No call history. A missed call still arrives as an ANCS `MissedCall` notification.
+- `HangupActive` and `HangupHeld` are documented but absent from BlueZ 5.87, so only
+  `HangupAll` is offered.
+- Caller ID is whatever HFP carries. When the phone sends no name, Tether fills it from
+  the PBAP address book by number. A network that refuses caller ID sends the literal
+  `withheld`, which is shown as unknown and never offered to redial.
+
 ## Conflicts
 
 The iPhone serves one MAP session at a time. Any other program on any machine holding it will block Tether.
@@ -191,10 +422,18 @@ checks the daemon does not make.
 | A group conversation cannot be replied to | Working as designed until the route is unambiguous | The thread's `reply_reason` says which condition failed |
 | The iPhone never offers the "Show Notifications" toggle, and messages and contacts work | Fixed. A BR/EDR-only bond used to latch notification mirroring off in the config, which takes the ANCS solicitation off air -- so the phone is never asked for the service | Nothing. On an older build, `tether --bt-ancs on` then `tether --bt-solicit`; `tether --bt-status` now shows mirroring under `Notifications:` -- see 2026-09-01 |
 | Pairing bonds but the LE half never derives, on a machine with a USB dongle plugged in | Tether used the first powered controller, which is the dongle, not the built-in one | `tether --bt-status` marks the controller in use; `tether --bt-adapter <hciN>` picks another -- see 2026-09-01 |
-| The link reads down forever with `br-connection-unknown`, while messages, contacts and notifications all work | This computer offers the iPhone no BR/EDR profile to connect to, and BlueZ only reports a link up while some local profile is connected | Nothing. Tether no longer waits on that link -- see 2026-08-23 below. Restoring the `a2dp_sink` and `hfp_hf` roles makes it read up again, at the cost of the phone's audio moving here |
+| The link reads down forever with `br-connection-unknown`, while messages, contacts and notifications all work | This computer offers the iPhone no BR/EDR profile to connect to, and BlueZ only reports a link up while some local profile is connected | Nothing. Tether no longer waits on that link -- see 2026-08-23 below. Call support does not change this: BlueZ's hands-free profile is not one of the local profiles BlueZ counts |
 | The iPhone's audio moves to the computer when Tether connects | The machine advertises itself as a Bluetooth speaker/headset, and iOS routes to it. Not caused by Tether beyond bringing the link up | See "Keeping the phone's audio on the phone" below |
+| `tether --bt-calls` reports call control off | The iPhone has not connected Hands-Free, or `bluetoothd` is running without `--experimental` | The daemon's reason line names which. Confirm with `busctl --system tree org.bluez \| grep telephony` |
+| Calls work but the audio is on the iPhone | Working as designed. BlueZ signals the call and never opens the voice link, so there is nothing to route here | Nothing. `./scripts/bt-probe.sh --calls` during a call shows the evidence; "Getting the call audio onto the desktop instead" is the trade if you want it |
+| The Calls page is empty after configuring PipeWire for call audio | Expected. PipeWire owns the hands-free profile now, so BlueZ exports no `telephony0` for Tether to drive | Pick one: the revert steps under "Getting the call audio onto the desktop instead", or keep PipeWire and use an oFono-compatible dialer |
+| Configured PipeWire for call audio and the machine is not in the iPhone's audio picker | `a2dp_sink` is missing from `bluez5.roles`. iOS only speaks hands-free to a machine it considers an audio destination | Add `a2dp_sink`, and accept that the phone's music comes here too -- see "Getting the call audio onto the desktop instead" |
+| `hfp_connect() unable to start connection` in the bluetoothd log | PipeWire's `hfp_hf` role and BlueZ's built-in profile are both claiming UUID `0000111e` | Remove `hfp_hf` from `bluez5.roles` -- see "Calls" and 2026-09-04 |
 
 ### Keeping the phone's audio on the phone
+
+Unaffected by call support: calls run over BlueZ's own profile and never make this
+machine an audio destination. This still applies exactly as written.
 
 Once the Classic link is up, the iPhone's calls, music, and system sounds play on the
 computer instead of the phone. PipeWire registers A2DP sink and HFP audio-gateway
@@ -229,6 +468,11 @@ playback and the HFP microphone. `bap_source` keeps LE Audio playback; drop it t
 nothing here uses LE Audio. On WirePlumber 0.4 the same setting goes in
 `~/.config/wireplumber/bluetooth.lua.d/51-no-phone-audio.lua` as
 `bluez_monitor.properties["bluez5.roles"]`.
+
+If you later want call audio on the desktop, be aware this setting is the thing in the
+way: `a2dp_sink` is what makes iOS willing to speak hands-free to this machine at all.
+See "Getting the call audio onto the desktop instead" -- you cannot keep the music here
+and move the calls.
 
 Two things that look like fixes and are not:
 
@@ -1646,3 +1890,180 @@ Also in the dump, unrelated and already reported correctly: MAP cycling through
 `no_record` / `busy` / `forbidden` / `none` for hours (another client holding the
 phone's single MAP session), and `bt_message_read` with `success: true, synced: 0`
 (marked read locally, not pushed to the phone -- working as designed).
+
+### 2026-09-04 - Two HFP hands-free implementations, one UUID
+
+Adding calls meant choosing which stack owns the hands-free profile, and on this
+machine both were installed.
+
+- PipeWire 1.6.8's `bluez5` plugin implements HFP HF in `backend-native.c` and, with
+  `bluez5.telephony-dbus-service`, publishes `org.pipewire.Telephony` on the session
+  bus. It carries the SCO audio, so it can move a call to the desktop speakers.
+- BlueZ 5.87 ships its own `profiles/audio/hfp-hf.c` with `org.bluez.Telephony1` and
+  `org.bluez.Call1`, gated behind `--experimental` -- which Tether already sets for
+  `Bearer.LE1`. It carries no audio.
+
+Both register `org.bluez.Profile1` for `0000111e`. With PipeWire's `hfp_hf` role on:
+
+```
+$ busctl --user tree org.pipewire.Telephony
+(no ag0)
+bluetoothd: profiles/audio/hfp-hf.c:hfp_connect() unable to start connection
+bluetoothd: btd_service_connect() hfp profile connect failed: Input/output error
+```
+
+PipeWire had registered its profile -- `Registering Profile /Profile/HFPHF
+0000111e-...` in `backend-native.c` -- and could serve an *inbound* connection: once
+the phone initiated, the log showed `NewConnection ... fd=59, profile /Profile/HFPHF`
+followed by `RFCOMM >> AT+BRSF=695`. Only the outbound path was broken, because
+`Device1.Connect()` routes into BlueZ's built-in profile, which fails.
+
+Removing `hfp_hf` from `bluez5.roles` and reconnecting resolved it immediately:
+
+```
+$ busctl --system introspect org.bluez \
+    /org/bluez/hci0/dev_.../telephony0 org.bluez.Telephony1
+.State           property s "connected"
+.OperatorName    property s "AT&T"
+.Signal          property y 1
+.BattChg         property y 4
+.Service         property b true
+```
+
+BlueZ's was taken. It needs no WirePlumber configuration at all, so the machine never
+becomes an audio destination and the "Keeping the phone's audio on the phone" advice
+stands unchanged; it reuses the ObjectManager subscriptions `BluezMonitor` already
+holds; and it reports carrier, signal, roaming and phone battery, which PipeWire's API
+does not expose. The cost is that call audio cannot come to the desktop.
+
+The alternative was `bluetoothd --noplugin=hfp` to disable BlueZ's built-in and let
+PipeWire own the profile. That buys desktop call audio at the price of a system-wide
+change to every Bluetooth device on the machine. Not taken.
+
+Two smaller findings from the same session:
+
+- A backup file left in `~/.config/wireplumber/wireplumber.conf.d/` is loaded as
+  configuration if it still ends in `.conf`. Keep backups outside that directory.
+- `HangupActive` and `HangupHeld` are in `man org.bluez.Telephony` but are not exported
+  by 5.87. Only `HangupAll` is.
+
+### 2026-09-04 - Why the audio cannot follow, and why that is the right trade
+
+BlueZ's hands-free profile signals calls and never opens the voice link. HFP runs over
+two connections, RFCOMM for the AT commands and SCO for the audio, and bluetoothd only
+uses the first. Its AT vocabulary is complete for control -- `BRSF`, `CIND`, `CMER`,
+`CLIP`, `CCWA`, `COPS`, `CLCC`, `CHLD`, `CHUP`, `BLDN`, `+CIEV` -- and contains no
+`AT+BCC` or `+BCS`, the Codec Connection commands that are the only way a hands-free
+unit asks the phone for audio. `profiles/audio/transport.c`, which implements
+`org.bluez.MediaTransport1`, links with `a2dp.c`, `bap.c` and `asha.c` and has no SCO
+transport type.
+
+Confirmed on a live call rather than inferred. With a call connected and talking, the
+`Call1` object is there and correct, and nothing else is:
+
+```
+$ ./scripts/bt-probe.sh --calls
+BlueZ telephony objects
+  /org/bluez/hci0/dev_<ADDR>/telephony0
+      .OperatorName  property s "AT&T"
+      .Signal        property y 2
+      .State         property s "connected"
+      .UUID          property s "0000111f-0000-1000-8000-00805f9b34fb"
+  /org/bluez/hci0/dev_<ADDR>/telephony0/call1
+      .LineIdentification  property s "<number>"
+      .State               property s "active"
+
+Media transports (a transport here would mean the audio can reach the desktop)
+  none -- BlueZ exports no transport, so the audio stays on the phone
+
+Audio server view
+  no bluez_card -- nothing for the desktop to play through
+```
+
+An `active` call with no transport and no audio device is the whole answer.
+
+PipeWire's implementation does carry the audio, and was rejected on maintenance grounds
+rather than capability. It needs two prerequisites that both move: PipeWire >= 1.4 for
+`org.pipewire.Telephony`, and `bluetoothd --noplugin=hfp` but only on BlueZ >= 5.87. The
+required system configuration therefore differs per distro and would appear under
+existing users when their distro bumps BlueZ -- working calls breaking on an unrelated
+upgrade, with no change in Tether. Ubuntu 24.04, one of this repo's own CI targets and
+an LTS supported to 2029, ships a PipeWire predating the API entirely. And it would bind
+Tether to one audio server on machines that may run PulseAudio or no audio stack at all.
+
+`org.bluez.Telephony1` costs one prerequisite, `--experimental`, which Tether already
+requires, detects and prints the fix for.
+
+It is also the profile-agnostic layer, which is what makes control-only acceptable
+rather than a dead end. `profiles/audio/telephony.c` is shared, sitting beside
+`profiles/audio/ccp.c` (LE Audio Call Control), and `Telephony1.UUID` exists because more
+than one profile can provide it: `0000111f` here over HFP, a TBS UUID on an LE Audio
+phone, through the same methods and the same `Call1` objects. LE Audio call audio rides
+an ordinary BAP `MediaTransport1` that every audio server already consumes. So the path
+to desktop call audio is BlueZ or the phone gaining it, not Tether growing an audio
+stack -- and Tether needs no change when it arrives.
+
+Users who want desktop audio today can hand the profile to PipeWire, at the cost of
+Tether's call control. Written up under "Getting the call audio onto the desktop
+instead", with the mutual exclusivity stated first.
+
+### 2026-09-04 - Walking the PipeWire route, and what it really costs
+
+The instructions above were written from reasoning and then tested before publishing.
+Two of the three steps were wrong, which is the argument for testing them.
+
+**`a2dp_sink` is mandatory, and that is the real price.** With
+`bluez5.roles = [ a2dp_source hfp_ag hfp_hf bap_source ]` and BlueZ's built-in disabled,
+PipeWire registered `/Profile/HFPHF` for `0000111e` -- confirmed on the adapter's UUID
+list -- and bluetoothd stopped logging its own `hfp_connect()` failure. Yet no
+`bluez_card` was ever created, no `ag0` appeared, and the machine did not show up in the
+iPhone's Control Center audio picker. Adding `a2dp_sink` produced the card instantly:
+
+```
+$ pactl list cards short
+827  bluez_card.60_57_C8_30_6A_F7  module-bluez5-device.c
+...
+    Active Profile: audio-gateway
+```
+
+So iOS decides whether to speak hands-free to a machine based on whether that machine is
+an audio destination at all, and A2DP sink is what makes it one. The consequence is that
+desktop call audio and "the phone's music stays on the phone" cannot both be had. That
+inverts the appeal of the whole route for anyone running the config in "Keeping the
+phone's audio on the phone".
+
+**`bluez5.telephony-dbus-service = true` must be set explicitly.** It was left out of the
+first draft because `busctl --user status org.pipewire.Telephony` showed the name owned,
+which was mistaken for the service being on. Ownership of the bus name is not the same
+as the service being enabled; without the setting no gateway is ever registered.
+
+**The desktop cannot bring the link up.** `Device1.Connect()` ignores an externally
+registered `Profile1`. `ConnectProfile("0000111e")` fails with `No more profiles to
+connect to`, because BlueZ matches `ConnectProfile` against the *remote's* advertised
+UUIDs and the iPhone advertises `0000111f`, not `111e`.
+`ConnectProfile("0000111f")` returns success and connects nothing meaningful -- BlueZ
+matches it to PipeWire's `/Profile/HFPAG`, this machine acting as the gateway, which is
+not the wanted direction. Every successful connection observed was initiated by the
+phone.
+
+With all three right, it does work end to end:
+
+```
+spa.bluez5.native   profile_new_connection: NewConnection ... fd=59, profile /Profile/HFPHF
+spa.bluez5.native   RFCOMM >> AT+BRSF=695
+spa.bluez5.native   RFCOMM << +BRSF:1007  OK
+spa.bluez5.native   RFCOMM >> AT+BAC=1,3,127,2
+spa.bluez5.telepho  telephony_ag_register: registered AudioGateway: /org/pipewire/Telephony/ag1
+```
+
+One diagnostic worth knowing: `Not activating device bluez_card.<ADDR>` from
+WirePlumber's `create-device.lua` is not an error in itself. It gates on
+`api.bluez5.connection == "connected"`, which only becomes true once the hands-free
+service level connection completes. Seeing it means the AT handshake above has not
+finished, or was interrupted -- a short-lived debug instance of `wireplumber` is enough
+to cut it off mid-negotiation.
+
+None of this changes the shipped design. It sharpens the reason for it: the supported
+path needs one flag Tether already requires, and the alternative needs three settings
+across two daemons, gives up call control, gives up keeping the phone's audio on the
+phone, and still depends on the phone choosing to connect.

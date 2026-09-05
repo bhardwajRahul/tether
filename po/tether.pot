@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: tether 0.2.23\n"
+"Project-Id-Version: tether 0.2.24\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 20:40-0700\n"
+"POT-Creation-Date: 2026-09-04 14:22-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -146,6 +146,28 @@ msgstr ""
 
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "List calls on the iPhone."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Place a call from the iPhone."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Answer the ringing call."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Hang up every call."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid ""
+"Turn call control on or off. Calls run over Bluetooth Hands-Free; the audio "
+"stays on the iPhone."
 msgstr ""
 
 #: src/cli/main.cpp
@@ -388,7 +410,41 @@ msgid "Contacts (PBAP)"
 msgstr ""
 
 #: src/cli/main.cpp
+msgid "no carrier"
+msgstr ""
+
+#: src/cli/main.cpp
+#, c++-format
+msgid " signal {0}/5 battery {1}/5"
+msgstr ""
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "roaming"
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Calls (HFP)"
+msgstr ""
+
+#: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
+msgstr ""
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "The call could not be placed."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Could not read calls from the daemon.\n"
+msgstr ""
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No calls. Check 'tether --bt-connection'.\n"
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "withheld"
 msgstr ""
 
 #: src/cli/main.cpp
@@ -520,6 +576,34 @@ msgstr ""
 #: src/cli/main.cpp
 #, c++-format
 msgid "Transfer Failed: {}"
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "A number is required, e.g. --bt-call +15551234567\n"
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Dialing."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Answering."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Hanging up."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Expected on or off, e.g. --bt-calls-enable on\n"
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Call control enabled."
+msgstr ""
+
+#: src/cli/main.cpp
+msgid "Call control disabled."
 msgstr ""
 
 #: src/cli/main.cpp
@@ -681,6 +765,10 @@ msgstr ""
 #: src/core/src/bluetooth/connection.cpp
 msgid ""
 "The iPhone is not offering notifications on this link. Asking it again..."
+msgstr ""
+
+#: src/core/src/bluetooth/connection.cpp
+msgid "Call control is off."
 msgstr ""
 
 #: src/core/src/bluetooth/connection.cpp
@@ -883,7 +971,8 @@ msgstr ""
 msgid "{} could not be opened."
 msgstr ""
 
-#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/notifications_view.cpp
+#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/calls_view.cpp
+#: src/gtk/notifications_view.cpp
 msgid "Waiting for the iPhone."
 msgstr ""
 
@@ -893,6 +982,38 @@ msgstr ""
 
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
+msgstr ""
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "The iPhone has not connected Hands-Free to this computer."
+msgstr ""
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Connecting to the iPhone's Hands-Free service."
+msgstr ""
+
+#: src/core/src/bluetooth/telephony.cpp src/gtk/calls_view.cpp
+msgid "Calls are controlled here; the audio plays on the iPhone."
+msgstr ""
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a dialable number."
+msgstr ""
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "No call named."
+msgstr ""
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "That call is no longer active."
+msgstr ""
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Unknown call action."
+msgstr ""
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a DTMF sequence."
 msgstr ""
 
 #: src/core/src/net.cpp
@@ -959,6 +1080,74 @@ msgstr ""
 
 #: src/daemon/notification.cpp
 msgid "Copy Code"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "Incoming"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "Call waiting"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "Dialing"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "Ringing"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "On call"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "On hold"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "Ended"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "No service"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "Unknown caller"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "Answer"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "Decline"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "Hang up"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "No calls."
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "Number to call"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "Call"
+msgstr ""
+
+#: src/gtk/calls_view.cpp
+msgid "The iPhone's carrier, signal, and battery."
 msgstr ""
 
 #: src/gtk/contacts_view.cpp
@@ -1398,6 +1587,10 @@ msgstr ""
 
 #: src/gtk/main.cpp
 msgid "Devices"
+msgstr ""
+
+#: src/gtk/main.cpp
+msgid "Calls"
 msgstr ""
 
 #: src/gtk/main.cpp

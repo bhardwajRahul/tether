@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 20:40-0700\n"
+"POT-Creation-Date: 2026-09-04 14:22-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -155,6 +155,30 @@ msgstr "使用する Bluetooth アダプタを選択します。"
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
 msgstr "ミラーリングされた iPhone の通知を一覧表示します。"
+
+#: src/cli/main.cpp
+msgid "List calls on the iPhone."
+msgstr "iPhone の通話を一覧表示します。"
+
+#: src/cli/main.cpp
+msgid "Place a call from the iPhone."
+msgstr "iPhone から発信します。"
+
+#: src/cli/main.cpp
+msgid "Answer the ringing call."
+msgstr "着信中の通話に応答します。"
+
+#: src/cli/main.cpp
+msgid "Hang up every call."
+msgstr "すべての通話を終了します。"
+
+#: src/cli/main.cpp
+msgid ""
+"Turn call control on or off. Calls run over Bluetooth Hands-Free; the audio "
+"stays on the iPhone."
+msgstr ""
+"通話操作をオンまたはオフにします。通話は Bluetooth ハンズフリー経由で、音声"
+"は iPhone に残ります。"
 
 #: src/cli/main.cpp
 msgid "Print a redacted Bluetooth report for a bug report."
@@ -415,8 +439,42 @@ msgid "Contacts (PBAP)"
 msgstr "連絡先 (PBAP)"
 
 #: src/cli/main.cpp
+msgid "no carrier"
+msgstr "通信事業者なし"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid " signal {0}/5 battery {1}/5"
+msgstr " 信号 {0}/5 バッテリー {1}/5"
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "roaming"
+msgstr "ローミング"
+
+#: src/cli/main.cpp
+msgid "Calls (HFP)"
+msgstr "通話 (HFP)"
+
+#: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
 msgstr "デーモンから Bluetooth の診断情報を読み取れませんでした。\n"
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "The call could not be placed."
+msgstr "発信できませんでした。"
+
+#: src/cli/main.cpp
+msgid "Could not read calls from the daemon.\n"
+msgstr "デーモンから通話を読み取れませんでした。\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No calls. Check 'tether --bt-connection'.\n"
+msgstr "通話はありません。'tether --bt-connection' を確認してください。\n"
+
+#: src/cli/main.cpp
+msgid "withheld"
+msgstr "非通知"
 
 #: src/cli/main.cpp
 msgid "Could not read notifications from the daemon.\n"
@@ -553,6 +611,34 @@ msgstr "そのフィンガープリントを持つペアリング済みデバイ
 #, c++-format
 msgid "Transfer Failed: {}"
 msgstr "転送に失敗しました: {}"
+
+#: src/cli/main.cpp
+msgid "A number is required, e.g. --bt-call +15551234567\n"
+msgstr "番号が必要です。例: --bt-call +15551234567\n"
+
+#: src/cli/main.cpp
+msgid "Dialing."
+msgstr "発信しています。"
+
+#: src/cli/main.cpp
+msgid "Answering."
+msgstr "応答しています。"
+
+#: src/cli/main.cpp
+msgid "Hanging up."
+msgstr "終了しています。"
+
+#: src/cli/main.cpp
+msgid "Expected on or off, e.g. --bt-calls-enable on\n"
+msgstr "on または off を指定してください。例: --bt-calls-enable on\n"
+
+#: src/cli/main.cpp
+msgid "Call control enabled."
+msgstr "通話操作をオンにしました。"
+
+#: src/cli/main.cpp
+msgid "Call control disabled."
+msgstr "通話操作をオフにしました。"
 
 #: src/cli/main.cpp
 msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
@@ -738,6 +824,10 @@ msgstr ""
 msgid ""
 "The iPhone is not offering notifications on this link. Asking it again..."
 msgstr "iPhone はこのリンクで通知を提供していません。再度要求しています..."
+
+#: src/core/src/bluetooth/connection.cpp
+msgid "Call control is off."
+msgstr "通話操作はオフです。"
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "No paired iPhone selected."
@@ -976,7 +1066,8 @@ msgstr ""
 msgid "{} could not be opened."
 msgstr "{} を開けませんでした。"
 
-#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/notifications_view.cpp
+#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/calls_view.cpp
+#: src/gtk/notifications_view.cpp
 msgid "Waiting for the iPhone."
 msgstr "iPhone を待っています。"
 
@@ -987,6 +1078,38 @@ msgstr "メッセージと連絡先が接続されています。"
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
 msgstr "メッセージと連絡先を開いています..."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "The iPhone has not connected Hands-Free to this computer."
+msgstr "iPhone がこのコンピューターにハンズフリーを接続していません。"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Connecting to the iPhone's Hands-Free service."
+msgstr "iPhone のハンズフリーサービスに接続しています。"
+
+#: src/core/src/bluetooth/telephony.cpp src/gtk/calls_view.cpp
+msgid "Calls are controlled here; the audio plays on the iPhone."
+msgstr "通話はここで操作し、音声は iPhone で再生されます。"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a dialable number."
+msgstr "発信できる番号ではありません。"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "No call named."
+msgstr "通話が指定されていません。"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "That call is no longer active."
+msgstr "その通話はもう有効ではありません。"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Unknown call action."
+msgstr "不明な通話操作です。"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a DTMF sequence."
+msgstr "DTMF シーケンスではありません。"
 
 #: src/core/src/net.cpp
 msgid "Notification mirroring is already active; nothing to do."
@@ -1060,6 +1183,75 @@ msgstr "返信"
 #: src/daemon/notification.cpp
 msgid "Copy Code"
 msgstr "コードをコピー"
+
+#: src/gtk/calls_view.cpp
+msgid "Incoming"
+msgstr "着信"
+
+#: src/gtk/calls_view.cpp
+msgid "Call waiting"
+msgstr "キャッチホン"
+
+#: src/gtk/calls_view.cpp
+msgid "Dialing"
+msgstr "発信中"
+
+#: src/gtk/calls_view.cpp
+msgid "Ringing"
+msgstr "呼び出し中"
+
+#: src/gtk/calls_view.cpp
+msgid "On call"
+msgstr "通話中"
+
+#: src/gtk/calls_view.cpp
+msgid "On hold"
+msgstr "保留中"
+
+#: src/gtk/calls_view.cpp
+msgid "Ended"
+msgstr "終了"
+
+#: src/gtk/calls_view.cpp
+msgid "No service"
+msgstr "圏外"
+
+#: src/gtk/calls_view.cpp
+msgid "Unknown caller"
+msgstr "不明な発信者"
+
+#: src/gtk/calls_view.cpp
+msgid "Answer"
+msgstr "応答"
+
+#: src/gtk/calls_view.cpp
+msgid "Decline"
+msgstr "拒否"
+
+#: src/gtk/calls_view.cpp
+msgid "Hang up"
+msgstr "終了"
+
+#: src/gtk/calls_view.cpp
+msgid "No calls."
+msgstr "通話はありません。"
+
+#: src/gtk/calls_view.cpp
+msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+msgstr ""
+"通話操作はオフです。'tether --bt-calls-enable on' でオンにしてください。"
+
+#: src/gtk/calls_view.cpp
+msgid "Number to call"
+msgstr "発信先の番号"
+
+#: src/gtk/calls_view.cpp
+msgid "Call"
+msgstr "発信"
+
+#: src/gtk/calls_view.cpp
+msgid "The iPhone's carrier, signal, and battery."
+msgstr "iPhone の通信事業者、電波、バッテリー。"
 
 #: src/gtk/contacts_view.cpp
 msgid "Copy"
@@ -1547,6 +1739,10 @@ msgid "Devices"
 msgstr "デバイス"
 
 #: src/gtk/main.cpp
+msgid "Calls"
+msgstr "通話"
+
+#: src/gtk/main.cpp
 msgid "Start hidden in the system tray"
 msgstr "システムトレイに隠して起動"
 
@@ -1683,6 +1879,41 @@ msgstr "デバイスの同期"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "デバイスをペアリングし、ネットワーク越しにクリップボードを同期します"
+
+#~ msgid "Move call audio to this computer, or back to the iPhone."
+#~ msgstr "通話音声をこのコンピューターに移す、または iPhone に戻します。"
+
+#~ msgid ""
+#~ "Turn call control on or off. Needs the hfp_hf role and telephony service "
+#~ "in WirePlumber; see docs/BLUETOOTH.md."
+#~ msgstr ""
+#~ "通話操作をオンまたはオフにします。WirePlumber の hfp_hf ロールとテレフォ"
+#~ "ニーサービスが必要です。docs/BLUETOOTH.md を参照してください。"
+
+#~ msgid "Call audio moved to this computer."
+#~ msgstr "通話音声をこのコンピューターに移しました。"
+
+#~ msgid "Take audio here"
+#~ msgstr "音声をここに移す"
+
+#~ msgid ""
+#~ "Play the call through this computer's speakers and microphone. Handing it "
+#~ "back applies to the next call."
+#~ msgstr ""
+#~ "このコンピューターのスピーカーとマイクで通話します。戻す操作は次の通話から"
+#~ "有効です。"
+
+#~ msgid "Expected here or phone, e.g. --bt-call-audio here\n"
+#~ msgstr "here または phone を指定してください。例: --bt-call-audio here\n"
+
+#~ msgid ""
+#~ "New calls will stay on the iPhone. A call already playing here does not "
+#~ "move back."
+#~ msgstr ""
+#~ "新しい通話は iPhone に残ります。すでにここで再生中の通話は戻りません。"
+
+#~ msgid "Move audio to iPhone"
+#~ msgstr "音声を iPhone に移す"
 
 #, fuzzy
 #~ msgid "Tether version"

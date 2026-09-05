@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 20:40-0700\n"
+"POT-Creation-Date: 2026-09-04 14:22-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -151,6 +151,28 @@ msgstr "选择要使用的蓝牙适配器。"
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
 msgstr "列出已镜像的 iPhone 通知。"
+
+#: src/cli/main.cpp
+msgid "List calls on the iPhone."
+msgstr "列出 iPhone 上的通话。"
+
+#: src/cli/main.cpp
+msgid "Place a call from the iPhone."
+msgstr "从 iPhone 拨打电话。"
+
+#: src/cli/main.cpp
+msgid "Answer the ringing call."
+msgstr "接听来电。"
+
+#: src/cli/main.cpp
+msgid "Hang up every call."
+msgstr "挂断所有通话。"
+
+#: src/cli/main.cpp
+msgid ""
+"Turn call control on or off. Calls run over Bluetooth Hands-Free; the audio "
+"stays on the iPhone."
+msgstr "开启或关闭通话控制。通话通过蓝牙免提进行，音频保留在 iPhone 上。"
 
 #: src/cli/main.cpp
 msgid "Print a redacted Bluetooth report for a bug report."
@@ -409,8 +431,42 @@ msgid "Contacts (PBAP)"
 msgstr "通讯录（PBAP）"
 
 #: src/cli/main.cpp
+msgid "no carrier"
+msgstr "无运营商"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid " signal {0}/5 battery {1}/5"
+msgstr " 信号 {0}/5 电量 {1}/5"
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "roaming"
+msgstr "漫游"
+
+#: src/cli/main.cpp
+msgid "Calls (HFP)"
+msgstr "通话 (HFP)"
+
+#: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
 msgstr "无法从守护进程读取蓝牙诊断信息。\n"
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "The call could not be placed."
+msgstr "无法拨出该通话。"
+
+#: src/cli/main.cpp
+msgid "Could not read calls from the daemon.\n"
+msgstr "无法从守护进程读取通话。\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No calls. Check 'tether --bt-connection'.\n"
+msgstr "没有通话。请检查 'tether --bt-connection'。\n"
+
+#: src/cli/main.cpp
+msgid "withheld"
+msgstr "已隐藏"
 
 #: src/cli/main.cpp
 msgid "Could not read notifications from the daemon.\n"
@@ -543,6 +599,34 @@ msgstr "没有使用该指纹的已配对设备。\n"
 #, c++-format
 msgid "Transfer Failed: {}"
 msgstr "传输失败：{}"
+
+#: src/cli/main.cpp
+msgid "A number is required, e.g. --bt-call +15551234567\n"
+msgstr "需要一个号码，例如 --bt-call +15551234567\n"
+
+#: src/cli/main.cpp
+msgid "Dialing."
+msgstr "正在拨号。"
+
+#: src/cli/main.cpp
+msgid "Answering."
+msgstr "正在接听。"
+
+#: src/cli/main.cpp
+msgid "Hanging up."
+msgstr "正在挂断。"
+
+#: src/cli/main.cpp
+msgid "Expected on or off, e.g. --bt-calls-enable on\n"
+msgstr "应为 on 或 off，例如 --bt-calls-enable on\n"
+
+#: src/cli/main.cpp
+msgid "Call control enabled."
+msgstr "通话控制已开启。"
+
+#: src/cli/main.cpp
+msgid "Call control disabled."
+msgstr "通话控制已关闭。"
 
 #: src/cli/main.cpp
 msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
@@ -715,6 +799,10 @@ msgstr "iPhone 目前未提供此信息；仅在这台电脑上标记为已读�
 msgid ""
 "The iPhone is not offering notifications on this link. Asking it again..."
 msgstr "iPhone 未在此链路上提供通知。正在再次请求……"
+
+#: src/core/src/bluetooth/connection.cpp
+msgid "Call control is off."
+msgstr "通话控制已关闭。"
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "No paired iPhone selected."
@@ -940,7 +1028,8 @@ msgstr ""
 msgid "{} could not be opened."
 msgstr "无法打开 {}。"
 
-#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/notifications_view.cpp
+#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/calls_view.cpp
+#: src/gtk/notifications_view.cpp
 msgid "Waiting for the iPhone."
 msgstr "正在等待 iPhone。"
 
@@ -951,6 +1040,38 @@ msgstr "信息和通讯录已连接。"
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
 msgstr "正在打开信息和通讯录……"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "The iPhone has not connected Hands-Free to this computer."
+msgstr "iPhone 尚未与本机建立免提连接。"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Connecting to the iPhone's Hands-Free service."
+msgstr "正在连接 iPhone 的免提服务。"
+
+#: src/core/src/bluetooth/telephony.cpp src/gtk/calls_view.cpp
+msgid "Calls are controlled here; the audio plays on the iPhone."
+msgstr "通话在此控制，音频在 iPhone 上播放。"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a dialable number."
+msgstr "不是可拨打的号码。"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "No call named."
+msgstr "未指定通话。"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "That call is no longer active."
+msgstr "该通话已不再有效。"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Unknown call action."
+msgstr "未知的通话操作。"
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a DTMF sequence."
+msgstr "不是 DTMF 序列。"
 
 #: src/core/src/net.cpp
 msgid "Notification mirroring is already active; nothing to do."
@@ -1022,6 +1143,74 @@ msgstr "回复"
 #: src/daemon/notification.cpp
 msgid "Copy Code"
 msgstr "复制验证码"
+
+#: src/gtk/calls_view.cpp
+msgid "Incoming"
+msgstr "来电"
+
+#: src/gtk/calls_view.cpp
+msgid "Call waiting"
+msgstr "呼叫等待"
+
+#: src/gtk/calls_view.cpp
+msgid "Dialing"
+msgstr "拨号中"
+
+#: src/gtk/calls_view.cpp
+msgid "Ringing"
+msgstr "正在响铃"
+
+#: src/gtk/calls_view.cpp
+msgid "On call"
+msgstr "通话中"
+
+#: src/gtk/calls_view.cpp
+msgid "On hold"
+msgstr "已保持"
+
+#: src/gtk/calls_view.cpp
+msgid "Ended"
+msgstr "已结束"
+
+#: src/gtk/calls_view.cpp
+msgid "No service"
+msgstr "无服务"
+
+#: src/gtk/calls_view.cpp
+msgid "Unknown caller"
+msgstr "未知来电者"
+
+#: src/gtk/calls_view.cpp
+msgid "Answer"
+msgstr "接听"
+
+#: src/gtk/calls_view.cpp
+msgid "Decline"
+msgstr "拒接"
+
+#: src/gtk/calls_view.cpp
+msgid "Hang up"
+msgstr "挂断"
+
+#: src/gtk/calls_view.cpp
+msgid "No calls."
+msgstr "没有通话。"
+
+#: src/gtk/calls_view.cpp
+msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+msgstr "通话控制已关闭。使用 'tether --bt-calls-enable on' 开启。"
+
+#: src/gtk/calls_view.cpp
+msgid "Number to call"
+msgstr "要拨打的号码"
+
+#: src/gtk/calls_view.cpp
+msgid "Call"
+msgstr "拨打"
+
+#: src/gtk/calls_view.cpp
+msgid "The iPhone's carrier, signal, and battery."
+msgstr "iPhone 的运营商、信号和电量。"
 
 #: src/gtk/contacts_view.cpp
 msgid "Copy"
@@ -1495,6 +1684,10 @@ msgid "Devices"
 msgstr "设备"
 
 #: src/gtk/main.cpp
+msgid "Calls"
+msgstr "通话"
+
+#: src/gtk/main.cpp
 msgid "Start hidden in the system tray"
 msgstr "启动时隐藏到系统托盘"
 
@@ -1629,6 +1822,38 @@ msgstr "设备同步"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "配对设备并通过网络同步剪贴板"
+
+#~ msgid "Move call audio to this computer, or back to the iPhone."
+#~ msgstr "将通话音频转到本机，或转回 iPhone。"
+
+#~ msgid ""
+#~ "Turn call control on or off. Needs the hfp_hf role and telephony service "
+#~ "in WirePlumber; see docs/BLUETOOTH.md."
+#~ msgstr ""
+#~ "开启或关闭通话控制。需要 WirePlumber 中的 hfp_hf 角色和电话服务；参见 "
+#~ "docs/BLUETOOTH.md。"
+
+#~ msgid "Call audio moved to this computer."
+#~ msgstr "通话音频已转到本机。"
+
+#~ msgid "Take audio here"
+#~ msgstr "将音频转到本机"
+
+#~ msgid ""
+#~ "Play the call through this computer's speakers and microphone. Handing it "
+#~ "back applies to the next call."
+#~ msgstr "通过本机的扬声器和麦克风进行通话。转回将从下一通电话开始生效。"
+
+#~ msgid "Expected here or phone, e.g. --bt-call-audio here\n"
+#~ msgstr "应为 here 或 phone，例如 --bt-call-audio here\n"
+
+#~ msgid ""
+#~ "New calls will stay on the iPhone. A call already playing here does not "
+#~ "move back."
+#~ msgstr "新通话将保留在 iPhone 上。已经在本机播放的通话不会转回。"
+
+#~ msgid "Move audio to iPhone"
+#~ msgstr "将音频转到 iPhone"
 
 #, fuzzy
 #~ msgid "Tether version"

@@ -5,6 +5,9 @@
 # Compatibility  = MAP + PBAP only; no notification mirroring
 #
 # Read-only unless --set-class is given.
+#
+#   --set-class   set the adapter's Class of Device to A/V Hands-Free
+#   --calls       probe the call path; run it while a call is connected
 
 set -uo pipefail
 
@@ -18,7 +21,11 @@ TARGET_COD_LOW=0x0408
 COD_MASK=0x1fff
 
 set_class=0
-[[ ${1:-} == --set-class ]] && set_class=1
+calls_only=0
+case ${1:-} in
+    --set-class) set_class=1 ;;
+    --calls) calls_only=1 ;;
+esac
 
 red=$'\e[31m'; grn=$'\e[32m'; ylw=$'\e[33m'; dim=$'\e[2m'; rst=$'\e[0m'
 [[ -t 1 ]] || { red=; grn=; ylw=; dim=; rst=; }
@@ -37,6 +44,76 @@ prop() {
     busctl --system get-property org.bluez "$ADAPTER_PATH" "$1" "$2" 2>/dev/null |
         awk '{ $1=""; sub(/^ /,""); gsub(/"/,""); print }'
 }
+
+# Where the call audio goes is decided by whoever owns the hands-free profile,
+# and only an active call proves it. Run this while a call is connected.
+probe_calls() {
+    echo
+    echo "Call audio probe (run this while a call is CONNECTED)"
+    echo "====================================================="
+
+    echo
+    echo "BlueZ telephony objects"
+    local tree
+    tree=$(busctl --system tree org.bluez 2>/dev/null)
+    if grep -q '/telephony' <<<"$tree"; then
+        grep -o '/org/bluez/[^ ]*/telephony[0-9]*[^ ]*' <<<"$tree" | sort -u | while read -r path; do
+            ok "$path"
+            # Only the telephony interface; the generic D-Bus ones are noise.
+            busctl --system introspect org.bluez "$path" 2>/dev/null |
+                awk '/^org\.bluez\.(Telephony|Call)1/ { p = 1; next }
+                     /^org\./ { p = 0 }
+                     p && /^\./ { printf "      %s\n", $0 }'
+        done
+    else
+        bad "no telephony object — HFP is not connected, or bluetoothd lacks --experimental"
+    fi
+
+    # The whole question: does BlueZ hand the SCO link to an audio server?
+    echo
+    echo "Media transports (a transport here would mean the audio can reach the desktop)"
+    if grep -qE '/fd[0-9]+' <<<"$tree"; then
+        grep -oE '/org/bluez/[^ ]*/fd[0-9]+' <<<"$tree" | sort -u | while read -r path; do
+            clash "$path"
+            busctl --system get-property org.bluez "$path" org.bluez.MediaTransport1 UUID 2>/dev/null |
+                awk '{ printf "      UUID %s\n", $2 }'
+        done
+        note "Unexpected: report this, it changes what Tether can do."
+    else
+        ok "none — BlueZ exports no transport, so the audio stays on the phone"
+    fi
+
+    echo
+    echo "Audio server view"
+    if command -v pactl >/dev/null; then
+        if pactl list cards short 2>/dev/null | grep -q bluez; then
+            clash "a bluez_card exists:"
+            pactl list cards short 2>/dev/null | grep bluez | awk '{ printf "      %s\n", $2 }'
+        else
+            ok "no bluez_card — nothing for the desktop to play through"
+        fi
+    else
+        note "pactl not installed; skipping"
+    fi
+
+    echo
+    echo "bluetoothd, last 40 lines"
+    journalctl -u bluetooth -n 40 --no-pager 2>/dev/null |
+        grep -iE 'sco|transport|codec|hfp' | tail -10 |
+        awk '{ printf "    %s\n", $0 }' || note "no matching log lines"
+
+    echo
+    echo "Verdict"
+    if grep -qE '/fd[0-9]+' <<<"$tree"; then
+        printf '  %sTRANSPORT PRESENT%s — the call audio can reach this machine.\n' "$ylw" "$rst"
+    else
+        printf '  %sCONTROL ONLY%s — BlueZ signals the call but never opens the voice link.\n' "$grn" "$rst"
+        printf '  The audio plays on the phone. See "Calls" in docs/BLUETOOTH.md.\n'
+    fi
+    exit 0
+}
+
+(( calls_only == 1 )) && probe_calls
 
 echo
 echo "Tether Bluetooth capability probe"

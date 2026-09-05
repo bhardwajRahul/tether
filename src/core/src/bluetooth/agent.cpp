@@ -61,7 +61,7 @@ namespace tether::bluetooth {
 
     } // namespace
 
-    bool is_authorized_service(const std::string& uuid) {
+    bool is_authorized_service(const std::string& uuid, bool calls_enabled) {
         static const std::array<const char*, 5> allowed = {
             "0000112e-0000-1000-8000-00805f9b34fb", // PBAP client
             "0000112f-0000-1000-8000-00805f9b34fb", // PBAP server
@@ -69,7 +69,18 @@ namespace tether::bluetooth {
             "00001133-0000-1000-8000-00805f9b34fb", // MAP notification server
             "00001134-0000-1000-8000-00805f9b34fb", // MAP client
         };
-        return std::any_of(allowed.begin(), allowed.end(), [&](const char* u) { return iequals(uuid, u); });
+        // Both sides of each pair: iOS has been seen to authorize against either
+        // its own role or ours, and HSP is its fallback when HFP negotiation fails.
+        static const std::array<const char*, 4> call_services = {
+            "0000111e-0000-1000-8000-00805f9b34fb", // Handsfree
+            "0000111f-0000-1000-8000-00805f9b34fb", // Handsfree audio gateway
+            "00001108-0000-1000-8000-00805f9b34fb", // Headset
+            "00001112-0000-1000-8000-00805f9b34fb", // Headset audio gateway
+        };
+        auto matches = [&](const char* u) { return iequals(uuid, u); };
+        if (std::any_of(allowed.begin(), allowed.end(), matches))
+            return true;
+        return calls_enabled && std::any_of(call_services.begin(), call_services.end(), matches);
     }
 
     std::string format_passkey(uint32_t passkey) {
@@ -81,6 +92,7 @@ namespace tether::bluetooth {
         GDBusConnection* conn = nullptr;
         std::string device_path;
         PairingAgent::ConfirmHandler on_confirm;
+        bool calls_enabled = false;
         std::string path = AGENT_PATH;
         guint registration_id = 0;
         bool registered_with_bluez = false;
@@ -136,7 +148,7 @@ namespace tether::bluetooth {
                 const gchar* uuid = nullptr;
                 g_variant_get_child(params, 1, "&s", &uuid);
                 const std::string service = uuid ? uuid : "";
-                if (!is_authorized_service(service)) {
+                if (!is_authorized_service(service, state->calls_enabled)) {
                     debug::log(INFO, "bluetooth: agent refused service {}", service);
                     reject(invocation, "Service not used by Tether");
                     return;
@@ -170,11 +182,15 @@ namespace tether::bluetooth {
 
     } // namespace
 
-    PairingAgent::PairingAgent(GDBusConnection* connection, std::string device_path, ConfirmHandler on_confirm)
+    PairingAgent::PairingAgent(GDBusConnection* connection,
+                               std::string device_path,
+                               ConfirmHandler on_confirm,
+                               bool calls_enabled)
         : state_(std::make_unique<AgentState>()) {
         state_->conn = connection;
         state_->device_path = std::move(device_path);
         state_->on_confirm = std::move(on_confirm);
+        state_->calls_enabled = calls_enabled;
     }
 
     PairingAgent::~PairingAgent() {

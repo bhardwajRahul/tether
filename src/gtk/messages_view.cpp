@@ -1,6 +1,7 @@
 #include "messages_view.hpp"
 #include <tether/i18n.hpp>
 
+#include "contact_completion.hpp"
 #include "daemon_client.hpp"
 #include "message_format.hpp"
 #include "prefs.hpp"
@@ -98,10 +99,7 @@ namespace tether::ui {
             bool composing = false;
             GtkWidget* compose_bar = nullptr;
             GtkWidget* compose_entry = nullptr;
-            GtkListStore* compose_model = nullptr;
-            std::map<std::string, std::string> compose_names;
             std::string compose_requested_key;
-            std::string compose_shown;
             std::string pending_new_thread;
         };
 
@@ -110,10 +108,6 @@ namespace tether::ui {
         constexpr int SEND_TIMEOUT_SECONDS = 60;
         constexpr int64_t GROUP_WINDOW_SECONDS = 300;
         constexpr double AT_BOTTOM_SLACK = 48.0;
-
-        enum ComposeColumn { COMPOSE_COL_DISPLAY, COMPOSE_COL_ADDRESS, COMPOSE_COL_SEARCH, COMPOSE_COL_COUNT };
-
-        constexpr int CONTACT_COMPLETION_LIMIT = 5000;
 
         void update_composer_sensitivity();
         void update_placeholder();
@@ -822,91 +816,6 @@ namespace tether::ui {
             update_composer_sensitivity();
         }
 
-        void request_contact_completion() {
-            nlohmann::json j;
-            j["command"] = "bt_list_contacts";
-            j["limit"] = CONTACT_COMPLETION_LIMIT;
-            daemon_send(j);
-        }
-
-        void show_contact_completion(const nlohmann::json& event) {
-            const std::string payload = event.contains("contacts") ? event["contacts"].dump() : "";
-            if (payload == g_messages.compose_shown)
-                return;
-            g_messages.compose_shown = payload;
-
-            gtk_list_store_clear(g_messages.compose_model);
-            g_messages.compose_names.clear();
-            if (!event.contains("contacts") || !event["contacts"].is_array())
-                return;
-
-            std::set<std::string> seen;
-            for (const auto& card : event["contacts"]) {
-                const std::string name = card.value("name", "");
-                if (!card.contains("addresses") || !card["addresses"].is_array())
-                    continue;
-                for (const auto& entry : card["addresses"]) {
-                    if (!entry.is_string())
-                        continue;
-
-                    bluetooth::Recipient recipient;
-                    std::string err;
-                    if (!bluetooth::recipient_from_thread_key(entry.get<std::string>(), recipient, err))
-                        continue;
-                    const std::string key = bluetooth::thread_key_for(recipient);
-                    if (key.empty() || !seen.insert(key).second)
-                        continue;
-                    if (!name.empty())
-                        g_messages.compose_names.emplace(key, name);
-
-                    const std::string display = name.empty() ? recipient.address : name + " · " + recipient.address;
-                    // The normalized form is in the haystack too, so "5551234567"
-                    // finds a contact whose number is stored as "+1 (555) 123-4567".
-                    const std::string search =
-                        fold(name + " " + recipient.address + " " + key.substr(key.find(':') + 1));
-
-                    GtkTreeIter iter;
-                    gtk_list_store_append(g_messages.compose_model, &iter);
-                    gtk_list_store_set(g_messages.compose_model,
-                                       &iter,
-                                       COMPOSE_COL_DISPLAY,
-                                       display.c_str(),
-                                       COMPOSE_COL_ADDRESS,
-                                       recipient.address.c_str(),
-                                       COMPOSE_COL_SEARCH,
-                                       search.c_str(),
-                                       -1);
-                }
-            }
-        }
-
-        // Substring, over the name and the number alike. The default match is a
-        // prefix test on the display column, which would miss both a surname and
-        // any number typed without its formatting.
-        gboolean completion_match(GtkEntryCompletion* completion, const gchar* key, GtkTreeIter* iter, gpointer) {
-            if (!key || !*key)
-                return FALSE;
-            GtkTreeModel* model = gtk_entry_completion_get_model(completion);
-            gchar* haystack = nullptr;
-            gtk_tree_model_get(model, iter, COMPOSE_COL_SEARCH, &haystack, -1);
-            const gboolean hit = haystack && std::strstr(haystack, key) != nullptr;
-            g_free(haystack);
-            return hit;
-        }
-
-        // The entry always ends up holding a bare address, never a display name,
-        // so there is exactly one path from what is in the box to the thread key
-        // and no separate selection to fall out of sync with an edit.
-        gboolean on_completion_match_selected(GtkEntryCompletion*, GtkTreeModel* model, GtkTreeIter* iter, gpointer) {
-            gchar* address = nullptr;
-            gtk_tree_model_get(model, iter, COMPOSE_COL_ADDRESS, &address, -1);
-            if (address)
-                gtk_entry_set_text(GTK_ENTRY(g_messages.compose_entry), address);
-            g_free(address);
-            gtk_editable_set_position(GTK_EDITABLE(g_messages.compose_entry), -1);
-            return TRUE;
-        }
-
         void on_recipient_changed(GtkEditable*, gpointer) {
             if (!g_messages.composing)
                 return;
@@ -924,9 +833,7 @@ namespace tether::ui {
             } else if (bluetooth::recipient_from_input(text, recipient, err)) {
                 g_messages.selected_thread = bluetooth::thread_key_for(recipient);
                 g_messages.selected_repliable = !g_messages.selected_thread.empty();
-                if (auto known = g_messages.compose_names.find(g_messages.selected_thread);
-                    known != g_messages.compose_names.end())
-                    g_messages.selected_name = known->second;
+                g_messages.selected_name = contact_name_for(g_messages.selected_thread);
             } else {
                 g_messages.selected_block_reason = err;
             }
@@ -976,7 +883,7 @@ namespace tether::ui {
 
             g_messages.composing = true;
             g_messages.compose_requested_key.clear();
-            request_contact_completion();
+            contact_completion_request();
 
             clear_list_box(g_messages.conversation);
             g_messages.rendered.clear();
@@ -1092,7 +999,7 @@ namespace tether::ui {
             return true;
         }
         if (command == "bt_contacts") {
-            show_contact_completion(event);
+            // The shared completion model is fed from the dispatcher.
             return true;
         }
         if (command == "bt_connection_changed") {
@@ -1220,18 +1127,7 @@ namespace tether::ui {
         gtk_entry_set_width_chars(GTK_ENTRY(g_messages.compose_entry), 12);
         gtk_box_pack_start(GTK_BOX(g_messages.compose_bar), g_messages.compose_entry, TRUE, TRUE, 0);
 
-        g_messages.compose_model = gtk_list_store_new(COMPOSE_COL_COUNT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
-        GtkEntryCompletion* completion = gtk_entry_completion_new();
-        gtk_entry_completion_set_model(completion, GTK_TREE_MODEL(g_messages.compose_model));
-        gtk_entry_completion_set_text_column(completion, COMPOSE_COL_DISPLAY);
-        gtk_entry_completion_set_match_func(completion, completion_match, nullptr, nullptr);
-        gtk_entry_completion_set_minimum_key_length(completion, 1);
-        // Inline completion would rewrite a half-typed number into whichever
-        // contact happens to start with those digits.
-        gtk_entry_completion_set_inline_completion(completion, FALSE);
-        g_signal_connect(completion, "match-selected", G_CALLBACK(on_completion_match_selected), nullptr);
-        gtk_entry_set_completion(GTK_ENTRY(g_messages.compose_entry), completion);
-        g_object_unref(completion);
+        attach_contact_completion(g_messages.compose_entry, ContactKind::Any);
 
         GtkWidget* compose_cancel = gtk_button_new_with_label(_("Cancel"));
         g_signal_connect(compose_cancel, "clicked", G_CALLBACK(on_compose_cancel), nullptr);

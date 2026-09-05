@@ -32,6 +32,7 @@
 | **Mail Extension** | ✅ Stable |
 | **Messages (SMS/iMessage)** | 🧪 Beta |
 | **Notification Mirroring** | 🧪 Beta |
+| **Phone Calls** | 🧪 Alpha |
 | **TOTP/OTP Vault** | 🗓️ Planning |
 
 ### Clipboard Sync
@@ -46,11 +47,15 @@ Read and reply to SMS and iMessage conversations, and see notifications from any
 ### Device Pairing
 There are two ways tether communicates with the iPhone:
 - WiFi: for clipboard sync, file transfer, and OTP handling
-- Bluetooth: for Messages and Notifications
+- Bluetooth: for Messages, Notifications, and Calls
 
 You can use either or both, depending on your needs.
 
 Connections run over TLS 1.2 and both sides present a self-signed X.509 certificate.
+
+### Phone Calls
+Place, answer and end calls on the iPhone from the desktop, complete with caller ID and the phone's carrier and signal. 
+The call audio stays on the iPhone. If you've used Linux long enough you know why (it sounds like "FalsePotty-o"). PulsAlsaWire is too hard to support across all deployment targets.
 
 ### OTP Handling
 Streamline two-factor authentication across your devices:

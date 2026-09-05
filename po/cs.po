@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-03 20:40-0700\n"
+"POT-Creation-Date: 2026-09-04 14:22-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Czech\n"
@@ -154,6 +154,30 @@ msgstr "Vybere, který adaptér Bluetooth se použije."
 #: src/cli/main.cpp
 msgid "List mirrored iPhone notifications."
 msgstr "Vypsat zrcadlená oznámení z iPhonu."
+
+#: src/cli/main.cpp
+msgid "List calls on the iPhone."
+msgstr "Vypsat hovory na iPhonu."
+
+#: src/cli/main.cpp
+msgid "Place a call from the iPhone."
+msgstr "Zavolat z iPhonu."
+
+#: src/cli/main.cpp
+msgid "Answer the ringing call."
+msgstr "Přijmout příchozí hovor."
+
+#: src/cli/main.cpp
+msgid "Hang up every call."
+msgstr "Ukončit všechny hovory."
+
+#: src/cli/main.cpp
+msgid ""
+"Turn call control on or off. Calls run over Bluetooth Hands-Free; the audio "
+"stays on the iPhone."
+msgstr ""
+"Zapnout nebo vypnout ovládání hovorů. Hovory jdou přes Bluetooth hands-free; "
+"zvuk zůstává v iPhonu."
 
 #: src/cli/main.cpp
 msgid "Print a redacted Bluetooth report for a bug report."
@@ -426,8 +450,42 @@ msgid "Contacts (PBAP)"
 msgstr "Kontakty (PBAP)"
 
 #: src/cli/main.cpp
+msgid "no carrier"
+msgstr "žádný operátor"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid " signal {0}/5 battery {1}/5"
+msgstr " signál {0}/5 baterie {1}/5"
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "roaming"
+msgstr "roaming"
+
+#: src/cli/main.cpp
+msgid "Calls (HFP)"
+msgstr "Hovory (HFP)"
+
+#: src/cli/main.cpp
 msgid "Could not read Bluetooth diagnostics from the daemon.\n"
 msgstr "Nepodařilo se načíst diagnostiku Bluetooth od démona.\n"
+
+#: src/cli/main.cpp src/gtk/calls_view.cpp
+msgid "The call could not be placed."
+msgstr "Hovor se nepodařilo uskutečnit."
+
+#: src/cli/main.cpp
+msgid "Could not read calls from the daemon.\n"
+msgstr "Hovory se nepodařilo načíst ze služby.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid "No calls. Check 'tether --bt-connection'.\n"
+msgstr "Žádné hovory. Zkontrolujte 'tether --bt-connection'.\n"
+
+#: src/cli/main.cpp
+msgid "withheld"
+msgstr "skryté"
 
 #: src/cli/main.cpp
 msgid "Could not read notifications from the daemon.\n"
@@ -566,6 +624,34 @@ msgstr "S tímto otiskem není spárováno žádné zařízení.\n"
 #, c++-format
 msgid "Transfer Failed: {}"
 msgstr "Přenos selhal: {}"
+
+#: src/cli/main.cpp
+msgid "A number is required, e.g. --bt-call +15551234567\n"
+msgstr "Je vyžadováno číslo, např. --bt-call +15551234567\n"
+
+#: src/cli/main.cpp
+msgid "Dialing."
+msgstr "Vytáčení."
+
+#: src/cli/main.cpp
+msgid "Answering."
+msgstr "Přijímání."
+
+#: src/cli/main.cpp
+msgid "Hanging up."
+msgstr "Zavěšování."
+
+#: src/cli/main.cpp
+msgid "Expected on or off, e.g. --bt-calls-enable on\n"
+msgstr "Očekáváno on nebo off, např. --bt-calls-enable on\n"
+
+#: src/cli/main.cpp
+msgid "Call control enabled."
+msgstr "Ovládání hovorů zapnuto."
+
+#: src/cli/main.cpp
+msgid "Call control disabled."
+msgstr "Ovládání hovorů vypnuto."
 
 #: src/cli/main.cpp
 msgid "A thread key is required, e.g. --bt-messages tel:+15551234567\n"
@@ -751,6 +837,10 @@ msgstr ""
 msgid ""
 "The iPhone is not offering notifications on this link. Asking it again..."
 msgstr "iPhone na tomto spojení nenabízí oznámení. Žádáme znovu..."
+
+#: src/core/src/bluetooth/connection.cpp
+msgid "Call control is off."
+msgstr "Ovládání hovorů je vypnuté."
 
 #: src/core/src/bluetooth/connection.cpp
 msgid "No paired iPhone selected."
@@ -988,7 +1078,8 @@ msgstr ""
 msgid "{} could not be opened."
 msgstr "{} se nepodařilo otevřít."
 
-#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/notifications_view.cpp
+#: src/core/src/bluetooth/profile_supervisor.cpp src/gtk/calls_view.cpp
+#: src/gtk/notifications_view.cpp
 msgid "Waiting for the iPhone."
 msgstr "Čeká se na iPhone."
 
@@ -999,6 +1090,38 @@ msgstr "Zprávy a kontakty jsou připojeny."
 #: src/core/src/bluetooth/profile_supervisor.cpp
 msgid "Opening messages and contacts..."
 msgstr "Otevírání zpráv a kontaktů..."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "The iPhone has not connected Hands-Free to this computer."
+msgstr "iPhone nepřipojil hands-free k tomuto počítači."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Connecting to the iPhone's Hands-Free service."
+msgstr "Připojování ke službě hands-free iPhonu."
+
+#: src/core/src/bluetooth/telephony.cpp src/gtk/calls_view.cpp
+msgid "Calls are controlled here; the audio plays on the iPhone."
+msgstr "Hovory se ovládají zde; zvuk se přehrává v iPhonu."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a dialable number."
+msgstr "Není to vytáčitelné číslo."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "No call named."
+msgstr "Nebyl uveden žádný hovor."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "That call is no longer active."
+msgstr "Tento hovor už není aktivní."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Unknown call action."
+msgstr "Neznámá akce hovoru."
+
+#: src/core/src/bluetooth/telephony.cpp
+msgid "Not a DTMF sequence."
+msgstr "Není to sekvence DTMF."
 
 #: src/core/src/net.cpp
 msgid "Notification mirroring is already active; nothing to do."
@@ -1071,6 +1194,76 @@ msgstr "Odpovědět"
 #: src/daemon/notification.cpp
 msgid "Copy Code"
 msgstr "Kopírovat kód"
+
+#: src/gtk/calls_view.cpp
+msgid "Incoming"
+msgstr "Příchozí"
+
+#: src/gtk/calls_view.cpp
+msgid "Call waiting"
+msgstr "Čekající hovor"
+
+#: src/gtk/calls_view.cpp
+msgid "Dialing"
+msgstr "Vytáčení"
+
+#: src/gtk/calls_view.cpp
+msgid "Ringing"
+msgstr "Vyzvání"
+
+#: src/gtk/calls_view.cpp
+msgid "On call"
+msgstr "Probíhá hovor"
+
+#: src/gtk/calls_view.cpp
+msgid "On hold"
+msgstr "Přidržený"
+
+#: src/gtk/calls_view.cpp
+msgid "Ended"
+msgstr "Ukončeno"
+
+#: src/gtk/calls_view.cpp
+msgid "No service"
+msgstr "Bez signálu"
+
+#: src/gtk/calls_view.cpp
+msgid "Unknown caller"
+msgstr "Neznámý volající"
+
+#: src/gtk/calls_view.cpp
+msgid "Answer"
+msgstr "Přijmout"
+
+#: src/gtk/calls_view.cpp
+msgid "Decline"
+msgstr "Odmítnout"
+
+#: src/gtk/calls_view.cpp
+msgid "Hang up"
+msgstr "Zavěsit"
+
+#: src/gtk/calls_view.cpp
+msgid "No calls."
+msgstr "Žádné hovory."
+
+#: src/gtk/calls_view.cpp
+msgid "Call control is off. Turn it on with 'tether --bt-calls-enable on'."
+msgstr ""
+"Ovládání hovorů je vypnuté. Zapněte je příkazem 'tether --bt-calls-enable "
+"on'."
+
+#: src/gtk/calls_view.cpp
+msgid "Number to call"
+msgstr "Číslo k volání"
+
+#: src/gtk/calls_view.cpp
+msgid "Call"
+msgstr "Volat"
+
+#: src/gtk/calls_view.cpp
+msgid "The iPhone's carrier, signal, and battery."
+msgstr "Operátor, signál a baterie iPhonu."
 
 #: src/gtk/contacts_view.cpp
 msgid "Copy"
@@ -1558,6 +1751,10 @@ msgid "Devices"
 msgstr "Zařízení"
 
 #: src/gtk/main.cpp
+msgid "Calls"
+msgstr "Hovory"
+
+#: src/gtk/main.cpp
 msgid "Start hidden in the system tray"
 msgstr "Spouštět skrytě v oznamovací oblasti"
 
@@ -1694,6 +1891,41 @@ msgstr "Synchronizace zařízení"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Spárujte zařízení a synchronizujte schránku po síti"
+
+#~ msgid "Move call audio to this computer, or back to the iPhone."
+#~ msgstr "Přesunout zvuk hovoru do tohoto počítače, nebo zpět do iPhonu."
+
+#~ msgid ""
+#~ "Turn call control on or off. Needs the hfp_hf role and telephony service "
+#~ "in WirePlumber; see docs/BLUETOOTH.md."
+#~ msgstr ""
+#~ "Zapnout nebo vypnout ovládání hovorů. Vyžaduje roli hfp_hf a službu "
+#~ "telefonie ve WirePlumberu; viz docs/BLUETOOTH.md."
+
+#~ msgid "Call audio moved to this computer."
+#~ msgstr "Zvuk hovoru přesunut do tohoto počítače."
+
+#~ msgid "Take audio here"
+#~ msgstr "Přesunout zvuk sem"
+
+#~ msgid ""
+#~ "Play the call through this computer's speakers and microphone. Handing it "
+#~ "back applies to the next call."
+#~ msgstr ""
+#~ "Přehrávat hovor přes reproduktory a mikrofon tohoto počítače. Vrácení "
+#~ "platí až pro další hovor."
+
+#~ msgid "Expected here or phone, e.g. --bt-call-audio here\n"
+#~ msgstr "Očekáváno here nebo phone, např. --bt-call-audio here\n"
+
+#~ msgid ""
+#~ "New calls will stay on the iPhone. A call already playing here does not "
+#~ "move back."
+#~ msgstr ""
+#~ "Nové hovory zůstanou v iPhonu. Hovor, který zde už hraje, se nevrátí."
+
+#~ msgid "Move audio to iPhone"
+#~ msgstr "Přesunout zvuk do iPhonu"
 
 #, fuzzy
 #~ msgid "Tether version"

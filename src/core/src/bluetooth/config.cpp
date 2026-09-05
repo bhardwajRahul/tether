@@ -50,6 +50,7 @@ namespace tether::bluetooth {
         j["ancs_enabled"] = config.ancs_enabled;
         j["ancs_content_enabled"] = config.ancs_content_enabled;
         j["group_messages_enabled"] = config.group_messages_enabled;
+        j["calls_enabled"] = config.calls_enabled;
         j["enabled"] = config.enabled;
         j["adapter"] = config.adapter;
         j["retention"] = to_string(config.retention);
@@ -68,6 +69,7 @@ namespace tether::bluetooth {
             const int version = j.value("config_version", 0);
             config.ancs_content_enabled = version < 1 ? true : j.value("ancs_content_enabled", true);
             config.group_messages_enabled = j.value("group_messages_enabled", false);
+            config.calls_enabled = j.value("calls_enabled", false);
             config.enabled = j.value("enabled", true);
             config.adapter = j.value("adapter", "");
             config.retention = retention_from_string(j.value("retention", "encrypted"));
