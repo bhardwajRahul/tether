@@ -40,6 +40,8 @@ namespace tether::bluetooth {
         std::string adapter;
         // How the message journal and contact cache are kept on disk. Encrypted by default.
         Retention retention = Retention::Encrypted;
+        // Whether the daemon shows desktop popups at all.
+        bool desktop_popups_enabled = true;
 
         bool operator==(const Config&) const = default;
     };

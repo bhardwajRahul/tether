@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:50-0700\n"
+"POT-Creation-Date: 2026-09-04 18:00-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Polish\n"
@@ -1872,6 +1872,22 @@ msgid "Title and message content are shown, not just which app sent it."
 msgstr "Pokazywane są tytuł i treść, nie tylko aplikacja, która je wysłała."
 
 #: src/gtk/settings_view.cpp
+msgid "Desktop popups"
+msgstr "Wyskakujące powiadomienia"
+
+#: src/gtk/settings_view.cpp
+msgid "What Tether shows in your notification area."
+msgstr "Co Tether pokazuje w obszarze powiadomień."
+
+#: src/gtk/settings_view.cpp
+msgid "Show desktop popups"
+msgstr "Pokazuj wyskakujące powiadomienia"
+
+#: src/gtk/settings_view.cpp
+msgid "Off silences iPhone alerts, new messages and arriving files."
+msgstr "Wyłączenie wycisza alerty z iPhone'a, nowe wiadomości i przychodzące pliki."
+
+#: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
 msgstr "Rozmowy SMS i iMessage synchronizowane przez Bluetooth."
 
@@ -1893,21 +1909,18 @@ msgstr "Przechowuj historię wiadomości"
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
+"Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
+"stored."
 msgstr ""
-"Gdzie na tym komputerze przechowywane są wiadomości i kontakty. Zaszyfrowane "
-"przechowuje je przy użyciu klucza z pęku kluczy. Nie przechowuj usuwa już "
-"zapisane dane i niczego dalej nie przechowuje."
+"Zaszyfrowane używa klucza z bazy kluczy. Nie przechowuj usuwa to, co jest "
+"zapisane."
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Message history is paused: the desktop keyring has no key to offer yet. "
-"Unlock it, or choose Unencrypted."
+"Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
 msgstr ""
-"Historia wiadomości jest wstrzymana: baza kluczy pulpitu nie ma jeszcze "
-"klucza. Odblokuj ją albo wybierz Niezaszyfrowane."
+"Wstrzymano: brak klucza z bazy kluczy. Odblokuj ją albo wybierz "
+"Niezaszyfrowane."
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"
@@ -1962,6 +1975,15 @@ msgstr "Synchronizacja urządzeń"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Sparuj urządzenia i synchronizuj schowek przez sieć"
+
+#~ msgid ""
+#~ "Where messages and contacts are stored on this computer. Encrypted keeps "
+#~ "them with a key in your desktop keyring. Do not keep deletes what is "
+#~ "already stored and retains nothing further."
+#~ msgstr ""
+#~ "Gdzie na tym komputerze przechowywane są wiadomości i kontakty. "
+#~ "Zaszyfrowane przechowuje je przy użyciu klucza z pęku kluczy. Nie "
+#~ "przechowuj usuwa już zapisane dane i niczego dalej nie przechowuje."
 
 #~ msgid ""
 #~ "Turned off automatically when pairing produces no LE bond; turn it back "

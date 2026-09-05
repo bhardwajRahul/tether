@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether 0.2.24\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:50-0700\n"
+"POT-Creation-Date: 2026-09-04 18:00-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1703,6 +1703,22 @@ msgid "Title and message content are shown, not just which app sent it."
 msgstr ""
 
 #: src/gtk/settings_view.cpp
+msgid "Desktop popups"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "What Tether shows in your notification area."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Show desktop popups"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Off silences iPhone alerts, new messages and arriving files."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
 msgstr ""
 
@@ -1724,15 +1740,13 @@ msgstr ""
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
+"Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
+"stored."
 msgstr ""
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Message history is paused: the desktop keyring has no key to offer yet. "
-"Unlock it, or choose Unencrypted."
+"Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
 msgstr ""
 
 #: src/gtk/settings_view.cpp

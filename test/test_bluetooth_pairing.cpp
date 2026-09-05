@@ -10,11 +10,11 @@ using namespace tether::bluetooth;
 // The agent authorizes services during pairing. Anything outside this set would
 // grant the phone a profile Tether has no reason to consume.
 TEST(AgentPolicy, AuthorizesOnlyMapAndPbap) {
-    EXPECT_TRUE(is_authorized_service("0000112e-0000-1000-8000-00805f9b34fb"));  // PBAP client
-    EXPECT_TRUE(is_authorized_service("0000112f-0000-1000-8000-00805f9b34fb"));  // PBAP server
-    EXPECT_TRUE(is_authorized_service("00001132-0000-1000-8000-00805f9b34fb"));  // MAP server
-    EXPECT_TRUE(is_authorized_service("00001133-0000-1000-8000-00805f9b34fb"));  // MAP notification
-    EXPECT_TRUE(is_authorized_service("00001134-0000-1000-8000-00805f9b34fb"));  // MAP client
+    EXPECT_TRUE(is_authorized_service("0000112e-0000-1000-8000-00805f9b34fb")); // PBAP client
+    EXPECT_TRUE(is_authorized_service("0000112f-0000-1000-8000-00805f9b34fb")); // PBAP server
+    EXPECT_TRUE(is_authorized_service("00001132-0000-1000-8000-00805f9b34fb")); // MAP server
+    EXPECT_TRUE(is_authorized_service("00001133-0000-1000-8000-00805f9b34fb")); // MAP notification
+    EXPECT_TRUE(is_authorized_service("00001134-0000-1000-8000-00805f9b34fb")); // MAP client
 }
 
 TEST(AgentPolicy, RefusesEverythingElse) {
@@ -77,6 +77,7 @@ TEST(BluetoothConfig, RoundTrips) {
     config.enabled = false;
     config.adapter = "hci1";
     config.calls_enabled = true;
+    config.desktop_popups_enabled = false;
 
     EXPECT_EQ(deserialize_config(serialize_config(config)), config);
 }
@@ -92,6 +93,8 @@ TEST(BluetoothConfig, DefaultsToConnectFirstAndAncsEnabled) {
     EXPECT_TRUE(config.adapter.empty());
     // Call control needs WirePlumber configured for it, so it is never assumed.
     EXPECT_FALSE(config.calls_enabled);
+    // A config written before the switch existed keeps showing popups.
+    EXPECT_TRUE(config.desktop_popups_enabled);
 }
 
 // Switching Bluetooth off supervises no device, which is what stops the daemon

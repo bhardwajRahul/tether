@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:50-0700\n"
+"POT-Creation-Date: 2026-09-04 18:00-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Dutch\n"
@@ -1871,6 +1871,22 @@ msgid "Title and message content are shown, not just which app sent it."
 msgstr "Titel en tekst worden getoond, niet alleen welke app het stuurde."
 
 #: src/gtk/settings_view.cpp
+msgid "Desktop popups"
+msgstr "Bureaubladmeldingen"
+
+#: src/gtk/settings_view.cpp
+msgid "What Tether shows in your notification area."
+msgstr "Wat Tether in je meldingsgebied laat zien."
+
+#: src/gtk/settings_view.cpp
+msgid "Show desktop popups"
+msgstr "Bureaubladmeldingen tonen"
+
+#: src/gtk/settings_view.cpp
+msgid "Off silences iPhone alerts, new messages and arriving files."
+msgstr "Uit dempt iPhone-meldingen, nieuwe berichten en binnenkomende bestanden."
+
+#: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
 msgstr "Sms- en iMessage-gesprekken die via Bluetooth worden gesynchroniseerd."
 
@@ -1892,21 +1908,18 @@ msgstr "Berichtgeschiedenis bewaren"
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
+"Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
+"stored."
 msgstr ""
-"Waar berichten en contacten op deze computer worden opgeslagen. Versleuteld "
-"bewaart ze met een sleutel in uw sleutelbos. Niet bewaren verwijdert wat al "
-"is opgeslagen en bewaart verder niets."
+"Versleuteld gebruikt een sleutel uit de sleutelbos. Niet bewaren wist wat is "
+"opgeslagen."
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Message history is paused: the desktop keyring has no key to offer yet. "
-"Unlock it, or choose Unencrypted."
+"Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
 msgstr ""
-"De berichtgeschiedenis is gepauzeerd: de sleutelbos van het bureaublad heeft "
-"nog geen sleutel. Ontgrendel hem, of kies Onversleuteld."
+"Gepauzeerd: geen sleutel uit de sleutelbos. Ontgrendel hem, of kies "
+"Onversleuteld."
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"
@@ -1960,6 +1973,15 @@ msgstr "Apparaatsynchronisatie"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Apparaten koppelen en het klembord over het netwerk synchroniseren"
+
+#~ msgid ""
+#~ "Where messages and contacts are stored on this computer. Encrypted keeps "
+#~ "them with a key in your desktop keyring. Do not keep deletes what is "
+#~ "already stored and retains nothing further."
+#~ msgstr ""
+#~ "Waar berichten en contacten op deze computer worden opgeslagen. "
+#~ "Versleuteld bewaart ze met een sleutel in uw sleutelbos. Niet bewaren "
+#~ "verwijdert wat al is opgeslagen en bewaart verder niets."
 
 #~ msgid ""
 #~ "Turned off automatically when pairing produces no LE bond; turn it back "

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:50-0700\n"
+"POT-Creation-Date: 2026-09-04 18:00-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Russian\n"
@@ -1872,6 +1872,22 @@ msgid "Title and message content are shown, not just which app sent it."
 msgstr "Показываются заголовок и текст, а не только приложение-отправитель."
 
 #: src/gtk/settings_view.cpp
+msgid "Desktop popups"
+msgstr "Всплывающие уведомления"
+
+#: src/gtk/settings_view.cpp
+msgid "What Tether shows in your notification area."
+msgstr "Что Tether показывает в области уведомлений."
+
+#: src/gtk/settings_view.cpp
+msgid "Show desktop popups"
+msgstr "Показывать всплывающие уведомления"
+
+#: src/gtk/settings_view.cpp
+msgid "Off silences iPhone alerts, new messages and arriving files."
+msgstr "Выключено — не показываются оповещения iPhone, новые сообщения и полученные файлы."
+
+#: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
 msgstr "Переписка SMS и iMessage, синхронизируемая по Bluetooth."
 
@@ -1893,21 +1909,18 @@ msgstr "Хранить историю сообщений"
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
+"Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
+"stored."
 msgstr ""
-"Где на этом компьютере хранятся сообщения и контакты. «Зашифрованно» хранит "
-"их с ключом в вашей связке ключей. «Не хранить» удаляет уже сохранённое и "
-"больше ничего не хранит."
+"«Зашифрованно» использует ключ из связки ключей. «Не хранить» удаляет "
+"сохранённое."
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Message history is paused: the desktop keyring has no key to offer yet. "
-"Unlock it, or choose Unencrypted."
+"Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
 msgstr ""
-"История сообщений приостановлена: связка ключей рабочего стола пока не "
-"предлагает ключ. Разблокируйте её или выберите «Незашифрованно»."
+"Приостановлено: нет ключа из связки ключей. Разблокируйте её или выберите "
+"«Незашифрованно»."
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"
@@ -1915,7 +1928,8 @@ msgstr "Экспериментальные"
 
 #: src/gtk/settings_view.cpp
 msgid "Unfinished features. These can stop working at any time."
-msgstr "Незавершённые возможности. Они могут перестать работать в любой момент."
+msgstr ""
+"Незавершённые возможности. Они могут перестать работать в любой момент."
 
 #: src/gtk/settings_view.cpp
 msgid "Call control over Bluetooth"
@@ -1962,6 +1976,15 @@ msgstr "Синхронизация устройств"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Создавайте пары устройств и синхронизируйте буфер обмена по сети"
+
+#~ msgid ""
+#~ "Where messages and contacts are stored on this computer. Encrypted keeps "
+#~ "them with a key in your desktop keyring. Do not keep deletes what is "
+#~ "already stored and retains nothing further."
+#~ msgstr ""
+#~ "Где на этом компьютере хранятся сообщения и контакты. «Зашифрованно» "
+#~ "хранит их с ключом в вашей связке ключей. «Не хранить» удаляет уже "
+#~ "сохранённое и больше ничего не хранит."
 
 #~ msgid ""
 #~ "Turned off automatically when pairing produces no LE bond; turn it back "

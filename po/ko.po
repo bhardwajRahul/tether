@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 17:50-0700\n"
+"POT-Creation-Date: 2026-09-04 18:00-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -1825,6 +1825,22 @@ msgid "Title and message content are shown, not just which app sent it."
 msgstr "보낸 앱뿐 아니라 제목과 본문도 표시됩니다."
 
 #: src/gtk/settings_view.cpp
+msgid "Desktop popups"
+msgstr "데스크톱 팝업"
+
+#: src/gtk/settings_view.cpp
+msgid "What Tether shows in your notification area."
+msgstr "Tether가 알림 영역에 표시하는 내용입니다."
+
+#: src/gtk/settings_view.cpp
+msgid "Show desktop popups"
+msgstr "데스크톱 팝업 표시"
+
+#: src/gtk/settings_view.cpp
+msgid "Off silences iPhone alerts, new messages and arriving files."
+msgstr "끄면 iPhone 알림, 새 메시지, 도착한 파일이 모두 표시되지 않습니다."
+
+#: src/gtk/settings_view.cpp
 msgid "SMS and iMessage conversations synced over Bluetooth."
 msgstr "Bluetooth로 동기화되는 SMS 및 iMessage 대화입니다."
 
@@ -1846,21 +1862,18 @@ msgstr "메시지 기록 보관"
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
+"Encrypted uses a key from your desktop keyring. Do not keep deletes what is "
+"stored."
 msgstr ""
-"이 컴퓨터에 메시지와 연락처를 저장하는 방식입니다. 암호화는 데스크톱 키링의 "
-"키로 보관합니다. 보관 안 함은 이미 저장된 내용을 삭제하고 이후 아무것도 보관"
-"하지 않습니다."
+"암호화는 데스크톱 키링의 키를 사용합니다. 보관 안 함은 저장된 것을 삭제합니"
+"다."
 
 #: src/gtk/settings_view.cpp
 msgid ""
-"Message history is paused: the desktop keyring has no key to offer yet. "
-"Unlock it, or choose Unencrypted."
+"Paused: no key from the desktop keyring. Unlock it, or choose Unencrypted."
 msgstr ""
-"메시지 기록이 일시 중지되었습니다. 데스크톱 키링이 아직 키를 제공하지 않습니"
-"다. 키링을 잠금 해제하거나 암호화 안 함을 선택하세요."
+"일시 중지됨: 데스크톱 키링에서 키를 가져올 수 없습니다. 잠금을 해제하거나 암"
+"호화 안 함을 선택하세요."
 
 #: src/gtk/settings_view.cpp
 msgid "Experimental"
@@ -1913,6 +1926,15 @@ msgstr "기기 동기화"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "기기를 페어링하고 네트워크를 통해 클립보드를 동기화합니다"
+
+#~ msgid ""
+#~ "Where messages and contacts are stored on this computer. Encrypted keeps "
+#~ "them with a key in your desktop keyring. Do not keep deletes what is "
+#~ "already stored and retains nothing further."
+#~ msgstr ""
+#~ "이 컴퓨터에 메시지와 연락처를 저장하는 방식입니다. 암호화는 데스크톱 키링"
+#~ "의 키로 보관합니다. 보관 안 함은 이미 저장된 내용을 삭제하고 이후 아무것"
+#~ "도 보관하지 않습니다."
 
 #~ msgid ""
 #~ "Turned off automatically when pairing produces no LE bond; turn it back "
