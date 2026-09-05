@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 14:22-0700\n"
+"POT-Creation-Date: 2026-09-04 17:50-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Russian\n"
@@ -1015,7 +1015,7 @@ msgstr "Отменить"
 
 #. TRANSLATORS: the feature name Tether shows for this profile.
 #: src/core/src/bluetooth/profile_supervisor.cpp src/daemon/main.cpp
-#: src/gtk/devices_view.cpp src/gtk/main.cpp
+#: src/gtk/devices_view.cpp src/gtk/main.cpp src/gtk/settings_view.cpp
 msgid "Messages"
 msgstr "Сообщения"
 
@@ -1338,14 +1338,6 @@ msgid "This machine cannot carry the Bluetooth features."
 msgstr "Эта машина не потянет функции Bluetooth."
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Message history is paused: the desktop keyring has no key to offer\n"
-"yet. Unlock it, or choose Unencrypted above."
-msgstr ""
-"История сообщений приостановлена: в связке ключей пока нет ключа.\n"
-"Разблокируйте её или выберите «Без шифрования» выше."
-
-#: src/gtk/devices_view.cpp
 msgid "Link"
 msgstr "Соединение"
 
@@ -1657,59 +1649,6 @@ msgstr ""
 "уже установленное соединение сохранится, пока вы его не разорвёте."
 
 #: src/gtk/devices_view.cpp
-msgid "Mirror iPhone notifications"
-msgstr "Дублировать уведомления iPhone"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Show notifications from the iPhone on this desktop. Turned off automatically "
-"when pairing produces no LE bond; turn it back on after re-pairing."
-msgstr ""
-"Показывает уведомления с iPhone на этом рабочем столе. Отключается "
-"автоматически, когда сопряжение не создаёт связь LE; включите заново после "
-"повторного сопряжения."
-
-#: src/gtk/devices_view.cpp
-msgid "Show notification contents"
-msgstr "Показывать содержимое уведомлений"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Ask the iPhone for each notification's title and message text, not just "
-"which app sent it. The phone's own Show Message Notifications toggle still "
-"has to be on."
-msgstr ""
-"Запрашивает у iPhone заголовок и текст каждого уведомления, а не только "
-"приложение, которое его отправило. Параметр «Показ уведомлений о сообщениях» "
-"на самом телефоне всё равно должен быть включён."
-
-#: src/gtk/devices_view.cpp
-msgid "Keep message history:"
-msgstr "Хранить историю сообщений:"
-
-#: src/gtk/devices_view.cpp
-msgid "Encrypted"
-msgstr "Зашифрованно"
-
-#: src/gtk/devices_view.cpp
-msgid "Unencrypted"
-msgstr "Незашифрованно"
-
-#: src/gtk/devices_view.cpp
-msgid "Do not keep"
-msgstr "Не хранить"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
-msgstr ""
-"Где на этом компьютере хранятся сообщения и контакты. «Зашифрованно» хранит "
-"их с ключом в вашей связке ключей. «Не хранить» удаляет уже сохранённое и "
-"больше ничего не хранит."
-
-#: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
 msgstr "Создать пару по Bluetooth"
 
@@ -1753,9 +1692,9 @@ msgstr "Запрошена синхронизация буфера обмена.
 msgid "Forget"
 msgstr "Забыть"
 
-#: src/gtk/main.cpp
-msgid "Keep running in tray when closed"
-msgstr "При закрытии продолжать работу в лотке"
+#: src/gtk/main.cpp src/gtk/settings_view.cpp
+msgid "Settings"
+msgstr "Настройки"
 
 #: src/gtk/main.cpp
 msgid "Quit"
@@ -1869,6 +1808,123 @@ msgstr "Уведомлений пока нет."
 msgid "Notification mirroring is unavailable."
 msgstr "Дублирование уведомлений недоступно."
 
+#: src/gtk/settings_view.cpp
+msgid ""
+"No iPhone is paired over Bluetooth, so the Bluetooth settings below cannot "
+"be changed yet."
+msgstr ""
+"По Bluetooth не сопряжён ни один iPhone, поэтому изменить настройки "
+"Bluetooth ниже пока нельзя."
+
+#: src/gtk/settings_view.cpp
+msgid "General"
+msgstr "Общие"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep running in the tray when the window is closed"
+msgstr "Продолжать работу в трее при закрытии окна"
+
+#: src/gtk/settings_view.cpp
+msgid "Closing the window hides it instead of quitting Tether."
+msgstr "Закрытие окна скрывает его, а не завершает Tether."
+
+#: src/gtk/settings_view.cpp
+msgid "Symbolic"
+msgstr "Символьный"
+
+#: src/gtk/settings_view.cpp
+msgid "Color"
+msgstr "Цветной"
+
+#: src/gtk/settings_view.cpp
+msgid "Tray icon"
+msgstr "Значок в трее"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Symbolic follows the panel's color. Takes effect the next time Tether starts."
+msgstr ""
+"Символьный принимает цвет панели. Вступит в силу при следующем запуске "
+"Tether."
+
+#: src/gtk/settings_view.cpp
+msgid "iPhone notifications"
+msgstr "Уведомления iPhone"
+
+#: src/gtk/settings_view.cpp
+msgid "Alerts your iPhone forwards to this computer over Bluetooth."
+msgstr "Оповещения, которые iPhone передаёт на этот компьютер по Bluetooth."
+
+#: src/gtk/settings_view.cpp
+msgid "Mirror iPhone notifications"
+msgstr "Дублировать уведомления iPhone"
+
+#: src/gtk/settings_view.cpp
+msgid "Disabled when pairing cannot support LE."
+msgstr "Отключается, если сопряжение не поддерживает LE."
+
+#: src/gtk/settings_view.cpp
+msgid "Include the notification text"
+msgstr "Включать текст уведомления"
+
+#: src/gtk/settings_view.cpp
+msgid "Title and message content are shown, not just which app sent it."
+msgstr "Показываются заголовок и текст, а не только приложение-отправитель."
+
+#: src/gtk/settings_view.cpp
+msgid "SMS and iMessage conversations synced over Bluetooth."
+msgstr "Переписка SMS и iMessage, синхронизируемая по Bluetooth."
+
+#: src/gtk/settings_view.cpp
+msgid "Encrypted"
+msgstr "Зашифрованно"
+
+#: src/gtk/settings_view.cpp
+msgid "Unencrypted"
+msgstr "Незашифрованно"
+
+#: src/gtk/settings_view.cpp
+msgid "Do not keep"
+msgstr "Не хранить"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep message history"
+msgstr "Хранить историю сообщений"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr ""
+"Где на этом компьютере хранятся сообщения и контакты. «Зашифрованно» хранит "
+"их с ключом в вашей связке ключей. «Не хранить» удаляет уже сохранённое и "
+"больше ничего не хранит."
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer yet. "
+"Unlock it, or choose Unencrypted."
+msgstr ""
+"История сообщений приостановлена: связка ключей рабочего стола пока не "
+"предлагает ключ. Разблокируйте её или выберите «Незашифрованно»."
+
+#: src/gtk/settings_view.cpp
+msgid "Experimental"
+msgstr "Экспериментальные"
+
+#: src/gtk/settings_view.cpp
+msgid "Unfinished features. These can stop working at any time."
+msgstr "Незавершённые возможности. Они могут перестать работать в любой момент."
+
+#: src/gtk/settings_view.cpp
+msgid "Call control over Bluetooth"
+msgstr "Управление вызовами по Bluetooth"
+
+#: src/gtk/settings_view.cpp
+msgid "Answer and place calls from the Calls tab."
+msgstr "Отвечайте на вызовы и звоните на вкладке «Вызовы»."
+
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
 msgstr "подключено"
@@ -1906,6 +1962,29 @@ msgstr "Синхронизация устройств"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Создавайте пары устройств и синхронизируйте буфер обмена по сети"
+
+#~ msgid ""
+#~ "Turned off automatically when pairing produces no LE bond; turn it back "
+#~ "on after re-pairing."
+#~ msgstr ""
+#~ "Отключается автоматически, если при сопряжении не создаётся LE-связь; "
+#~ "включите снова после повторного сопряжения."
+
+#~ msgid ""
+#~ "Ask for each alert's title and message, not just which app sent it. The "
+#~ "iPhone's own Show Message Notifications toggle still has to be on."
+#~ msgstr ""
+#~ "Запрашивать заголовок и текст каждого оповещения, а не только приложение-"
+#~ "отправителя. Переключатель «Показывать уведомления сообщений» на iPhone "
+#~ "должен оставаться включённым."
+
+#~ msgid ""
+#~ "Answer and place calls from the Calls tab. Needs hfp_hf in bluez5.roles "
+#~ "and PipeWire's telephony D-Bus service, neither of which Tether installs."
+#~ msgstr ""
+#~ "Отвечайте на вызовы и звоните на вкладке «Вызовы». Требуются hfp_hf в "
+#~ "bluez5.roles и служба телефонии D-Bus из PipeWire; Tether не "
+#~ "устанавливает ни то, ни другое."
 
 #~ msgid "Move call audio to this computer, or back to the iPhone."
 #~ msgstr "Перевести звук вызова на этот компьютер или обратно на iPhone."

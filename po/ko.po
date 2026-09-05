@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 14:22-0700\n"
+"POT-Creation-Date: 2026-09-04 17:50-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -983,7 +983,7 @@ msgstr "취소"
 
 #. TRANSLATORS: the feature name Tether shows for this profile.
 #: src/core/src/bluetooth/profile_supervisor.cpp src/daemon/main.cpp
-#: src/gtk/devices_view.cpp src/gtk/main.cpp
+#: src/gtk/devices_view.cpp src/gtk/main.cpp src/gtk/settings_view.cpp
 msgid "Messages"
 msgstr "메시지"
 
@@ -1301,14 +1301,6 @@ msgid "This machine cannot carry the Bluetooth features."
 msgstr "이 컴퓨터는 Bluetooth 기능을 지원할 수 없습니다."
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Message history is paused: the desktop keyring has no key to offer\n"
-"yet. Unlock it, or choose Unencrypted above."
-msgstr ""
-"메시지 기록이 일시 중지되었습니다: 데스크톱 키링에 아직 키가 없습니다.\n"
-"키링을 잠금 해제하거나 위에서 '암호화 안 함'을 선택하세요."
-
-#: src/gtk/devices_view.cpp
 msgid "Link"
 msgstr "링크"
 
@@ -1612,57 +1604,6 @@ msgstr ""
 "가 다시 연결하지 않습니다. 이미 연결된 링크는 연결을 끊을 때까지 유지됩니다."
 
 #: src/gtk/devices_view.cpp
-msgid "Mirror iPhone notifications"
-msgstr "iPhone 알림 미러링"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Show notifications from the iPhone on this desktop. Turned off automatically "
-"when pairing produces no LE bond; turn it back on after re-pairing."
-msgstr ""
-"iPhone의 알림을 이 데스크탑에 표시합니다. 페어링에서 LE 본드가 생기지 않으면 "
-"자동으로 꺼집니다. 다시 페어링한 뒤 켜십시오."
-
-#: src/gtk/devices_view.cpp
-msgid "Show notification contents"
-msgstr "알림 내용 표시"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Ask the iPhone for each notification's title and message text, not just "
-"which app sent it. The phone's own Show Message Notifications toggle still "
-"has to be on."
-msgstr ""
-"어떤 앱이 보냈는지뿐 아니라 각 알림의 제목과 본문도 iPhone에 요청합니다. "
-"iPhone의 '메시지 알림 보기' 설정도 켜져 있어야 합니다."
-
-#: src/gtk/devices_view.cpp
-msgid "Keep message history:"
-msgstr "메시지 기록 보관:"
-
-#: src/gtk/devices_view.cpp
-msgid "Encrypted"
-msgstr "암호화"
-
-#: src/gtk/devices_view.cpp
-msgid "Unencrypted"
-msgstr "암호화 안 함"
-
-#: src/gtk/devices_view.cpp
-msgid "Do not keep"
-msgstr "보관 안 함"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
-msgstr ""
-"이 컴퓨터에 메시지와 연락처를 저장하는 방식입니다. 암호화는 데스크톱 키링의 "
-"키로 보관합니다. 보관 안 함은 이미 저장된 내용을 삭제하고 이후 아무것도 보관"
-"하지 않습니다."
-
-#: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
 msgstr "Bluetooth로 페어링"
 
@@ -1706,9 +1647,9 @@ msgstr "클립보드 동기화를 요청했습니다..."
 msgid "Forget"
 msgstr "삭제"
 
-#: src/gtk/main.cpp
-msgid "Keep running in tray when closed"
-msgstr "닫아도 트레이에서 계속 실행"
+#: src/gtk/main.cpp src/gtk/settings_view.cpp
+msgid "Settings"
+msgstr "설정"
 
 #: src/gtk/main.cpp
 msgid "Quit"
@@ -1822,6 +1763,121 @@ msgstr "아직 알림이 없습니다."
 msgid "Notification mirroring is unavailable."
 msgstr "알림 미러링을 사용할 수 없습니다."
 
+#: src/gtk/settings_view.cpp
+msgid ""
+"No iPhone is paired over Bluetooth, so the Bluetooth settings below cannot "
+"be changed yet."
+msgstr ""
+"Bluetooth로 페어링된 iPhone이 없어 아래 Bluetooth 설정은 아직 변경할 수 없습"
+"니다."
+
+#: src/gtk/settings_view.cpp
+msgid "General"
+msgstr "일반"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep running in the tray when the window is closed"
+msgstr "창을 닫아도 트레이에서 계속 실행"
+
+#: src/gtk/settings_view.cpp
+msgid "Closing the window hides it instead of quitting Tether."
+msgstr "창을 닫으면 Tether를 종료하지 않고 숨깁니다."
+
+#: src/gtk/settings_view.cpp
+msgid "Symbolic"
+msgstr "심볼릭"
+
+#: src/gtk/settings_view.cpp
+msgid "Color"
+msgstr "컬러"
+
+#: src/gtk/settings_view.cpp
+msgid "Tray icon"
+msgstr "트레이 아이콘"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Symbolic follows the panel's color. Takes effect the next time Tether starts."
+msgstr "심볼릭은 패널 색상을 따릅니다. 다음에 Tether를 시작할 때 적용됩니다."
+
+#: src/gtk/settings_view.cpp
+msgid "iPhone notifications"
+msgstr "iPhone 알림"
+
+#: src/gtk/settings_view.cpp
+msgid "Alerts your iPhone forwards to this computer over Bluetooth."
+msgstr "iPhone이 Bluetooth로 이 컴퓨터에 전달하는 알림입니다."
+
+#: src/gtk/settings_view.cpp
+msgid "Mirror iPhone notifications"
+msgstr "iPhone 알림 미러링"
+
+#: src/gtk/settings_view.cpp
+msgid "Disabled when pairing cannot support LE."
+msgstr "페어링이 LE를 지원하지 못하면 꺼집니다."
+
+#: src/gtk/settings_view.cpp
+msgid "Include the notification text"
+msgstr "알림 본문 포함"
+
+#: src/gtk/settings_view.cpp
+msgid "Title and message content are shown, not just which app sent it."
+msgstr "보낸 앱뿐 아니라 제목과 본문도 표시됩니다."
+
+#: src/gtk/settings_view.cpp
+msgid "SMS and iMessage conversations synced over Bluetooth."
+msgstr "Bluetooth로 동기화되는 SMS 및 iMessage 대화입니다."
+
+#: src/gtk/settings_view.cpp
+msgid "Encrypted"
+msgstr "암호화"
+
+#: src/gtk/settings_view.cpp
+msgid "Unencrypted"
+msgstr "암호화 안 함"
+
+#: src/gtk/settings_view.cpp
+msgid "Do not keep"
+msgstr "보관 안 함"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep message history"
+msgstr "메시지 기록 보관"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr ""
+"이 컴퓨터에 메시지와 연락처를 저장하는 방식입니다. 암호화는 데스크톱 키링의 "
+"키로 보관합니다. 보관 안 함은 이미 저장된 내용을 삭제하고 이후 아무것도 보관"
+"하지 않습니다."
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer yet. "
+"Unlock it, or choose Unencrypted."
+msgstr ""
+"메시지 기록이 일시 중지되었습니다. 데스크톱 키링이 아직 키를 제공하지 않습니"
+"다. 키링을 잠금 해제하거나 암호화 안 함을 선택하세요."
+
+#: src/gtk/settings_view.cpp
+msgid "Experimental"
+msgstr "실험적 기능"
+
+#: src/gtk/settings_view.cpp
+msgid "Unfinished features. These can stop working at any time."
+msgstr "미완성 기능입니다. 언제든 작동이 멈출 수 있습니다."
+
+#: src/gtk/settings_view.cpp
+msgid "Call control over Bluetooth"
+msgstr "Bluetooth 통화 제어"
+
+#: src/gtk/settings_view.cpp
+msgid "Answer and place calls from the Calls tab."
+msgstr "통화 탭에서 전화를 받고 걸 수 있습니다."
+
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
 msgstr "연결됨"
@@ -1857,6 +1913,27 @@ msgstr "기기 동기화"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "기기를 페어링하고 네트워크를 통해 클립보드를 동기화합니다"
+
+#~ msgid ""
+#~ "Turned off automatically when pairing produces no LE bond; turn it back "
+#~ "on after re-pairing."
+#~ msgstr ""
+#~ "페어링에서 LE 본드가 만들어지지 않으면 자동으로 꺼집니다. 다시 페어링한 "
+#~ "뒤 켜세요."
+
+#~ msgid ""
+#~ "Ask for each alert's title and message, not just which app sent it. The "
+#~ "iPhone's own Show Message Notifications toggle still has to be on."
+#~ msgstr ""
+#~ "보낸 앱뿐 아니라 각 알림의 제목과 본문도 요청합니다. iPhone의 ‘메시지 알"
+#~ "림 보기’ 설정도 켜져 있어야 합니다."
+
+#~ msgid ""
+#~ "Answer and place calls from the Calls tab. Needs hfp_hf in bluez5.roles "
+#~ "and PipeWire's telephony D-Bus service, neither of which Tether installs."
+#~ msgstr ""
+#~ "통화 탭에서 전화를 받고 걸 수 있습니다. bluez5.roles의 hfp_hf와 PipeWire"
+#~ "의 텔레포니 D-Bus 서비스가 필요하며, 둘 다 Tether가 설치하지 않습니다."
 
 #~ msgid "Move call audio to this computer, or back to the iPhone."
 #~ msgstr "통화 오디오를 이 컴퓨터로 옮기거나 iPhone으로 되돌립니다."

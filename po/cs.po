@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 14:22-0700\n"
+"POT-Creation-Date: 2026-09-04 17:50-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Czech\n"
@@ -1006,7 +1006,7 @@ msgstr "Zrušit"
 
 #. TRANSLATORS: the feature name Tether shows for this profile.
 #: src/core/src/bluetooth/profile_supervisor.cpp src/daemon/main.cpp
-#: src/gtk/devices_view.cpp src/gtk/main.cpp
+#: src/gtk/devices_view.cpp src/gtk/main.cpp src/gtk/settings_view.cpp
 msgid "Messages"
 msgstr "Zprávy"
 
@@ -1327,14 +1327,6 @@ msgid "This machine cannot carry the Bluetooth features."
 msgstr "Tento stroj nezvládne funkce Bluetooth."
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Message history is paused: the desktop keyring has no key to offer\n"
-"yet. Unlock it, or choose Unencrypted above."
-msgstr ""
-"Historie zpráv je pozastavena: klíčenka plochy zatím nemá klíč.\n"
-"Odemkněte ji nebo výše zvolte Nešifrovaně."
-
-#: src/gtk/devices_view.cpp
 msgid "Link"
 msgstr "Spojení"
 
@@ -1643,58 +1635,6 @@ msgstr ""
 "až do jeho odpojení."
 
 #: src/gtk/devices_view.cpp
-msgid "Mirror iPhone notifications"
-msgstr "Zrcadlit oznámení z iPhonu"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Show notifications from the iPhone on this desktop. Turned off automatically "
-"when pairing produces no LE bond; turn it back on after re-pairing."
-msgstr ""
-"Zobrazuje oznámení z iPhonu na této ploše. Automaticky se vypne, když "
-"párování nevytvoří LE vazbu; po opětovném spárování jej znovu zapněte."
-
-#: src/gtk/devices_view.cpp
-msgid "Show notification contents"
-msgstr "Zobrazovat obsah oznámení"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Ask the iPhone for each notification's title and message text, not just "
-"which app sent it. The phone's own Show Message Notifications toggle still "
-"has to be on."
-msgstr ""
-"Žádá iPhone o název a text každého oznámení, nejen o to, která aplikace jej "
-"poslala. Volba „Zobrazovat oznámení zpráv“ v telefonu musí být přesto "
-"zapnutá."
-
-#: src/gtk/devices_view.cpp
-msgid "Keep message history:"
-msgstr "Uchovávat historii zpráv:"
-
-#: src/gtk/devices_view.cpp
-msgid "Encrypted"
-msgstr "Šifrovaně"
-
-#: src/gtk/devices_view.cpp
-msgid "Unencrypted"
-msgstr "Nešifrovaně"
-
-#: src/gtk/devices_view.cpp
-msgid "Do not keep"
-msgstr "Neuchovávat"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
-msgstr ""
-"Kde se v tomto počítači ukládají zprávy a kontakty. Šifrovaně je uchová "
-"pomocí klíče ve vaší klíčence. Neuchovávat smaže již uložená data a dál nic "
-"neuchovává."
-
-#: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
 msgstr "Spárovat přes Bluetooth"
 
@@ -1738,9 +1678,9 @@ msgstr "Vyžádána synchronizace schránky..."
 msgid "Forget"
 msgstr "Zapomenout"
 
-#: src/gtk/main.cpp
-msgid "Keep running in tray when closed"
-msgstr "Po zavření nechat běžet v oznamovací oblasti"
+#: src/gtk/main.cpp src/gtk/settings_view.cpp
+msgid "Settings"
+msgstr "Nastavení"
 
 #: src/gtk/main.cpp
 msgid "Quit"
@@ -1854,6 +1794,123 @@ msgstr "Zatím žádná oznámení."
 msgid "Notification mirroring is unavailable."
 msgstr "Zrcadlení oznámení není dostupné."
 
+#: src/gtk/settings_view.cpp
+msgid ""
+"No iPhone is paired over Bluetooth, so the Bluetooth settings below cannot "
+"be changed yet."
+msgstr ""
+"Přes Bluetooth není spárován žádný iPhone, nastavení Bluetooth níže proto "
+"zatím nelze měnit."
+
+#: src/gtk/settings_view.cpp
+msgid "General"
+msgstr "Obecné"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep running in the tray when the window is closed"
+msgstr "Po zavření okna nechat běžet v oznamovací oblasti"
+
+#: src/gtk/settings_view.cpp
+msgid "Closing the window hides it instead of quitting Tether."
+msgstr "Zavření okna aplikaci Tether neukončí, jen ji skryje."
+
+#: src/gtk/settings_view.cpp
+msgid "Symbolic"
+msgstr "Symbolická"
+
+#: src/gtk/settings_view.cpp
+msgid "Color"
+msgstr "Barevná"
+
+#: src/gtk/settings_view.cpp
+msgid "Tray icon"
+msgstr "Ikona v oznamovací oblasti"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Symbolic follows the panel's color. Takes effect the next time Tether starts."
+msgstr ""
+"Symbolická přebírá barvu panelu. Projeví se při příštím spuštění aplikace "
+"Tether."
+
+#: src/gtk/settings_view.cpp
+msgid "iPhone notifications"
+msgstr "Oznámení z iPhonu"
+
+#: src/gtk/settings_view.cpp
+msgid "Alerts your iPhone forwards to this computer over Bluetooth."
+msgstr "Upozornění, která iPhone přeposílá do tohoto počítače přes Bluetooth."
+
+#: src/gtk/settings_view.cpp
+msgid "Mirror iPhone notifications"
+msgstr "Zrcadlit oznámení z iPhonu"
+
+#: src/gtk/settings_view.cpp
+msgid "Disabled when pairing cannot support LE."
+msgstr "Vypne se, když párování nezvládne LE."
+
+#: src/gtk/settings_view.cpp
+msgid "Include the notification text"
+msgstr "Zahrnout text oznámení"
+
+#: src/gtk/settings_view.cpp
+msgid "Title and message content are shown, not just which app sent it."
+msgstr "Zobrazí se nadpis a text, nejen odesílající aplikace."
+
+#: src/gtk/settings_view.cpp
+msgid "SMS and iMessage conversations synced over Bluetooth."
+msgstr "SMS a konverzace iMessage synchronizované přes Bluetooth."
+
+#: src/gtk/settings_view.cpp
+msgid "Encrypted"
+msgstr "Šifrovaně"
+
+#: src/gtk/settings_view.cpp
+msgid "Unencrypted"
+msgstr "Nešifrovaně"
+
+#: src/gtk/settings_view.cpp
+msgid "Do not keep"
+msgstr "Neuchovávat"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep message history"
+msgstr "Uchovávat historii zpráv"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr ""
+"Kde se v tomto počítači ukládají zprávy a kontakty. Šifrovaně je uchová "
+"pomocí klíče ve vaší klíčence. Neuchovávat smaže již uložená data a dál nic "
+"neuchovává."
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer yet. "
+"Unlock it, or choose Unencrypted."
+msgstr ""
+"Historie zpráv je pozastavena: klíčenka zatím nenabízí žádný klíč. Odemkněte "
+"ji, nebo zvolte Nešifrovaně."
+
+#: src/gtk/settings_view.cpp
+msgid "Experimental"
+msgstr "Experimentální"
+
+#: src/gtk/settings_view.cpp
+msgid "Unfinished features. These can stop working at any time."
+msgstr "Nedokončené funkce. Mohou kdykoli přestat fungovat."
+
+#: src/gtk/settings_view.cpp
+msgid "Call control over Bluetooth"
+msgstr "Ovládání hovorů přes Bluetooth"
+
+#: src/gtk/settings_view.cpp
+msgid "Answer and place calls from the Calls tab."
+msgstr "Přijímejte a uskutečňujte hovory na kartě Hovory."
+
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
 msgstr "připojeno"
@@ -1891,6 +1948,28 @@ msgstr "Synchronizace zařízení"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Spárujte zařízení a synchronizujte schránku po síti"
+
+#~ msgid ""
+#~ "Turned off automatically when pairing produces no LE bond; turn it back "
+#~ "on after re-pairing."
+#~ msgstr ""
+#~ "Automaticky se vypne, když párování nevytvoří vazbu LE; po opětovném "
+#~ "spárování je znovu zapněte."
+
+#~ msgid ""
+#~ "Ask for each alert's title and message, not just which app sent it. The "
+#~ "iPhone's own Show Message Notifications toggle still has to be on."
+#~ msgstr ""
+#~ "Vyžádat si u každého upozornění nadpis a text, nejen odesílající "
+#~ "aplikaci. Volba „Zobrazovat oznámení zpráv“ na iPhonu musí zůstat zapnutá."
+
+#~ msgid ""
+#~ "Answer and place calls from the Calls tab. Needs hfp_hf in bluez5.roles "
+#~ "and PipeWire's telephony D-Bus service, neither of which Tether installs."
+#~ msgstr ""
+#~ "Přijímejte a uskutečňujte hovory na kartě Hovory. Vyžaduje hfp_hf v "
+#~ "bluez5.roles a telefonní službu D-Bus z PipeWire; ani jedno Tether "
+#~ "neinstaluje."
 
 #~ msgid "Move call audio to this computer, or back to the iPhone."
 #~ msgstr "Přesunout zvuk hovoru do tohoto počítače, nebo zpět do iPhonu."

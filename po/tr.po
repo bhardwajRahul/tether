@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 14:22-0700\n"
+"POT-Creation-Date: 2026-09-04 17:50-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Turkish\n"
@@ -1002,7 +1002,7 @@ msgstr "Vazgeç"
 
 #. TRANSLATORS: the feature name Tether shows for this profile.
 #: src/core/src/bluetooth/profile_supervisor.cpp src/daemon/main.cpp
-#: src/gtk/devices_view.cpp src/gtk/main.cpp
+#: src/gtk/devices_view.cpp src/gtk/main.cpp src/gtk/settings_view.cpp
 msgid "Messages"
 msgstr "Mesajlar"
 
@@ -1321,14 +1321,6 @@ msgid "This machine cannot carry the Bluetooth features."
 msgstr "Bu makine Bluetooth özelliklerini taşıyamaz."
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Message history is paused: the desktop keyring has no key to offer\n"
-"yet. Unlock it, or choose Unencrypted above."
-msgstr ""
-"İleti geçmişi duraklatıldı: masaüstü anahtarlığında henüz anahtar yok.\n"
-"Kilidini açın veya yukarıdan Şifresiz seçeneğini seçin."
-
-#: src/gtk/devices_view.cpp
 msgid "Link"
 msgstr "Bağlantı"
 
@@ -1634,58 +1626,6 @@ msgstr ""
 "kurulu olan bir bağlantı, siz kesene dek sürer."
 
 #: src/gtk/devices_view.cpp
-msgid "Mirror iPhone notifications"
-msgstr "iPhone bildirimlerini yansıt"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Show notifications from the iPhone on this desktop. Turned off automatically "
-"when pairing produces no LE bond; turn it back on after re-pairing."
-msgstr ""
-"iPhone'dan gelen bildirimleri bu masaüstünde gösterir. Eşleşme bir LE bağı "
-"üretmediğinde kendiliğinden kapanır; yeniden eşleştikten sonra tekrar açın."
-
-#: src/gtk/devices_view.cpp
-msgid "Show notification contents"
-msgstr "Bildirim içeriğini göster"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Ask the iPhone for each notification's title and message text, not just "
-"which app sent it. The phone's own Show Message Notifications toggle still "
-"has to be on."
-msgstr ""
-"iPhone'dan her bildirimin başlığını ve metnini ister; yalnızca hangi "
-"uygulamanın gönderdiğini değil. Telefonun kendi \"Mesaj Bildirimlerini "
-"Göster\" seçeneğinin yine de açık olması gerekir."
-
-#: src/gtk/devices_view.cpp
-msgid "Keep message history:"
-msgstr "Mesaj geçmişini sakla:"
-
-#: src/gtk/devices_view.cpp
-msgid "Encrypted"
-msgstr "Şifreli"
-
-#: src/gtk/devices_view.cpp
-msgid "Unencrypted"
-msgstr "Şifresiz"
-
-#: src/gtk/devices_view.cpp
-msgid "Do not keep"
-msgstr "Saklama"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
-msgstr ""
-"Mesajların ve kişilerin bu bilgisayarda nerede saklanacağı. Şifreli, onları "
-"masaüstü anahtarlığınızdaki bir anahtarla saklar. Saklama, halihazırda "
-"saklananları siler ve başka bir şey tutmaz."
-
-#: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
 msgstr "Bluetooth üzerinden eşleş"
 
@@ -1730,9 +1670,9 @@ msgstr "Pano eşzamanlaması istendi..."
 msgid "Forget"
 msgstr "Unut"
 
-#: src/gtk/main.cpp
-msgid "Keep running in tray when closed"
-msgstr "Kapatıldığında tepside çalışmayı sürdür"
+#: src/gtk/main.cpp src/gtk/settings_view.cpp
+msgid "Settings"
+msgstr "Ayarlar"
 
 #: src/gtk/main.cpp
 msgid "Quit"
@@ -1846,6 +1786,123 @@ msgstr "Henüz bildirim yok."
 msgid "Notification mirroring is unavailable."
 msgstr "Bildirim yansıtma kullanılamıyor."
 
+#: src/gtk/settings_view.cpp
+msgid ""
+"No iPhone is paired over Bluetooth, so the Bluetooth settings below cannot "
+"be changed yet."
+msgstr ""
+"Bluetooth ile eşleştirilmiş bir iPhone yok, bu yüzden aşağıdaki Bluetooth "
+"ayarları henüz değiştirilemez."
+
+#: src/gtk/settings_view.cpp
+msgid "General"
+msgstr "Genel"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep running in the tray when the window is closed"
+msgstr "Pencere kapatıldığında tepside çalışmayı sürdür"
+
+#: src/gtk/settings_view.cpp
+msgid "Closing the window hides it instead of quitting Tether."
+msgstr "Pencereyi kapatmak Tether'ı kapatmaz, yalnızca gizler."
+
+#: src/gtk/settings_view.cpp
+msgid "Symbolic"
+msgstr "Simgesel"
+
+#: src/gtk/settings_view.cpp
+msgid "Color"
+msgstr "Renkli"
+
+#: src/gtk/settings_view.cpp
+msgid "Tray icon"
+msgstr "Tepsi simgesi"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Symbolic follows the panel's color. Takes effect the next time Tether starts."
+msgstr ""
+"Simgesel olan panelin rengini alır. Tether'ın bir sonraki başlatılışında "
+"etkili olur."
+
+#: src/gtk/settings_view.cpp
+msgid "iPhone notifications"
+msgstr "iPhone bildirimleri"
+
+#: src/gtk/settings_view.cpp
+msgid "Alerts your iPhone forwards to this computer over Bluetooth."
+msgstr "iPhone'un Bluetooth üzerinden bu bilgisayara ilettiği uyarılar."
+
+#: src/gtk/settings_view.cpp
+msgid "Mirror iPhone notifications"
+msgstr "iPhone bildirimlerini yansıt"
+
+#: src/gtk/settings_view.cpp
+msgid "Disabled when pairing cannot support LE."
+msgstr "Eşleştirme LE'yi desteklemediğinde kapatılır."
+
+#: src/gtk/settings_view.cpp
+msgid "Include the notification text"
+msgstr "Bildirim metnini de al"
+
+#: src/gtk/settings_view.cpp
+msgid "Title and message content are shown, not just which app sent it."
+msgstr "Yalnızca gönderen uygulama değil, başlık ve ileti içeriği de gösterilir."
+
+#: src/gtk/settings_view.cpp
+msgid "SMS and iMessage conversations synced over Bluetooth."
+msgstr "Bluetooth üzerinden eşitlenen SMS ve iMessage konuşmaları."
+
+#: src/gtk/settings_view.cpp
+msgid "Encrypted"
+msgstr "Şifreli"
+
+#: src/gtk/settings_view.cpp
+msgid "Unencrypted"
+msgstr "Şifresiz"
+
+#: src/gtk/settings_view.cpp
+msgid "Do not keep"
+msgstr "Saklama"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep message history"
+msgstr "Mesaj geçmişini sakla"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr ""
+"Mesajların ve kişilerin bu bilgisayarda nerede saklanacağı. Şifreli, onları "
+"masaüstü anahtarlığınızdaki bir anahtarla saklar. Saklama, halihazırda "
+"saklananları siler ve başka bir şey tutmaz."
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer yet. "
+"Unlock it, or choose Unencrypted."
+msgstr ""
+"Mesaj geçmişi duraklatıldı: masaüstü anahtarlığının sunacak bir anahtarı "
+"yok. Kilidini açın ya da Şifresiz'i seçin."
+
+#: src/gtk/settings_view.cpp
+msgid "Experimental"
+msgstr "Deneysel"
+
+#: src/gtk/settings_view.cpp
+msgid "Unfinished features. These can stop working at any time."
+msgstr "Tamamlanmamış özellikler. Her an çalışmayı bırakabilirler."
+
+#: src/gtk/settings_view.cpp
+msgid "Call control over Bluetooth"
+msgstr "Bluetooth üzerinden çağrı denetimi"
+
+#: src/gtk/settings_view.cpp
+msgid "Answer and place calls from the Calls tab."
+msgstr "Çağrılar sekmesinden çağrı yanıtlayın ve başlatın."
+
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
 msgstr "bağlı"
@@ -1882,6 +1939,29 @@ msgstr "Aygıt eşzamanlaması"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Aygıtları eşleştirin ve panoyu ağ üzerinden eşzamanlayın"
+
+#~ msgid ""
+#~ "Turned off automatically when pairing produces no LE bond; turn it back "
+#~ "on after re-pairing."
+#~ msgstr ""
+#~ "Eşleştirme LE bağı üretmediğinde kendiliğinden kapanır; yeniden "
+#~ "eşleştirdikten sonra tekrar açın."
+
+#~ msgid ""
+#~ "Ask for each alert's title and message, not just which app sent it. The "
+#~ "iPhone's own Show Message Notifications toggle still has to be on."
+#~ msgstr ""
+#~ "Her uyarının yalnızca gönderen uygulamasını değil, başlığını ve iletisini "
+#~ "de iste. iPhone'daki “Mesaj Bildirimlerini Göster” anahtarının da açık "
+#~ "olması gerekir."
+
+#~ msgid ""
+#~ "Answer and place calls from the Calls tab. Needs hfp_hf in bluez5.roles "
+#~ "and PipeWire's telephony D-Bus service, neither of which Tether installs."
+#~ msgstr ""
+#~ "Çağrılar sekmesinden çağrı yanıtlayın ve başlatın. bluez5.roles içinde "
+#~ "hfp_hf ve PipeWire'ın telefon D-Bus hizmeti gerekir; Tether bunların "
+#~ "hiçbirini kurmaz."
 
 #~ msgid "Move call audio to this computer, or back to the iPhone."
 #~ msgstr "Çağrı sesini bu bilgisayara ya da iPhone’a geri taşı."

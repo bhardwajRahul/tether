@@ -13,6 +13,7 @@ add_executable(tether-gtk
     devices_view.cpp
     messages_view.cpp
     notifications_view.cpp
+    settings_view.cpp
     tray.cpp
 )
 

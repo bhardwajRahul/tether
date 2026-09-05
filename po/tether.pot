@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether 0.2.24\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 14:22-0700\n"
+"POT-Creation-Date: 2026-09-04 17:50-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -909,7 +909,7 @@ msgstr ""
 
 #. TRANSLATORS: the feature name Tether shows for this profile.
 #: src/core/src/bluetooth/profile_supervisor.cpp src/daemon/main.cpp
-#: src/gtk/devices_view.cpp src/gtk/main.cpp
+#: src/gtk/devices_view.cpp src/gtk/main.cpp src/gtk/settings_view.cpp
 msgid "Messages"
 msgstr ""
 
@@ -1211,12 +1211,6 @@ msgid "This machine cannot carry the Bluetooth features."
 msgstr ""
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Message history is paused: the desktop keyring has no key to offer\n"
-"yet. Unlock it, or choose Unencrypted above."
-msgstr ""
-
-#: src/gtk/devices_view.cpp
 msgid "Link"
 msgstr ""
 
@@ -1492,50 +1486,6 @@ msgid ""
 msgstr ""
 
 #: src/gtk/devices_view.cpp
-msgid "Mirror iPhone notifications"
-msgstr ""
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Show notifications from the iPhone on this desktop. Turned off automatically "
-"when pairing produces no LE bond; turn it back on after re-pairing."
-msgstr ""
-
-#: src/gtk/devices_view.cpp
-msgid "Show notification contents"
-msgstr ""
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Ask the iPhone for each notification's title and message text, not just "
-"which app sent it. The phone's own Show Message Notifications toggle still "
-"has to be on."
-msgstr ""
-
-#: src/gtk/devices_view.cpp
-msgid "Keep message history:"
-msgstr ""
-
-#: src/gtk/devices_view.cpp
-msgid "Encrypted"
-msgstr ""
-
-#: src/gtk/devices_view.cpp
-msgid "Unencrypted"
-msgstr ""
-
-#: src/gtk/devices_view.cpp
-msgid "Do not keep"
-msgstr ""
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
-msgstr ""
-
-#: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
 msgstr ""
 
@@ -1577,8 +1527,8 @@ msgstr ""
 msgid "Forget"
 msgstr ""
 
-#: src/gtk/main.cpp
-msgid "Keep running in tray when closed"
+#: src/gtk/main.cpp src/gtk/settings_view.cpp
+msgid "Settings"
 msgstr ""
 
 #: src/gtk/main.cpp
@@ -1691,6 +1641,114 @@ msgstr ""
 
 #: src/gtk/notifications_view.cpp
 msgid "Notification mirroring is unavailable."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"No iPhone is paired over Bluetooth, so the Bluetooth settings below cannot "
+"be changed yet."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "General"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Keep running in the tray when the window is closed"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Closing the window hides it instead of quitting Tether."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Symbolic"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Color"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Tray icon"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Symbolic follows the panel's color. Takes effect the next time Tether starts."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "iPhone notifications"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Alerts your iPhone forwards to this computer over Bluetooth."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Mirror iPhone notifications"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Disabled when pairing cannot support LE."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Include the notification text"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Title and message content are shown, not just which app sent it."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "SMS and iMessage conversations synced over Bluetooth."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Encrypted"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Unencrypted"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Do not keep"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Keep message history"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer yet. "
+"Unlock it, or choose Unencrypted."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Experimental"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Unfinished features. These can stop working at any time."
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Call control over Bluetooth"
+msgstr ""
+
+#: src/gtk/settings_view.cpp
+msgid "Answer and place calls from the Calls tab."
 msgstr ""
 
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp

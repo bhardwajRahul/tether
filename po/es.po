@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 14:22-0700\n"
+"POT-Creation-Date: 2026-09-04 17:50-0700\n"
 "PO-Revision-Date: 2026-08-22\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Spanish\n"
@@ -1020,7 +1020,7 @@ msgstr "Cancelar"
 
 #. TRANSLATORS: the feature name Tether shows for this profile.
 #: src/core/src/bluetooth/profile_supervisor.cpp src/daemon/main.cpp
-#: src/gtk/devices_view.cpp src/gtk/main.cpp
+#: src/gtk/devices_view.cpp src/gtk/main.cpp src/gtk/settings_view.cpp
 msgid "Messages"
 msgstr "Mensajes"
 
@@ -1346,14 +1346,6 @@ msgid "This machine cannot carry the Bluetooth features."
 msgstr "Este equipo no puede ofrecer las funciones Bluetooth."
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Message history is paused: the desktop keyring has no key to offer\n"
-"yet. Unlock it, or choose Unencrypted above."
-msgstr ""
-"El historial de mensajes está en pausa: el depósito de claves aún no\n"
-"ofrece ninguna clave. Desbloquéalo o elige Sin cifrar arriba."
-
-#: src/gtk/devices_view.cpp
 msgid "Link"
 msgstr "Enlace"
 
@@ -1664,59 +1656,6 @@ msgstr ""
 "activo seguirá activo hasta que lo desconecte."
 
 #: src/gtk/devices_view.cpp
-msgid "Mirror iPhone notifications"
-msgstr "Duplicar las notificaciones del iPhone"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Show notifications from the iPhone on this desktop. Turned off automatically "
-"when pairing produces no LE bond; turn it back on after re-pairing."
-msgstr ""
-"Mostrar en este escritorio las notificaciones del iPhone. Se desactiva "
-"automáticamente cuando el emparejamiento no produce vínculo LE; vuelva a "
-"activarlo después de emparejar de nuevo."
-
-#: src/gtk/devices_view.cpp
-msgid "Show notification contents"
-msgstr "Mostrar el contenido de las notificaciones"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Ask the iPhone for each notification's title and message text, not just "
-"which app sent it. The phone's own Show Message Notifications toggle still "
-"has to be on."
-msgstr ""
-"Pedir al iPhone el título y el texto de cada notificación, no solo qué app "
-"la envió. El propio ajuste «Mostrar notificaciones de mensajes» del teléfono "
-"debe seguir activado."
-
-#: src/gtk/devices_view.cpp
-msgid "Keep message history:"
-msgstr "Conservar el historial de mensajes:"
-
-#: src/gtk/devices_view.cpp
-msgid "Encrypted"
-msgstr "Cifrado"
-
-#: src/gtk/devices_view.cpp
-msgid "Unencrypted"
-msgstr "Sin cifrar"
-
-#: src/gtk/devices_view.cpp
-msgid "Do not keep"
-msgstr "No conservar"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
-msgstr ""
-"Dónde se almacenan los mensajes y los contactos en este equipo. Cifrado los "
-"guarda con una clave en el llavero de su escritorio. No conservar elimina lo "
-"ya almacenado y no conserva nada más."
-
-#: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
 msgstr "Emparejar por Bluetooth"
 
@@ -1761,9 +1700,9 @@ msgstr "Sincronización del portapapeles solicitada..."
 msgid "Forget"
 msgstr "Olvidar"
 
-#: src/gtk/main.cpp
-msgid "Keep running in tray when closed"
-msgstr "Seguir ejecutándose en la bandeja al cerrar"
+#: src/gtk/main.cpp src/gtk/settings_view.cpp
+msgid "Settings"
+msgstr "Ajustes"
 
 #: src/gtk/main.cpp
 msgid "Quit"
@@ -1878,6 +1817,123 @@ msgstr "Aún no hay notificaciones."
 msgid "Notification mirroring is unavailable."
 msgstr "La duplicación de notificaciones no está disponible."
 
+#: src/gtk/settings_view.cpp
+msgid ""
+"No iPhone is paired over Bluetooth, so the Bluetooth settings below cannot "
+"be changed yet."
+msgstr ""
+"No hay ningún iPhone emparejado por Bluetooth, así que los ajustes de "
+"Bluetooth de abajo aún no se pueden cambiar."
+
+#: src/gtk/settings_view.cpp
+msgid "General"
+msgstr "General"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep running in the tray when the window is closed"
+msgstr "Seguir en la bandeja al cerrar la ventana"
+
+#: src/gtk/settings_view.cpp
+msgid "Closing the window hides it instead of quitting Tether."
+msgstr "Cerrar la ventana la oculta en lugar de salir de Tether."
+
+#: src/gtk/settings_view.cpp
+msgid "Symbolic"
+msgstr "Simbólico"
+
+#: src/gtk/settings_view.cpp
+msgid "Color"
+msgstr "En color"
+
+#: src/gtk/settings_view.cpp
+msgid "Tray icon"
+msgstr "Icono de la bandeja"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Symbolic follows the panel's color. Takes effect the next time Tether starts."
+msgstr ""
+"El simbólico toma el color del panel. Se aplica la próxima vez que se inicie "
+"Tether."
+
+#: src/gtk/settings_view.cpp
+msgid "iPhone notifications"
+msgstr "Notificaciones del iPhone"
+
+#: src/gtk/settings_view.cpp
+msgid "Alerts your iPhone forwards to this computer over Bluetooth."
+msgstr "Avisos que el iPhone reenvía a este equipo por Bluetooth."
+
+#: src/gtk/settings_view.cpp
+msgid "Mirror iPhone notifications"
+msgstr "Duplicar las notificaciones del iPhone"
+
+#: src/gtk/settings_view.cpp
+msgid "Disabled when pairing cannot support LE."
+msgstr "Se desactiva cuando el emparejamiento no admite LE."
+
+#: src/gtk/settings_view.cpp
+msgid "Include the notification text"
+msgstr "Incluir el texto de la notificación"
+
+#: src/gtk/settings_view.cpp
+msgid "Title and message content are shown, not just which app sent it."
+msgstr "Se muestran el título y el mensaje, no solo qué aplicación lo envió."
+
+#: src/gtk/settings_view.cpp
+msgid "SMS and iMessage conversations synced over Bluetooth."
+msgstr "Conversaciones de SMS e iMessage sincronizadas por Bluetooth."
+
+#: src/gtk/settings_view.cpp
+msgid "Encrypted"
+msgstr "Cifrado"
+
+#: src/gtk/settings_view.cpp
+msgid "Unencrypted"
+msgstr "Sin cifrar"
+
+#: src/gtk/settings_view.cpp
+msgid "Do not keep"
+msgstr "No conservar"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep message history"
+msgstr "Conservar el historial de mensajes"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr ""
+"Dónde se almacenan los mensajes y los contactos en este equipo. Cifrado los "
+"guarda con una clave en el llavero de su escritorio. No conservar elimina lo "
+"ya almacenado y no conserva nada más."
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer yet. "
+"Unlock it, or choose Unencrypted."
+msgstr ""
+"El historial de mensajes está en pausa: el depósito de claves del escritorio "
+"aún no ofrece ninguna clave. Desbloquéalo o elige Sin cifrar."
+
+#: src/gtk/settings_view.cpp
+msgid "Experimental"
+msgstr "Experimental"
+
+#: src/gtk/settings_view.cpp
+msgid "Unfinished features. These can stop working at any time."
+msgstr "Funciones sin terminar. Pueden dejar de funcionar en cualquier momento."
+
+#: src/gtk/settings_view.cpp
+msgid "Call control over Bluetooth"
+msgstr "Control de llamadas por Bluetooth"
+
+#: src/gtk/settings_view.cpp
+msgid "Answer and place calls from the Calls tab."
+msgstr "Responde y realiza llamadas desde la pestaña Llamadas."
+
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
 msgstr "conectado"
@@ -1914,6 +1970,29 @@ msgstr "Sincronización de dispositivos"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "Empareje dispositivos y sincronice el portapapeles a través de la red"
+
+#~ msgid ""
+#~ "Turned off automatically when pairing produces no LE bond; turn it back "
+#~ "on after re-pairing."
+#~ msgstr ""
+#~ "Se desactiva automáticamente cuando el emparejamiento no produce un "
+#~ "vínculo LE; vuelve a activarlo tras emparejar de nuevo."
+
+#~ msgid ""
+#~ "Ask for each alert's title and message, not just which app sent it. The "
+#~ "iPhone's own Show Message Notifications toggle still has to be on."
+#~ msgstr ""
+#~ "Pedir el título y el mensaje de cada aviso, no solo qué aplicación lo "
+#~ "envió. La opción «Mostrar notificaciones de mensajes» del iPhone debe "
+#~ "seguir activada."
+
+#~ msgid ""
+#~ "Answer and place calls from the Calls tab. Needs hfp_hf in bluez5.roles "
+#~ "and PipeWire's telephony D-Bus service, neither of which Tether installs."
+#~ msgstr ""
+#~ "Responde y realiza llamadas desde la pestaña Llamadas. Necesita hfp_hf en "
+#~ "bluez5.roles y el servicio D-Bus de telefonía de PipeWire; Tether no "
+#~ "instala ninguno de los dos."
 
 #~ msgid "Move call audio to this computer, or back to the iPhone."
 #~ msgstr "Pasar el audio de la llamada a este equipo, o devolverlo al iPhone."

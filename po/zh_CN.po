@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 14:22-0700\n"
+"POT-Creation-Date: 2026-09-04 17:50-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Simplified Chinese\n"
@@ -958,7 +958,7 @@ msgstr "取消"
 
 #. TRANSLATORS: the feature name Tether shows for this profile.
 #: src/core/src/bluetooth/profile_supervisor.cpp src/daemon/main.cpp
-#: src/gtk/devices_view.cpp src/gtk/main.cpp
+#: src/gtk/devices_view.cpp src/gtk/main.cpp src/gtk/settings_view.cpp
 msgid "Messages"
 msgstr "信息"
 
@@ -1273,14 +1273,6 @@ msgid "This machine cannot carry the Bluetooth features."
 msgstr "这台机器无法支持蓝牙功能。"
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Message history is paused: the desktop keyring has no key to offer\n"
-"yet. Unlock it, or choose Unencrypted above."
-msgstr ""
-"消息历史已暂停：桌面密钥环尚无可用密钥。\n"
-"请解锁密钥环，或在上方选择“不加密”。"
-
-#: src/gtk/devices_view.cpp
 msgid "Link"
 msgstr "链路"
 
@@ -1578,56 +1570,6 @@ msgstr ""
 "已经建立的链路会一直保持，直到你断开它。"
 
 #: src/gtk/devices_view.cpp
-msgid "Mirror iPhone notifications"
-msgstr "镜像 iPhone 通知"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Show notifications from the iPhone on this desktop. Turned off automatically "
-"when pairing produces no LE bond; turn it back on after re-pairing."
-msgstr ""
-"在此桌面上显示来自 iPhone 的通知。当配对未产生 LE 绑定时会自动关闭；重新配对"
-"后请再次开启。"
-
-#: src/gtk/devices_view.cpp
-msgid "Show notification contents"
-msgstr "显示通知内容"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Ask the iPhone for each notification's title and message text, not just "
-"which app sent it. The phone's own Show Message Notifications toggle still "
-"has to be on."
-msgstr ""
-"向 iPhone 请求每条通知的标题和正文，而不只是发送它的 App。iPhone 自身的“显示"
-"信息通知”开关仍需保持开启。"
-
-#: src/gtk/devices_view.cpp
-msgid "Keep message history:"
-msgstr "保留消息记录："
-
-#: src/gtk/devices_view.cpp
-msgid "Encrypted"
-msgstr "加密"
-
-#: src/gtk/devices_view.cpp
-msgid "Unencrypted"
-msgstr "不加密"
-
-#: src/gtk/devices_view.cpp
-msgid "Do not keep"
-msgstr "不保留"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
-msgstr ""
-"消息和通讯录在这台计算机上的存储方式。「加密」会用桌面密钥环中的密钥保存。"
-"「不保留」会删除已存储的内容且不再保留任何内容。"
-
-#: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
 msgstr "通过蓝牙配对"
 
@@ -1671,9 +1613,9 @@ msgstr "已请求剪贴板同步……"
 msgid "Forget"
 msgstr "忘记"
 
-#: src/gtk/main.cpp
-msgid "Keep running in tray when closed"
-msgstr "关闭后在托盘中继续运行"
+#: src/gtk/main.cpp src/gtk/settings_view.cpp
+msgid "Settings"
+msgstr "设置"
 
 #: src/gtk/main.cpp
 msgid "Quit"
@@ -1787,6 +1729,116 @@ msgstr "暂无通知。"
 msgid "Notification mirroring is unavailable."
 msgstr "通知镜像不可用。"
 
+#: src/gtk/settings_view.cpp
+msgid ""
+"No iPhone is paired over Bluetooth, so the Bluetooth settings below cannot "
+"be changed yet."
+msgstr "尚未通过蓝牙配对 iPhone，因此下方的蓝牙设置暂时无法更改。"
+
+#: src/gtk/settings_view.cpp
+msgid "General"
+msgstr "常规"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep running in the tray when the window is closed"
+msgstr "关闭窗口后继续在托盘中运行"
+
+#: src/gtk/settings_view.cpp
+msgid "Closing the window hides it instead of quitting Tether."
+msgstr "关闭窗口只会隐藏它，而不会退出 Tether。"
+
+#: src/gtk/settings_view.cpp
+msgid "Symbolic"
+msgstr "符号"
+
+#: src/gtk/settings_view.cpp
+msgid "Color"
+msgstr "彩色"
+
+#: src/gtk/settings_view.cpp
+msgid "Tray icon"
+msgstr "托盘图标"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Symbolic follows the panel's color. Takes effect the next time Tether starts."
+msgstr "符号图标跟随面板颜色。下次启动 Tether 时生效。"
+
+#: src/gtk/settings_view.cpp
+msgid "iPhone notifications"
+msgstr "iPhone 通知"
+
+#: src/gtk/settings_view.cpp
+msgid "Alerts your iPhone forwards to this computer over Bluetooth."
+msgstr "iPhone 通过蓝牙转发到本机的提醒。"
+
+#: src/gtk/settings_view.cpp
+msgid "Mirror iPhone notifications"
+msgstr "镜像 iPhone 通知"
+
+#: src/gtk/settings_view.cpp
+msgid "Disabled when pairing cannot support LE."
+msgstr "配对不支持 LE 时会被禁用。"
+
+#: src/gtk/settings_view.cpp
+msgid "Include the notification text"
+msgstr "包含通知正文"
+
+#: src/gtk/settings_view.cpp
+msgid "Title and message content are shown, not just which app sent it."
+msgstr "显示标题和正文，而不只是发送它的应用。"
+
+#: src/gtk/settings_view.cpp
+msgid "SMS and iMessage conversations synced over Bluetooth."
+msgstr "通过蓝牙同步的短信和 iMessage 会话。"
+
+#: src/gtk/settings_view.cpp
+msgid "Encrypted"
+msgstr "加密"
+
+#: src/gtk/settings_view.cpp
+msgid "Unencrypted"
+msgstr "不加密"
+
+#: src/gtk/settings_view.cpp
+msgid "Do not keep"
+msgstr "不保留"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep message history"
+msgstr "保留信息历史"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr ""
+"消息和通讯录在这台计算机上的存储方式。「加密」会用桌面密钥环中的密钥保存。"
+"「不保留」会删除已存储的内容且不再保留任何内容。"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer yet. "
+"Unlock it, or choose Unencrypted."
+msgstr "信息历史已暂停：桌面密钥环尚无可用密钥。请解锁密钥环，或选择“不加密”。"
+
+#: src/gtk/settings_view.cpp
+msgid "Experimental"
+msgstr "实验性"
+
+#: src/gtk/settings_view.cpp
+msgid "Unfinished features. These can stop working at any time."
+msgstr "未完成的功能。随时可能停止工作。"
+
+#: src/gtk/settings_view.cpp
+msgid "Call control over Bluetooth"
+msgstr "通过蓝牙控制通话"
+
+#: src/gtk/settings_view.cpp
+msgid "Answer and place calls from the Calls tab."
+msgstr "在“通话”标签页接听和拨打电话。"
+
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
 msgstr "已连接"
@@ -1822,6 +1874,25 @@ msgstr "设备同步"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "配对设备并通过网络同步剪贴板"
+
+#~ msgid ""
+#~ "Turned off automatically when pairing produces no LE bond; turn it back "
+#~ "on after re-pairing."
+#~ msgstr "配对未产生 LE 绑定时会自动关闭；重新配对后请再次开启。"
+
+#~ msgid ""
+#~ "Ask for each alert's title and message, not just which app sent it. The "
+#~ "iPhone's own Show Message Notifications toggle still has to be on."
+#~ msgstr ""
+#~ "获取每条提醒的标题和正文，而不只是发送它的应用。iPhone 上的“显示信息通知”"
+#~ "开关仍须开启。"
+
+#~ msgid ""
+#~ "Answer and place calls from the Calls tab. Needs hfp_hf in bluez5.roles "
+#~ "and PipeWire's telephony D-Bus service, neither of which Tether installs."
+#~ msgstr ""
+#~ "在“通话”标签页接听和拨打电话。需要 bluez5.roles 中的 hfp_hf 以及 PipeWire "
+#~ "的电话 D-Bus 服务，Tether 两者都不会安装。"
 
 #~ msgid "Move call audio to this computer, or back to the iPhone."
 #~ msgstr "将通话音频转到本机，或转回 iPhone。"

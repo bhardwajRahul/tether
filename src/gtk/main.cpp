@@ -6,6 +6,7 @@
 #include "messages_view.hpp"
 #include "notifications_view.hpp"
 #include "prefs.hpp"
+#include "settings_view.hpp"
 #include "tray.hpp"
 #include "ui_util.hpp"
 
@@ -70,19 +71,13 @@ namespace {
         contacts_view_set_visible(view == "contacts");
     }
 
-    // The tray controls live here
     GtkWidget* create_app_menu_button() {
         GtkWidget* menu = gtk_menu_new();
 
-        GtkWidget* close_to_tray = gtk_check_menu_item_new_with_label(_("Keep running in tray when closed"));
-        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(close_to_tray), tray_close_to_tray());
-        g_signal_connect(close_to_tray,
-                         "toggled",
-                         G_CALLBACK(+[](GtkCheckMenuItem* item, gpointer) {
-                             tray_set_close_to_tray(gtk_check_menu_item_get_active(item));
-                         }),
-                         nullptr);
-        gtk_menu_shell_append(GTK_MENU_SHELL(menu), close_to_tray);
+        GtkWidget* settings = gtk_menu_item_new_with_label(_("Settings"));
+        g_signal_connect(
+            settings, "activate", G_CALLBACK(+[](GtkMenuItem*, gpointer) { settings_window_show(); }), nullptr);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), settings);
 
         GtkWidget* quit = gtk_menu_item_new_with_label(_("Quit"));
         g_signal_connect(quit,
@@ -163,6 +158,7 @@ namespace {
             {"messages", "<Control>2", [] { show_view("messages"); }},
             {"notifications", "<Control>3", [] { show_view("notifications"); }},
             {"contacts", "<Control>4", [] { show_view("contacts"); }},
+            {"settings", "<Control>comma", [] { settings_window_show(); }},
             {"close",
              "<Control>w",
              [] {
@@ -260,6 +256,7 @@ namespace {
 
         daemon_client_start([](const nlohmann::json& event) {
             contact_completion_update(event);
+            settings_handle_event(event);
             if (event.value("command", "") == "bt_status")
                 set_calls_tab_visible(event.value("calls_enabled", false));
             if (devices_view_handle_event(event))
