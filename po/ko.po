@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 18:25-0700\n"
+"POT-Creation-Date: 2026-09-05 11:01-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Korean\n"
@@ -194,6 +194,13 @@ msgstr ""
 "다."
 
 #: src/cli/main.cpp
+msgid ""
+"Write the tether-btclass@.service unit, which sets the Bluetooth adapter "
+"class iOS requires. Needs root, and never enables it. Needed only for "
+"portable builds; the distro packages install it."
+msgstr "iOS가 요구하는 블루투스 어댑터 클래스를 설정하는 tether-btclass@.service 유닛을 씁니다. root가 필요하며 활성화는 하지 않습니다. 포터블 빌드에만 필요합니다. 배포판 패키지는 직접 설치합니다."
+
+#: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
 msgstr "대기 중인 페어링 요청을 로컬에서 수락합니다."
 
@@ -240,6 +247,24 @@ msgid ""
 msgstr ""
 "\n"
 "적용하려면 브라우저나 메일 클라이언트를 다시 시작하세요.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Writing {} needs root. Run this with sudo.\n"
+msgstr "{} 쓰기에는 root가 필요합니다. sudo로 실행하세요.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Could not write {}.\n"
+msgstr "{}을(를) 쓸 수 없습니다.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"It is not enabled. Run 'systemctl daemon-reload', then 'systemctl enable --"
+"now tether-btclass@hci0' to apply it.\n"
+msgstr "\n활성화되지 않았습니다. 적용하려면 'systemctl daemon-reload'를 실행한 다음 'systemctl enable --now tether-btclass@hci0'을 실행하세요.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth status from the daemon.\n"
@@ -742,7 +767,11 @@ msgid ""
 "is never asked for the service. Nothing on the iPhone changes this and re-"
 "pairing will not either. Check the controller with tether --bt-status; "
 "another one can be selected with tether --bt-adapter."
-msgstr "이 컴퓨터가 알림 요청을 송출하지 않아 iPhone에 서비스를 요청하는 일이 없습니다. iPhone에서 할 수 있는 일은 없으며 다시 페어링해도 마찬가지입니다. tether --bt-status로 컨트롤러를 확인하고, tether --bt-adapter로 다른 것을 선택할 수 있습니다."
+msgstr ""
+"이 컴퓨터가 알림 요청을 송출하지 않아 iPhone에 서비스를 요청하는 일이 없습니"
+"다. iPhone에서 할 수 있는 일은 없으며 다시 페어링해도 마찬가지입니다. tether "
+"--bt-status로 컨트롤러를 확인하고, tether --bt-adapter로 다른 것을 선택할 수 "
+"있습니다."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 18:25-0700\n"
+"POT-Creation-Date: 2026-09-05 11:01-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Polish\n"
@@ -196,6 +196,13 @@ msgstr ""
 "dystrybucji instalują je systemowo."
 
 #: src/cli/main.cpp
+msgid ""
+"Write the tether-btclass@.service unit, which sets the Bluetooth adapter "
+"class iOS requires. Needs root, and never enables it. Needed only for "
+"portable builds; the distro packages install it."
+msgstr "Zapisuje jednostkę tether-btclass@.service, która ustawia klasę adaptera Bluetooth wymaganą przez iOS. Wymaga roota i nigdy jej nie włącza. Potrzebne tylko dla wersji przenośnych; pakiety dystrybucji instalują ją same."
+
+#: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
 msgstr "Zaakceptuj lokalnie oczekujące żądanie parowania."
 
@@ -242,6 +249,24 @@ msgid ""
 msgstr ""
 "\n"
 "Uruchom ponownie przeglądarkę lub klienta poczty, aby to zadziałało.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Writing {} needs root. Run this with sudo.\n"
+msgstr "Zapis {} wymaga roota. Uruchom to przez sudo.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Could not write {}.\n"
+msgstr "Nie udało się zapisać {}.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"It is not enabled. Run 'systemctl daemon-reload', then 'systemctl enable --"
+"now tether-btclass@hci0' to apply it.\n"
+msgstr "\nNie jest włączona. Uruchom 'systemctl daemon-reload', a następnie 'systemctl enable --now tether-btclass@hci0', aby ją zastosować.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth status from the daemon.\n"
@@ -764,7 +789,11 @@ msgid ""
 "is never asked for the service. Nothing on the iPhone changes this and re-"
 "pairing will not either. Check the controller with tether --bt-status; "
 "another one can be selected with tether --bt-adapter."
-msgstr "Ten komputer nie nadaje żądania powiadomień, więc iPhone nigdy nie jest proszony o tę usługę. Nic po stronie iPhone'a tego nie zmieni, ponowne parowanie także nie. Sprawdź kontroler poleceniem tether --bt-status; inny można wybrać poleceniem tether --bt-adapter."
+msgstr ""
+"Ten komputer nie nadaje żądania powiadomień, więc iPhone nigdy nie jest "
+"proszony o tę usługę. Nic po stronie iPhone'a tego nie zmieni, ponowne "
+"parowanie także nie. Sprawdź kontroler poleceniem tether --bt-status; inny "
+"można wybrać poleceniem tether --bt-adapter."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""

@@ -47,7 +47,7 @@ class. `sudo btmgmt class 4 8` sets it for now.
 **It does not survive a `bluetoothd` restart**. bluetoothd rewrites the
 class from its own default every time it starts. Already-granted session survives that, but a phone that has not yet granted the permissions will refuse MAP and PBAP with an OBEX error that seems like a missing service record rather than
 like a permissions problem.
-The packaged unit handles that:
+A packaged install handles that with a unit it already put on disk:
 
 ```bash
 sudo systemctl enable --now tether-btclass@hci0
@@ -55,6 +55,13 @@ sudo systemctl enable --now tether-btclass@hci0
 
 `PartOf=bluetooth.service` re-runs it on every `bluetooth.service` restart. It writes the
 class, reads it back, and retries for ten seconds.
+
+**A portable build has no unit on disk to enable**, since neither the AppImage nor the Flatpak
+can write a system directory. That command fails there with `Unit tether-btclass@hci0.service
+does not exist`. The unit text is compiled into the binary instead, and `--bt-setup` prints the
+form that applies to the running build: the AppImage prints `sudo "$APPIMAGE"
+--install-btclass-unit` to write the unit out first, everything else prints it as a
+here-document. Take the command from `--bt-setup` rather than from here.
 
 **BlueZ needs the experimental bearer API** for ANCS, and it must be active
 *before* pairing: a bond made without it has no LE half. `--bt-setup` prints the
@@ -77,7 +84,8 @@ a wrong `ExecStart` leaves `bluetooth.service` failing with `status=203/EXEC`.
 Nothing is installed into `bluetooth.service.d` by the package: a drop-in there
 takes effect the moment the package lands, and changing how `bluetoothd` runs
 for the whole machine is the user's decision. The class unit ships but stays
-disabled for the same reason.
+disabled for the same reason, and `--install-btclass-unit` writes it without
+enabling it on the builds that have no package to ship it.
 
 Without it `bluetoothd` still registers `org.bluez.Bearer.LE1`, but as an empty
 marker: no properties, no `Connect()`. So the interface being present is not
@@ -397,6 +405,7 @@ checks the daemon does not make.
 | Symptom | Cause | What to do |
 |---|---|---|
 | `systemctl enable --now tether-btclass@hci0` hangs in `activating (start)` forever | `btmgmt` epolls its stdin before running the command, and epoll rejects the `/dev/null` systemd hands it, so it waits having done nothing | Update the unit -- it pipes into `btmgmt` now. On an older build, `sudo btmgmt class 4 8` by hand sets the class until `bluetoothd` restarts, see 2026-09-01 below |
+| `systemctl enable --now tether-btclass@hci0` says `Unit tether-btclass@hci0.service does not exist` | A portable build (AppImage, Flatpak) installed no unit -- only the distro packages do | `tether --bt-setup` and run the command it prints, which writes the unit first, see 2026-09-05 below |
 | Messages and contacts worked, then stopped, and the error mentions a service record | `bluetoothd` restarted and reset the Class of Device | `sudo systemctl enable --now tether-btclass@hci0`, then re-pair if the phone dropped the bond |
 | The phone never offers notifications / Sync Contacts | The class is wrong, or the ANCS advertisement is not running | Check for `class=ok` in `tether --bt-status`, can take minutes |
 | MAP or PBAP reports `forbidden` | The matching toggle on the phone is off | Turn it on. This is not a pairing failure |
@@ -2147,3 +2156,42 @@ firmware gets resolving lists wrong.
 
 No known-bad-controller list was added. One report is not a rule, and naming the hardware
 in every dump has to come first.
+
+### 2026-09-05 - The setup command the AppImage prints could not be pasted
+
+Reported as #136 from CachyOS: `sudo systemctl enable --now tether-btclass@hci0` answers `Unit
+tether-btclass@hci0.service does not exist`, so iOS never offers Messages and Contacts.
+
+Correct as far as it goes -- an AppImage installs nothing system-wide, and only the distro
+packages put `tether-btclass@.service` in `/usr/lib/systemd/system`. That case was already
+handled: `CMakeLists.txt` compiles the unit text into the binary and `set_class_command()`
+probes the four unit directories, emitting a `sudo tee ... <<'EOF'` here-document when the file
+is absent. The path existed and did not work.
+
+`print_bt_setup()` indented every line of a step's command by five spaces so a multi-line
+command would read as one block. A here-document delimiter only ends the document at column 0
+-- `<<-` strips tabs and never spaces -- so the printed `     EOF` closed nothing:
+
+```
+$ bash step.sh
+warning: here-document at line 1 delimited by end-of-file (wanted `EOF')
+```
+
+Pasted into a terminal the shell sits on a `>` continuation prompt, and the `daemon-reload` and
+`enable` lines that follow are swallowed into the unit body instead of running. The GTK Devices
+page was never affected: its "Copy commands" button copies the raw string and does no
+indentation.
+
+The docs made it worse by never mentioning the split. `docs/BLUETOOTH.md` printed the
+packaged-install command as *the* answer and contained no occurrence of "AppImage", "Flatpak" or
+"portable"; the README's AppImage section did not mention the class unit at all. So a portable
+user following the documentation reached a command that cannot work, with nothing pointing at
+`--bt-setup`.
+
+Fixed by printing command lines flush left, which removes the failure mode rather than working
+around it, and by adding `tether --install-btclass-unit`: it writes the embedded unit to
+`/etc/systemd/system/tether-btclass@.service`, refuses without root, and never enables anything,
+so the AppImage now prints three short lines instead of a 24-line paste. Flatpak keeps the
+here-document, because `flatpak run` under `sudo` is the wrong user. The test on
+`set_class_command()` now asserts the unit text ends in a newline and that the here-document
+carries a bare `EOF` line to close it.

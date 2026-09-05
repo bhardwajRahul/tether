@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 18:25-0700\n"
+"POT-Creation-Date: 2026-09-05 11:01-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Ukrainian\n"
@@ -197,6 +197,13 @@ msgstr ""
 "дистрибутивів встановлюють їх для всієї системи."
 
 #: src/cli/main.cpp
+msgid ""
+"Write the tether-btclass@.service unit, which sets the Bluetooth adapter "
+"class iOS requires. Needs root, and never enables it. Needed only for "
+"portable builds; the distro packages install it."
+msgstr "Записує юніт tether-btclass@.service, який задає клас адаптера Bluetooth, потрібний iOS. Потребує root і ніколи його не вмикає. Потрібно лише для переносних збірок; пакунки дистрибутива встановлюють його самі."
+
+#: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
 msgstr "Прийняти локально запит на створення пари, що очікує."
 
@@ -243,6 +250,24 @@ msgid ""
 msgstr ""
 "\n"
 "Перезапустіть браузер або поштовий клієнт, щоб зміни набули чинності.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Writing {} needs root. Run this with sudo.\n"
+msgstr "Для запису {} потрібен root. Запустіть це через sudo.\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Could not write {}.\n"
+msgstr "Не вдалося записати {}.\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"It is not enabled. Run 'systemctl daemon-reload', then 'systemctl enable --"
+"now tether-btclass@hci0' to apply it.\n"
+msgstr "\nВін не увімкнений. Виконайте 'systemctl daemon-reload', потім 'systemctl enable --now tether-btclass@hci0', щоб застосувати його.\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth status from the daemon.\n"
@@ -767,7 +792,11 @@ msgid ""
 "is never asked for the service. Nothing on the iPhone changes this and re-"
 "pairing will not either. Check the controller with tether --bt-status; "
 "another one can be selected with tether --bt-adapter."
-msgstr "Цей комп'ютер не передає запит сповіщень в ефір, тож iPhone ніколи не просять про цю службу. Ніщо на iPhone цього не змінить, повторне спарювання теж. Перевірте контролер командою tether --bt-status; інший можна вибрати командою tether --bt-adapter."
+msgstr ""
+"Цей комп'ютер не передає запит сповіщень в ефір, тож iPhone ніколи не "
+"просять про цю службу. Ніщо на iPhone цього не змінить, повторне спарювання "
+"теж. Перевірте контролер командою tether --bt-status; інший можна вибрати "
+"командою tether --bt-adapter."
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""

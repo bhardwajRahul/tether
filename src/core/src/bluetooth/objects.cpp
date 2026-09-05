@@ -3,6 +3,7 @@
 #include <tether/packaging.hpp>
 
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -397,6 +398,14 @@ namespace tether::bluetooth {
                 if (std::filesystem::exists(std::string(dir) + "/tether-btclass@.service", ec))
                     return enable;
             }
+
+            // The AppImage can write the unit itself, which beats pasting it. Flatpak cannot:
+            // "flatpak run" under sudo is the wrong user, so it falls through to the here-document.
+            if (const char* appimage = std::getenv("APPIMAGE"); appimage && *appimage)
+                return "sudo \"" + std::string(appimage) +
+                       "\" --install-btclass-unit\n"
+                       "sudo systemctl daemon-reload\n" +
+                       enable;
 
             return "sudo tee /etc/systemd/system/tether-btclass@.service >/dev/null <<'EOF'\n" +
                    std::string(packaging::BTCLASS_UNIT) +

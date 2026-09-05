@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 18:25-0700\n"
+"POT-Creation-Date: 2026-09-05 11:01-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -195,6 +195,13 @@ msgstr ""
 "ビューションのパッケージはシステム全体にインストールします。"
 
 #: src/cli/main.cpp
+msgid ""
+"Write the tether-btclass@.service unit, which sets the Bluetooth adapter "
+"class iOS requires. Needs root, and never enables it. Needed only for "
+"portable builds; the distro packages install it."
+msgstr "iOS が要求する Bluetooth アダプターのクラスを設定する tether-btclass@.service ユニットを書き出します。root が必要で、有効化は行いません。ポータブルビルドでのみ必要です。ディストリビューションのパッケージは自分でインストールします。"
+
+#: src/cli/main.cpp
 msgid "Accept a pending pairing request locally."
 msgstr "保留中のペアリング要求をローカルで承認します。"
 
@@ -241,6 +248,24 @@ msgid ""
 msgstr ""
 "\n"
 "反映するにはブラウザーまたはメールクライアントを再起動してください。\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Writing {} needs root. Run this with sudo.\n"
+msgstr "{} の書き込みには root が必要です。sudo で実行してください。\n"
+
+#: src/cli/main.cpp
+#, c++-format
+msgid "Could not write {}.\n"
+msgstr "{} を書き込めませんでした。\n"
+
+#: src/cli/main.cpp
+#, c-format
+msgid ""
+"\n"
+"It is not enabled. Run 'systemctl daemon-reload', then 'systemctl enable --"
+"now tether-btclass@hci0' to apply it.\n"
+msgstr "\n有効にはなっていません。適用するには 'systemctl daemon-reload' を実行し、続けて 'systemctl enable --now tether-btclass@hci0' を実行してください。\n"
 
 #: src/cli/main.cpp
 msgid "Could not read Bluetooth status from the daemon.\n"
@@ -749,7 +774,11 @@ msgid ""
 "is never asked for the service. Nothing on the iPhone changes this and re-"
 "pairing will not either. Check the controller with tether --bt-status; "
 "another one can be selected with tether --bt-adapter."
-msgstr "このコンピューターが通知の要求を電波に乗せていないため、iPhone にサービスが要求されることがありません。iPhone 側では解決できず、ペアリングをやり直しても変わりません。tether --bt-status でコントローラーを確認してください。別のものは tether --bt-adapter で選べます。"
+msgstr ""
+"このコンピューターが通知の要求を電波に乗せていないため、iPhone にサービスが要"
+"求されることがありません。iPhone 側では解決できず、ペアリングをやり直しても変"
+"わりません。tether --bt-status でコントローラーを確認してください。別のもの"
+"は tether --bt-adapter で選べます。"
 
 #: src/core/src/bluetooth/bearer_supervisor.cpp
 msgid ""

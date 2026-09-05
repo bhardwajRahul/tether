@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
 #include <tether/bluetooth/objects.hpp>
+#include <tether/packaging.hpp>
+
+#include <sstream>
+#include <string_view>
 
 using namespace tether::bluetooth;
 
@@ -559,6 +563,18 @@ TEST(Capability, WrongClassIsReportedButDoesNotDowngradeMode) {
     ASSERT_EQ(cap.setup.size(), 1u);
     EXPECT_TRUE(cap.setup[0].command.ends_with("sudo systemctl enable --now tether-btclass@hci0"))
         << cap.setup[0].command;
+
+    // The portable-build branch pastes the unit through a here-document, and a here-document
+    // delimiter only ends it at column 0. That is why the unit text has to end in a newline:
+    // without it EOF lands on the last line of the unit and closes nothing.
+    EXPECT_TRUE(std::string_view(tether::packaging::BTCLASS_UNIT).ends_with("\n"));
+    if (cap.setup[0].command.find("<<'EOF'") != std::string::npos) {
+        bool terminated = false;
+        std::istringstream lines(cap.setup[0].command);
+        for (std::string line; std::getline(lines, line);)
+            terminated = terminated || line == "EOF";
+        EXPECT_TRUE(terminated) << cap.setup[0].command;
+    }
 }
 
 TEST(Capability, PrefersAPoweredAdapter) {
