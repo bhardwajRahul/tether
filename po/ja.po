@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-04 14:22-0700\n"
+"POT-Creation-Date: 2026-09-04 17:50-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -993,7 +993,7 @@ msgstr "キャンセル"
 
 #. TRANSLATORS: the feature name Tether shows for this profile.
 #: src/core/src/bluetooth/profile_supervisor.cpp src/daemon/main.cpp
-#: src/gtk/devices_view.cpp src/gtk/main.cpp
+#: src/gtk/devices_view.cpp src/gtk/main.cpp src/gtk/settings_view.cpp
 msgid "Messages"
 msgstr "メッセージ"
 
@@ -1315,14 +1315,6 @@ msgid "This machine cannot carry the Bluetooth features."
 msgstr "このマシンでは Bluetooth 機能を利用できません。"
 
 #: src/gtk/devices_view.cpp
-msgid ""
-"Message history is paused: the desktop keyring has no key to offer\n"
-"yet. Unlock it, or choose Unencrypted above."
-msgstr ""
-"メッセージ履歴は一時停止中です: デスクトップのキーリングにまだ鍵が\n"
-"ありません。ロックを解除するか、上で「暗号化しない」を選んでください。"
-
-#: src/gtk/devices_view.cpp
 msgid "Link"
 msgstr "リンク"
 
@@ -1631,58 +1623,6 @@ msgstr ""
 "維持されます。"
 
 #: src/gtk/devices_view.cpp
-msgid "Mirror iPhone notifications"
-msgstr "iPhone の通知をミラーリング"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Show notifications from the iPhone on this desktop. Turned off automatically "
-"when pairing produces no LE bond; turn it back on after re-pairing."
-msgstr ""
-"iPhone からの通知をこのデスクトップに表示します。ペアリングで LE ボンドが作成"
-"されなかった場合は自動的にオフになります。ペアリングをやり直した後にもう一度"
-"オンにしてください。"
-
-#: src/gtk/devices_view.cpp
-msgid "Show notification contents"
-msgstr "通知の内容を表示"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Ask the iPhone for each notification's title and message text, not just "
-"which app sent it. The phone's own Show Message Notifications toggle still "
-"has to be on."
-msgstr ""
-"どのアプリが送信したかだけでなく、各通知のタイトルと本文も iPhone に要求しま"
-"す。iPhone 側の「メッセージ通知を表示」もオンになっている必要があります。"
-
-#: src/gtk/devices_view.cpp
-msgid "Keep message history:"
-msgstr "メッセージ履歴の保持:"
-
-#: src/gtk/devices_view.cpp
-msgid "Encrypted"
-msgstr "暗号化する"
-
-#: src/gtk/devices_view.cpp
-msgid "Unencrypted"
-msgstr "暗号化しない"
-
-#: src/gtk/devices_view.cpp
-msgid "Do not keep"
-msgstr "保持しない"
-
-#: src/gtk/devices_view.cpp
-msgid ""
-"Where messages and contacts are stored on this computer. Encrypted keeps "
-"them with a key in your desktop keyring. Do not keep deletes what is already "
-"stored and retains nothing further."
-msgstr ""
-"このコンピューターでメッセージと連絡先を保存する方法。「暗号化する」はデスク"
-"トップのキーリングにある鍵で保存します。「保持しない」は保存済みのものを削除"
-"し、以後何も保持しません。"
-
-#: src/gtk/devices_view.cpp
 msgid "Pair over Bluetooth"
 msgstr "Bluetooth でペアリング"
 
@@ -1726,9 +1666,9 @@ msgstr "クリップボードの同期を要求しました..."
 msgid "Forget"
 msgstr "削除"
 
-#: src/gtk/main.cpp
-msgid "Keep running in tray when closed"
-msgstr "閉じてもトレイで実行を続ける"
+#: src/gtk/main.cpp src/gtk/settings_view.cpp
+msgid "Settings"
+msgstr "設定"
 
 #: src/gtk/main.cpp
 msgid "Quit"
@@ -1844,6 +1784,122 @@ msgstr "まだ通知はありません。"
 msgid "Notification mirroring is unavailable."
 msgstr "通知のミラーリングは利用できません。"
 
+#: src/gtk/settings_view.cpp
+msgid ""
+"No iPhone is paired over Bluetooth, so the Bluetooth settings below cannot "
+"be changed yet."
+msgstr ""
+"Bluetooth でペアリングされた iPhone がないため、以下の Bluetooth 設定はまだ変"
+"更できません。"
+
+#: src/gtk/settings_view.cpp
+msgid "General"
+msgstr "全般"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep running in the tray when the window is closed"
+msgstr "ウィンドウを閉じてもトレイで実行を続ける"
+
+#: src/gtk/settings_view.cpp
+msgid "Closing the window hides it instead of quitting Tether."
+msgstr "ウィンドウを閉じると、Tether を終了せずに非表示にします。"
+
+#: src/gtk/settings_view.cpp
+msgid "Symbolic"
+msgstr "シンボリック"
+
+#: src/gtk/settings_view.cpp
+msgid "Color"
+msgstr "カラー"
+
+#: src/gtk/settings_view.cpp
+msgid "Tray icon"
+msgstr "トレイアイコン"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Symbolic follows the panel's color. Takes effect the next time Tether starts."
+msgstr ""
+"シンボリックはパネルの色に従います。次回の Tether 起動時に反映されます。"
+
+#: src/gtk/settings_view.cpp
+msgid "iPhone notifications"
+msgstr "iPhone の通知"
+
+#: src/gtk/settings_view.cpp
+msgid "Alerts your iPhone forwards to this computer over Bluetooth."
+msgstr "iPhone が Bluetooth 経由でこのコンピューターに転送する通知です。"
+
+#: src/gtk/settings_view.cpp
+msgid "Mirror iPhone notifications"
+msgstr "iPhone の通知をミラーリング"
+
+#: src/gtk/settings_view.cpp
+msgid "Disabled when pairing cannot support LE."
+msgstr "ペアリングが LE に対応しない場合は無効になります。"
+
+#: src/gtk/settings_view.cpp
+msgid "Include the notification text"
+msgstr "通知の本文を含める"
+
+#: src/gtk/settings_view.cpp
+msgid "Title and message content are shown, not just which app sent it."
+msgstr "送信元アプリだけでなく、タイトルと本文も表示されます。"
+
+#: src/gtk/settings_view.cpp
+msgid "SMS and iMessage conversations synced over Bluetooth."
+msgstr "Bluetooth 経由で同期される SMS と iMessage の会話です。"
+
+#: src/gtk/settings_view.cpp
+msgid "Encrypted"
+msgstr "暗号化する"
+
+#: src/gtk/settings_view.cpp
+msgid "Unencrypted"
+msgstr "暗号化しない"
+
+#: src/gtk/settings_view.cpp
+msgid "Do not keep"
+msgstr "保持しない"
+
+#: src/gtk/settings_view.cpp
+msgid "Keep message history"
+msgstr "メッセージ履歴を保持"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Where messages and contacts are stored on this computer. Encrypted keeps "
+"them with a key in your desktop keyring. Do not keep deletes what is already "
+"stored and retains nothing further."
+msgstr ""
+"このコンピューターでメッセージと連絡先を保存する方法。「暗号化する」はデスク"
+"トップのキーリングにある鍵で保存します。「保持しない」は保存済みのものを削除"
+"し、以後何も保持しません。"
+
+#: src/gtk/settings_view.cpp
+msgid ""
+"Message history is paused: the desktop keyring has no key to offer yet. "
+"Unlock it, or choose Unencrypted."
+msgstr ""
+"メッセージ履歴は一時停止中です。デスクトップのキーリングがまだ鍵を提供してい"
+"ません。ロックを解除するか、暗号化しないを選んでください。"
+
+#: src/gtk/settings_view.cpp
+msgid "Experimental"
+msgstr "実験的機能"
+
+#: src/gtk/settings_view.cpp
+msgid "Unfinished features. These can stop working at any time."
+msgstr "未完成の機能です。いつ動作しなくなってもおかしくありません。"
+
+#: src/gtk/settings_view.cpp
+msgid "Call control over Bluetooth"
+msgstr "Bluetooth 経由の通話操作"
+
+#: src/gtk/settings_view.cpp
+msgid "Answer and place calls from the Calls tab."
+msgstr "「通話」タブから通話の応答と発信ができます。"
+
 #: src/gtk/tray.cpp src/gtk/ui_util.cpp
 msgid "connected"
 msgstr "接続済み"
@@ -1879,6 +1935,28 @@ msgstr "デバイスの同期"
 #: src/gtk/tether-gtk.desktop.in
 msgid "Pair devices and synchronize clipboard across the network"
 msgstr "デバイスをペアリングし、ネットワーク越しにクリップボードを同期します"
+
+#~ msgid ""
+#~ "Turned off automatically when pairing produces no LE bond; turn it back "
+#~ "on after re-pairing."
+#~ msgstr ""
+#~ "ペアリングで LE ボンドが作られなかった場合は自動的にオフになります。再ペア"
+#~ "リング後にもう一度オンにしてください。"
+
+#~ msgid ""
+#~ "Ask for each alert's title and message, not just which app sent it. The "
+#~ "iPhone's own Show Message Notifications toggle still has to be on."
+#~ msgstr ""
+#~ "送信元アプリだけでなく、各通知のタイトルと本文も取得します。iPhone 側の"
+#~ "「メッセージ通知を表示」もオンにしておく必要があります。"
+
+#~ msgid ""
+#~ "Answer and place calls from the Calls tab. Needs hfp_hf in bluez5.roles "
+#~ "and PipeWire's telephony D-Bus service, neither of which Tether installs."
+#~ msgstr ""
+#~ "「通話」タブから通話の応答と発信ができます。bluez5.roles の hfp_hf と "
+#~ "PipeWire のテレフォニー D-Bus サービスが必要ですが、どちらも Tether はイン"
+#~ "ストールしません。"
 
 #~ msgid "Move call audio to this computer, or back to the iPhone."
 #~ msgstr "通話音声をこのコンピューターに移す、または iPhone に戻します。"
