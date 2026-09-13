@@ -235,8 +235,9 @@ TEST(AirPods, SeparatesAnIdlePeerFromOneTakingTheBuds) {
     EXPECT_FALSE(peer(0x15).taking_over());
     EXPECT_TRUE(peer(0x10).taking_over());
     EXPECT_FALSE(peer(0x10).active());
-    EXPECT_TRUE(peer(0x12).taking_over());
-    EXPECT_TRUE(peer(0x17).taking_over());
+    EXPECT_TRUE(peer(0x14).taking_over());
+    EXPECT_FALSE(peer(0x12).taking_over());
+    EXPECT_FALSE(peer(0x17).taking_over());
     EXPECT_TRUE(peer(0x17).active());
     EXPECT_FALSE(peer(0x15).active());
     // AirPods Pro 1 leaves a healthy iPhone at 0x01 forever.
@@ -258,6 +259,8 @@ TEST(AirPods, ReadsOwnershipFromTheOwnerBit) {
     // The same bit separates the pair reported by the models the reference was written against.
     EXPECT_FALSE(peer(0x15).active());
     EXPECT_TRUE(peer(0x17).active());
+    // An iPhone owning at 0x17 accepted a claim on the #85 reporter's Pro 2 and Pro 3.
+    EXPECT_FALSE(peer(0x17).taking_over());
 }
 
 // The registration packets the buds expect for every other host, ported from a working

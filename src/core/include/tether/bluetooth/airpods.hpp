@@ -53,9 +53,10 @@ namespace tether::bluetooth {
 
         bool active() const { return (state & AAP_PEER_OWNER) != 0; }
         // Escalating towards taking the buds, on the models that report 0x10 and up. Claiming
-        // against this leaves the host contested and the firmware closes the link. Owning is
-        // deliberately not part of it: an owner that has finished is what a reclaim claims from.
-        bool taking_over() const { return state >= AAP_PEER_ENGAGED && state != AAP_PEER_PASSIVE; }
+        // against this leaves the host contested and the firmware closes the link. Owning never
+        // counts: an owner that has finished is what a reclaim claims from, and some models keep
+        // an owning iPhone at 0x17 for as long as it holds the buds.
+        bool taking_over() const { return state >= AAP_PEER_ENGAGED && state != AAP_PEER_PASSIVE && !active(); }
 
         bool operator==(const AapPeer&) const = default;
     };

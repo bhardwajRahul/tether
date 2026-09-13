@@ -541,9 +541,10 @@ arriving in the same instant:
 | the models the AC reference was written against | `0x15` | `0x17` |
 
 Bit `0x10` is separate: it marks a host that firmware treats as engaged, and a claim sent into
-that range leaves this host contested. So a peer blocks a claim when it sits at `0x10` or above
-and is not `0x15` -- **owning does not block one**, because an owner that has finished its call is
-exactly what a reclaim takes the buds from. The iPhone keeps the owner bit until another host
+that range leaves this host contested. So a peer blocks a claim when it sits at `0x10` or above,
+does not carry the owner bit, and is not `0x15` -- **owning does not block one**, because an owner
+that has finished its call is exactly what a reclaim takes the buds from, and an iPhone owning at
+`0x17` stays there until another host claims. The iPhone keeps the owner bit until another host
 claims, so ownership alone never means "still using them" either; that needs the audio source.
 
 The AC reference reads the low values as validation state instead (`0x00` validated,
@@ -907,7 +908,7 @@ checks the daemon does not make.
 | Music resumed on the computer's speakers after a call | Fixed. A reclaim now waits for the buds' sink to come back before resuming | Nothing. `pactl` must be on `PATH` for the wait to work |
 | A call dialled from this computer is routed to it by the iPhone and nobody hears anything | Stock `bluez5.roles` carries `hfp_hf`, so PipeWire owns the profile and rejects the SCO by default (`bluez5.telephony.default-reject-sco`). iOS routes a call to the unit that dialled it and does not reconsider, so the audio is offered to a machine that is refusing it | `tether --bt-call-audio on` accepts it for the current call. To keep call audio on the phone, where the AirPods are, drop `hfp_hf` per "Either stack can serve the calls" and reconnect |
 | `--bt-call-audio on` answers `InvalidState` | `Activate` applies to audio the phone is offering right now, and there is none pending | Nothing. The `RejectSCO` half is applied either way, so the next offer is accepted |
-| The stem swipe changes the iPhone's volume, not this computer's | The buds send volume to whichever host owns them, and only ownership handoff makes that this machine | Set the adapter Device ID, per "Presenting as Apple hardware" |
+| The stem swipe changes the iPhone's volume, not this computer's | The buds send volume to whichever host owns them, and only ownership handoff makes that this machine. Up to 0.2.31, buds that report an owning iPhone as `0x17` were never claimed at all | Set the adapter Device ID, per "Presenting as Apple hardware". On `0x17` models, update; see 2026-09-12 below |
 | The AirPods came back after a call but playback did not resume | Fixed. Disconnecting the buds for the call used to clear the remembered players, so there was nothing left to resume | Nothing. Press play on an older build |
 | The AirPods did not come back after a call | The phone still had them after three attempts, so Tether gave up rather than fight it | Reconnect them from the phone or the Devices list. Playback is deliberately left paused |
 | Playback does not pause when a bud comes out | Pause on removal is off, which is the default | Set it on the AirPods page, or `tether --bt-airpods-pause one-removed` |
@@ -3407,3 +3408,36 @@ A new notification popped up afterwards with nothing touched on the phone.
 Not settled: the read on a live *inbound* link where `Bearer.LE1.Connected` reads false
 (2026-08-19). Any error other than `Not connected` counts as up; if BlueZ answers
 `Not connected` there, this drops a working session every 30 seconds.
+
+### 2026-09-12 - The stem swipe stayed on the phone at 0x17
+
+Reported in #85 on AirPods Pro 2 and Pro 3, two machines: the stem swipe always changed the
+iPhone's volume while music played here. Never reproduced on our Pro 3.
+
+The reporter isolated it on their side:
+
+- The swipe follows the host whose CLAIM the firmware last accepted. A script sending only
+  handshake, set-features and `04 00 04 00 09 00 06 01 00 00 00` moved it to Linux at once.
+- Every ownership change moves it again. After a call the swipe stays on the phone until the
+  host claims once more.
+- The host list when that claim was accepted had the iPhone at **`0x17`**:
+
+```
+040004002e00 01 00 02 7413ea6efeeb 01 01 64484254e53c 02 17
+```
+
+`taking_over()` read `0x17` as a peer taking the buds, because only `0x15` was carved out of
+the `0x10` range. So on those buds `peer_taking_over` held for as long as the phone owned them,
+and the session claim, the reclaim after a call and the claim for local playback were all
+dropped by the gate. Our iPhone owns at `0x07`, below the range, which is why it never showed
+here. The code also contradicted the rule above, that owning never blocks a claim.
+
+`taking_over()` now excludes the owner bit. Suggested instead: send the session claim on the
+features acknowledgement, bypassing the gate and the cooldown. Not taken, since the fixed gate
+lets the existing claims through, and a claim before `CLAIM_SETTLE_MS` is the one that drops the
+audio link.
+
+Both gates now log when they hold a claim back.
+
+Not settled: whether a claim into `0x17` survives a pod movement afterwards (the reference's
+contested-host drop). Unconfirmed on `0x17` hardware.
