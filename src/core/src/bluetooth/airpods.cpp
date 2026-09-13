@@ -697,8 +697,10 @@ namespace tether::bluetooth {
                 }
                 // ponytail: a flat cooldown. Claims come from call transitions here, not
                 // from every play event; measure the pause length if that ever changes.
-                if (now - last_claim < std::chrono::milliseconds(CLAIM_COOLDOWN_MS))
+                if (now - last_claim < std::chrono::milliseconds(CLAIM_COOLDOWN_MS)) {
+                    debug::log(DEBUG, "airpods: not claiming, a claim went out under {}ms ago", CLAIM_COOLDOWN_MS);
                     return true;
+                }
                 last_claim = now;
             }
             if (write_all(fd, CLAIM, sizeof(CLAIM))) {
@@ -827,13 +829,19 @@ namespace tether::bluetooth {
             // Ownership taken to validate this host goes back unless something here is playing.
             std::optional<clock::time_point> idle_release_at;
             const auto claim = [&] {
-                bool blocked = false;
+                bool peer = false;
+                bool yielding = false;
                 {
                     std::lock_guard<std::mutex> lock(mutex);
-                    blocked = state.peer_taking_over || yielded;
+                    peer = state.peer_taking_over;
+                    yielding = yielded;
                 }
-                if (blocked)
+                if (peer || yielding) {
+                    debug::log(DEBUG,
+                               "airpods: session claim held back, {}",
+                               peer ? "a peer is taking the buds" : "the buds are yielded");
                     return true;
+                }
                 claim_sent = true;
                 if (!send_ownership(fd, true))
                     return false;
