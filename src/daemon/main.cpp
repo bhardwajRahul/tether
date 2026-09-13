@@ -294,7 +294,7 @@ int main(int argc, char** argv) {
     // worker, the call handler, and the end of each handoff thread, so deciding and marking busy
     // is one step.
     std::function<void(const tether::bluetooth::AirPodsState&)> run_ownership;
-    run_ownership = [handoff, phone_busy, &run_ownership](const tether::bluetooth::AirPodsState& state) {
+    run_ownership = [handoff, phone_busy, &connections, &run_ownership](const tether::bluetooth::AirPodsState& state) {
         const auto config = tether::bluetooth::load_config();
         const bool busy_now = phone_busy(state);
 
@@ -348,10 +348,11 @@ int main(int argc, char** argv) {
             return;
         }
 
-        std::thread([handoff, phone_busy, &run_ownership] {
+        std::thread([handoff, phone_busy, &connections, &run_ownership] {
             bool reclaimed = false;
             for (int attempt = 0; attempt < HANDOFF_RECLAIM_ATTEMPTS && !reclaimed; ++attempt) {
-                std::this_thread::sleep_for(std::chrono::seconds(HANDOFF_GUARD_SECONDS));
+                if (attempt > 0 || !connections.calls_available())
+                    std::this_thread::sleep_for(std::chrono::seconds(HANDOFF_GUARD_SECONDS));
                 if (!tether::bluetooth::g_airpods)
                     break;
                 if (phone_busy(tether::bluetooth::g_airpods->state()))

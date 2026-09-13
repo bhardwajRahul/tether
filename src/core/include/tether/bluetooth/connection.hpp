@@ -68,6 +68,8 @@ namespace tether::bluetooth {
         bool call_action(const std::string& path, const std::string& action, std::string& err);
         bool call_tones(const std::string& tones, std::string& err);
         nlohmann::json calls() const;
+        // Whether the phone has Hands-Free up.
+        bool calls_available() const;
 
         nlohmann::json notifications(size_t limit = 50) const;
         ~ConnectionManager();

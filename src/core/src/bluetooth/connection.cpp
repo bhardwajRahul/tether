@@ -1483,6 +1483,11 @@ namespace tether::bluetooth {
         return client->send_tones(tones, err);
     }
 
+    bool ConnectionManager::calls_available() const {
+        auto client = state_->calls_client();
+        return client && client->available();
+    }
+
     nlohmann::json ConnectionManager::calls() const {
         auto client = state_->calls_client();
         if (!client)
