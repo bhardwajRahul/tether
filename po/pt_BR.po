@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-12 10:39-0700\n"
+"POT-Creation-Date: 2026-09-12 17:22-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Brazilian Portuguese\n"
@@ -2201,6 +2201,10 @@ msgid "Skipped {} non-file item."
 msgid_plural "Skipped {} non-file items."
 msgstr[0] "{} item que não é arquivo foi ignorado."
 msgstr[1] "{} itens que não são arquivos foram ignorados."
+
+#: src/gtk/devices_view.cpp
+msgid "Clipboard is empty."
+msgstr "A área de transferência está vazia."
 
 #: src/gtk/devices_view.cpp
 msgid "Desktop Clipboard Sync triggered."

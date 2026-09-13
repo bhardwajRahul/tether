@@ -1277,7 +1277,8 @@ namespace tether::ui {
             return true;
         }
         if (command == "clipboard_content") {
-            set_status_action(_("Desktop Clipboard Sync triggered."));
+            set_status_action(event.value("content", std::string{}).empty() ? _("Clipboard is empty.")
+                                                                            : _("Desktop Clipboard Sync triggered."));
             return true;
         }
         if (command == "bt_status") {
@@ -1759,7 +1760,7 @@ namespace tether::ui {
                          "clicked",
                          G_CALLBACK(+[](GtkWidget*, gpointer) {
                              nlohmann::json j;
-                             j["command"] = "clipboard_set"; // triggers clipboard send
+                             j["command"] = "clipboard_send";
                              daemon_send(j);
                              set_status_action(_("Clipboard sync requested..."));
                          }),

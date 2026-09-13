@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-12 10:39-0700\n"
+"POT-Creation-Date: 2026-09-12 17:22-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Ukrainian\n"
@@ -2197,6 +2197,10 @@ msgid_plural "Skipped {} non-file items."
 msgstr[0] "Пропущено {} об'єкт, що не є файлом."
 msgstr[1] "Пропущено {} об'єкти, що не є файлами."
 msgstr[2] "Пропущено {} об'єктів, що не є файлами."
+
+#: src/gtk/devices_view.cpp
+msgid "Clipboard is empty."
+msgstr "Буфер обміну порожній."
 
 #: src/gtk/devices_view.cpp
 msgid "Desktop Clipboard Sync triggered."

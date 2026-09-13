@@ -48,6 +48,12 @@ The clipboard capabilities allow seamless copying and pasting between the Host (
 
 ---
 
+### `clipboard_send` (Local client -> Daemon)
+
+**Description**: Local socket only. Broadcasts the current Host clipboard to clients as `clipboard_updated`, and replies with `clipboard_content`. Nothing is broadcast when the clipboard is empty.
+
+---
+
 ## 2. File Transfers
 
 Tether supports streaming large binary files seamlessly through JSON using Base64 chunks to adhere to extension native messaging payload restrictions.

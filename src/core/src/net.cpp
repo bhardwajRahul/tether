@@ -1335,6 +1335,19 @@ namespace tether {
                             write_plain_packet(client_fd, payload);
                             continue;
                         }
+                    } else if (j.contains("command") && j["command"] == "clipboard_send") {
+                        nlohmann::json resp;
+                        resp["command"] = "clipboard_content";
+                        resp["content"] = g_wayland ? g_wayland->get_clipboard() : std::string{};
+                        if (!resp["content"].get_ref<const std::string&>().empty()) {
+                            nlohmann::json bc;
+                            bc["command"] = "clipboard_updated";
+                            bc["content"] = resp["content"];
+                            broadcast_message(bc.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
+                        }
+                        write_plain_packet(client_fd,
+                                           resp.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace) + "\n");
+                        continue;
                     } else if (j.contains("command") && j["command"] == "new_otp" && j.contains("otp")) {
                         otp_publish(otp_from_json(j["otp"]), j.value("sender_domain", std::string{}), client_fd);
                         std::string payload = "{\"status\":\"ok\"}\n";

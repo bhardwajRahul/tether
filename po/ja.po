@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tether\n"
 "Report-Msgid-Bugs-To: zack@bartel.com\n"
-"POT-Creation-Date: 2026-09-12 10:39-0700\n"
+"POT-Creation-Date: 2026-09-12 17:22-0700\n"
 "PO-Revision-Date: 2026-08-23\n"
 "Last-Translator: Tether project\n"
 "Language-Team: Japanese\n"
@@ -2175,6 +2175,10 @@ msgstr[0] "{1} 件中 {0} 件のファイルを送信しました。"
 msgid "Skipped {} non-file item."
 msgid_plural "Skipped {} non-file items."
 msgstr[0] "ファイルでない項目を {} 件スキップしました。"
+
+#: src/gtk/devices_view.cpp
+msgid "Clipboard is empty."
+msgstr "クリップボードは空です。"
 
 #: src/gtk/devices_view.cpp
 msgid "Desktop Clipboard Sync triggered."
